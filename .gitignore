@@ -1,0 +1,58 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Convention: anything kept local-only goes in private/
+private/
+
+# Secrets — NEVER commit AWS or model-provider credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+.aws/
+credentials
+
+# Terraform — state holds resource IDs and can hold secrets in plaintext
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Node / frontend
+node_modules/
+.next/
+.vite/
+
+# Local data artifacts — the ingestion output lives in S3 and is rebuilt from source.
+# Keep manifest.json tracked; it is small and it pins the artifact version.
+data/artifacts/
+*.parquet
+*.sqlite3
+!data/manifest.json
+
+# Eval run output — reproducible by re-running the suite
+eval/results/
+
+# AWS SAM / build litter
+.aws-sam/
