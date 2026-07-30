@@ -73,10 +73,14 @@ judge, the artist axis, contested-claim UI, caching, and any density work. Each 
 6. Budget alarms armed; CloudWatch log retention set explicitly in Terraform.
 7. Token cost is measured and logged, not estimated.
 
-## Prerequisites not yet installed
+## Prerequisites
 
-**Terraform** and **Docker** are both absent locally. On WSL2, Docker means Docker Desktop with WSL
-integration or the engine inside the distro. Both block this phase; neither blocks writing its
+**Resolved 2026-07-30:** Terraform 1.15.8 and Docker Engine 29.6.2 are installed on WSL2 (the engine inside
+the distro, not Docker Desktop). The AWS account exists on the paid plan in `us-east-1` with the $20 budget
+armed.
+
+**Still gating:** all 160 Bedrock quotas read 0 TPM and 0 RPM. Nothing in this phase can make a `converse`
+call until that clears, which is exactly why step zero is step zero. It does not block writing the
 IMPLEMENTATION doc.
 
 ## Cost

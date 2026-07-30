@@ -49,7 +49,15 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | 0 | written (retroactively) | written (as-built) |
 | 1 | written | **next artifact** |
 | 2 | written | at phase start |
-| 3–7 | **pending** — next session | at phase start |
+| 3 | written | at phase start |
+| 4 | written | at phase start |
+| 5 | written | at phase start |
+| 6 | **pending** — held for the P279 validation | at phase start |
+| 7 | written | at phase start |
+
+Phase 6's scope doc is deliberately last. It is density and coverage, the phase most directly exposed to what
+the P279 taxonomy can actually carry, and hand-validating 20 edges first means it is written against evidence
+rather than assumption.
 
 **v0.1 definition of done:** a public URL that streams a grounded, cited, two-sentence answer about one
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
@@ -82,13 +90,15 @@ before a Lambda exists is not preparation, it is clutter.
 | Pinned dependency lockfile | `uv.lock` (committed; CI runs `uv sync --locked`) |
 | Product shape and canonical queries | `SPEC.md` |
 | Phase spine and the two-layer phase-doc pattern | `CLAUDE.md`, `docs/phases/` |
-| Scope docs, phases 0–2 | `docs/phases/phase-{0,1,2}-*.md` |
+| Scope docs, phases 0–5 and 7 | `docs/phases/phase-{0,1,2,3,4,5,7}-*.md` |
+| Terraform 1.15.8, Docker Engine 29.6.2 | Installed on WSL2, 2026-07-30 |
+| AWS account, `us-east-1`, PAID plan | Budget armed at $20 with 25/50/100% alerts; Cost Explorer on |
 
 ### Arrives with its subject, not before
 
 | Item | Trigger |
 |---|---|
-| Scope docs, phases 3–7 | Next session, in one pass, before phase 1 is built |
+| Scope doc, phase 6 | After the 20-edge P279 hand-validation, before phase 1 is built |
 | `infra/terraform/` | AWS account exists |
 | `infra/docker/Dockerfile` | There is code to package |
 | Deploy workflow with OIDC | AWS account exists; no long-lived keys, ever |
@@ -98,10 +108,16 @@ before a Lambda exists is not preparation, it is clutter.
 | Graph-viz engine choice | v0.5, via throwaway previews |
 | Logo and banner | **After** the first successful Bedrock call, not before |
 
-### Prerequisites not yet installed on this machine
+### Local prerequisites
 
-`uv`, Terraform, Docker. Node 22 and Make are present. Python is 3.12 locally; `uv` provisions the 3.13
-this project targets, so there is no `.python-version` file.
+All present as of 2026-07-30: `uv`, Terraform 1.15.8, Docker Engine 29.6.2 (in-distro, not Desktop), Node 22,
+Make. Python is 3.12 locally; `uv` provisions the 3.13 this project targets, so there is no `.python-version`
+file.
+
+**The one remaining gate is Bedrock quotas.** As of 2026-07-30 all 160 quotas in `us-east-1` read 0 TPM and 0
+RPM — a new-account provisioning condition, not a model-access problem; the "model access" page is retired and
+there is no approval queue to join. A support case is drafted. Nothing can call Bedrock until this clears, and
+step zero of phase 1 is blocked behind it. Doc and validation work is not.
 
 ## 4. Decision history
 
@@ -124,6 +140,16 @@ exists.
   reached 26 root entries by accretion where every individual addition looked reasonable. The cap makes the
   accretion visible. The largest single lever was reserving `web/` so the SPA's five config files never
   land in the root.
+- **2026-07-30 — AWS account live, `us-east-1`, PAID plan.** Budget armed at $20 with 25/50/100% alerts;
+  Cost Explorer on. Terraform and Docker installed locally. Root MFA and Cost Anomaly Detection still owed.
+  Bedrock quotas all read 0 TPM/RPM and are the sole remaining gate on phase 1.
+- **2026-07-30 — Scope docs written for phases 3, 4, 5, and 7; phase 6 deferred.** Phase 6 is density and
+  coverage, and it is the phase whose edges depend most directly on what P279 turns out to assert. Writing it
+  after the 20-edge hand-validation costs one day and buys a doc written against evidence.
+- **2026-07-30 — Phase 3 owns the eval work for the behaviors phase 3 introduces.** `planning/07` §12 assigns
+  the adversarial set, refusal accuracy, injection resistance, contested flagging, and slicing to v0.3 while
+  the spine calls phase 4 "the eval suite." Both are right: phase 3 measures what it builds, phase 4 builds
+  the suite — judge, validation, noise floor, thresholds, held-out set, metric unit tests, report.
 - **2026-07-29 — Python 3.13, uv, ruff, mypy, pytest.** Lambda supports 3.13 as both a managed runtime and
   a container base image, and 3.13 is the current LTS with support through October 2029. 3.14 is available
   on Lambda but 3.13 has the wider dependency support today.
