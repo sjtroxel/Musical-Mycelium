@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: lint, types, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        # Exact tag, not @v9: setup-uv does not publish a floating major tag, so @v9 fails to resolve.
+        # Dependabot keeps this current.
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: "0.12.0"
+          enable-cache: true
+
+      # --locked fails the build if uv.lock is out of date with pyproject.toml,
+      # rather than silently resolving something different from local dev.
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Format check
+        run: uv run ruff format --check src tests
+
+      - name: Lint
+        run: uv run ruff check src tests
+
+      - name: Types
+        run: uv run mypy
+
+      # Integration tests touch real services and billable calls; they never run unattended.
+      - name: Tests
+        run: uv run pytest -m "not integration and not costs_money"
+
+  root-hygiene:
+    name: repo root cap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check root entry count
+        run: make root-check

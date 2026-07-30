@@ -1,0 +1,103 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "musical-mycelium"
+version = "0.0.1"
+description = "A cited-lineage engine for music history: a Bedrock agent that walks a provenance graph where every influence edge traces to a source."
+readme = "README.md"
+# Upper bound is deliberate. Without it uv resolves to the newest interpreter on the machine (it picked
+# 3.14.6), which then disagrees with CI and with the Lambda container base image. Local, CI, and the
+# deployed runtime must be the same minor version or bugs only appear after deploy. Lambda supports 3.14
+# too; 3.13 is the LTS with wider dependency support, and the choice is recorded in docs/ROADMAP.md.
+requires-python = ">=3.13,<3.14"
+license = "MIT"
+authors = [{ name = "sjtroxel" }]
+
+# Deliberately minimal. Both of these are certain: boto3 is how Bedrock is called, and the Claim model
+# is a one-way door (05 section 2.1). Nothing speculative gets added here ahead of its subject.
+dependencies = [
+  "boto3>=1.35",
+  "pydantic>=2.9",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=6.0",
+  "mypy>=1.11",
+  "ruff>=0.16.0",
+  "pre-commit>=4.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/musical_mycelium"]
+
+# --- lint + format -----------------------------------------------------------
+# Every Python tool is configured here so that no per-tool file ever appears in the repo root.
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "F",    # pyflakes
+  "W",    # pycodestyle warnings
+  "I",    # import sorting
+  "B",    # bugbear
+  "UP",   # pyupgrade
+  "SIM",  # simplify
+  "C4",   # comprehensions
+  "PTH",  # prefer pathlib
+  "RUF",  # ruff-specific
+]
+
+# E501 is off because the formatter already owns code line width and cannot reflow prose. Leaving it on
+# means every docstring and comment fights the linter, and a check that fights you constantly is a check
+# that gets disabled outright — the same reasoning as the eval gating rule in .claude/rules/evals.md.
+# W505 replaces it with a limit that applies specifically to docs, set loose enough to be honest.
+ignore = ["E501"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 110
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]
+
+# --- types -------------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.13"
+files = ["src", "tests"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+
+# No exemption for tests. An earlier attempt at one needed a "test_*" pattern, which mypy rejects
+# (wildcards may only replace whole components), and the alternative was adding tests/__init__.py purely
+# to satisfy a pattern. Annotating a test with "-> None" is cheaper than either, and it means mypy
+# actually checks test bodies instead of skipping them as untyped.
+
+# --- tests -------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --strict-config"
+markers = [
+  "integration: touches a real external service; skipped by default in CI",
+  "costs_money: makes a billable Bedrock call; never runs unattended",
+]
+
+[tool.coverage.run]
+source = ["src/musical_mycelium"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

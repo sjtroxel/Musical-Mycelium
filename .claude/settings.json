@@ -3,7 +3,26 @@
     "deny": [
       "Bash(git commit*)",
       "Bash(git push*)",
-      "Bash(git commit --amend*)"
+      "Bash(git commit --amend*)",
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(aws *)"
+    ],
+    "allow": [
+      "Bash(make *)",
+      "Bash(uv run pytest*)",
+      "Bash(uv run ruff*)",
+      "Bash(uv run mypy*)",
+      "Bash(uv sync*)",
+      "Bash(uv lock*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git ls-files*)",
+      "Bash(git show*)",
+      "Bash(terraform fmt*)",
+      "Bash(terraform validate*)",
+      "Bash(terraform plan*)"
     ]
   }
 }

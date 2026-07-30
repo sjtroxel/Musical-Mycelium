@@ -12,18 +12,26 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Pre-build.** Named 2026-07-29. No code yet, no AWS account yet, nothing deployed.
+**Pre-build.** Named 2026-07-29. No AWS account yet, nothing deployed, no application code.
 
 What exists is the planning series in [`docs/planning/`](docs/planning/) — ten documents covering the
 concept, data sources, architecture, cost model, risk register, evolution plan, design direction, and
-evaluation spec, plus an independent review. Planning is closed. The next artifacts are an
-IMPLEMENTATION doc and a walking skeleton.
+evaluation spec, plus an independent review — and the project scaffolding: toolchain, CI, package
+boundaries with their contracts written down, and the architecture tests that guard them. Planning is
+closed. The next artifact is the v0.1 IMPLEMENTATION doc, then the walking skeleton.
+
+The version spine and what lands when are in [`docs/ROADMAP.md`](docs/ROADMAP.md). The contracts are in
+[`docs/SPEC.md`](docs/SPEC.md).
 
 ## What it will be
 
 A hand-built tool-use loop on Amazon Bedrock's Converse API. Given a genre or an artist, it plans a
 traversal across a pre-built provenance graph of musical influence, cross-references, and synthesizes a
 grounded, cited lineage.
+
+You ask it where something came from — "Where did Detroit techno come from?", "Who influenced Kate
+Bush?" — and it streams back a lineage with a source on every link. Later, it will take two points and
+walk the path between them: delta blues to Detroit techno, narrated hop by hop.
 
 - **Claims first, prose second.** The agent emits structured claims that a deterministic gate approves;
   the narrative is generated *from* the approved claims. The model cannot narrate an edge the gate
@@ -48,8 +56,27 @@ per-source gotchas are in [`docs/planning/01-DATA-SOURCES.md`](docs/planning/01-
 ## Repo layout
 
 ```
-docs/planning/    the ten pre-build planning documents (00-09) plus the naming worksheet
-docs/archive/     superseded docs move here rather than being deleted
+src/musical_mycelium/
+  ingest/   Wikidata + MusicBrainz -> a versioned artifact. Runs locally, not in Lambda.
+  graph/    the GraphStore seam; the only way anything reads the graph.
+  agent/    the hand-built Bedrock Converse tool loop; emits claims.
+  api/      the streaming HTTP surface. Thin, owns no logic.
+  eval/     deterministic scorers, the judge, the frozen datasets.
+tests/      unit, integration, and the architecture tests.
+infra/      terraform/ and docker/ — deployment lives here, not in the repo root.
+web/        reserved for the SPA, so its toolchain never reaches the repo root.
+docs/       planning/ (00-09, closed), phases/, archive/, ROADMAP.md, SPEC.md
+```
+
+The repo root is capped at 18 entries and CI enforces it. Tool configuration goes in `pyproject.toml`,
+deployment configuration goes in `infra/`, and nothing else earns a place at the top level.
+
+## Working on it
+
+```
+make install    # provisions Python 3.13 via uv and installs everything
+make check      # format, lint, types, tests, root cap — what CI runs
+make help       # everything else
 ```
 
 ## Why the name

@@ -23,9 +23,11 @@ credentials
 *.tfvars
 !*.tfvars.example
 .terraform/
-.terraform.lock.hcl
 crash.log
 crash.*.log
+# NOTE: .terraform.lock.hcl is deliberately NOT ignored. It pins provider versions and hashes and
+# belongs in version control, exactly like uv.lock. Ignoring it makes provider versions
+# non-reproducible between machines and CI.
 
 # Python
 __pycache__/
@@ -45,14 +47,15 @@ node_modules/
 .vite/
 
 # Local data artifacts — the ingestion output lives in S3 and is rebuilt from source.
-# Keep manifest.json tracked; it is small and it pins the artifact version.
-data/artifacts/
+# data/ is fully untracked, which also keeps it off the GitHub root listing. The tracked pointer to
+# the pinned artifact version gets a home in the v0.1 IMPLEMENTATION doc; it is not this directory.
+data/
 *.parquet
 *.sqlite3
-!data/manifest.json
 
 # Eval run output — reproducible by re-running the suite
-eval/results/
+**/eval/results/
+eval-results/
 
 # AWS SAM / build litter
 .aws-sam/
