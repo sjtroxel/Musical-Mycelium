@@ -20,8 +20,10 @@ are one connected organism, and most of the connections are not written down in 
   **once** here and referenced, never duplicated.
 - `docs/planning/00`–`09` — the pre-build series. `09` §7 is the sequence; `05` §2.1 is the one-way-door
   table; `07` is the eval spec; `04` is the risk register. Read these for *why*, not *what now*.
-- `docs/phases/phase-N-*-IMPLEMENTATION.md` — the as-built plan for each phase, written **when the phase
-  begins**, not up front, so it reflects how earlier phases actually turned out.
+- `docs/phases/phase-N-<slug>.md` — the **scope doc** for a phase: what it delivers, what it explicitly does
+  not, how it will be judged done. Written **up front for every phase in the ROADMAP**, before any building.
+- `docs/phases/phase-N-<slug>-IMPLEMENTATION.md` — the as-built plan for that phase, written **immediately
+  before that phase is built**, not up front, so it reflects how earlier phases actually turned out.
 - `docs/archive/` — superseded docs move here rather than being deleted.
 
 This repo shares one Claude memory store with `job-search-headquarters` and `patchwork-assurance` via a
@@ -79,9 +81,17 @@ Patchwork and Heritage Odyssey both reached 26 root entries.
 
 ## Conventions
 
-- **The IMPLEMENTATION doc comes before the code.** Starting a phase means writing and getting approval on
-  `docs/phases/phase-N-*-IMPLEMENTATION.md` first. "Let's get a move on" does not mean skip the plan. Use
-  the `start-a-phase` skill.
+- **Two doc layers per phase, and they are written at different times.** This is his established pattern
+  across 17 Patchwork phases, and it is not optional:
+  1. **Scope docs for every phase, up front, in one pass** — before anything is built. They say what each
+     phase is for and where its edges are.
+  2. **The IMPLEMENTATION doc for phase N, immediately before phase N is built** — never up front, because
+     it is supposed to absorb what phases 1..N-1 actually taught.
+  3. **A phase conceived later gets its own scope doc when it is conceived**, and phases can be inserted
+     mid-arc (Patchwork gained 4.5 and 4.6 that way). The up-front scope pass is a map, not a contract.
+
+  Starting a phase means re-reading its scope doc, then writing and getting approval on its IMPLEMENTATION
+  doc. "Let's get a move on" does not mean skip the plan. Use the `start-a-phase` skill.
 - **One command:** `make check` runs format, lint, types, and tests. `make help` lists everything.
 - **Never run `git commit` or `git push`.** Provide the command; he runs it. Enforced in
   `.claude/settings.json`. One-line commit messages, no AI attribution or `Co-Authored-By` trailers.

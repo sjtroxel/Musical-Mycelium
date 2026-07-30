@@ -8,16 +8,24 @@ description: Use when beginning any new phase or version of Musical Mycelium (v0
 The standing rule: **the phase IMPLEMENTATION doc is written and approved before any code.** "Let's get a
 move on" does not mean skip the plan. This exists because skipping it has cost real rework before.
 
+Every phase already has a **scope doc** (`docs/phases/phase-N-<slug>.md`) written up front. This skill covers
+the second layer: turning that scope into an approved implementation plan at the moment the phase starts.
+
 ## Steps
 
-1. **Confirm which phase.** Check `docs/ROADMAP.md` for the version spine and confirm the phase number and
-   the target version with him. Do not infer it.
+1. **Confirm which phase.** Check `docs/ROADMAP.md` for the phase spine and confirm the phase number and
+   target version with him. Do not infer it.
 
-2. **Read the inherited assignments.** `docs/planning/09-PRIORITIES-AND-OPEN-DECISIONS.md` §6 gathers every
+2. **Re-read that phase's scope doc first.** It was written before any building, so check it against what
+   the intervening phases actually taught. Where reality has diverged, say so explicitly and offer to amend
+   the scope doc — do not silently let the IMPLEMENTATION doc contradict it. If the phase has no scope doc
+   because it was conceived later, write the scope doc first and get it approved as its own step.
+
+3. **Read the inherited assignments.** `docs/planning/09-PRIORITIES-AND-OPEN-DECISIONS.md` §6 gathers every
    accumulated assignment from the pre-build series. Check which ones this phase is responsible for and
    carry them forward explicitly — that list exists so nothing gets lost between planning and building.
 
-3. **Write `docs/phases/phase-N-<slug>-IMPLEMENTATION.md`** covering, at minimum:
+4. **Write `docs/phases/phase-N-<slug>-IMPLEMENTATION.md`** covering, at minimum:
    - What this phase delivers, in one sentence, and its definition of done
    - The explicit **not-in-this-phase** list (this is the scope fence; it does more work than the feature list)
    - Which one-way doors from `CLAUDE.md` this phase touches, and how each is satisfied
@@ -26,12 +34,12 @@ move on" does not mean skip the plan. This exists because skipping it has cost r
    - Cost impact, if any, and the guardrail for it
    - Anything genuinely uncertain, named as uncertain rather than smoothed over
 
-4. **Get explicit approval on the doc.** Present it and stop. Do not begin writing code in the same turn.
+5. **Get explicit approval on the doc.** Present it and stop. Do not begin writing code in the same turn.
 
-5. **Then build**, keeping the doc updated as the as-built record when reality diverges from the plan.
+6. **Then build**, keeping the doc updated as the as-built record when reality diverges from the plan.
    The doc is allowed to be wrong; it is not allowed to be silently wrong.
 
-6. **Write the plain-English explanation as you go.** A short write-up of what this phase does, in language
+7. **Write the plain-English explanation as you go.** A short write-up of what this phase does, in language
    with no jargon, phase by phase. This is the cold-articulation rep — it is genuinely useful interview
    preparation and it is much harder to reconstruct months later.
 

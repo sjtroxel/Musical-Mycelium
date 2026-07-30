@@ -25,15 +25,31 @@ From `planning/05-EVOLUTION-PLAN.md` §5. Read the right-hand column: no row req
 row. That is what planning for expansion actually means — not predicting the feature set, but making sure
 every future addition lands in a slot that already exists.
 
-| Version | What thickens | Which seam absorbs it |
+| Phase | Version | What thickens | Which seam absorbs it |
+|---|---|---|---|
+| **0** `scaffold-and-spine` | — | The repo itself | Complete 2026-07-29 |
+| **1** `walking-skeleton` | **v0.1** | Everything present, connected, deployed, and tiny | — |
+| **2** `corpus-and-traversal` | **v0.2** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
+| **3** `agent-loop` | **v0.3** | Real agent loop: planning, 5–8 tools, cross-referencing | Tool registry; loop untouched |
+| **4** `eval-suite` | **v0.4** | The eval suite proper | Independent scorers over a pinned artifact |
+| **5** `spa-and-visualization` | **v0.5** | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
+| **6** `density-and-coverage` | **v0.6** | Density: artists, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
+| **7** `polish-and-portfolio` | **v1.0** | Polish, writeup, portfolio surface | No architecture change |
+
+**AWS signup is phase 1's step zero**, not a phase: account on the paid plan, Bedrock model access, and budget
+alarms armed. It is a gate, and one successful `converse` call is task one of the build.
+
+### Phase doc status
+
+Two layers per phase, written at different times — see `CLAUDE.md` for the rule and `.claude/skills/start-a-phase/`
+for the workflow. Scope docs are written up front; IMPLEMENTATION docs are written immediately before each build.
+
+| Phase | Scope doc | IMPLEMENTATION doc |
 |---|---|---|
-| **v0.1** | The walking skeleton | — |
-| **v0.2** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
-| **v0.3** | Real agent loop: planning, 5–8 tools, cross-referencing | Tool registry; loop untouched |
-| **v0.4** | The eval suite proper | Independent scorers over a pinned artifact |
-| **v0.5** | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
-| **v0.6** | Density: artists, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
-| **v1.0** | Polish, writeup, portfolio surface | No architecture change |
+| 0 | written (retroactively) | written (as-built) |
+| 1 | written | **next artifact** |
+| 2 | written | at phase start |
+| 3–7 | **pending** — next session | at phase start |
 
 **v0.1 definition of done:** a public URL that streams a grounded, cited, two-sentence answer about one
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
@@ -65,11 +81,14 @@ before a Lambda exists is not preparation, it is clutter.
 | Secret and state leak prevention | `.gitignore` |
 | Pinned dependency lockfile | `uv.lock` (committed; CI runs `uv sync --locked`) |
 | Product shape and canonical queries | `SPEC.md` |
+| Phase spine and the two-layer phase-doc pattern | `CLAUDE.md`, `docs/phases/` |
+| Scope docs, phases 0–2 | `docs/phases/phase-{0,1,2}-*.md` |
 
 ### Arrives with its subject, not before
 
 | Item | Trigger |
 |---|---|
+| Scope docs, phases 3–7 | Next session, in one pass, before phase 1 is built |
 | `infra/terraform/` | AWS account exists |
 | `infra/docker/Dockerfile` | There is code to package |
 | Deploy workflow with OIDC | AWS account exists; no long-lived keys, ever |
