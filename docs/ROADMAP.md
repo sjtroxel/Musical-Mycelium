@@ -52,12 +52,13 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | 3 | written | at phase start |
 | 4 | written | at phase start |
 | 5 | written | at phase start |
-| 6 | **pending** — held for the P279 validation | at phase start |
+| 6 | written 2026-07-31, after the validation | at phase start |
 | 7 | written | at phase start |
 
-Phase 6's scope doc is deliberately last. It is density and coverage, the phase most directly exposed to what
-the P279 taxonomy can actually carry, and hand-validating 20 edges first means it is written against evidence
-rather than assumption.
+Phase 6's scope doc was deliberately last. It is density and coverage, the phase most directly exposed to what
+the P279 taxonomy can actually carry, and hand-validating the edges first meant it could be written against
+evidence rather than assumption. That paid off: the validation falsified the assumption the phase was going to
+be built on. See `docs/graph-semantics.md`.
 
 **v0.1 definition of done:** a public URL that streams a grounded, cited, two-sentence answer about one
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
@@ -98,7 +99,7 @@ before a Lambda exists is not preparation, it is clutter.
 
 | Item | Trigger |
 |---|---|
-| Scope doc, phase 6 | After the 20-edge P279 hand-validation, before phase 1 is built |
+| ~~Scope doc, phase 6~~ | **Done 2026-07-31.** Validation ran first, as intended |
 | `infra/terraform/` | AWS account exists |
 | `infra/docker/Dockerfile` | There is code to package |
 | Deploy workflow with OIDC | AWS account exists; no long-lived keys, ever |
@@ -146,6 +147,19 @@ exists.
 - **2026-07-30 — Scope docs written for phases 3, 4, 5, and 7; phase 6 deferred.** Phase 6 is density and
   coverage, and it is the phase whose edges depend most directly on what P279 turns out to assert. Writing it
   after the 20-edge hand-validation costs one day and buys a doc written against evidence.
+- **2026-07-31 — The P279/P737 validation ran and falsified the plan's central assumption.** P279 is category
+  membership, not derivation; the lineage predicate is P737, which yields 351 genre edges of which 158 survive
+  a Wikipedia prose check, forming 46 disconnected components rather than one graph. `01-DATA-SOURCES.md` is
+  amended in place. Deferring phase 6's scope doc was the right call — it would otherwise have been written
+  against an assumption that turned out to be wrong. Full findings in `docs/graph-semantics.md`.
+- **2026-07-31 — The Wikipedia prose check moves into ingestion rather than becoming a curation pass.** It is
+  deterministic, free, and needs no model call, so it is a corpus filter, a displayed coverage metric, and a
+  Tier 1 eval at once. Method contributed by sjtroxel. Wikipedia cannot *confirm* a Wikidata edge (shared
+  editorial ecosystem) but can *disconfirm* one, and the circularity hypothesis was tested and rejected at
+  11 of 227 infobox-only.
+- **2026-07-31 — Phase 6's scope doc names the 46-component question rather than answering it.** A scope doc
+  is a map, not a contract; the resolution needs to know how phases 1–5 actually went, and the phase 6
+  IMPLEMENTATION doc is where it gets decided.
 - **2026-07-30 — Phase 3 owns the eval work for the behaviors phase 3 introduces.** `planning/07` §12 assigns
   the adversarial set, refusal accuracy, injection resistance, contested flagging, and slicing to v0.3 while
   the spine calls phase 4 "the eval suite." Both are right: phase 3 measures what it builds, phase 4 builds

@@ -13,17 +13,26 @@ Key entities / properties:
 | Item | Meaning |
 |---|---|
 | `Q188451` | "music genre" (the instance-of target) |
-| `P279` | subclass of — genre → parent-genre derivation (the genre family tree) |
-| `P737` | "influenced by" — artist→artist and work influence edges |
+| `P279` | subclass of — genre → parent-genre **category membership**. *(AMENDED 2026-07-31: this row previously read "derivation (the genre family tree)". That was wrong. P279 is taxonomic and carries no historical lineage. See the amendment note below.)* |
+| `P737` | "influenced by" — artist→artist and work influence edges, **and genre→genre**. *(AMENDED 2026-07-31: the genre axis was missing here and it is the one that carries lineage.)* |
 | `P571` | inception — dates genres/forms |
 | `P106` / `Q639669` | occupation / musician |
 
 **Verified live results (2026-07-24):**
 
 - **6,324** music genres (`COUNT DISTINCT` instance-of `Q188451`).
-- **~7,936** genre→genre derivation edges (`P279` between two genres) — a real, sizable family tree.
+- **~7,936** genre→genre `P279` edges — a real, sizable **taxonomy**. *(AMENDED 2026-07-31: originally
+  written as "derivation edges". They are category-membership edges. Re-measured 7,948 on 2026-07-31.)*
 - **"Influenced by" (`P737`) edges are populated and real** — live sample: Chopin ← Mozart, Rachel Portman ← Mozart, Alanis Morissette ← Patti Smith, Carina Round ← Patti Smith, and a cluster ← Kate Bush.
 - **Temporal reach:** ordering genres by inception (`P571`) ascending, the oldest nodes land at **~2000 BCE** (a `-1999` timestamp) plus a **medieval cluster 200–1000 CE**, thickening from there. The skeleton genuinely spans millennia — **sparse at the ancient end, dense at the modern end**, which is exactly the full-history-skeleton design shape (see `00-DESIGN-BRIEF` §3.1).
+
+> **AMENDMENT NOTE — 2026-07-31.** The `04` §4.4 hand-validation was run on 2026-07-31 and it falsified
+> this section's central assumption. **P279 is category membership, not derivation**, across every one of
+> 47 edges read; the canonical `bebop ← swing` relation does not exist in P279 at all. The lineage
+> predicate is **P737**, which also runs genre→genre — but there are only **351** such edges, and only
+> **158** survive a Wikipedia prose check. Those 158 form **46 disconnected components**, not one graph.
+> The rows above are amended in place rather than rewritten, because this planning series is closed and
+> the record of what was assumed on 2026-07-24 is worth preserving. Full findings: `docs/graph-semantics.md`.
 
 ## Secondary: MusicBrainz — relational depth (mostly CC0 / public domain)
 
