@@ -48,7 +48,7 @@ CI, provisioned by Terraform, with one eval passing in the pipeline and a budget
 | Package boundaries | Already done in phase 0 |
 | LLM provider seam | Real `build_llm`-style factory, one implementation |
 | Lambda container image | Real. Required anyway by the 250MB unzipped limit |
-| Response streaming | Real. Lambda Function URL with response streaming, even though the answer is two sentences |
+| Response streaming | Real. Lambda Function URL with response streaming, even though the answer is two sentences. **VERIFIED 2026-07-31** — Python needs the Lambda Web Adapter; TTFB 0.214s vs 10.22s total. See `docs/streaming-verification.md` |
 
 ## Deliberately fake or thin
 

@@ -23,7 +23,14 @@ roughly $20/month total across all tooling, and there is a history of a real spe
 - **Never join this account to an AWS Organization** — it forfeits the activation credits immediately.
   Credits expire 12 months from account creation.
 - **No long-lived AWS keys.** Lambda gets an execution role; GitHub Actions uses OIDC. Better security and
-  a better resume line.
+  a better resume line. *(Amended 2026-07-31: this rule did not contemplate LOCAL developer credentials.
+  IAM Identity Center is the right answer but requires an organization instance, which requires creating an
+  AWS Organization — colliding with the credits rule above. Interim: a scoped IAM user with an access key,
+  time-boxed and deleted after use. The credits question is unresolved and worth asking AWS directly.)*
+- **The Lambda timeout is a COST control when streaming.** Verified 2026-07-31; AWS docs are explicit that
+  *"streamed responses are not interrupted or stopped when the invoking client connection is broken.
+  Customers are billed for the full function duration."* A visitor who triggers a multi-step agent loop on
+  the public URL and closes the tab bills the full timeout. Set it as tight as the workload allows.
 - **Bedrock spend is the only real line item.** Route traversal and tool turns to the cheap model and use a
   stronger model only for synthesis and judging. Agentic loops are input-heavy — every turn re-sends
   accumulated context. Any operation that spends money at scale (the eval suite above all) goes behind an
