@@ -183,8 +183,13 @@ genres" is a general capability or a capability within one component. It is the 
 
 ## 6. Consequences by phase
 
-- **Phase 1** — genre axis only, P279. Safe, because phase 1 asserts one hardcoded hop and does not
-  claim lineage. The gate must already refuse to narrate P279 as derivation.
+- **Phase 1** — *amended 2026-08-01, decided by sjtroxel; originally "genre axis only, P279."* That
+  assignment contradicted the scope doc's promised **origins** answer: P279 is category membership (§2),
+  and a gate that correctly refuses to narrate it as derivation makes an origins answer impossible from
+  P279 data. v0.1 therefore uses **P737 genre-to-genre edges from the PROSE tier** (~15, hand-verified),
+  which preserves the real claim shape (`influenced_by`) so the gate, the `Claim` model, and the prose
+  templates survive into phase 2 unchanged. P279 is not ingested at v0.1 at all, so it cannot be narrated
+  as derivation by construction. Reasoning in `docs/phases/phase-1-walking-skeleton-IMPLEMENTATION.md` §2.
 - **Phase 2** — the boundary predicate must catch the vertical *and* lateral escapes (§2.1). Type
   filtering on both ends of both predicates (§3.1). The prose check moves into ingestion (§4.5).
 - **Phase 6** — unblocked as of 2026-07-31. §4.4 and §5 are its raw material; density and coverage are

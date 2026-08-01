@@ -42,7 +42,7 @@ CI, provisioned by Terraform, with one eval passing in the pipeline and a budget
 |---|---|
 | Claims first, prose second | Real. The gate is deterministic code; prose sees only approved claims |
 | Provenance on every edge | Real. `source`, `source_id`, `retrieved_at` on every row from the first row |
-| Validated graph semantics | Real. Hand-check 20 P279 edges and write down what the predicate means, **before** ingesting |
+| Validated graph semantics | **Done 2026-07-31** — 47 edges read, findings in `docs/graph-semantics.md`. v0.1 ingests P737 genre-to-genre only |
 | Agent-to-data tool contract | Real interface, 2 tools behind it |
 | Everything in Terraform | Real. Nothing clicked in the console except account setup and Bedrock access |
 | Package boundaries | Already done in phase 0 |
@@ -52,11 +52,14 @@ CI, provisioned by Terraform, with one eval passing in the pipeline and a budget
 
 ## Deliberately fake or thin
 
-- A few hundred genres, not the full ~6,324.
+- ~15 hand-verified edges, not the full corpus. *(Amended 2026-08-01 from "a few hundred genres" — the
+  P279/P737 validation showed the sourced-lineage corpus is ~158 edges total; see the IMPLEMENTATION doc §2.)*
 - **Two tools**, and one hardcoded traversal hop. No planning.
 - **No React.** `curl` is the v0.1 client.
 - **One eval metric, five gold cases.** Not the suite.
-- Genre axis only (P279). The artist axis (P737) is phase 2.
+- Genre axis only, on P737 genre-to-genre edges. *(Amended 2026-08-01 — originally "P279; the artist axis
+  (P737) is phase 2." P279 is category membership and cannot carry an origins answer; P737 runs
+  genre-to-genre as well as artist-to-artist. The **artist** axis is still phase 2. IMPLEMENTATION doc §2.)*
 
 ## Explicitly not in this phase
 
