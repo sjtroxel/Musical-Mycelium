@@ -16,5 +16,11 @@ Contract (``docs/planning/01-DATA-SOURCES.md``, ``04-RISK-REGISTER.md`` section 
 - MusicBrainz core tables only (CC0). Contributor data is CC BY-NC-SA 3.0 and is out of scope.
   1 request/second, contactable User-Agent.
 
-Nothing is implemented yet. The v0.1 IMPLEMENTATION doc defines the artifact schema.
+**Built as of 2026-08-02 (phase 1, step 3).** ``artifact.py`` writes and verifies a versioned artifact;
+``wikidata.py`` fetches P737 genre-to-genre edges, type-filters both ends, and stamps provenance. The
+schema itself lives in ``graph.schema`` — see that module for why the dependency points that way.
+
+v0.1 ingests a **hand-verified list** of 21 edges rather than running a discovery query; the record is
+``docs/phases/phase-1-edge-verification.md``. The pipeline shape is the real one, so phase 2 replaces
+only where the candidate pairs come from.
 """

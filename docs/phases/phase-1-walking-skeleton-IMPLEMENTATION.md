@@ -107,10 +107,30 @@ Single JSON file plus a manifest, both immutable and versioned. At ~15 edges the
 performance and is chosen for legibility and diffability.
 
 ```
-artifacts/v0.1.0/
+src/musical_mycelium/artifacts/v0.1.0/
   graph.json      nodes[] + edges[], every row carrying provenance
   manifest.json   artifact_version, generated_at, source snapshot ids, edge/node counts, sha256 of graph.json
 ```
+
+*(Path settled 2026-08-02 during the build; this section originally read `artifacts/v0.1.0/` at the repo
+root. Three reasons it moved into the package: the root is CI-capped at 18 and this spends headroom on
+data; phase 0 already decided in `.gitignore` that data directories stay off the root listing, and its
+`data/` pattern matches at any depth so it cannot hold a tracked artifact; and hatchling ships everything
+under the package directory, so `pip install` carries the artifact into the container image with no COPY
+step and no S3 fetch on the cold path.)*
+
+*(Also settled: **the schema lives in `graph/schema.py`, not `ingest/`.** `ingest` may import `graph`;
+`graph` must never import `ingest`, or the Lambda image carries the network-fetching ingestion code.
+`tests/test_architecture.py` enforces the direction. The artifact is the seam between the two.)*
+
+**Provenance is enforced at construction, not by a test.** `Node` and `Edge` are frozen dataclasses whose
+`__post_init__` raises `ProvenanceError` on a missing or blank `source` / `source_id` / `retrieved_at`. A
+test that checks provenance can be deleted; a constructor that refuses to build the row cannot be.
+
+**An edge's `source_id` is the Wikidata *statement* URI, not the subject QID** — e.g.
+`.../entity/statement/Q193355-032451F3-...`. It resolves to the specific assertion, which is the
+difference between a citation that can be checked and one that gestures. Every node additionally carries
+the `revision_id` it was read from, so `retrieved_at` has something behind it.
 
 Edge rows carry `subject_id`, `predicate` (`influenced_by`), `object_id`, `source`, `source_id`,
 `retrieved_at`, and `prose_tier` (`PROSE` for all v0.1 rows, present so phase 2 does not alter the schema).
@@ -146,8 +166,9 @@ claim-coverage audit possible.
 
 | Path | What lands |
 |---|---|
-| `src/musical_mycelium/ingest/wikidata.py` | One-shot P737 fetch + type filter on both ends; writes the artifact. Runs locally, never in Lambda |
-| `src/musical_mycelium/ingest/artifact.py` | Artifact + manifest writer, sha256, provenance stamping |
+| `src/musical_mycelium/ingest/wikidata.py` | One-shot P737 fetch + type filter on both ends; writes the artifact. Runs locally, never in Lambda. **Built 2026-08-02** |
+| `src/musical_mycelium/ingest/artifact.py` | Artifact + manifest writer, sha256, immutability guard, hash verification. **Built 2026-08-02** |
+| `src/musical_mycelium/graph/schema.py` | **Added during the build, not in the original plan.** The artifact contract: `Node`, `Edge`, `Manifest`, `Artifact`. Lives in `graph` because `ingest -> graph` is the only safe direction |
 | `src/musical_mycelium/graph/store.py` | `GraphStore` protocol |
 | `src/musical_mycelium/graph/memory.py` | `InMemoryGraphStore` |
 | `src/musical_mycelium/agent/claims.py` | `Claim`, and the deterministic `gate()` |

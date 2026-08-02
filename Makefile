@@ -2,7 +2,7 @@
 # `make help` lists targets. `make check` is what CI runs.
 
 .DEFAULT_GOAL := help
-.PHONY: help install fmt lint typecheck test cov check root-check clean dev
+.PHONY: help install fmt lint typecheck test cov check root-check clean dev ingest
 
 UV := $(shell command -v uv 2>/dev/null)
 
@@ -50,6 +50,12 @@ root-check: ## Fail if the repo root has grown past its cap (see CLAUDE.md)
 	fi
 
 check: lint typecheck test root-check ## Everything CI runs
+
+# Hits Wikidata, so it is deliberately NOT part of `check` and never runs in CI. The artifact it writes
+# is committed; rebuilding it is an explicit act. Costs $0 — Wikidata is free — but it is network I/O
+# against a service that is degraded in 2026, so run it when the corpus changes, not on every loop.
+ingest: ## Rebuild the pinned graph artifact from Wikidata (local only; requires --force to overwrite)
+	uv run python -m musical_mycelium.ingest.wikidata $(ARGS)
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .mypy_cache .ruff_cache dist build .coverage

@@ -142,7 +142,7 @@ than assumed, and the test should be re-run if the corpus is ever re-ingested.
 123 of the 158 have three or more prose mentions. **The usable corpus is ~123–158 edges, not 351.**
 55% of P737 fails the weakest test that can be constructed against it.
 
-*Amended 2026-08-02: treat 158 as an **upper bound**. Hand-reading 26 of these edges rejected 5 (§4.7),
+*Amended 2026-08-02: treat 158 as an **upper bound**. Hand-reading 28 of these edges rejected 7 (§4.7),
 and the mention counter has three inflating defects (§4.6). The true usable count is lower and is not yet
 measured.*
 
@@ -179,10 +179,11 @@ rate as a measured number with a known error bar, not for claiming the check is 
 
 ### 4.7 The tier over-accepts by roughly a fifth on hand-reading
 
-Of 26 candidates drawn from the PROSE tier and hand-read on 2026-08-02, **21 were accepted and 5 rejected**
-— and 3 of the 5 failed on a gate the automated check cannot apply at all: whether the sentence *asserts
+Of 28 candidates drawn from the PROSE tier and hand-read on 2026-08-02, **21 were accepted and 7 rejected**
+— and 4 of the 7 failed on a gate the automated check cannot apply at all: whether the sentence *asserts
 influence* rather than merely mentioning the object. Synonymy ("the terms were used interchangeably"),
-contradiction ("rooted in different cultural traditions"), and taxonomy ("is a subgenre of") all read as
+contradiction ("rooted in different cultural traditions"), taxonomy ("is a subgenre of"), and a mention
+that runs the wrong way in time ("the fall of dubstep" as a motive for returning to grime) all read as
 PROSE.
 
 **The usable corpus is therefore smaller than 158.** Do not quote 158 as the sourced-edge count without

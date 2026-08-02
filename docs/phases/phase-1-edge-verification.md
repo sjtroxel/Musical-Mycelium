@@ -24,11 +24,20 @@ whether the article says what the edge claims.
 
 ## 2. Result
 
-**21 of 26 candidates accepted. 5 rejected.** Two batches were run because the first lost 5 of 16 and the
-plan calls for ~15 edges.
+**21 of 28 candidates accepted. 7 rejected.**
+
+| batch | candidates | accepted | rejected |
+|---|---|---|---|
+| 1 | 16 | 11 | 5 |
+| 2 — run because batch 1 lost 5 and the plan calls for ~15 edges | 10 | 8 | 2 |
+| follow-up — `acid jazz <- soul` and `<- hip-hop`, after the article's lead named them | 2 | 2 | 0 |
+| **total** | **28** | **21** | **7** |
+
+Of the 7 rejections, **3 failed at gate 3** (no genuine prose, or the wrong article entirely) and **4
+failed at gate 4** — the assertion gate, which no automated check applies.
 
 The survival rate matters beyond this phase: these candidates had **already passed** the automated PROSE
-tier. Roughly **one in five surviving edges does not withstand hand-reading**, which means the usable
+tier. Roughly **one in four surviving edges does not withstand hand-reading**, which means the usable
 corpus is smaller than the 158 that `graph-semantics.md` §4.4 records. See §4.
 
 ## 3. Three defects in the automated prose check
@@ -127,7 +136,8 @@ are the corpus. They make the refusal case testable against a node the graph can
 
 ## 5. The rejected set — and why each was rejected
 
-The more useful half of the record.
+The more useful half of the record. Six are tabled here; the seventh, `extreme metal <- heavy metal`, gets
+its own section below because of what it implies.
 
 | Rejected edge | Gate | Reason |
 |---|---|---|
