@@ -182,6 +182,29 @@ has consumers is the annoying kind of rework.
 `span` is the character range in the emitted prose that the claim underwrites, which is what makes the phase-4
 claim-coverage audit possible.
 
+**As built, 2026-08-02. There are two types, not one, and that is the load-bearing decision.**
+
+- **`ClaimProposal(subject_id, predicate, object_id)`** is what the model may emit. It carries **no
+  sources**. A model that cannot name a citation cannot fabricate one.
+- **`Claim`** carries `source_ids`, and the only thing that can produce one is `gate()`, which reads the
+  sources off the artifact edge. The type system enforces the boundary rather than a code review.
+
+`span` defaults to `None` and is attached by `with_span()` at synthesis time. That is not a convenience —
+at gate time there is no prose to point at, and that ordering *is* the claims-first rule.
+
+Two structural refusals, both at construction: a `Claim` with empty `source_ids` raises (an uncited claim
+is a refusal, not a claim), and a `Span` with a backwards range raises.
+
+**Source resolution is checkable, not aspirational.** A Wikidata statement URI encodes the QID of the
+entity the statement belongs to, so a citation on an `influenced_by` edge must name that edge's *subject*.
+A well-formed URI pointing at some other entity is rejected — which is exactly what a plausible fabricated
+citation looks like, and what a prefix check alone would wave through. Verified true across all 21 edges.
+
+**Not built, deliberately: the contested state.** `.claude/rules/grounding-and-claims.md` makes contested
+first-class, and it will need a third outcome beside approved and rejected. Nothing in the v0.1 corpus can
+mark an edge as disputed, so a state nothing can produce would be speculative structure. It arrives with
+the data that justifies it, in phase 2 or 6. Recorded here so its absence is a decision.
+
 ## 6. Files and modules that will change
 
 | Path | What lands |
@@ -191,12 +214,12 @@ claim-coverage audit possible.
 | `src/musical_mycelium/graph/schema.py` | **Added during the build, not in the original plan.** The artifact contract: `Node`, `Edge`, `Manifest`, `Artifact`. Lives in `graph` because `ingest -> graph` is the only safe direction |
 | `src/musical_mycelium/graph/store.py` | `GraphStore` protocol + the `Direction` enum. **Built 2026-08-02** |
 | `src/musical_mycelium/graph/memory.py` | `InMemoryGraphStore`, name normalisation, the memoised `default_store()`. **Built 2026-08-02** |
-| `src/musical_mycelium/agent/claims.py` | `Claim`, and the deterministic `gate()` |
+| `src/musical_mycelium/agent/claims.py` | `ClaimProposal`, `Claim`, `Rejection`, `GateResult`, and the deterministic `gate()`. **Built 2026-08-02** |
 | `src/musical_mycelium/agent/tools.py` | `Tool` protocol, `ToolResult`, the two tools, the registry |
 | `src/musical_mycelium/agent/llm.py` | `build_llm()` + `BedrockLLM` (Converse/ConverseStream) |
 | `src/musical_mycelium/agent/loop.py` | The hand-built tool loop; emits claims, then prose from approved claims |
 | `src/musical_mycelium/api/app.py` | FastAPI app, the SSE endpoint. Owns no logic |
-| `src/musical_mycelium/eval/metrics.py` | `edge_groundedness`, plus its own unit tests |
+| `src/musical_mycelium/eval/metrics.py` | `edge_groundedness` + `Groundedness`, plus its own unit tests. **Built 2026-08-02** |
 | `src/musical_mycelium/eval/datasets/gold_v0_1.json` | Five hand-authored gold cases |
 | `infra/docker/Dockerfile` | Python 3.13 base, LWA copied to `/opt/extensions/`, artifact baked in |
 | `infra/terraform/` | ECR, Lambda, Function URL, IAM role, CloudWatch log group **with explicit retention**, budget, anomaly detection |
@@ -227,6 +250,26 @@ synthesizes from the survivors.
 **Only `edge_groundedness` is in scope.** It is blocking at 100% per `.claude/rules/evals.md`, and it can be
 because it is a dictionary lookup against a graph we own. No thresholds are invented for anything else —
 there is no baseline yet.
+
+**As built, 2026-08-02.**
+
+- **The metric does not call the gate.** It re-derives its own verdict from the artifact, because a
+  measurement that asks the gate whether the gate was right measures nothing. One test asserts the two
+  agree on real data; if they ever diverge, the divergence is the finding.
+- **Groundedness is `None`, not `1.0`, for an empty claim set** — the vacuous-truth guard, and
+  `is_fully_grounded` requires `total > 0` so the empty case cannot reach the passing branch. `__str__`
+  prints "undefined (0 claims)" rather than a percentage.
+- **A grounded claim needs a real edge *and* a citation that edge actually carries.** A claim can name a
+  true triple and cite a statement the edge does not hold — a plausible citation on a true statement —
+  and a triple-only metric scores that 1.0. That check is what keeps `edge_groundedness` from decaying
+  into a lookup.
+- **The gold set is validated against the pinned artifact in CI** (`tests/test_gold_set.py`), which
+  discharges the standing rule adopted in `SPEC.md` §2.1. It caught a real drift on its first run: the
+  gold set pinned `"v0.1.0"` while the manifest records `"0.1.0"` — the `v` belongs to the directory name
+  only.
+- **The suite was mutation-tested.** Four deliberate breaks — a direction-blind gate, an empty output
+  scoring 100%, a gate skipping the citation-ownership check, and a metric ignoring citations — were each
+  caught by between two and eight tests. Tests that have never failed have not been shown to have teeth.
 
 The five gold cases are hand-authored from the same verification pass that produces the artifact, **before**
 the agent is coded. That ordering is required: a gold set written after the agent exists is contaminated by

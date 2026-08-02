@@ -17,6 +17,13 @@ Contract (``docs/planning/07-EVAL-SPEC.md``, and ``.claude/rules/evals.md`` for 
 
 May import from any other subpackage. Nothing imports from here.
 
-Nothing is implemented yet. The three frozen datasets are hand-authored **before** the agent exists, or
-they are contaminated by model output.
+**Partly built as of 2026-08-02 (phase 1, step 5).** ``metrics.py`` holds ``edge_groundedness``, the one
+Tier 1 metric in v0.1 scope, and ``datasets/gold_v0_1.json`` holds the five gold cases — hand-authored on
+2026-08-02, **before the agent exists**, or they would be contaminated by model output.
+
+``edge_groundedness`` deliberately does **not** call the gate. It re-derives its verdict from the
+artifact, because a measurement that asks the gate whether the gate was right measures nothing.
+
+Still to come: the full gold set (20-30), the adversarial set with a planted injection, the sealed
+held-out ten, the judge and its human-agreement measurement, and the slicing. Phase 4 owns those.
 """
