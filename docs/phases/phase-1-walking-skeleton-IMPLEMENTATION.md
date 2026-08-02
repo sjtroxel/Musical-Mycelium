@@ -149,6 +149,26 @@ The artifact ships **inside the container image** at v0.1 rather than being fetc
 it removes an IAM permission and a network call from the cold path, and the S3 loader is a phase-2 concern
 when the artifact stops being trivially small. This is a two-way door behind the protocol.
 
+**As built, 2026-08-02.** Three additions to the above, each because retrofitting it would touch every
+implementation:
+
+- **`neighbors` takes a `Direction`**, not just a node id. `SPEC.md` §2.2 commits to descendant queries,
+  and a one-argument `neighbors` would have to grow a second method later. The enum members are
+  `INFLUENCED_BY` and `INFLUENCED` rather than incoming/outgoing — an edge reads *subject
+  `influenced_by` object*, so graph-theoretic naming here is an invitation to invert music history
+  while every count stays identical.
+- **`artifact_version` is on the protocol.** Evals report against the pin, so the store has to be able
+  to say what it loaded.
+- **Loading verifies the sha256** against the manifest. A corpus that has drifted fails at boot instead
+  of quietly serving edges nobody signed off on. This forced the *read* side of the artifact —
+  `verify`, `read_manifest`, `sha256_of` — to move from `ingest/artifact.py` into `graph/schema.py`,
+  since `graph` must not import `ingest`. `ingest` now owns writing only.
+
+One deviation from the wording above: loading is a **memoised function** (`default_store()`), not a true
+import-time side effect. Same "parsed once per container" property, but importing the module never does
+file I/O — an import that can fail on a missing file is a bad cold start and an worse test fixture. The
+API module calls it at module scope in step 7 so the parse still lands in the Lambda INIT phase.
+
 ### 5.3 API contract
 
 `GET /lineage?q=<genre>`, `text/event-stream`. Event types: `claim` (each approved claim as it is gated),
@@ -169,8 +189,8 @@ claim-coverage audit possible.
 | `src/musical_mycelium/ingest/wikidata.py` | One-shot P737 fetch + type filter on both ends; writes the artifact. Runs locally, never in Lambda. **Built 2026-08-02** |
 | `src/musical_mycelium/ingest/artifact.py` | Artifact + manifest writer, sha256, immutability guard, hash verification. **Built 2026-08-02** |
 | `src/musical_mycelium/graph/schema.py` | **Added during the build, not in the original plan.** The artifact contract: `Node`, `Edge`, `Manifest`, `Artifact`. Lives in `graph` because `ingest -> graph` is the only safe direction |
-| `src/musical_mycelium/graph/store.py` | `GraphStore` protocol |
-| `src/musical_mycelium/graph/memory.py` | `InMemoryGraphStore` |
+| `src/musical_mycelium/graph/store.py` | `GraphStore` protocol + the `Direction` enum. **Built 2026-08-02** |
+| `src/musical_mycelium/graph/memory.py` | `InMemoryGraphStore`, name normalisation, the memoised `default_store()`. **Built 2026-08-02** |
 | `src/musical_mycelium/agent/claims.py` | `Claim`, and the deterministic `gate()` |
 | `src/musical_mycelium/agent/tools.py` | `Tool` protocol, `ToolResult`, the two tools, the registry |
 | `src/musical_mycelium/agent/llm.py` | `build_llm()` + `BedrockLLM` (Converse/ConverseStream) |

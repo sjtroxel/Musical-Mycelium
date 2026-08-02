@@ -15,6 +15,7 @@ that refuses to build the row cannot be.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -144,3 +145,32 @@ class Artifact:
     @classmethod
     def load(cls, directory: Path) -> Self:
         return cls.from_json((directory / ARTIFACT_FILENAME).read_text(encoding="utf-8"))
+
+
+class ArtifactCorruptError(ValueError):
+    """``graph.json`` does not hash to the value its manifest records."""
+
+
+def sha256_of(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def read_manifest(directory: Path) -> Manifest:
+    return Manifest(**json.loads((directory / MANIFEST_FILENAME).read_text(encoding="utf-8")))
+
+
+def verify(directory: Path) -> Manifest:
+    """Recompute the hash of ``graph.json`` and check it against the manifest.
+
+    The read side of the pin lives here, not in ``ingest``, so the runtime can check its own corpus
+    without importing the ingestion package. ``ingest.artifact`` owns the *write* side and imports this.
+    Cheap enough to run on every cold start: a sha256 over a few KB.
+    """
+    manifest = read_manifest(directory)
+    actual = sha256_of((directory / ARTIFACT_FILENAME).read_text(encoding="utf-8"))
+    if actual != manifest.sha256:
+        raise ArtifactCorruptError(
+            f"{directory / ARTIFACT_FILENAME} hashes to {actual} but its manifest records "
+            f"{manifest.sha256}. The artifact has been edited in place."
+        )
+    return manifest

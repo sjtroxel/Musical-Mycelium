@@ -1,4 +1,4 @@
-"""Write and verify the versioned artifact.
+"""Write the versioned artifact.
 
 The artifact is **immutable and versioned**: a build writes ``graph.json`` plus a ``manifest.json``
 carrying the sha256 of those exact bytes, and downstream code reads a pinned version rather than
@@ -7,11 +7,15 @@ carrying the sha256 of those exact bytes, and downstream code reads a pinned ver
 
 Writing refuses to overwrite an existing version by default, because an artifact version that quietly
 changes contents is the failure the pin exists to prevent. Rebuild under a new version instead.
+
+Only the **write** side lives here. Reading, hashing and verification live in ``graph.schema``, so the
+runtime can check its own corpus without importing this package and dragging the ingestion code into the
+Lambda image. ``verify`` and ``read_manifest`` are re-exported below for callers that already have this
+module in hand.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -20,21 +24,28 @@ from pathlib import Path
 from musical_mycelium.graph.schema import (
     ARTIFACT_FILENAME,
     MANIFEST_FILENAME,
-    Artifact,
+    ArtifactCorruptError,
     Manifest,
+    read_manifest,
+    sha256_of,
+    verify,
 )
+from musical_mycelium.graph.schema import Artifact as Artifact
+
+__all__ = [
+    "Artifact",
+    "ArtifactCorruptError",
+    "ArtifactExistsError",
+    "build_manifest",
+    "read_manifest",
+    "sha256_of",
+    "verify",
+    "write",
+]
 
 
 class ArtifactExistsError(FileExistsError):
     """The target version already exists. Artifacts are immutable; build a new version."""
-
-
-class ArtifactCorruptError(ValueError):
-    """``graph.json`` does not hash to the value its manifest records."""
-
-
-def sha256_of(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def build_manifest(
@@ -103,25 +114,4 @@ def write(
     (directory / MANIFEST_FILENAME).write_text(
         json.dumps(asdict(manifest), indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    return manifest
-
-
-def read_manifest(directory: Path) -> Manifest:
-    data = json.loads((directory / MANIFEST_FILENAME).read_text(encoding="utf-8"))
-    return Manifest(**data)
-
-
-def verify(directory: Path) -> Manifest:
-    """Recompute the hash of ``graph.json`` and check it against the manifest.
-
-    This is the cheap integrity check that makes "pinned artifact version" a real guarantee. It is a
-    Tier 1 eval candidate: deterministic, free, and it fails loudly if a corpus file drifts.
-    """
-    manifest = read_manifest(directory)
-    actual = sha256_of((directory / ARTIFACT_FILENAME).read_text(encoding="utf-8"))
-    if actual != manifest.sha256:
-        raise ArtifactCorruptError(
-            f"{directory / ARTIFACT_FILENAME} hashes to {actual} but its manifest records "
-            f"{manifest.sha256}. The artifact has been edited in place."
-        )
     return manifest
