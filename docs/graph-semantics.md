@@ -142,6 +142,10 @@ than assumed, and the test should be re-run if the corpus is ever re-ingested.
 123 of the 158 have three or more prose mentions. **The usable corpus is ~123–158 edges, not 351.**
 55% of P737 fails the weakest test that can be constructed against it.
 
+*Amended 2026-08-02: treat 158 as an **upper bound**. Hand-reading 26 of these edges rejected 5 (§4.7),
+and the mention counter has three inflating defects (§4.6). The true usable count is lower and is not yet
+measured.*
+
 ### 4.5 Why this belongs in the pipeline, not in a curation pass
 
 The check is deterministic, free, requires no model call, and is reproducible. It therefore belongs in
@@ -150,9 +154,51 @@ file with a per-edge reason. That yields a defensible corpus without hand-curati
 that is a **displayed** coverage metric per `04` §4.5, and a **Tier 1 eval** that costs $0 and runs on
 every commit per `.claude/rules/evals.md`.
 
-**Known defect before this ships:** the mention counter currently counts `[[Category:...]]` tags and
-navbox templates as prose. Skweee reports 6 mentions of which only 1 is genuine prose. Strip categories,
-navboxes, external-link sections and references before counting.
+### 4.6 Known defects. All three inflate the tier, so 158 is an upper bound
+
+The first was found on 2026-07-31; the second and third on 2026-08-02 during the phase-1 hand-verification
+(`docs/phases/phase-1-edge-verification.md` §3). None of them can deflate the PROSE tier, only inflate it.
+
+1. **Markup counted as prose.** `[[Category:...]]` tags and navbox templates are counted as body text.
+   Skweee reports 6 mentions of which 1 is genuine. Confirmed live on 2026-08-02: both `groove metal`
+   edges hold a PROSE tier with **zero** genuine prose sentences. Strip categories, navboxes,
+   external-link sections and references before counting.
+2. **Self-match when the object label is a substring of the subject label.** `Western swing <- swing`
+   reports 28 sentences because `\bswing\b` matches the "swing" in "Western swing" — the article matching
+   against its own title. 8 survive masking; 1 supports the edge. Mask the subject label first.
+3. **Redirect collapse, and it is the worst of the three.** `disco house` (Q360596) sitelinks to a title
+   that redirects to **`French house`**. The check read the French house article, found "disco" discussed
+   throughout, and scored the edge PROSE. This produces **confident false support** rather than a missing
+   signal. Resolve redirects and reject or flag any subject article that resolves to a different title.
+
+**A counter-defect, working the other way:** exact-label matching *under*-accepts. `country rock <- country
+music` scores zero because the lead says "fuses rock and country", and `dubstep <- dub music` scores zero
+because the article says "sparse dub production". Both edges are genuinely supported. The check must try
+label variants and will still err in both directions — which is an argument for reporting the exclusion
+rate as a measured number with a known error bar, not for claiming the check is exact.
+
+### 4.7 The tier over-accepts by roughly a fifth on hand-reading
+
+Of 26 candidates drawn from the PROSE tier and hand-read on 2026-08-02, **21 were accepted and 5 rejected**
+— and 3 of the 5 failed on a gate the automated check cannot apply at all: whether the sentence *asserts
+influence* rather than merely mentioning the object. Synonymy ("the terms were used interchangeably"),
+contradiction ("rooted in different cultural traditions"), and taxonomy ("is a subgenre of") all read as
+PROSE.
+
+**The usable corpus is therefore smaller than 158.** Do not quote 158 as the sourced-edge count without
+this caveat.
+
+### 4.8 P737 is not uniformly historical — an open input to phase 2
+
+§2 concluded that P279 is taxonomy and P737 is lineage. The boundary is not that clean. `extreme metal
+<- heavy metal music` is a P737 edge whose only prose support is:
+
+> "Extreme metal is a loosely defined umbrella term for a number of related heavy metal music subgenres."
+
+That is a taxonomic statement riding on the influence predicate, and the prose check cannot detect it —
+"is a subgenre of Y" contains a real, findable mention of Y. **Some P737 edges encode category membership.**
+Phase 2's ingestion design has to confront this rather than inherit the assumption that P737 is
+uniformly historical. Recorded, not resolved.
 
 ---
 

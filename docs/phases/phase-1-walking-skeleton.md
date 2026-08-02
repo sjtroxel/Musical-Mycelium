@@ -52,7 +52,9 @@ CI, provisioned by Terraform, with one eval passing in the pipeline and a budget
 
 ## Deliberately fake or thin
 
-- ~15 hand-verified edges, not the full corpus. *(Amended 2026-08-01 from "a few hundred genres" — the
+- **21 hand-verified edges over 28 nodes**, not the full corpus. *(Count settled 2026-08-02 by the
+  verification pass; 26 candidates were read and 5 rejected. Record in `phase-1-edge-verification.md`.)*
+  *(Amended 2026-08-01 from "a few hundred genres" — the
   P279/P737 validation showed the sourced-lineage corpus is ~158 edges total; see the IMPLEMENTATION doc §2.)*
 - **Two tools**, and one hardcoded traversal hop. No planning.
 - **No React.** `curl` is the v0.1 client.

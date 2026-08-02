@@ -40,30 +40,78 @@ visualization that `planning/06` defers to v0.5).
 lineage stream in with citations resolving as claims are made, leave remembering that every edge had a
 source.
 
-## 2. Canonical queries — DRAFT, his to edit
+## 2. Canonical queries (decided 2026-08-02)
 
 These are load-bearing in four places at once: the chips on the first screen, the demo script, the gold-set
-cases, and the eval slices. `planning/09` §2 asks for them verbatim, so they are written here as a starting
-point to react to rather than a blank page. **Edit freely — this list is not approved yet.**
+cases, and the eval slices.
 
-1. "Where did Detroit techno come from?"
-2. "What did bebop grow out of?"
-3. "Who influenced Kate Bush?"
-4. "What came out of Jamaican ska?"
-5. "Trace the roots of Brazilian tropicália."
-6. "How is delta blues connected to hip hop?"
-7. "What descends from West African griot traditions?"
+**Edited 2026-08-02, decided by sjtroxel.** The original seven were written on 2026-07-29, before the
+P279/P737 validation established that the sourced-lineage corpus is 158 prose-verified edges. Checked
+against that corpus, five of the seven are unanswerable. They are not deleted — they are separated into
+what the graph supports now and what it is being built toward, so the ambition stays visible and the
+v0.1 gold set stays honest.
 
-Notes on the set, since the composition is doing work:
+### 2.1 Validated queries — the v0.1 set
 
-- 1, 2, 4, 5 are **A-shaped** (origins and descendants of one node) — the v0.1 spine.
-- 3 is the **artist axis** (P737), not the genre axis (P279). Both need to work; they are different
-  predicates and conflating them is invariant 3.
-- 6 is **C-shaped** — a path between two nodes. It belongs in the set because it is the most memorable
-  query type, but it should be honestly labeled as arriving later than the others.
-- 7 deliberately targets a **sparse, non-Western region** of the corpus. It is in the set precisely because
-  it is the one most likely to expose thin coverage, and coverage honesty is a stated metric. If the answer
-  is "the graph does not support this well," that is the correct answer and it should say so.
+Every one of these was checked against the PROSE tier of the 2026-07-31 validation before being written
+here. They are the five hand-authored gold cases of phase 1.
+
+**Amended 2026-08-02 after hand-verification.** Cases 2 and 5 changed. The originals were written against
+the automated PROSE tier; reading the sources by hand rejected them. Full record in
+`docs/phases/phase-1-edge-verification.md`.
+
+| # | Query | Shape | What the corpus holds |
+|---|---|---|---|
+| 1 | "Where did blues rock come from?" | A, origins | 1 edge: `blues rock (Q193355) <- blues (Q9759)` |
+| 2 | "Where did acid jazz come from?" | A, origins | 4 edges: `acid jazz (Q221772) <- jazz (Q8341), funk (Q164444), soul (Q131272), hip-hop (Q11401)` |
+| 3 | "Where did trip hop come from?" | A, origins | 2 edges: `trip hop (Q205560) <- hip-hop (Q11401), electronica (Q817138)` |
+| 4 | "Where did Western swing come from?" | A, origins | 2 edges: `Western swing (Q1730388) <- swing (Q203775), country music (Q83440)` |
+| 5 | "Where did the blues come from?" | A, **refusal** | `blues (Q9759)` resolves and is cited as the source in case 1, but has **zero** sourced parent edges. The correct answer is that the graph does not support this |
+
+Notes on the composition, since it is doing work:
+
+- All five are **origins-shaped**, because v0.1's `get_influences` walks parents only. Descendant queries
+  ("what came out of X") are a direction the tool does not walk until the phase-2 corpus arrives.
+- 1 is the trivial case and 2 is the showpiece, at four parents — the richest node in the artifact, and the
+  case most likely to expose a traversal that stops early. It also carries a story: acid jazz is the genre
+  whose article started the prose check on 2026-07-31.
+- 3 and 4 are deliberately **boring middles**. `.claude/rules/evals.md` requires them: a gold set made only
+  of memorable cases hides the steps that are easy to skip. 4 carries a second trap — the Western swing
+  article's *first* sentence is taxonomic and only the sentence after it is a derivation claim.
+- 5 is the **coverage-honesty case, and it is not optional.** `.claude/rules/grounding-and-claims.md` makes
+  refusal correct behavior, so the gold set must contain at least one case where refusing is the right
+  answer; without it, refusal accuracy has no true refusal to measure. It is the **resolved-but-unsourced**
+  refusal, which is the stronger of the two shapes: the system demonstrably knows the node, cites it
+  elsewhere, and still declines to state its origins. 13 of the artifact's 28 nodes are in this position.
+
+**Two originals were rejected on the evidence, and the reasons are worth keeping.** "Where did heavy metal
+come from?" rested on `heavy metal <- classical music`, but the article says *"classical and metal are
+rooted in different cultural traditions and practices"* — Wikipedia contradicts the edge. And
+`griot (Q511054)` is typed as an occupation, not a music genre, so it cannot survive the artifact's type
+filter; the regional coverage-honesty case moves to phase 2, where the corpus has real non-Western nodes.
+
+**Standing rule, adopted 2026-08-02.** Every query in this section is validated against the pinned artifact:
+it is either answerable or deliberately labeled as a coverage-honesty case. The check is deterministic and
+becomes a Tier-1 eval row, so a corpus change that silently breaks a demo query fails CI instead of a demo.
+
+### 2.2 Aspirational queries — the v0.5 chip set
+
+The first screen ships at v0.5 with 5–7 chips. These are the intended set. Each carries the corpus work it
+is waiting on, so nothing here is a surprise later.
+
+| Query | Shape | Blocked on |
+|---|---|---|
+| "Where did Detroit techno come from?" | A, origins | Absent from all 351 P737 edges. Needs a second source — `dbo:stylisticOrigin` is the phase-6 candidate |
+| "What did bebop grow out of?" | A, origins | `bebop <- swing` is not in the corpus. Same second-source dependency |
+| "Who influenced Kate Bush?" | A, **artist axis** | The ~31k artist-level P737 edges. Phase 2. Genre and artist are different axes of the same predicate and conflating them is invariant 3 |
+| "What came out of Jamaican ska?" | A, descendants | Ska is absent entirely, and the descendant direction is not walked at v0.1 |
+| "Trace the roots of Brazilian tropicália." | A, origins | 1 edge, fails the prose check. Needs corpus expansion |
+| "How is the blues connected to heavy metal?" | **C, path** | Nothing. The path `blues -> blues rock -> heavy metal music` is fully sourced and hand-verified **today**. It needs `GraphStore.path()`, which lands in phase 5. *(Amended 2026-08-02: the chain originally read through to `extreme metal`; that edge was rejected on hand-reading as taxonomic, so the path is two hops, not three.)* |
+
+The last row replaces the original "How is delta blues connected to hip hop?", which was the intended
+signature demo. Delta blues is absent from the corpus and no path exists between blues and hip-hop, but the
+blues-to-metal chain is the same shape, the same memorability, and it is real. It is the strongest argument
+in the corpus for the project's thesis that music history is a network rather than a timeline.
 
 ## 3. What this refuses to be
 

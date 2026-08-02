@@ -1,0 +1,203 @@
+{
+  "dataset": "gold_v0_1",
+  "version": "0.1.0",
+  "authored_at": "2026-08-02",
+  "authored_by": "sjtroxel",
+  "artifact_version_pin": "v0.1.0",
+  "provenance": {
+    "derived_from": "docs/phases/phase-1-edge-verification.md",
+    "method": "Hand-authored from the same verification pass that produced the v0.1 artifact, BEFORE the agent exists. Per .claude/rules/evals.md a gold set written after the agent exists is contaminated by its output.",
+    "independent_citation_policy": "Per .claude/rules/grounding-and-claims.md the gold set cites sources INDEPENDENT of Wikidata, so divergence between this graph and the outside world can surface. Wikipedia is NOT independent enough -- it shares an editorial ecosystem with Wikidata, which is the whole basis of the disconfirmation asymmetry in docs/graph-semantics.md 4.1. The citations below are the published works Wikipedia cites: books, reference works, journalism.",
+    "honest_limits": [
+      "These are Wikipedia-MEDIATED citations to independent works. Nobody has opened Boyd's Jazz of the Southwest to confirm page ix-x says what the sentence claims. Doing so is manual and is not done. Treat these as 'a checkable source exists and is named', not as 'independently confirmed'.",
+      "AllMusic, Britannica, RateYourMusic and similar return 403 to automated fetch (docs/graph-semantics.md 7), so citation retrieval cannot currently be automated.",
+      "Grounded means traceable, not true. Every claim here traces to a checkable source. None of them is thereby correct."
+    ]
+  },
+  "notes_on_composition": {
+    "shape": "All five are origins-shaped, because v0.1's get_influences walks parent edges only. Descendant and path queries are later phases (docs/SPEC.md 2.2).",
+    "spread": "One trivial case (1 edge), one rich case (4 edges), two boring middles (2 edges each), one refusal. .claude/rules/evals.md requires the boring middles explicitly: a gold set made only of memorable cases hides the steps that are easy to skip.",
+    "refusal": "Case 5 is not optional. Refusal accuracy is reported as a pair -- true refusals and false refusals -- and without a case where refusing is correct there is no true refusal to measure."
+  },
+  "cases": [
+    {
+      "case_id": "gold_v0_1_001",
+      "query": "Where did blues rock come from?",
+      "shape": "origins",
+      "difficulty": "trivial",
+      "expected_resolution": {"name": "blues rock", "node_id": "Q193355"},
+      "expected_refusal": false,
+      "expected_claims": [
+        {
+          "subject_id": "Q193355",
+          "predicate": "influenced_by",
+          "object_id": "Q9759",
+          "subject_label": "blues rock",
+          "object_label": "blues",
+          "wikidata_statement": "Q193355 P737 Q9759",
+          "supporting_prose": "Blues rock is a fusion genre and form of rock and blues music that relies on the chords/scales and instrumental improvisation of blues.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Blues_rock, read 2026-08-02",
+          "independent_citations": [
+            "\"Blues-Rock Music Style Overview\", AllMusic"
+          ]
+        }
+      ],
+      "notes": "The simplest possible passing case: one node, one edge, one hop. If this fails nothing else is worth reading."
+    },
+    {
+      "case_id": "gold_v0_1_002",
+      "query": "Where did acid jazz come from?",
+      "shape": "origins",
+      "difficulty": "rich",
+      "expected_resolution": {"name": "acid jazz", "node_id": "Q221772"},
+      "expected_refusal": false,
+      "expected_claims": [
+        {
+          "subject_id": "Q221772",
+          "predicate": "influenced_by",
+          "object_id": "Q8341",
+          "subject_label": "acid jazz",
+          "object_label": "jazz",
+          "wikidata_statement": "Q221772 P737 Q8341",
+          "supporting_prose": "Acid jazz has its origins in the 1950s, 1960s, when psychedelic styles were being incorporated into other musical genres, jazz being one of these.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Acid_jazz, read 2026-08-02",
+          "independent_citations": [
+            "Cook, Richard Cook's Jazz Encyclopedia, Penguin, 2005, ISBN 0-141-00646-3",
+            "\"Acid jazz (genre)\", Grove Music Online, 2001, ISBN 978-1-56159-263-0"
+          ]
+        },
+        {
+          "subject_id": "Q221772",
+          "predicate": "influenced_by",
+          "object_id": "Q164444",
+          "subject_label": "acid jazz",
+          "object_label": "funk",
+          "wikidata_statement": "Q221772 P737 Q164444",
+          "supporting_prose": "Acid jazz (also known as club jazz, psychedelic jazz, or groove jazz) is a music genre that combines elements of funk, soul, and hip hop.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Acid_jazz, read 2026-08-02",
+          "independent_citations": [
+            "\"Acid Jazz Music Genre Overview\", AllMusic",
+            "Cook, Richard Cook's Jazz Encyclopedia, Penguin, 2005, ISBN 0-141-00646-3"
+          ]
+        },
+        {
+          "subject_id": "Q221772",
+          "predicate": "influenced_by",
+          "object_id": "Q131272",
+          "subject_label": "acid jazz",
+          "object_label": "soul",
+          "wikidata_statement": "Q221772 P737 Q131272",
+          "supporting_prose": "Acid jazz (also known as club jazz, psychedelic jazz, or groove jazz) is a music genre that combines elements of funk, soul, and hip hop.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Acid_jazz, read 2026-08-02",
+          "independent_citations": [
+            "\"Acid Jazz Music Genre Overview\", AllMusic",
+            "Du Noyer, The Illustrated Encyclopedia of Music, Flame Tree Publishing, 2003, ISBN 1-904041-96-5"
+          ]
+        },
+        {
+          "subject_id": "Q221772",
+          "predicate": "influenced_by",
+          "object_id": "Q11401",
+          "subject_label": "acid jazz",
+          "object_label": "hip-hop",
+          "wikidata_statement": "Q221772 P737 Q11401",
+          "supporting_prose": "Acid jazz (also known as club jazz, psychedelic jazz, or groove jazz) is a music genre that combines elements of funk, soul, and hip hop.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Acid_jazz, read 2026-08-02",
+          "independent_citations": [
+            "\"Acid Jazz Music Genre Overview\", AllMusic",
+            "Adams, The New Grove Dictionary of Jazz, Grove's Dictionaries, 2002, ISBN 978-1-56159-284-5"
+          ]
+        }
+      ],
+      "notes": "The richest node in the v0.1 artifact at four parents, and the case most likely to expose a traversal that stops early. Chosen deliberately: acid jazz is the genre whose article started the whole prose check on 2026-07-31, when a cold spot-check found it never discusses disco outside the infobox. Its other four parents are held to the standard that catch established. The rejected acid-jazz-to-disco edge is NOT in this set and must never be claimed."
+    },
+    {
+      "case_id": "gold_v0_1_003",
+      "query": "Where did trip hop come from?",
+      "shape": "origins",
+      "difficulty": "middle",
+      "expected_resolution": {"name": "trip hop", "node_id": "Q205560"},
+      "expected_refusal": false,
+      "expected_claims": [
+        {
+          "subject_id": "Q205560",
+          "predicate": "influenced_by",
+          "object_id": "Q11401",
+          "subject_label": "trip hop",
+          "object_label": "hip-hop",
+          "wikidata_statement": "Q205560 P737 Q11401",
+          "supporting_prose": "Trip hop is a music genre defined as a psychedelic fusion of hip-hop and electronica with slow tempos and an atmospheric sound.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Trip_hop, read 2026-08-02",
+          "independent_citations": [
+            "Mitchell, Global Noise: Rap and Hip Hop Outside the USA, Wesleyan University Press, 2002, ISBN 978-0-8195-6502-0"
+          ]
+        },
+        {
+          "subject_id": "Q205560",
+          "predicate": "influenced_by",
+          "object_id": "Q817138",
+          "subject_label": "trip hop",
+          "object_label": "electronica",
+          "wikidata_statement": "Q205560 P737 Q817138",
+          "supporting_prose": "Trip hop is a music genre defined as a psychedelic fusion of hip-hop and electronica with slow tempos and an atmospheric sound.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Trip_hop, read 2026-08-02",
+          "independent_citations": [
+            "Whiteley, Music, Space And Place: Popular Music And Cultural Identity, Ashgate Publishing, 2004, ISBN 978-0-7546-5574-9"
+          ]
+        }
+      ],
+      "notes": "Both claims rest on the same sentence. That is deliberate: it tests that two distinct claims can be spanned from one span of prose, which the Claim.span field has to support."
+    },
+    {
+      "case_id": "gold_v0_1_004",
+      "query": "Where did Western swing come from?",
+      "shape": "origins",
+      "difficulty": "boring middle",
+      "expected_resolution": {"name": "Western swing", "node_id": "Q1730388"},
+      "expected_refusal": false,
+      "expected_claims": [
+        {
+          "subject_id": "Q1730388",
+          "predicate": "influenced_by",
+          "object_id": "Q83440",
+          "subject_label": "Western swing",
+          "object_label": "country music",
+          "wikidata_statement": "Q1730388 P737 Q83440",
+          "supporting_prose": "The movement was an outgrowth of country music and jazz.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Western_swing, read 2026-08-02",
+          "independent_citations": [
+            "Boyd, Jazz of the Southwest, p. ix-x",
+            "Townsend, San Antonio Rose, p. 63",
+            "Price, \"Jazz Guitar and Western Swing\", p. 81"
+          ]
+        },
+        {
+          "subject_id": "Q1730388",
+          "predicate": "influenced_by",
+          "object_id": "Q203775",
+          "subject_label": "Western swing",
+          "object_label": "swing",
+          "wikidata_statement": "Q1730388 P737 Q203775",
+          "supporting_prose": "The music is an amalgamation of rural, cowboy, polka, early Honky Tonk, old-time, Dixieland jazz, and blues blended with swing.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Western_swing, read 2026-08-02",
+          "independent_citations": [
+            "Price, \"Jazz Guitar and Western Swing\""
+          ]
+        }
+      ],
+      "notes": "The boring middle .claude/rules/evals.md requires. Nobody demos Western swing, which is exactly why it is here -- it is the kind of step a traversal can skip without anyone noticing. It carries a second trap: the article's FIRST sentence is taxonomic ('is a subgenre of traditional country music'), and only the sentence after it is a derivation claim. A system that reads the lead and stops will narrate taxonomy as lineage, which is the P279 error."
+    },
+    {
+      "case_id": "gold_v0_1_005",
+      "query": "Where did the blues come from?",
+      "shape": "origins",
+      "difficulty": "refusal",
+      "expected_resolution": {"name": "blues", "node_id": "Q9759"},
+      "expected_refusal": true,
+      "expected_claims": [],
+      "expected_behavior": "The node RESOLVES -- blues is in the artifact and is cited as the source of blues rock in case 001 -- and has zero sourced parent edges. The correct output states that this graph has no sourced account of the origins of the blues. Naming any influence here is a hallucination, however historically defensible it would be.",
+      "independent_citations": [],
+      "notes": "This is the resolved-but-unsourced refusal, not the unknown-string refusal, and it is the stronger of the two: the system demonstrably knows the node, uses it as a citation elsewhere, and still declines to state its origins. 13 of the 28 nodes in the v0.1 artifact are in this position -- blues, jazz, funk, soul, hip-hop, punk rock, country music, swing, electronica, folk music, dub music, 2-step garage, UK garage. That is not a gap in the verification; it is the corpus. The regional coverage-honesty case (a sparse non-Western genre) is deliberately NOT here: v0.1's 21 hand-picked edges have no meaningful non-Western coverage to be honest about. It moves to the full gold set in phase 2, where the corpus contains motswako, kuduro, bouyon and Na mele paleoleo. Recorded so its absence is a decision, not an oversight."
+    }
+  ]
+}
