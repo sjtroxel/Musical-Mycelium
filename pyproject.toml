@@ -15,11 +15,19 @@ requires-python = ">=3.13,<3.14"
 license = "MIT"
 authors = [{ name = "sjtroxel" }]
 
-# Deliberately minimal. Both of these are certain: boto3 is how Bedrock is called, and the Claim model
-# is a one-way door (05 section 2.1). Nothing speculative gets added here ahead of its subject.
+# Deliberately minimal, and each entry is added only once its subject exists.
+#
+# fastapi + uvicorn arrived with phase 1 step 7. The streaming spike (docs/streaming-verification.md)
+# established that Python Lambda has no native response streaming, so invariant 9 requires a real ASGI
+# server behind the Lambda Web Adapter — the api/ package is a server, not a bare handler.
+#
+# uvicorn WITHOUT [standard] on purpose: httptools and uvloop are a performance optimisation, and the
+# 250MB unzipped image limit (invariant 8) is the binding constraint here, not per-request throughput.
 dependencies = [
   "boto3>=1.35",
+  "fastapi>=0.115",
   "pydantic>=2.9",
+  "uvicorn>=0.32",
 ]
 
 [dependency-groups]
@@ -29,6 +37,7 @@ dev = [
   "mypy>=1.11",
   "ruff>=0.16.0",
   "pre-commit>=4.0",
+  "httpx>=0.27",  # required by fastapi.testclient.TestClient
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -83,6 +92,13 @@ no_implicit_optional = true
 # (wildcards may only replace whole components), and the alternative was adding tests/__init__.py purely
 # to satisfy a pattern. Annotating a test with "-> None" is cheaper than either, and it means mypy
 # actually checks test bodies instead of skipping them as untyped.
+
+# boto3 ships no type stubs. The alternative is the boto3-stubs package, which is a large dev
+# dependency to type one lazily-imported client in one module; the Bedrock call surface is already
+# behind the LLM protocol, so the untyped edge is contained to `agent/llm.py`.
+[[tool.mypy.overrides]]
+module = ["boto3", "boto3.*", "botocore.*"]
+ignore_missing_imports = true
 
 # --- tests -------------------------------------------------------------------
 

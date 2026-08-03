@@ -61,7 +61,9 @@ clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .mypy_cache .ruff_cache dist build .coverage
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-dev: ## Run the local API + web dev servers (arrives with the v0.1 API in phase 1)
-	@echo "Not wired yet — there is no API to run. The v0.1 IMPLEMENTATION doc adds this target's body."
-	@echo "Until then: 'make check' is the loop."
+# MYCELIUM_LLM_PROVIDER=local is the default here on purpose: it runs the whole stack with no AWS
+# account, no credentials and no spend. Set it to `bedrock` once the quota clears.
+dev: ## Run the API locally on :8000 (local stub LLM by default — no AWS needed)
+	MYCELIUM_LLM_PROVIDER=$${MYCELIUM_LLM_PROVIDER:-local} \
+		uv run uvicorn musical_mycelium.api.app:app --reload --port 8000
 	@exit 1

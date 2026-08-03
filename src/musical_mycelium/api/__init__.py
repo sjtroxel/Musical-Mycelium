@@ -11,6 +11,16 @@ Contract:
   schema has consumers (``docs/planning/06-DESIGN-DIRECTION.md`` section 6).
 - Product shape is the question-answerer (see ``docs/SPEC.md``): one query in, a streamed cited lineage out.
 
-Nothing is implemented yet. The v0.1 IMPLEMENTATION doc defines the streaming contract, and it should be
-defined before anything calls it.
+**Built as of 2026-08-02 (phase 1, step 7).** ``app.py`` is the whole surface: ``GET /lineage`` streams
+SSE frames, ``GET /health`` reports liveness and the corpus size.
+
+It is a **real ASGI server rather than a bare Lambda handler**, and that is forced rather than chosen —
+Python on Lambda has no native response streaming, so invariant 9 requires FastAPI under uvicorn behind
+the Lambda Web Adapter (``docs/streaming-verification.md``).
+
+The module maps loop events onto frames and does nothing else. A test asserts it contains no ``gate(``,
+no ``.neighbors(``, no ``Claim(`` and no ``ingest`` import, because "owns no logic" is an invariant and
+invariants get tests rather than good intentions.
+
+``make dev`` runs it locally on :8000 against the ``local`` LLM stub — no AWS, no credentials, no spend.
 """

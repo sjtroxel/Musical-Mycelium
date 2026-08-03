@@ -176,6 +176,34 @@ API module calls it at module scope in step 7 so the parse still lands in the La
 non-negotiable at v0.1 — `SPEC.md` §1 commits to B and C, and retrofitting path-in-payload after the schema
 has consumers is the annoying kind of rework.
 
+**As built, 2026-08-02. Verified streaming locally over real HTTP**, not just through `TestClient` —
+`TestClient` buffers, so it proves the frames are correct and proves nothing about streaming. Under
+uvicorn with `curl -N`, frames arrive incrementally in the expected order.
+
+- **Three event types beyond the four `SPEC.md` fixes**: `tool`, `rejected`, `refused`. Additive, and
+  they exist because the demo is watching the machinery work — a visitor seeing tool calls and rejected
+  claims is *seeing* the grounding happen rather than being told about it afterwards.
+- **A refusal is a 200 with a `refused` frame**, not a 4xx. It is a correct answer; a 4xx would tell the
+  client its request was malformed.
+- **`done` carries `usage`, `elapsed_seconds`, `artifact_version` and `corpus`.** The corpus block is
+  Fable's §5.2 suggestion taken up: 21 edges and 28 nodes stated on the wire rather than left for a
+  visitor to assume. `/health` returns the same block and gives step 8's Function URL a smoke target.
+- **`elapsed_seconds` uses `time.monotonic`**, per the spike's finding that WSL2 wall-clock resync
+  under-reported a run by 30%. Latency is a planned eval metric, so this is not a detail.
+- **A test asserts `api/app.py` contains no logic** — no `gate(`, no `.neighbors(`, no `Claim(`, no
+  `ingest` import. Invariant 6 calls an agent growing inside an HTTP handler a rewrite, so it gets a
+  test rather than a convention.
+
+**New dependency note.** `fastapi` + `uvicorn` were added now rather than up front, per the
+"structure now, content when its subject exists" rule. `uvicorn` **without** `[standard]`: httptools and
+uvloop are a throughput optimisation, and the binding constraint here is the 250MB image limit
+(invariant 8), not per-request performance.
+
+**`LocalLLM` (`MYCELIUM_LLM_PROVIDER=local`, the `make dev` default).** A deterministic stand-in that
+walks the fixed v0.1 tool sequence and renders template prose, so the whole stack — loop, gate, SSE —
+runs with no AWS account, no credentials and no spend. It is a fixture, not a model, and it says so: if
+it ever starts making decisions a real model should make, delete it rather than extend it.
+
 ### 5.4 Claim model
 
 `Claim(subject_id, predicate, object_id, source_ids, span)` exactly as `SPEC.md` §7 fixes it. Frozen dataclass.
@@ -215,10 +243,10 @@ the data that justifies it, in phase 2 or 6. Recorded here so its absence is a d
 | `src/musical_mycelium/graph/store.py` | `GraphStore` protocol + the `Direction` enum. **Built 2026-08-02** |
 | `src/musical_mycelium/graph/memory.py` | `InMemoryGraphStore`, name normalisation, the memoised `default_store()`. **Built 2026-08-02** |
 | `src/musical_mycelium/agent/claims.py` | `ClaimProposal`, `Claim`, `Rejection`, `GateResult`, and the deterministic `gate()`. **Built 2026-08-02** |
-| `src/musical_mycelium/agent/tools.py` | `Tool` protocol, `ToolResult`, the two tools, the registry |
-| `src/musical_mycelium/agent/llm.py` | `build_llm()` + `BedrockLLM` (Converse/ConverseStream) |
-| `src/musical_mycelium/agent/loop.py` | The hand-built tool loop; emits claims, then prose from approved claims |
-| `src/musical_mycelium/api/app.py` | FastAPI app, the SSE endpoint. Owns no logic |
+| `src/musical_mycelium/agent/tools.py` | `Tool` protocol, `ToolResult`, the two tools, the registry. **Built 2026-08-02** |
+| `src/musical_mycelium/agent/llm.py` | `build_llm()` + `BedrockLLM` (Converse/ConverseStream) + `ScriptedLLM`. **Built 2026-08-02; `BedrockLLM` unexecuted** |
+| `src/musical_mycelium/agent/loop.py` | The hand-built tool loop as an event generator; emits claims, then prose from approved claims. **Built 2026-08-02** |
+| `src/musical_mycelium/api/app.py` | FastAPI app, the SSE endpoint, `/health`. Owns no logic, and a test enforces it. **Built 2026-08-02** |
 | `src/musical_mycelium/eval/metrics.py` | `edge_groundedness` + `Groundedness`, plus its own unit tests. **Built 2026-08-02** |
 | `src/musical_mycelium/eval/datasets/gold_v0_1.json` | Five hand-authored gold cases |
 | `infra/docker/Dockerfile` | Python 3.13 base, LWA copied to `/opt/extensions/`, artifact baked in |
@@ -236,6 +264,38 @@ Deliberately two, behind the `Tool` protocol.
 
 One hardcoded hop, no planning. The loop calls 1 then 2, emits a claim per returned edge, gates them, and
 synthesizes from the survivors.
+
+**As built, 2026-08-02.**
+
+- **The model selects the tools; the *claims* come from tool results, not from model output.** A
+  `ToolResult` carries `proposals` (the claims its data supports), `sources`, and `visited` (node ids,
+  for the path event). The loop harvests all three generically and never branches on a tool's name, so
+  a third tool is a registration rather than a loop edit — that is invariant 4, and a test adds a
+  throwaway third tool and asserts the loop gates its proposal without modification.
+- **`synthesize()` takes exactly one argument, an `ApprovedClaimSet`.** No query, no store, no
+  `GateResult`, no message history — there is no parameter to leak through. The object's
+  `__post_init__` rejects a labels map containing any node no approved claim mentions, so context
+  cannot be smuggled in alongside the labels. A test drives a tool that proposes one real edge and one
+  fabricated one, then asserts the rejected genre never appears in the synthesis prompt.
+- **Refusal never calls the model.** With no approved claims there is nothing to ground prose in, so
+  the refusal is a deterministic template — reliable rather than probabilistic, and free. A test
+  asserts the loop does not consume a model turn on the gold case 5 path.
+- **The loop is an event generator** (`ToolCalled`, `ClaimApproved`, `ClaimRejected`, `PathWalked`,
+  `Token`, `Refused`, `Done`), which maps one-to-one onto §5.3's SSE frames. That is what lets the API
+  layer in step 7 own no logic.
+- **`MAX_TURNS = 4` is a cost control, not just a safety net.** An agentic loop re-sends its
+  accumulated context every turn, so an unbounded loop is an unbounded bill.
+
+**The model ID is configuration, not a constant.** §10 says the model and the US-vs-Global inference
+profile cannot be settled until the quota clears, so `agent/llm.py` reads `MYCELIUM_MODEL_ID` with a
+documented default rather than hardcoding a verified ID. `MYCELIUM_LLM_PROVIDER=scripted` runs the whole
+stack with no AWS at all, which is the local-dev path while the quota is at zero.
+
+**`BedrockLLM` is written but has never been executed.** No `converse` call has succeeded on this
+account. The request and response shapes follow the Converse API as documented and are unverified
+against a live call; `_parse_converse` is factored out and unit-tested against a hand-built payload so
+the parsing is at least exercised. Step 1 (the smoke call) is what confirms the shapes — treat a
+mismatch there as expected and fix it against the real response.
 
 ## 8. Testing
 

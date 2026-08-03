@@ -18,14 +18,20 @@ Contract:
 - Refusal is correct behavior. An unsourced edge is refused, not narrated. Contested is a state, not an
   error.
 
-**Partly built as of 2026-08-02 (phase 1, step 5).** ``claims.py`` holds the claim model and the
-deterministic gate, built **before** the loop on purpose so the gate is not shaped to fit it.
+**Built as of 2026-08-02 (phase 1, steps 5-6).** ``claims.py`` is the claim model and the deterministic
+gate, built **before** the loop on purpose so the gate is not shaped to fit it. ``tools.py`` is the tool
+contract and the two v0.1 tools. ``llm.py`` is the provider seam. ``loop.py`` is the loop itself, as a
+generator of events.
 
-Note the two types there. ``ClaimProposal`` is what the model may emit and it carries **no sources**;
+Note the two claim types. ``ClaimProposal`` is what the model may emit and it carries **no sources**;
 ``Claim`` carries ``source_ids`` and can only be produced by ``gate()``, which reads them off the artifact
 edge. A model that cannot name a citation cannot fabricate one, and that is enforced by the types rather
 than by review.
 
-Still to come: ``tools.py``, ``llm.py`` and ``loop.py``. One successful Bedrock ``converse`` call gates
-the AWS half; the loop itself is developed against a stub LLM and needs no AWS.
+The same shape appears again one level up: ``loop.synthesize()`` takes only an ``ApprovedClaimSet``, so
+prose generation has no parameter through which the query, the graph, or a rejected claim could reach it.
+
+``BedrockLLM`` is written but **has never been executed** — every Bedrock daily-token quota on the
+account reads 0. Everything here runs today against ``ScriptedLLM``; the smoke call swaps the
+implementation and nothing above the seam changes.
 """

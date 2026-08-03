@@ -132,6 +132,12 @@ class InMemoryGraphStore:
     def __len__(self) -> int:
         return len(self._nodes)
 
+    @property
+    def edge_count(self) -> int:
+        """Public because coverage is a displayed metric, not a debugging aid — the API states the
+        corpus size on the screen rather than letting a visitor assume it (``04`` 4.5)."""
+        return len(self._artifact.edges)
+
     def __repr__(self) -> str:
         return (
             f"InMemoryGraphStore(version={self.artifact_version!r}, "
