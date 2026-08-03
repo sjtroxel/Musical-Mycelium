@@ -15,7 +15,15 @@ assumption. The phase 1 IMPLEMENTATION doc should absorb everything here.
 A ten-chunk response, one second apart, through a Lambda Function URL. Buffered responses show TTFB
 within milliseconds of total; these differ by a factor of 48. Streaming is real.
 
-Image size **216 MB**, comfortably inside the 250 MB unzipped limit that forced invariant 8.
+Image size **216 MB**.
+
+*(Corrected 2026-08-03 during phase 1 step 8. This line originally read "comfortably inside the 250 MB
+unzipped limit that forced invariant 8," which misstates what that limit is. The 250 MB unzipped
+ceiling applies to **.zip deployment packages** — it is the reason this project ships a container at
+all, not a ceiling on the container. Container images are allowed 10 GB. Image size still matters here,
+because it is cold-start latency on a public URL with no provisioned concurrency, but it is a
+performance concern rather than a correctness one and should not be cited as a hard limit. The phase-1
+image measures ~256 MB on disk, ~67 MB compressed.)*
 
 ## Python has no native response streaming
 

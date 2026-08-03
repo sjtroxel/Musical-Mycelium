@@ -2,9 +2,19 @@
 # `make help` lists targets. `make check` is what CI runs.
 
 .DEFAULT_GOAL := help
-.PHONY: help install fmt lint typecheck test cov check root-check clean dev ingest
+.PHONY: help install fmt lint typecheck test cov check root-check clean dev ingest \
+        image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push
 
 UV := $(shell command -v uv 2>/dev/null)
+
+# --- deployment settings -----------------------------------------------------
+# Every value here is also a Terraform variable default. They are repeated rather than read out of
+# Terraform because these targets have to work before any state exists.
+PROJECT   := musical-mycelium
+AWS_REGION := us-east-1
+IMAGE     := $(PROJECT):local
+BOOTSTRAP := infra/terraform/bootstrap
+TF_MAIN   := infra/terraform/main
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -49,7 +59,77 @@ root-check: ## Fail if the repo root has grown past its cap (see CLAUDE.md)
 		exit 1; \
 	fi
 
-check: lint typecheck test root-check ## Everything CI runs
+check: lint typecheck test root-check tf-validate ## Everything CI runs
+
+# --- deployment --------------------------------------------------------------
+# These wrap the flags so nobody has to remember them. Two of them are not style preferences:
+# --provenance=false --sbom=false is MANDATORY (Docker 29 attaches attestations that Lambda rejects
+# outright), and --platform linux/amd64 must match the function's architecture. Both were established
+# by a real deploy — docs/streaming-verification.md.
+
+image: ## Build the Lambda container image locally
+	docker buildx build \
+		--platform linux/amd64 \
+		--provenance=false --sbom=false \
+		-f infra/docker/Dockerfile \
+		-t $(IMAGE) --load .
+	@docker image inspect $(IMAGE) --format '{{.Size}}' \
+		| awk '{printf "image size: %.1f MB on disk\n", $$1/1048576}'
+
+# Runs the deployed artifact, not the source tree, with the no-AWS stub LLM. This is the check that
+# catches an image which builds and then fails to start — a broken console-script shebang, a missing
+# package, an artifact that did not make it into the wheel.
+image-run: image ## Build the image and serve it on :8099 with the local stub LLM
+	@docker rm -f $(PROJECT)-local >/dev/null 2>&1 || true
+	docker run --rm -p 8099:8080 -e MYCELIUM_LLM_PROVIDER=local --name $(PROJECT)-local $(IMAGE)
+
+image-push: image ## Log in to ECR, tag, and push (needs AWS credentials)
+	@account=$$(aws sts get-caller-identity --query Account --output text); \
+	registry=$$account.dkr.ecr.$(AWS_REGION).amazonaws.com; \
+	aws ecr get-login-password --region $(AWS_REGION) \
+		| docker login --username AWS --password-stdin $$registry; \
+	docker tag $(IMAGE) $$registry/$(PROJECT):latest; \
+	docker push $$registry/$(PROJECT):latest
+
+tf-fmt: ## Format all Terraform
+	terraform fmt -recursive infra/terraform
+
+# -backend=false is what makes this credential-free: backend initialisation is the only part of
+# `init` that authenticates. Runs in `make check` and in CI for that reason.
+tf-validate: ## Check Terraform formatting and validity (no AWS credentials needed)
+	@command -v terraform >/dev/null || { echo "terraform is not installed"; exit 1; }
+	terraform fmt -check -recursive infra/terraform
+	@for dir in infra/terraform/*/; do \
+		terraform -chdir=$$dir init -backend=false -input=false -no-color >/dev/null || exit 1; \
+		terraform -chdir=$$dir validate -no-color || exit 1; \
+	done
+
+# STAGE ONE of the two-stage apply. Creates the state bucket, the ECR repository, and the GitHub OIDC
+# deploy role — the three things everything else depends on and none of which can create themselves.
+# Run once. Uses local state; see infra/README.md.
+tf-bootstrap: ## Apply the bootstrap root (state bucket, ECR, OIDC role)
+	terraform -chdir=$(BOOTSTRAP) init
+	terraform -chdir=$(BOOTSTRAP) apply
+
+# The state bucket name contains the account id and backend blocks cannot interpolate variables, so
+# it is resolved here rather than hardcoded into a public repository.
+tf-init: ## Initialise the main root against the bootstrap state bucket
+	@account=$$(aws sts get-caller-identity --query Account --output text); \
+	terraform -chdir=$(TF_MAIN) init -backend-config=bucket=$(PROJECT)-tfstate-$$account
+
+tf-plan: ## Plan the main root (requires TF_VAR_alert_email)
+	terraform -chdir=$(TF_MAIN) plan
+
+tf-apply: ## Apply the main root (requires TF_VAR_alert_email and an image already in ECR)
+	terraform -chdir=$(TF_MAIN) apply
+
+# The off-switch, and the ORDER IS NOT OPTIONAL: main first, then bootstrap. Destroying bootstrap
+# first deletes the bucket holding main's state and leaves main's resources running and unmanaged.
+tf-destroy: ## Destroy the main root. Bootstrap is destroyed separately and AFTER this.
+	terraform -chdir=$(TF_MAIN) destroy
+	@echo
+	@echo "main/ is gone. To remove the rest (state bucket, ECR, OIDC role):"
+	@echo "  terraform -chdir=$(BOOTSTRAP) destroy"
 
 # Hits Wikidata, so it is deliberately NOT part of `check` and never runs in CI. The artifact it writes
 # is committed; rebuilding it is an explicit act. Costs $0 — Wikidata is free — but it is network I/O

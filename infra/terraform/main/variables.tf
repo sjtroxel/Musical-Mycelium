@@ -1,0 +1,125 @@
+variable "project" {
+  description = "Name prefix. Must match the value used in bootstrap/ — the deploy role's policy names these ARNs."
+  type        = string
+  default     = "musical-mycelium"
+}
+
+variable "region" {
+  description = "AWS region. Must match the backend region and the region Bedrock is called in."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "image_tag" {
+  description = <<-EOT
+    Which image in ECR the function runs.
+
+    CI passes the git sha, so what is deployed is always traceable to a commit and a rollback is
+    "apply the previous sha". `latest` is the manual-apply convenience default and is the weaker
+    choice: two applies with the same tag are indistinguishable to Terraform, so nothing changes in
+    the plan even though the image did.
+  EOT
+  type        = string
+  default     = "latest"
+}
+
+variable "alert_email" {
+  description = <<-EOT
+    Where budget and cost-anomaly notifications go. No default: an unset alert address is a guardrail
+    that exists in the plan and not in reality, and this project's cost rules are the reason the
+    account is survivable at all.
+
+    Supply it as TF_VAR_alert_email rather than in a committed tfvars file.
+  EOT
+  type        = string
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alert_email))
+    error_message = "alert_email must be an email address."
+  }
+}
+
+variable "model_id" {
+  description = <<-EOT
+    The Bedrock model the agent calls, as MYCELIUM_MODEL_ID.
+
+    Genuinely undecided as of 2026-08-03 and recorded as such in the phase-1 IMPLEMENTATION doc 10:
+    which model, and US vs Global inference profile, cannot be settled until the daily-token quota
+    clears and a real `converse` call runs. It is configuration precisely so that answer can land
+    without touching code or rebuilding the image.
+  EOT
+  type        = string
+  default     = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+}
+
+variable "memory_mb" {
+  description = <<-EOT
+    Lambda memory, which also buys proportional CPU.
+
+    1024 is chosen for cold start, not for the request: the artifact parse and the FastAPI import
+    happen during INIT, and more CPU makes that shorter. It stays inside the free tier by a wide
+    margin — 400,000 GB-seconds/month is roughly 390,000 seconds at this size.
+  EOT
+  type        = number
+  default     = 1024
+}
+
+variable "timeout_seconds" {
+  description = <<-EOT
+    THE LAMBDA TIMEOUT IS A COST CONTROL, not just a reliability setting.
+
+    Verified against AWS documentation on 2026-07-31: "streamed responses are not interrupted or
+    stopped when the invoking client connection is broken. Customers are billed for the full function
+    duration." A visitor who opens the public URL, triggers the agent loop, and closes the tab bills
+    the entire timeout. On a $20 ceiling with a recruiter-facing URL, this number is the exposure.
+
+    30s is the starting point from IMPLEMENTATION 9. Measure the real loop and tighten it.
+  EOT
+  type        = number
+  default     = 30
+}
+
+variable "reserved_concurrency" {
+  description = <<-EOT
+    Cap on simultaneous executions — the blast-radius control for a public, unauthenticated URL.
+
+    Not to be confused with PROVISIONED concurrency, which is banned by .claude/rules/aws-and-cost.md
+    because it bills whether or not anyone visits. Reserved concurrency is free; it only refuses to
+    scale past the cap, which is exactly what should happen when a public URL is being hammered.
+
+    -1 means unreserved. Set it to -1 if apply fails with "decreases account's
+    UnreservedConcurrentExecution below its minimum value of [100]" — that means this account's
+    concurrency ceiling is still at a new-account default, and the budget alarms carry the load until
+    a limit increase lands.
+  EOT
+  type        = number
+  default     = 5
+}
+
+variable "log_retention_days" {
+  description = <<-EOT
+    CloudWatch log retention, set EXPLICITLY because the default is never-expire, which bills forever.
+    That is a hard rule in .claude/rules/aws-and-cost.md and one of the named guardrails in the
+    phase-1 definition of done.
+  EOT
+  type        = number
+  default     = 14
+}
+
+variable "budget_thresholds" {
+  description = "The $5/$10/$20 ladder from .claude/rules/aws-and-cost.md. Dollars, monthly."
+  type        = list(number)
+  default     = [5, 10, 20]
+}
+
+variable "cors_allowed_origins" {
+  description = <<-EOT
+    Origins allowed to call the Function URL from a browser.
+
+    ["*"] while the only client is curl and the eventual SPA has no domain yet. Narrow this to the
+    CloudFront domain when phase 5 ships a frontend — CORS is not a security boundary for a public
+    read-only endpoint, but a wildcard that outlives its reason is how one stops being noticed.
+  EOT
+  type        = list(string)
+  default     = ["*"]
+}

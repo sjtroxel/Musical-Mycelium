@@ -52,3 +52,30 @@ jobs:
       - uses: actions/checkout@v7
       - name: Check root entry count
         run: make root-check
+
+  # Runs on every commit and needs NO AWS credentials: `-backend=false` skips backend initialisation,
+  # which is the only part of `init` that authenticates. So a syntax error, a bad reference, or an
+  # unformatted file is caught here rather than at 2am against a real account.
+  terraform:
+    name: terraform fmt + validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      - name: Format check
+        run: terraform fmt -check -recursive infra/terraform
+
+      - name: Validate every root
+        run: |
+          set -euo pipefail
+          for dir in infra/terraform/*/; do
+            echo "::group::$dir"
+            terraform -chdir="$dir" init -backend=false -input=false -no-color
+            terraform -chdir="$dir" validate -no-color
+            echo "::endgroup::"
+          done

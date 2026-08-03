@@ -1,0 +1,157 @@
+name: Deploy
+
+# MANUAL ONLY, for now, and that is a decision rather than an omission.
+#
+# A `push: branches: [main]` trigger is one uncommented block away and belongs there eventually. It is
+# not enabled yet because two preconditions are outstanding, and a workflow that fails on every push
+# is a workflow that gets ignored within a week:
+#
+#   1. `infra/terraform/bootstrap` has not been applied, so the role this job assumes, the ECR
+#      repository it pushes to, and the state bucket it initialises against do not exist yet.
+#   2. Every Bedrock daily-token quota on the account still reads 0 (support case 178545883500013).
+#      A deploy would succeed and the deployed /lineage endpoint would fail on the first model call.
+#
+# Enabling it is step 9's business, once a live converse call has actually worked.
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy. Leave blank to build and deploy this commit."
+        required: false
+        type: string
+
+  # push:
+  #   branches: [main]
+  #   paths-ignore:
+  #     - "docs/**"
+  #     - "**/*.md"
+
+# id-token: write is what makes OIDC work — it lets the job request a GitHub-signed token to exchange
+# with STS. Without it the credential step fails with a message that does not mention this line.
+permissions:
+  id-token: write
+  contents: read
+
+# cancel-in-progress is deliberately FALSE. Cancelling a running `terraform apply` mid-flight can
+# orphan resources and, with S3 native locking, leave a lock object behind that blocks the next run.
+# A queued deploy is cheap; a half-applied one is an evening.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  PROJECT: musical-mycelium
+
+jobs:
+  deploy:
+    name: build, push, apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # No access key anywhere. The role's trust policy pins this to one repo and one branch; see
+      # infra/terraform/bootstrap/oidc.tf.
+      - name: Assume the deploy role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: gha-${{ github.run_id }}
+
+      - name: Resolve account-scoped names
+        id: names
+        run: |
+          set -euo pipefail
+          account="$(aws sts get-caller-identity --query Account --output text)"
+          tag="${{ inputs.image_tag }}"
+          [ -n "$tag" ] || tag="${GITHUB_SHA::12}"
+          {
+            echo "state_bucket=${PROJECT}-tfstate-${account}"
+            echo "registry=${account}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+            echo "image_tag=${tag}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v4
+
+      # provenance and sbom MUST be false. Docker's default attestations wrap the image in a manifest
+      # list and Lambda rejects it with InvalidParameterValueException — a failure that appears in no
+      # AWS documentation and was found by a real deploy on 2026-07-31. Same rule as `make image`.
+      - name: Build and push the Lambda image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
+          push: true
+          tags: |
+            ${{ steps.names.outputs.registry }}/${{ env.PROJECT }}:${{ steps.names.outputs.image_tag }}
+            ${{ steps.names.outputs.registry }}/${{ env.PROJECT }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      # The bucket name carries the account id, and backend blocks cannot interpolate variables, so it
+      # arrives here rather than in versions.tf. See infra/terraform/main/versions.tf.
+      - name: Terraform init
+        run: |
+          terraform -chdir=infra/terraform/main init \
+            -backend-config=bucket=${{ steps.names.outputs.state_bucket }}
+
+      - name: Terraform apply
+        env:
+          TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
+        run: |
+          terraform -chdir=infra/terraform/main apply -auto-approve \
+            -var="image_tag=${{ steps.names.outputs.image_tag }}"
+
+      # The deploy is not finished when apply succeeds. It is finished when the URL streams.
+      #
+      # TTFB against total is the only check that can tell the difference between working streaming
+      # and a buffered response, and buffering is the documented silent-failure mode of this stack:
+      # miss AWS_LWA_INVOKE_MODE or the Function URL's invoke_mode and every request still returns
+      # 200. The 2026-07-31 spike measured 0.214s vs 10.22s; anything close to a 1.0 ratio here means
+      # streaming is off, whatever the status code says.
+      - name: Smoke test the deployed URL
+        run: |
+          set -euo pipefail
+          url="$(terraform -chdir=infra/terraform/main output -raw function_url)"
+          echo "Function URL: $url"
+
+          echo "--- /health ---"
+          curl -fsS --max-time 60 "${url}health" | tee /dev/stderr
+          echo
+
+          echo "--- /lineage streaming check ---"
+          ttfb=$(curl -sN -o /dev/null --max-time 60 -w '%{time_starttransfer}' "${url}lineage?q=thrash%20metal")
+          total=$(curl -sN -o /dev/null --max-time 60 -w '%{time_total}' "${url}lineage?q=thrash%20metal")
+          echo "time to first byte: ${ttfb}s"
+          echo "total:              ${total}s"
+          awk -v t="$ttfb" -v T="$total" 'BEGIN {
+            if (T <= 0) { print "::error::no response"; exit 1 }
+            r = t / T
+            printf "ttfb/total ratio:   %.3f\n", r
+            if (r > 0.9) {
+              print "::warning::Response looks BUFFERED, not streamed. Check AWS_LWA_INVOKE_MODE in the"
+              print "::warning::Dockerfile and invoke_mode on aws_lambda_function_url."
+            }
+          }'
+
+      - name: Report what is live
+        run: |
+          {
+            echo "### Deployed"
+            echo
+            echo "- image tag: \`${{ steps.names.outputs.image_tag }}\`"
+            echo "- url: $(terraform -chdir=infra/terraform/main output -raw function_url)"
+          } >> "$GITHUB_STEP_SUMMARY"

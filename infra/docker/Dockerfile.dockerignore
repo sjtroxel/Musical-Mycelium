@@ -1,0 +1,44 @@
+# Ignore rules for the Lambda image build.
+#
+# This file is NOT in the repo root on purpose. BuildKit resolves `<dockerfile-path>.dockerignore`
+# first and only falls back to a context-root `.dockerignore`, so keeping it here honours the root
+# cap in CLAUDE.md while still applying to a build whose context is the repo root.
+#
+# Everything the image does not need is excluded rather than enumerated by inclusion, because a
+# missed exclusion costs image size and a missed inclusion costs a runtime ImportError. What is being
+# defended is cold-start latency, not the 250MB zip limit — see the note in the runtime stage.
+
+.git
+.github
+.venv
+venv
+
+docs
+infra
+web
+tests
+
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+dist
+build
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+
+# Never let credentials or local state near a build context.
+.env
+.env.*
+*.pem
+*.key
+*.tfstate
+*.tfstate.*
+*.tfvars
+**/.terraform
+
+private
+data
+Makefile

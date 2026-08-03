@@ -233,6 +233,72 @@ first-class, and it will need a third outcome beside approved and rejected. Noth
 mark an edge as disputed, so a state nothing can produce would be speculative structure. It arrives with
 the data that justifies it, in phase 2 or 6. Recorded here so its absence is a decision.
 
+### 5.5 Deployment shape
+
+**Built 2026-08-03 (step 8).** §10 left the two-stage apply undecided between two workspaces, a
+`null_resource`, and a documented two-command sequence. **Resolved: two Terraform roots.**
+
+```
+infra/terraform/bootstrap/   LOCAL state. S3 state bucket, ECR repository, GitHub OIDC provider + role.
+infra/terraform/main/        S3 backend. Lambda, Function URL, exec role, log group, budgets, anomaly detection.
+```
+
+The ordering constraint is real in two places, not one: a `package_type = "IMAGE"` function cannot be
+created before an image exists at the URI it names, **and** CI cannot assume a deploy role that CI has
+not yet created. A `-target` sequence solves the first and not the second. Splitting the roots makes
+both an artifact of the directory layout rather than a procedure someone has to remember, and it means
+the ugly ordering is executed exactly once instead of on every apply.
+
+`main/` reads the ECR repository with a `data` source rather than a remote-state lookup, so the two
+roots share no lock and `main/` can be destroyed and reapplied without touching `bootstrap/`.
+
+Decisions inside that shape, each because the alternative is worse:
+
+- **S3 native locking (`use_lockfile = true`), not DynamoDB.** The conventional answer adds a DynamoDB
+  table to hold a single lock row. Terraform 1.10+ can hold the lock as an object in the state bucket,
+  which deletes an entire resource whose only job was to protect a solo project's state.
+- **The backend is a partial configuration.** The bucket name contains the account id, backend blocks
+  cannot interpolate variables, and hardcoding an account id into a public repository is a small,
+  permanent, avoidable disclosure. `make tf-init` resolves it from `sts:GetCallerIdentity`.
+- **The execution role does not use `AWSLambdaBasicExecutionRole`.** That managed policy grants
+  `logs:CreateLogGroup`, which lets the function create a replacement log group **with no retention**
+  if the managed one is ever missing — quietly reintroducing the never-expire default this project has
+  a hard rule against. The role gets `CreateLogStream` and `PutLogEvents` on one log group ARN.
+- **`reserved_concurrent_executions = 5`.** Not to be confused with provisioned concurrency, which is
+  banned because it bills whether or not anyone visits. Reserved concurrency is free and is the blast-
+  radius cap on a public unauthenticated URL. It may need to be `-1` until the account's concurrency
+  ceiling is raised; the variable documents that failure message verbatim.
+- **The OIDC trust policy is pinned to one repo AND one branch ref.** Pinned to the repo alone, a pull
+  request from a fork can mint credentials for the account. The deploy policy is scoped to specific
+  ARNs, with `iam:PassRole` constrained to the one execution role and to `lambda.amazonaws.com`.
+- **`deploy.yml` is `workflow_dispatch` only for now.** Bootstrap has not been applied and the Bedrock
+  quota is still 0, so a push trigger would fail on every commit — and a workflow that is always red is
+  a workflow that gets ignored inside a week. The `push:` block is written and commented out; enabling
+  it belongs to step 9, after a live `converse` call works.
+- **CI gained a credential-free Terraform job.** `init -backend=false` skips the only part of `init`
+  that authenticates, so `fmt -check` and `validate` run on every commit against no AWS account.
+  `make check` runs the same thing.
+
+**What the local container run does and does not prove.** `make image-run` serves the built image on
+:8099 and was used to verify, on 2026-08-03, that the image starts, `/health` reports the pinned
+corpus (21 edges, 28 nodes), and `/lineage?q=thrash%20metal` emits `tool`, `claim`, `path`, `token`,
+`done` in order with real source URIs. That is the image and the application. **It is not evidence
+about LWA**, which is a Lambda extension in `/opt/extensions` and does not run outside the Lambda
+runtime. §10's "SSE with typed events through LWA specifically" is therefore still open and is step
+9's first measurement, by TTFB against total — not by status code.
+
+One bug worth recording because it costs a session and produces a working build: a uv virtualenv built
+at `/build/.venv` and copied to `/opt/venv` yields `exec /opt/venv/bin/uvicorn: no such file or
+directory`, because console scripts carry an absolute shebang. `UV_PROJECT_ENVIRONMENT=/opt/venv`
+builds it where it will live. The image is ~256MB on disk, ~67MB compressed.
+
+**A correction to a claim this project has been repeating.** The 250MB unzipped limit behind invariant
+8 is the ceiling on **.zip deployment packages**, and it is the reason this project ships a container
+at all — container images get 10GB. `docs/streaming-verification.md` describes 216MB as "comfortably
+inside the 250 MB unzipped limit", which reads as though the limit applies to the image. It does not.
+Image size still matters, because it is cold-start latency on a public URL with no provisioned
+concurrency, but it is not a correctness ceiling and should not be described as one.
+
 ## 6. Files and modules that will change
 
 | Path | What lands |
@@ -249,9 +315,14 @@ the data that justifies it, in phase 2 or 6. Recorded here so its absence is a d
 | `src/musical_mycelium/api/app.py` | FastAPI app, the SSE endpoint, `/health`. Owns no logic, and a test enforces it. **Built 2026-08-02** |
 | `src/musical_mycelium/eval/metrics.py` | `edge_groundedness` + `Groundedness`, plus its own unit tests. **Built 2026-08-02** |
 | `src/musical_mycelium/eval/datasets/gold_v0_1.json` | Five hand-authored gold cases |
-| `infra/docker/Dockerfile` | Python 3.13 base, LWA copied to `/opt/extensions/`, artifact baked in |
-| `infra/terraform/` | ECR, Lambda, Function URL, IAM role, CloudWatch log group **with explicit retention**, budget, anomaly detection |
-| `.github/workflows/deploy.yml` | OIDC role assumption, build, push, two-stage apply |
+| `infra/docker/Dockerfile` | Multi-stage: uv builds the venv at `/opt/venv` from `uv.lock`, LWA copied to `/opt/extensions/`, artifact baked in via the wheel. **Built 2026-08-03** |
+| `infra/docker/Dockerfile.dockerignore` | **Added during the build.** BuildKit reads this in preference to a context-root `.dockerignore`, which keeps the ignore rules out of the capped repo root |
+| `infra/terraform/bootstrap/` | **Added during the build.** State bucket, ECR + lifecycle policy, GitHub OIDC provider and deploy role. Local state, applied once. **Built 2026-08-03** |
+| `infra/terraform/main/` | Lambda, Function URL (`RESPONSE_STREAM`), exec role, log group **with explicit retention**, the $5/$10/$20 budgets, Cost Anomaly Detection. **Built 2026-08-03** |
+| `.github/workflows/deploy.yml` | OIDC role assumption, build, push, apply, and a TTFB-vs-total streaming smoke test. `workflow_dispatch` only until step 9. **Built 2026-08-03** |
+| `.github/workflows/ci.yml` | **Changed during the build.** Gained a credential-free `terraform fmt -check` + `validate` job |
+| `Makefile` | **Changed during the build.** `image`, `image-run`, `image-push`, `tf-fmt`, `tf-validate`, `tf-bootstrap`, `tf-init`, `tf-plan`, `tf-apply`, `tf-destroy`. `check` now includes `tf-validate` |
+| `infra/README.md` | **Changed during the build.** The first-deploy runbook, the budget-import procedure, and the destroy order |
 | `docs/SPEC.md` | §5, §6, §7 filled from section 5 above |
 
 ## 7. The two tools
@@ -364,9 +435,19 @@ Named rather than smoothed over.
   move is to say the coverage is thin, not to pick a genre the data does not support.
 - **SSE through the Lambda Web Adapter specifically.** Streaming is verified; streaming *SSE with typed
   events* through LWA is not. This is the phase's fiddliest part and the most likely source of a lost session.
-- **Two-stage Terraform apply.** ECR must exist and hold an image before the Lambda can reference it. The
-  ordering is known; whether it wants two workspaces, a `null_resource`, or just a documented two-command
-  sequence is not decided. Simplest thing that works.
+  **Still open after step 8** — running the container locally exercises uvicorn and the app, not the
+  adapter, which only runs under the Lambda runtime. Step 9 settles it by TTFB against total.
+- ~~**Two-stage Terraform apply.**~~ **Resolved 2026-08-03: two Terraform roots, `bootstrap/` and
+  `main/`.** See §5.5. It turned out the ordering constraint was two constraints — the image must
+  precede the function, *and* the OIDC role must precede the CI job that assumes it — which is what
+  ruled out a `-target` sequence.
+- **Whether the hand-armed budgets import cleanly.** `main/cost.tf` declares the $5/$10/$20 ladder that
+  was created outside Terraform, and the import only works if the existing names match
+  `musical-mycelium-monthly-{5,10,20}`. The names are not known without credentials. Procedure, both
+  branches, in `infra/README.md`.
+- **Whether `reserved_concurrent_executions = 5` applies on this account.** AWS refuses any reservation
+  that drops unreserved concurrency below 100, which a new account's default ceiling can trigger. The
+  fallback is `-1` and the budget ladder.
 
 ## 11. Inherited assignments discharged
 
@@ -394,8 +475,11 @@ From `planning/09` §6, the list that exists so nothing is lost between planning
 5. `Claim` + gate + metric + metric unit tests. **Before** the loop, so the gate is not shaped to fit it.
 6. Tools, `build_llm`, the loop.
 7. FastAPI SSE endpoint; verify streaming locally.
-8. Dockerfile, Terraform, CI deploy with OIDC.
-9. Public URL, end to end, cost logged.
+8. Dockerfile, Terraform, CI deploy with OIDC. **Authored and validated 2026-08-03; nothing applied.**
+   The image builds and runs; both Terraform roots pass `fmt -check` and `validate`; CI enforces both
+   on every commit. Everything past this point needs credentials.
+9. Public URL, end to end, cost logged. **Runbook in `infra/README.md`.** First real measurement is
+   TTFB against total on the deployed URL, which is also what closes the last §10 uncertainty.
 10. Plain-English write-up of what this phase does — the cold-articulation rep, per the skill's step 7.
 
 Steps 2 through 8 need no AWS. If the quota clears mid-build, step 1 slots in ahead of step 9.
