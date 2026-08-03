@@ -39,6 +39,32 @@ variable "alert_email" {
   }
 }
 
+variable "llm_provider" {
+  description = <<-EOT
+    Which LLM implementation the deployed function builds — `build_llm()`'s provider, as
+    MYCELIUM_LLM_PROVIDER.
+
+    This is a variable rather than a constant because it is the thing that decouples DEPLOYING from
+    the Bedrock quota. `local` runs the whole stack — tool loop, deterministic gate, real cited claims
+    off the pinned artifact, SSE — with no model call and no spend, so the infrastructure can be
+    proven end to end while every daily-token quota still reads 0. Flip it to `bedrock` and redeploy
+    when that clears; nothing else changes.
+
+    That is invariant 7 (the LLM provider seam) doing the job it was put there to do.
+
+    Be honest about what a `local` deploy is: the prose comes from a template, not a model. It proves
+    the plumbing, the grounding path, and the streaming. It does not close phase 1's definition of
+    done, which requires a real converse call and measured token cost.
+  EOT
+  type        = string
+  default     = "bedrock"
+
+  validation {
+    condition     = contains(["bedrock", "local"], var.llm_provider)
+    error_message = "llm_provider must be `bedrock` or `local`. `scripted` is a test double and needs responses injected."
+  }
+}
+
 variable "model_id" {
   description = <<-EOT
     The Bedrock model the agent calls, as MYCELIUM_MODEL_ID.

@@ -104,9 +104,11 @@ resource "aws_lambda_function" "app" {
 
   environment {
     variables = {
-      # The image already defaults to bedrock; stating it here means the deployed configuration is
-      # readable in the console without going and reading a Dockerfile.
-      MYCELIUM_LLM_PROVIDER = "bedrock"
+      # The image defaults to bedrock; setting it here means the deployed configuration is readable in
+      # the console without going and reading a Dockerfile, AND that it can be changed without
+      # rebuilding the image. `-var llm_provider=local` deploys a working, streaming, fully grounded
+      # endpoint with no model call at all — which is how this ships while the Bedrock quota is 0.
+      MYCELIUM_LLM_PROVIDER = var.llm_provider
       MYCELIUM_MODEL_ID     = var.model_id
       AWS_REGION_NAME       = var.region
     }

@@ -98,6 +98,20 @@ make tf-plan     # read it
 make tf-apply
 ```
 
+**Deploying while the Bedrock quota is still 0.** Add `-var llm_provider=local`:
+
+```bash
+terraform -chdir=infra/terraform/main apply -var llm_provider=local
+```
+
+That deploys a real, public, streaming endpoint that walks the graph, gates every claim, and cites
+real Wikidata statement URIs — with no model call and no spend. It proves the infrastructure, the
+grounding path, and SSE-through-LWA, which is the last open uncertainty in the phase. The prose comes
+from a template rather than a model, so it does **not** close phase 1's definition of done (a real
+`converse` call, and measured token cost). When the quota clears, `apply` again without the flag.
+
+This is only possible because of the LLM provider seam (invariant 7). It is the seam paying out.
+
 **3. Verify it actually streams.** A 200 is not evidence. `TestClient` buffers and so does a
 misconfigured Function URL, so the only real check is time-to-first-byte against total:
 

@@ -275,6 +275,13 @@ Decisions inside that shape, each because the alternative is worse:
   quota is still 0, so a push trigger would fail on every commit — and a workflow that is always red is
   a workflow that gets ignored inside a week. The `push:` block is written and commented out; enabling
   it belongs to step 9, after a live `converse` call works.
+- **`llm_provider` is a Terraform variable, not a constant.** This is what decouples *deploying* from
+  the Bedrock quota. `-var llm_provider=local` deploys a real public streaming endpoint that walks the
+  graph, gates every claim, and cites real statement URIs, with no model call and no spend — proving
+  the infrastructure, the grounding path, and SSE-through-LWA while every daily-token quota reads 0.
+  It closes five of the seven definition-of-done items in §1. It does **not** close #1 (a successful
+  `converse` call) or #7 (measured token cost), so phase 1 stays open and should be described that
+  way. Invariant 7 is the reason this is a one-flag change rather than a fork of the deployment.
 - **CI gained a credential-free Terraform job.** `init -backend=false` skips the only part of `init`
   that authenticates, so `fmt -check` and `validate` run on every commit against no AWS account.
   `make check` runs the same thing.
