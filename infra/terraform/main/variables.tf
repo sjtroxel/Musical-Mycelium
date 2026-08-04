@@ -114,9 +114,17 @@ variable "reserved_concurrency" {
     scale past the cap, which is exactly what should happen when a public URL is being hammered.
 
     -1 means unreserved. Set it to -1 if apply fails with "decreases account's
-    UnreservedConcurrentExecution below its minimum value of [100]" — that means this account's
+    UnreservedConcurrentExecution below its minimum value of [N]" — that means this account's
     concurrency ceiling is still at a new-account default, and the budget alarms carry the load until
     a limit increase lands.
+
+    MEASURED 2026-08-03 on the first apply: the error named **[10]**, not the [100] this comment
+    originally predicted. This account's entire concurrency ceiling is ~10 against a normal 1,000, so
+    a reservation of 5 was refused and the deploy runs at -1 with the account ceiling doing the job.
+
+    Worth knowing for a reason beyond Lambda: it is independent evidence that the Bedrock zero-token
+    quota is new-account posture rather than anything specific to this account or its owner. Two
+    unrelated services, clamped by the same automation.
   EOT
   type        = number
   default     = 5

@@ -123,7 +123,7 @@ class InMemoryGraphStore:
 
     def path(self, start_id: str, end_id: str) -> list[Edge]:
         raise NotImplementedError(
-            "path() lands in phase 5 with the guided tour; SPEC.md 2.2 names the query it serves. "
+            "path() lands in phase 2 with the corpus it needs; SPEC.md 2.2 names the query it serves. "
             "v0.1 answers single-hop origins only."
         )
 

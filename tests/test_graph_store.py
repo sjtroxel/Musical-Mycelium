@@ -44,8 +44,14 @@ def test_the_v01_backend_satisfies_the_protocol(store: InMemoryGraphStore) -> No
 
 def test_path_is_declared_but_not_implemented(store: InMemoryGraphStore) -> None:
     """Deliberate, not an oversight. It is on the protocol because retrofitting a protocol method
-    touches every implementation; it raises because phase 5 owns the guided tour."""
-    with pytest.raises(NotImplementedError, match="phase 5"):
+    touches every implementation; it raises because v0.1's corpus is one hop deep.
+
+    **This test caught the phase-5-to-phase-2 correction on 2026-08-04** — the message said phase 5 in
+    three places and the assertion pinned one of them. That is the test working, so it keeps asserting on
+    the phase, not merely on the exception type. It is expected to fail and be deleted in phase 2 when
+    `path()` is implemented.
+    """
+    with pytest.raises(NotImplementedError, match="phase 2"):
         store.path(BLUES, HEAVY_METAL)
 
 

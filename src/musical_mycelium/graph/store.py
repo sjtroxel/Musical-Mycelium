@@ -73,8 +73,13 @@ class GraphStore(Protocol):
     def path(self, start_id: str, end_id: str) -> list[Edge]:
         """The shortest sourced chain from ``start_id`` to ``end_id``, or an empty list if none exists.
 
-        Declared now, implemented in phase 5. The v0.1 backend raises ``NotImplementedError``: the
-        method is on the protocol because retrofitting it would touch every implementation, and because
-        ``SPEC.md`` 2.2 already names the query it serves.
+        Declared at v0.1, **implemented in phase 2** alongside the corpus it needs. The v0.1 backend
+        raises ``NotImplementedError``: the method is on the protocol because retrofitting it would touch
+        every implementation, and because ``SPEC.md`` 2.2 already names the query it serves.
+
+        *(Corrected 2026-08-04: this said "phase 5". It was written while ``path()`` was a phase-1
+        deferral, but the ROADMAP assigns "real multi-hop traversal" to phase 2 and that phase's DoD #2
+        requires a three-hop path. Phase 5 **consumes** this for the guided tour; it does not introduce
+        it.)*
         """
         ...

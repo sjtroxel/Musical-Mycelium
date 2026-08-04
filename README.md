@@ -12,18 +12,31 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Pre-build.** Named 2026-07-29. No AWS account yet, nothing deployed, no application code.
+**Deployed, and honestly incomplete.** Last updated 2026-08-04.
 
-What exists is the planning series in [`docs/planning/`](docs/planning/) — ten documents covering the
-concept, data sources, architecture, cost model, risk register, evolution plan, design direction, and
-evaluation spec, plus an independent review — and the project scaffolding: toolchain, CI, package
-boundaries with their contracts written down, and the architecture tests that guard them. Planning is
-closed. The next artifact is the v0.1 IMPLEMENTATION doc, then the walking skeleton.
+The walking skeleton is live on AWS: a public Lambda Function URL streams a grounded, cited lineage as
+typed server-sent events, provisioned entirely by Terraform, with budget alarms and log retention armed
+before the first apply. Every claim it emits is checked against a pinned artifact by a deterministic gate
+before any prose is generated.
+
+Two things are deliberately not done, and saying so is the point of this section:
+
+- **The agent is running its local provider, not Bedrock.** Every Bedrock token quota on this account
+  reads zero — a new-account provisioning condition, not a model-access one — so the deployed loop walks
+  the graph, gates the claims and cites real Wikidata statement URIs, but the prose comes from a template
+  rather than a model. The provider is a deploy-time variable precisely so this was survivable.
+- **The corpus is small.** v0.1 ships 21 hand-verified influence edges over 28 genres. Phase 2 is
+  replacing that with the full Wikidata P737 corpus, filtered by an automated Wikipedia disconfirmation
+  check. The honest expected size is 120–160 edges, not thousands — see
+  [`docs/graph-semantics.md`](docs/graph-semantics.md) for why, which is the most interesting document
+  in this repo.
 
 The version spine and what lands when are in [`docs/ROADMAP.md`](docs/ROADMAP.md). The contracts are in
-[`docs/SPEC.md`](docs/SPEC.md).
+[`docs/SPEC.md`](docs/SPEC.md). Planning is closed and lives in [`docs/planning/`](docs/planning/) —
+ten documents covering concept, data sources, architecture, cost, risk, evolution, design and evaluation,
+plus an independent review.
 
-## What it will be
+## What it is
 
 A hand-built tool-use loop on Amazon Bedrock's Converse API. Given a genre or an artist, it plans a
 traversal across a pre-built provenance graph of musical influence, cross-references, and synthesizes a
@@ -42,15 +55,19 @@ walk the path between them: delta blues to Detroit techno, narrated hop by hop.
   correctness metrics are deterministic dictionary lookups rather than judged text comparisons. They
   cost nothing and run on every commit.
 
-Planned stack: Python on AWS Lambda, Bedrock for the agent, Terraform for everything, S3 + CloudFront
-for the frontend, GitHub Actions with OIDC for deploys. No managed database — the graph is small enough
-to live in a versioned artifact in S3.
+Stack: Python 3.13 on AWS Lambda as a container image, Bedrock for the agent, Terraform for everything,
+GitHub Actions with OIDC for deploys and no long-lived keys. S3 + CloudFront for the frontend, which
+arrives at v0.5. No managed database — which also means no VPC, and therefore no NAT gateway. Fixed
+infrastructure is designed to cost approximately nothing; Bedrock tokens are the only real line item.
 
 ## Data
 
-Wikidata (CC0) for the genre and influence graph, MusicBrainz core tables (CC0) for artists and
-releases, Wikipedia (CC BY-SA, attribution displayed) for narrative depth. Licensing rules and the
-per-source gotchas are in [`docs/planning/01-DATA-SOURCES.md`](docs/planning/01-DATA-SOURCES.md) and
+Wikidata (CC0) for the genre and influence graph, and Wikipedia (CC BY-SA, attribution displayed) — used
+as a **disconfirmation** check rather than a source, because it shares an editorial ecosystem with
+Wikidata and so can refute an edge far more credibly than it can confirm one. MusicBrainz core tables
+(CC0) for artists and releases arrive at v0.6; contributor-generated MusicBrainz data is CC BY-NC-SA 3.0
+and is out of scope. Licensing rules and the per-source gotchas are in
+[`docs/planning/01-DATA-SOURCES.md`](docs/planning/01-DATA-SOURCES.md) and
 [`docs/planning/04-RISK-REGISTER.md`](docs/planning/04-RISK-REGISTER.md).
 
 ## Repo layout

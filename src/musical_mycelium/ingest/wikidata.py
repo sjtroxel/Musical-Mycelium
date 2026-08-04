@@ -88,9 +88,24 @@ VERIFIED_EDGES: tuple[tuple[str, str], ...] = (
 
 #: Rejected during the same pass, recorded so they are not quietly re-added. The exclusion rate is a
 #: displayed coverage number, not a silent filter (``docs/planning/04-RISK-REGISTER.md`` 4.5).
+#:
+#: **Two reasons corrected 2026-08-04** while building ``prosecheck.py``, which re-measured every case
+#: against the live articles. The count is unchanged at 7 — the v0.1 artifact is pinned and is not being
+#: rewritten — but the *record* was wrong and one of these is a false rejection worth re-admitting when
+#: phase 2 rebuilds the corpus. See ``docs/graph-semantics.md`` 4.6.
 REJECTED_EDGES: tuple[tuple[str, str, str], ...] = (
-    ("Q241662", "Q38848", "groove metal <- heavy metal: zero genuine prose; the tier was markup"),
-    ("Q241662", "Q483352", "groove metal <- thrash metal: zero genuine prose"),
+    (
+        "Q241662",
+        "Q38848",
+        "groove metal <- heavy metal: taxonomic. 6 genuine prose mentions, but the lead reads "
+        "'is a subgenre of heavy metal music'. (Was recorded as 'zero genuine prose'; that was wrong.)",
+    ),
+    (
+        "Q241662",
+        "Q483352",
+        "groove metal <- thrash metal: FALSE REJECTION. Recorded as 'zero genuine prose'; it has 7, "
+        "led by 'primarily derived from thrash metal'. Re-admit in phase 2.",
+    ),
     ("Q38848", "Q83270", "heavy metal <- hard rock: prose asserts synonymy, not derivation"),
     ("Q38848", "Q9730", "heavy metal <- classical music: prose contradicts it"),
     ("Q465978", "Q38848", "extreme metal <- heavy metal: taxonomic, not historical"),

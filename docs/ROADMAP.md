@@ -47,8 +47,8 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | Phase | Scope doc | IMPLEMENTATION doc |
 |---|---|---|
 | 0 | written (retroactively) | written (as-built) |
-| 1 | written | **next artifact** |
-| 2 | written | at phase start |
+| 1 | written | written (as-built) |
+| 2 | written; **amended 2026-08-04 (A1–A4)** | **written 2026-08-04** |
 | 3 | written | at phase start |
 | 4 | written | at phase start |
 | 5 | written | at phase start |
@@ -115,10 +115,16 @@ All present as of 2026-07-30: `uv`, Terraform 1.15.8, Docker Engine 29.6.2 (in-d
 Make. Python is 3.12 locally; `uv` provisions the 3.13 this project targets, so there is no `.python-version`
 file.
 
-**The one remaining gate is Bedrock quotas.** As of 2026-07-30 all 160 quotas in `us-east-1` read 0 TPM and 0
-RPM — a new-account provisioning condition, not a model-access problem; the "model access" page is retired and
-there is no approval queue to join. A support case is drafted. Nothing can call Bedrock until this clears, and
-step zero of phase 1 is blocked behind it. Doc and validation work is not.
+**The one remaining gate is Bedrock quotas.** Diagnosed 2026-08-01: the failure is `ThrottlingException`,
+not `AccessDenied`, so **model access is granted** and this is a quota gate. The dimension at zero is
+**tokens per DAY**, and it reads 0.0 across every vendor in `us-east-1` — a new-account provisioning
+condition, one switch rather than sixty, which is why "try a different model" is not a workaround. Support
+case `178545883500013` was filed 2026-07-30 and escalated to the Bedrock service team on 07-31. Phase 1's
+DoD #1 (a real `converse` call) and #7 (measured token cost) are blocked behind it.
+
+**Nothing else is.** The account is live, both Terraform roots are applied, and the deployed Lambda serves a
+public streaming URL on `llm_provider=local` — invariant 7 paying out. Ingestion, traversal, the corpus, the
+prose check, evals and docs all touch Bedrock zero times.
 
 ## 4. Decision history
 
@@ -164,6 +170,23 @@ exists.
   the adversarial set, refusal accuracy, injection resistance, contested flagging, and slicing to v0.3 while
   the spine calls phase 4 "the eval suite." Both are right: phase 3 measures what it builds, phase 4 builds
   the suite — judge, validation, noise floor, thresholds, held-out set, metric unit tests, report.
+- **2026-08-04 — Phase 2's scope doc amended in four places (A1–A4) before building.** It was written
+  2026-07-29, two days before the P279/P737 validation, and four items rested on the falsified assumption.
+  A1: its corpus numbers were P279 counts described as "derivation" — the real target is 120–160 P737 edges,
+  not 7,936. A2: MusicBrainz moves to phase 6; no query in `SPEC.md` §2 needs a release, and it carries a
+  licensing surface for nothing. A3: P279 ingestion moves to phase 6, so DoD #4 is restated as bounded type
+  filtering. A4: DoD #6 was stricter than invariant 4 — it forbade editing the *agent package*, which would
+  have forbidden registering a tool; it now names `run()` and `gate()`. Reasoning in the phase-2
+  IMPLEMENTATION doc §1.
+- **2026-08-04 — `GraphStore.path()` belongs to phase 2, not phase 5.** `SPEC.md` §2.2, `graph/store.py`
+  and `graph/memory.py` all said phase 5, written while `path()` was a phase-1 deferral. The spine assigns
+  "real multi-hop traversal" to phase 2 and its DoD #2 requires a three-hop path. Phase 5 consumes it.
+- **2026-08-04 — `graph-semantics.md` §4.6's `groove metal` example was wrong, and a phase-1 rejection with
+  it.** Re-measured live while building `ingest/prosecheck.py`: the article has 6–7 genuine prose mentions,
+  not the documented zero. The markup defect is real (stripping retains 29% of the raw wikitext and halves
+  the hit count) but groove metal is a §4.7 case, and **`groove metal <- thrash metal` is a false rejection**
+  — its lead sentence reads "primarily derived from thrash metal." Corrected in place; the v0.1 artifact is
+  pinned and was not rewritten. The lesson is in the code now: a tier is not evidence, the sentences are.
 - **2026-07-29 — Python 3.13, uv, ruff, mypy, pytest.** Lambda supports 3.13 as both a managed runtime and
   a container base image, and 3.13 is the current LTS with support through October 2029. 3.14 is available
   on Lambda but 3.13 has the wider dependency support today.

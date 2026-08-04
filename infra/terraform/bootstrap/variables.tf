@@ -45,9 +45,13 @@ variable "keep_image_count" {
   description = <<-EOT
     How many tagged images ECR retains before expiring the oldest.
 
-    ECR storage bills at ~$0.10/GB-month beyond the 500MB free allowance, and this image is ~256MB
-    uncompressed. Unbounded retention is how a $0 project quietly starts costing a few dollars a month
-    for images nobody will ever roll back to.
+    ECR storage bills at ~$0.10/GB-month beyond the 500MB free allowance. **ECR bills the COMPRESSED
+    size**, which measured 63.8MB on the first real push (2026-08-03) — not the ~256MB uncompressed
+    figure this comment previously quoted, which was the wrong number for a storage-billing decision.
+    Three tags is therefore ~190MB, comfortably inside the free allowance.
+
+    The cap stays anyway: unbounded retention is how a $0 project quietly starts costing a few dollars
+    a month for images nobody will ever roll back to.
   EOT
   type        = number
   default     = 3

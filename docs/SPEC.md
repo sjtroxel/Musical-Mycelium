@@ -106,7 +106,7 @@ is waiting on, so nothing here is a surprise later.
 | "Who influenced Kate Bush?" | A, **artist axis** | The ~31k artist-level P737 edges. Phase 2. Genre and artist are different axes of the same predicate and conflating them is invariant 3 |
 | "What came out of Jamaican ska?" | A, descendants | Ska is absent entirely, and the descendant direction is not walked at v0.1 |
 | "Trace the roots of Brazilian tropicália." | A, origins | 1 edge, fails the prose check. Needs corpus expansion |
-| "How is the blues connected to heavy metal?" | **C, path** | Nothing. The path `blues -> blues rock -> heavy metal music` is fully sourced and hand-verified **today**. It needs `GraphStore.path()`, which lands in phase 5. *(Amended 2026-08-02: the chain originally read through to `extreme metal`; that edge was rejected on hand-reading as taxonomic, so the path is two hops, not three.)* |
+| "How is the blues connected to heavy metal?" | **C, path** | Nothing. The path `blues -> blues rock -> heavy metal music` is fully sourced and hand-verified **today**. It needs `GraphStore.path()`, which lands in phase 2. *(Corrected 2026-08-04: this said phase 5, written while `path()` was a phase-1 deferral. The ROADMAP assigns multi-hop traversal to phase 2; phase 5 consumes it for the guided tour.)* *(Amended 2026-08-02: the chain originally read through to `extreme metal`; that edge was rejected on hand-reading as taxonomic, so the path is two hops, not three.)* |
 
 The last row replaces the original "How is delta blues connected to hip hop?", which was the intended
 signature demo. Delta blues is absent from the corpus and no path exists between blues and hip-hop, but the

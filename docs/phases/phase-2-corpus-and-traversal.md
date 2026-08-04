@@ -2,6 +2,12 @@
 
 > **Scope doc.** Written 2026-07-29, before building. Re-read it at the start of phase 2 and amend it where
 > phase 1 taught something different — it was written before any of this existed.
+>
+> **AMENDED 2026-08-04, approved by sjtroxel.** It was written two days before the P279/P737 validation,
+> and four items rested on an assumption that validation falsified. Amendments A1 (corpus numbers), A2
+> (MusicBrainz to phase 6), A3 (P279 to phase 6) and A4 (DoD #6 restated) are applied below and marked
+> inline. The reasoning is in `phase-2-corpus-and-traversal-IMPLEMENTATION.md` §1 — that is the record,
+> this is the map.
 
 ## What this phase is for
 
@@ -15,12 +21,32 @@ editing the agent, a seam broke and that is the finding.
 
 ## Delivers
 
-- **Full ingestion:** ~6,324 Wikidata genres and ~7,936 derivation edges, plus the **artist axis (P737)**,
-  plus MusicBrainz CC0 core tables for artists and releases.
+- **Full ingestion of the P737 lineage corpus** — all 351 genre-out edges, type-filtered on both ends and
+  passed through the automated Wikipedia prose check, yielding a target of **120–160 sourced edges over
+  roughly 200 genres**, plus the **artist axis (P737 artist-to-artist, Wikidata only)**.
+
+  > **A1, 2026-08-04.** This line originally read *"~6,324 Wikidata genres and ~7,936 derivation edges,
+  > plus MusicBrainz CC0 core tables for artists and releases."* Those are **P279** counts, and P279 is
+  > category membership, not derivation — the word "derivation" was the exact conflation `04` §4.4 warned
+  > about. The lineage corpus is 351 P737 edges, of which 158 held a PROSE tier and 158 is an upper bound.
+  > **A2:** MusicBrainz moves to phase 6; nothing in `SPEC.md` §2 needs a release, and it carries a new
+  > client, a 1-req/s budget and a CC0-vs-CC-BY-NC-SA licensing surface for no current query.
+
 - **Real multi-hop traversal** through `GraphStore` — `path`, `neighbors`, and search that work over the
   whole graph rather than one hardcoded hop.
-- **A versioned, immutable artifact with a manifest**, built locally and uploaded to S3.
-- **The genre-domain boundary predicate**, so P279 chains stop climbing out of music and into "art form."
+- **A versioned, immutable artifact with a manifest**, built locally, baked into the container image and
+  published to S3.
+- **Bounded type filtering on both ends of every edge** — a membership test against `Q188451` via
+  `P31/P279*`, with rejected entities recorded by reason.
+
+  > **A3, 2026-08-04.** This line originally promised *"the genre-domain boundary predicate, so P279
+  > chains stop climbing out of music and into 'art form.'"* P279 is **not ingested** at v0.1 and moves to
+  > phase 6 with the rest of the taxonomy work: its only payoffs are taxonomic connectivity and a taxonomy
+  > display, and `docs/graph-semantics.md` §5 assigns the connectivity question to phase 6 explicitly.
+  > The boundary problem is contained rather than solved — asking P279 only "does this climb reach
+  > Q188451" makes both the vertical escape (`bebop -> … -> oscillation`) and the lateral one
+  > (`blues -> music of North America`) unreachable by construction.
+
 - Coverage measured and recorded per era and region, so the documented skew becomes a number.
 
 ## Explicitly not in this phase
@@ -28,6 +54,10 @@ editing the agent, a seam broke and that is the finding.
 Agent planning and tool expansion (phase 3), the eval suite proper (phase 4), the SPA and any visualization
 (phase 5), density beyond the base graph (phase 6). Contested-claim handling is *represented* in the data
 here but not surfaced in a UI.
+
+**Added 2026-08-04 by A2 and A3:** MusicBrainz in any form, and P279 ingestion. Both move to phase 6.
+Resolving the 46-component connectivity question moves with them — this phase *measures* the component
+structure and states the constraint honestly; it does not fix it.
 
 ## Key decisions this phase makes
 
@@ -38,17 +68,34 @@ here but not surfaced in a UI.
 - **How the artifact is versioned and pinned**, because evals must run against a pinned version or every
   corpus change silently invalidates every prior benchmark.
 - **Whether P279 and P737 stay separate predicates end to end.** They must. "Bebop subclass-of jazz" is not
-  "bebop derived from swing," and an artist influence is not a genre derivation.
+  "bebop derived from swing," and an artist influence is not a genre derivation. *(A3: at v0.2 this is
+  enforced by absence — P279 is not in the artifact, and `agent/claims.py:36` is a second lock. The
+  decision returns when phase 6 ingests it.)*
 
 ## Definition of done
 
-1. The full corpus ingests locally and produces a versioned artifact plus manifest in S3.
+1. The full corpus ingests locally, runs the prose check in-pipeline, and produces a versioned artifact,
+   a manifest, and an **exclusions file with a per-edge reason for every rejected candidate**.
 2. A multi-hop query returns a path of three or more hops, with a source on every edge.
-3. The artist axis answers at least one artist-influence query end to end.
-4. P279 chains terminate at the genre-domain boundary rather than climbing to abstractions.
-5. Phase 1's eval still passes against the new pinned artifact, and the pin is recorded.
-6. **The agent package was not edited** to accommodate any of this.
+3. The artist axis answers at least one artist-influence query end to end, from Wikidata P737 only.
+4. **The type filter is a bounded membership test against `Q188451` on both ends of every edge**, with
+   rejected entities recorded by reason. *(A3 — was: "P279 chains terminate at the genre-domain
+   boundary." P279 is not ingested, so the original item had nothing to apply to.)*
+5. Phase 1's five gold cases still pass against the new pinned artifact, and the pin is recorded.
+6. **`agent/loop.py`'s `run()` and `agent/claims.py`'s `gate()` were not edited** to accommodate the
+   corpus.
+
+   > **A4, 2026-08-04.** This read *"the agent package was not edited to accommodate any of this."* That
+   > is stricter than the invariant it protects: `CLAUDE.md` invariant 4 forbids editing **the loop**,
+   > and `tools.py` lives inside `agent/`, so the original wording would have forbidden registering a
+   > tool — the one thing invariant 4 explicitly permits. Tool registrations and the multi-subject
+   > synthesis path are expected changes. The seam that must not move is `synthesize()` taking exactly
+   > one `ApprovedClaimSet` and having no way to reach the graph, the query, or the rejected claims.
+
 7. Coverage by era and region is a recorded number, not a disclaimer.
+8. The artifact is published to S3, versioned and immutable, **and still baked into the container image** —
+   the image copy keeps the cold path free of a network fetch; the S3 copy is what makes a pin provable
+   months later.
 
 ## Data rules that govern this phase
 
@@ -63,9 +110,15 @@ here but not surfaced in a UI.
 
 ## Known risks
 
-- **P279 semantics at scale.** Twenty hand-validated edges in phase 1 is a sample, not a proof. The taxonomy
-  may carry lineage well in dense modern genres and badly in sparse or ancient ones, which is exactly where
-  slicing matters.
+- **P737 is not uniformly historical, and the prose check structurally cannot catch it.** *(Replaces the
+  original "P279 semantics at scale" risk, which the 2026-07-31 validation answered decisively — 47 edges
+  read, zero historical.)* Some P737 edges encode taxonomy: `extreme metal <- heavy metal` is supported
+  only by *"an umbrella term for a number of related heavy metal subgenres,"* and "is a subgenre of Y"
+  contains a real, findable mention of Y. The check flags a taxonomic lead sentence for triage; it cannot
+  reject on it. See `docs/graph-semantics.md` §4.8.
+- **The hardened check will shrink the corpus, not grow it.** Every defect fixed in step 1 removes *false*
+  PROSE, so the corpus likely lands below 158. If it lands near v0.1's 21, that is a finding about the
+  data rather than a failure of the phase — and it makes phase 6's second-source work urgent.
 - **Artifact size versus Lambda memory.** Tens of MB is fine; verify rather than assume, and remember the
   `GraphStore` seam exists precisely so this is recoverable.
 - **The sparse ancient end.** His design rule is scope the density, never the structure — so thin coverage

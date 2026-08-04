@@ -160,9 +160,28 @@ The first was found on 2026-07-31; the second and third on 2026-08-02 during the
 (`docs/phases/phase-1-edge-verification.md` §3). None of them can deflate the PROSE tier, only inflate it.
 
 1. **Markup counted as prose.** `[[Category:...]]` tags and navbox templates are counted as body text.
-   Skweee reports 6 mentions of which 1 is genuine. Confirmed live on 2026-08-02: both `groove metal`
-   edges hold a PROSE tier with **zero** genuine prose sentences. Strip categories, navboxes,
-   external-link sections and references before counting.
+   Skweee reports 6 mentions of which 1 is genuine. Strip categories, navboxes, external-link sections
+   and references before counting.
+
+   **AMENDED 2026-08-04 — the `groove metal` example attached to this defect was wrong, and the error
+   mattered.** This item originally read *"Confirmed live on 2026-08-02: both `groove metal` edges hold
+   a PROSE tier with zero genuine prose sentences."* Re-measured against the live articles while
+   building `ingest/prosecheck.py`, that is false: after stripping, `groove metal <- heavy metal music`
+   has **6** genuine prose mentions and `groove metal <- thrash metal` has **7**.
+
+   - **The defect itself is real and the fix is necessary.** Stripping retains 29% of the groove metal
+     article's raw wikitext and halves the hit count, 12 to 6. Markup was inflating the tier; it was
+     just not the *whole* signal on this article.
+   - **Groove metal is a 4.7 case, not a 4.6 one** — prose that mentions the object without asserting
+     influence. `groove metal <- heavy metal music` leads with *"is a subgenre of heavy metal music"*,
+     which is taxonomy.
+   - **`groove metal <- thrash metal` is a FALSE REJECTION.** Its lead sentence reads *"The genre is
+     primarily derived from thrash metal, but played in slower tempos"*, and a second says the same.
+     That is the exact claim shape the product promises. It was excluded on a reason that does not hold,
+     and it is a candidate to re-admit when phase 2 step 2 rebuilds the corpus.
+
+   The general lesson is the one that produced this whole check: **a tier is not evidence, the sentences
+   are.** `ProseCheck.sentences` now carries them for exactly this reason.
 2. **Self-match when the object label is a substring of the subject label.** `Western swing <- swing`
    reports 28 sentences because `\bswing\b` matches the "swing" in "Western swing" — the article matching
    against its own title. 8 survive masking; 1 supports the edge. Mask the subject label first.

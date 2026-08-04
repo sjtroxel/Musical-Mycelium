@@ -15,8 +15,10 @@ is the ``GraphStore`` protocol and the ``Direction`` enum. ``memory.py`` is ``In
 v0.1 backend, plus the memoised ``default_store()``.
 
 ``path`` is declared on the protocol and raises ``NotImplementedError`` in the v0.1 backend. That is
-deliberate: phase 5 owns the guided tour, and adding a protocol method later would touch every
-implementation.
+deliberate: adding a protocol method later would touch every implementation, and v0.1's corpus is one
+hop deep. It is implemented in **phase 2**, with the corpus that makes multi-hop meaningful; phase 5's
+guided tour consumes it rather than introducing it. *(Corrected 2026-08-04 — this said phase 5, written
+while ``path`` was a phase-1 deferral.)*
 
 v0.1 revises one detail above: the artifact ships **inside the container image**, not in S3, because it is
 a few KB and that removes an IAM permission and a network call from the cold path. S3 loading is a phase-2
