@@ -301,6 +301,10 @@ class LocalLLM:
         self.requests.append({"messages": messages, "system": system, "tool_config": tool_config})
         usage = Usage(input_tokens=_rough_tokens(messages), output_tokens=24)
 
+        pair = _genre_pair(messages)
+        if pair is not None:
+            return self._lineage_turn(messages, pair, usage)
+
         resolved = _last_resolved_node(messages)
         if resolved is None and not _has_tool_result(messages):
             return LLMResponse(
@@ -322,6 +326,45 @@ class LocalLLM:
             )
         return LLMResponse(text="Done.", stop_reason="end_turn", usage=usage)
 
+    def _lineage_turn(
+        self, messages: list[dict[str, Any]], pair: tuple[str, str], usage: Usage
+    ) -> LLMResponse:
+        """The second fixed script: resolve both genres, then trace between them.
+
+        Sequenced off the **calls already made**, not off the ids already resolved, so a genre that does
+        not resolve falls through to the end turn and the run refuses. Sequencing off resolved ids would
+        retry the failed name until ``MAX_TURNS`` and bill for it.
+        """
+        calls = _tool_call_names(messages)
+        resolves = calls.count("resolve_genre")
+        if resolves < 2:
+            return LLMResponse(
+                tool_uses=(
+                    ToolUse(
+                        id=f"local-r{resolves + 1}",
+                        name="resolve_genre",
+                        arguments={"name": pair[resolves]},
+                    ),
+                ),
+                stop_reason="tool_use",
+                usage=usage,
+            )
+
+        resolved = _resolved_nodes(messages)
+        if "trace_lineage" not in calls and len(resolved) == 2:
+            return LLMResponse(
+                tool_uses=(
+                    ToolUse(
+                        id="local-t1",
+                        name="trace_lineage",
+                        arguments={"from_id": resolved[0], "to_id": resolved[1]},
+                    ),
+                ),
+                stop_reason="tool_use",
+                usage=usage,
+            )
+        return LLMResponse(text="Done.", stop_reason="end_turn", usage=usage)
+
     def stream(
         self,
         messages: list[dict[str, Any]],
@@ -331,6 +374,15 @@ class LocalLLM:
     ) -> Iterator[str]:
         self.requests.append({"messages": messages, "system": system, "tool_config": None})
         prompt = _text_of(messages)
+
+        chain = json.loads(_after(prompt, "Chain: ") or "[]")
+        if chain:
+            yield f"{str(chain[0]).capitalize()} came out of {chain[1]}"
+            for ancestor in chain[2:]:
+                yield f", which came out of {ancestor}"
+            yield ". Every link above traces to a cited source."
+            return
+
         genre = _after(prompt, "Genre: ")
         influences = json.loads(_after(prompt, "Documented influences: ") or "[]")
 
@@ -368,6 +420,85 @@ def _query(messages: list[dict[str, Any]]) -> str:
             raw = raw[: -len(suffix)]
             break
     return raw.strip()
+
+
+#: Phrasings the fixture treats as "connect these two genres". Both orders appear because the same
+#: question is asked from either end, and ``trace_lineage`` searches both directions for that reason.
+_LINEAGE_SEPARATORS = (
+    " connected to ",
+    " connect to ",
+    " related to ",
+    " come out of ",
+    " came out of ",
+    " lead to ",
+    " to ",
+)
+
+_LINEAGE_PREFIXES = (
+    "how is ",
+    "how are ",
+    "how did ",
+    "what connects ",
+    "trace the lineage from ",
+    "trace the line from ",
+    "connect ",
+)
+
+
+def _genre_pair(messages: list[dict[str, Any]]) -> tuple[str, str] | None:
+    """The two genres a connection question names, or ``None`` if it is not one.
+
+    String matching against a fixed list, which is a fixture's job and would be indefensible in a
+    provider that mattered — the point is only that the local stub can drive the multi-hop path so the
+    SSE plumbing and the deployed demo are not blocked on Bedrock quota.
+    """
+    raw = _first_user_text(messages).strip().rstrip("?").strip()
+    lowered = raw.lower()
+    for prefix in _LINEAGE_PREFIXES:
+        if lowered.startswith(prefix):
+            raw, lowered = raw[len(prefix) :], lowered[len(prefix) :]
+            break
+    else:
+        return None
+
+    for separator in _LINEAGE_SEPARATORS:
+        index = lowered.find(separator)
+        if index != -1:
+            left, right = raw[:index].strip(), raw[index + len(separator) :].strip()
+            if left and right:
+                return left, right
+    return None
+
+
+def _tool_call_names(messages: list[dict[str, Any]]) -> list[str]:
+    return [
+        str(block["toolUse"].get("name", ""))
+        for message in messages
+        for block in message.get("content", [])
+        if isinstance(block, dict) and "toolUse" in block
+    ]
+
+
+def _resolved_nodes(messages: list[dict[str, Any]]) -> list[str]:
+    """Every node id resolved so far, in order, deduplicated."""
+    found: list[str] = []
+    for result in _tool_results(messages):
+        for item in result.get("content", []):
+            node_id = item.get("json", {}).get("node_id") if isinstance(item, dict) else None
+            if node_id and str(node_id) not in found:
+                found.append(str(node_id))
+    return found
+
+
+def _first_user_text(messages: list[dict[str, Any]]) -> str:
+    for message in messages:
+        if message.get("role") == "user":
+            return "\n".join(
+                block.get("text", "")
+                for block in message.get("content", [])
+                if isinstance(block, dict)
+            )
+    return ""
 
 
 def _after(text: str, marker: str) -> str:

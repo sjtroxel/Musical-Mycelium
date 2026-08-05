@@ -72,6 +72,9 @@ Notes on the composition, since it is doing work:
 
 - All five are **origins-shaped**, because v0.1's `get_influences` walks parents only. Descendant queries
   ("what came out of X") are a direction the tool does not walk until the phase-2 corpus arrives.
+  *(2026-08-05: `trace_lineage` walks it. It searches ancestry first and descent second and reports the
+  chain descendant-first either way, so a descendant-shaped question is answered without ever inverting an
+  influence claim. The five gold cases above are unchanged and stay origins-shaped.)*
 - 1 is the trivial case and 2 is the showpiece, at four parents — the richest node in the artifact, and the
   case most likely to expose a traversal that stops early. It also carries a story: acid jazz is the genre
   whose article started the prose check on 2026-07-31.
@@ -106,7 +109,7 @@ is waiting on, so nothing here is a surprise later.
 | "Who influenced Kate Bush?" | A, **artist axis** | The ~31k artist-level P737 edges. Phase 2. Genre and artist are different axes of the same predicate and conflating them is invariant 3 |
 | "What came out of Jamaican ska?" | A, descendants | Ska is absent entirely, and the descendant direction is not walked at v0.1 |
 | "Trace the roots of Brazilian tropicália." | A, origins | 1 edge, fails the prose check. Needs corpus expansion |
-| "How is the blues connected to heavy metal?" | **C, path** | Nothing. The path `blues -> blues rock -> heavy metal music` is fully sourced and hand-verified **today**. It needs `GraphStore.path()`, which lands in phase 2. *(Corrected 2026-08-04: this said phase 5, written while `path()` was a phase-1 deferral. The ROADMAP assigns multi-hop traversal to phase 2; phase 5 consumes it for the guided tour.)* *(Amended 2026-08-02: the chain originally read through to `extreme metal`; that edge was rejected on hand-reading as taxonomic, so the path is two hops, not three.)* |
+| "How is the blues connected to heavy metal?" | **C, path** | **Nothing — delivered 2026-08-05, phase 2 step 5.** It answers end to end through `trace_lineage`, with both hops gated and cited. *(Corrected 2026-08-04: this said phase 5, written while `path()` was a phase-1 deferral. The ROADMAP assigns multi-hop traversal to phase 2; phase 5 consumes it for the guided tour.)* *(Amended 2026-08-02: the chain originally read through to `extreme metal`; that edge was rejected on hand-reading as taxonomic, so the path is two hops, not three.)* *(2026-08-05: typed verbatim, this query first **refused** — the node is labelled `heavy metal music` and 32 of 169 labels carry that suffix. `label_key` now makes a trailing "music" optional on both sides.)* |
 
 The last row replaces the original "How is delta blues connected to hip hop?", which was the intended
 signature demo. Delta blues is absent from the corpus and no path exists between blues and hip-hop, but the
@@ -188,6 +191,22 @@ refusal is correct behaviour here and has to be distinguishable from breakage.
 
 Derived, never stored: the store recomputes it on load rather than trusting the manifest, so it cannot
 drift from the corpus in hand.
+
+**Added 2026-08-05 (phase 2 step 5).** The `path` frame carries two orderings, not one:
+
+```json
+{ "node_ids": ["Q9759", "Q38848", "Q193355"], "labels": ["blues", "heavy metal music", "blues rock"],
+  "chain": ["Q38848", "Q193355", "Q9759"],
+  "chain_labels": ["heavy metal music", "blues rock", "blues"] }
+```
+
+`node_ids` is the walk — the order the agent touched things, which is the transparency the streaming
+demo is for. `chain` is the **approved line of descent, descendant-first**, and it exists as its own
+field because the two are genuinely different and inferring one from the other states false history: a
+lineage question resolves both endpoints before it traces between them, so the walk opens *blues, heavy
+metal* while the descent runs the other way. `chain` is empty for an origins query (a fan-out of
+influences is a set, not a sequence) and empty when the gate rejected any hop — a broken chain is never
+displayed as a chain, and the surviving claims are listed instead.
 
 ## 7. Claim contract — OPEN in detail, fixed in shape
 

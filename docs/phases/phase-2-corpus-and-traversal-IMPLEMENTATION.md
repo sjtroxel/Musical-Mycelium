@@ -144,7 +144,8 @@ correction is recorded here rather than by editing the plan, so the two stay com
 | 2 | done | the population is **351 → 138 accepted**, not 158; redirect collapse was **8% of the corpus**; the derived-stem rule scored 0 true / 3 false and was deleted |
 | 3 | done | the hand-rejection list is **load-bearing** — the check re-admits 6 of the 7; corpus ships at **133**, not 138 |
 | 4 | done 2026-08-05 | **the corpus is broad and shallow: the deepest chain `path()` can return is 2 hops, so DoD #2 is not satisfiable from P737** |
-| 5 | **next** | — |
+| 5 | done 2026-08-05 | **the signature query refused when worded the way the SPEC words it** — 32 of 169 labels carry a trailing "music" |
+| 6 | **next** | — |
 
 Three plan assumptions that did not survive contact:
 
@@ -210,6 +211,57 @@ They are — `build_manifest` derives them for every future build — but **v0.2
 rewritten**, because artifacts are immutable and rewriting one under the same version is precisely what
 the pin exists to prevent. The store recomputes structure at load instead, which is strictly better: it
 cannot drift, and it works on an artifact built before the field existed.
+
+#### Step 5 shipped, and running it found three things the plan did not
+
+`trace_lineage` landed as a registration — `default_registry` gained one entry and no branch of the loop
+names it, which is invariant 4 paying out on its first real test. 269 tests, `make check` green, root
+15/18. Four things are worth recording because the plan did not anticipate them.
+
+**1. The seam had a prose door as well as a code door.** §4.5 said a third tool must not require editing
+the loop. It did not — but v0.1's `SYSTEM_PROMPT` hard-coded the procedure, *"use resolve_genre, then
+get_influences"*, so a tool could be registered without a loop edit and still never be called. The prompt
+now states rules rather than a tool sequence, and `test_the_system_prompt_names_no_tool` asserts that no
+registered tool name appears in it. The tools describe themselves in their own `toolSpec`.
+
+**2. Visit order is not descent order, and the `path` frame was quietly conflating them.** A lineage
+question resolves both endpoints *before* it traces between them, so the walk for "how is the blues
+connected to heavy metal" opens `blues, heavy metal music, blues rock` — a client drawing arrows down
+that list states the descent backwards. The approved chain now rides as its own field
+(`chain`, `chain_labels`), empty for an origins query and empty when any hop was rejected. This is the
+same distinction `graph/structure.py` drew between undirected components and directed paths, one layer
+up. Found by running it, not by reading it.
+
+**3. The signature query in `SPEC.md` 2.2 refused when typed verbatim.** "How is the blues connected to
+heavy metal?" — `the blues` resolves, `heavy metal` does not, because the node is labelled *heavy metal
+music*. **32 of the 169 nodes carry that suffix**, so roughly one node in five was unreachable by its own
+name. `label_key` makes a trailing "music" optional on both sides; it produces **zero** collisions across
+v0.2.0, checked before it was written, and two nodes agreeing under it is a refusal rather than a coin
+flip. It is the same category of rule as the existing leading-"the" strip, and the near-miss tests
+(`metal`, `blues r`) still refuse.
+
+**4. `MAX_TURNS` went 4 to 5.** A lineage answer needs three tool turns plus a text turn, which consumed
+the entire v0.1 budget and left a real model no room to recover from one bad argument.
+
+Two decisions inside step 5 that are worth defending rather than assuming:
+
+- **`ToolResult` gained a generic `chain` field, and that *is* a loop edit** — a small honest one. The
+  loop reads `result.chain` the way it already reads `result.visited`, without naming a tool, so the seam
+  holds; but the mechanism had to be added once. Inferring a chain from the approved claims instead was
+  the alternative and it is worse: four sibling influences would infer as a line of descent.
+- **`trace_lineage` searches both directions and reports the chain descendant-first.** The same question
+  arrives with the arguments in either order, and the model should not have to guess which. This is safe
+  only because a proposal is built from the **edge**, never from argument order, so a reversed query
+  cannot manufacture a reversed influence claim — `test_the_reversed_question_finds_the_same_chain_
+  without_inverting_it` is the assertion that keeps it true.
+
+The local provider also had to learn the lineage script (resolve, resolve, trace), because
+`llm_provider=local` is what the deployed URL runs while Bedrock is at zero — without it there would be
+nothing multi-hop to redeploy. `LocalLLM`'s docstring says to delete rather than extend it if it starts
+making decisions a real model should make; a second fixed script sequenced off the calls already made is
+still a fixture, but it is now two scripts away from that line rather than one.
+
+**Redeploy is now owed for two steps** (step 4's `structure`, step 5's chain and third tool).
 
 ---
 

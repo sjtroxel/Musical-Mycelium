@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
+from itertools import pairwise
 
 from musical_mycelium.agent.claims import Claim, ClaimProposal, GateResult, Rejection, gate
 from musical_mycelium.agent.llm import (
@@ -33,22 +34,30 @@ from musical_mycelium.agent.llm import (
 from musical_mycelium.agent.tools import ToolRegistry
 from musical_mycelium.graph.store import GraphStore
 
-#: Hard ceiling on model turns. v0.1 needs two (resolve, then influences); the rest is slack for a
-#: retry. It is a **cost control** as much as a safety one — an agentic loop re-sends its accumulated
-#: context every turn, so an unbounded loop is an unbounded bill (``.claude/rules/aws-and-cost.md``).
-MAX_TURNS = 4
+#: Hard ceiling on model turns. It is a **cost control** as much as a safety one — an agentic loop
+#: re-sends its accumulated context every turn, so an unbounded loop is an unbounded bill
+#: (``.claude/rules/aws-and-cost.md``).
+#:
+#: Raised from 4 to 5 at phase 2 step 5. A lineage question needs **three** tool turns — resolve, resolve,
+#: trace — plus a final text turn, which consumed the whole v0.1 budget and left a real model no room to
+#: recover from one bad argument. One turn of slack, not a blank cheque.
+MAX_TURNS = 5
 
-SYSTEM_PROMPT = """You answer questions about where music genres came from, using only a graph of \
-documented influences.
+#: Deliberately free of tool names. v0.1's prompt hard-coded the two-step procedure — "use resolve_genre,
+#: then get_influences" — which meant a third tool needed a prompt edit inside the loop module to ever be
+#: called. That is invariant 4 leaking through the prose door rather than the code door. Each tool
+#: describes itself in its own ``toolSpec``; this states the rules that hold no matter which one runs.
+SYSTEM_PROMPT = """You answer questions about where music genres came from and how they connect, using \
+only a graph of documented influences.
 
-Use resolve_genre to turn the genre the user named into a node id, then get_influences to list what \
-that genre came out of. Then stop and summarise what you found.
+Start by resolving every genre the user named to a node id. Then use whichever tool answers the question \
+that was actually asked — one genre's origins, or the chain between two of them. Then stop and summarise \
+what you found.
 
 Two rules matter more than being helpful:
-- If resolve_genre returns null, this graph does not cover that genre. Say so. Do not substitute a \
-similar genre.
-- If get_influences returns an empty list, this graph has no sourced influences for that genre. Say so. \
-Do not fill the gap from your own knowledge.
+- If a genre does not resolve, this graph does not cover it. Say so. Do not substitute a similar genre.
+- If a tool comes back empty, this graph has no sourced answer. Say so. Do not fill the gap from your \
+own knowledge.
 
 You are not the final word: everything you say is checked against the graph before the user sees it, \
 and anything the graph does not support is discarded."""
@@ -56,6 +65,15 @@ and anything the graph does not support is discarded."""
 SYNTHESIS_PROMPT = """Write two sentences stating what the genre came out of, using only the influences \
 listed below. Name every one of them. Add nothing else: no dates, no places, no artists, no context \
 that is not in the list. Do not hedge and do not editorialise."""
+
+#: The chain form. Same rules, different shape: a sequence to walk rather than a set to list. It is a
+#: separate constant rather than a branch inside one prompt because the failure modes differ — the risk
+#: here is the model reordering the chain or inverting a hop, which is the one error that turns a correct
+#: claim set into false music history.
+CHAIN_SYNTHESIS_PROMPT = """Write two or three sentences tracing the chain of influence below, in the \
+order given. Each genre listed came out of the one after it. Name every genre in the chain and keep them \
+in that order. Add nothing else: no dates, no places, no artists, no context that is not in the chain. \
+Do not hedge and do not editorialise."""
 
 
 # --- events ---------------------------------------------------------------------------------------
@@ -82,10 +100,23 @@ class ClaimRejected:
 class PathWalked:
     """The nodes visited, in order. ``SPEC.md`` 5.3 makes this non-negotiable at v0.1 — retrofitting
     path-in-payload once the schema has consumers is the annoying kind of rework, and phase 5's guided
-    tour is built on it."""
+    tour is built on it.
+
+    **Visit order is not descent order, and conflating them narrates false history.** A lineage query
+    resolves both endpoints before it traces between them, so the visit order of
+    "how is blues connected to heavy metal" starts *blues, heavy metal* — a client drawing an arrow
+    down that list would state that heavy metal came out of the blues via blues rock in the wrong
+    order. So the approved chain rides alongside as its own field rather than being inferred from this
+    one, and it is empty whenever the answer is not a chain. Same distinction ``graph/structure.py``
+    draws between undirected components and directed paths, at the event layer.
+    """
 
     node_ids: tuple[str, ...]
     labels: tuple[str, ...]
+    #: The approved chain, descendant-first. Empty for an origins query, and empty when a hop was
+    #: rejected — a broken chain is not displayed as a chain.
+    chain: tuple[str, ...] = ()
+    chain_labels: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,6 +157,11 @@ class ApprovedClaimSet:
 
     claims: tuple[Claim, ...]
     labels: Mapping[str, str] = field(default_factory=dict)
+    #: Node ids descendant-first, when the approved claims form a chain the answer should be told as one.
+    #: Empty for an origins query. **Every consecutive pair must itself be an approved claim** — checked
+    #: below, because a chain is an ordering assertion about music history and an unchecked one could
+    #: state a descent the gate never approved.
+    chain: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         endpoints = {c.subject_id for c in self.claims} | {c.object_id for c in self.claims}
@@ -135,10 +171,19 @@ class ApprovedClaimSet:
                 f"labels contain node(s) no approved claim mentions: {sorted(extra)}. "
                 f"Synthesis may only see the approved claim set."
             )
+        if self.chain and not chain_is_approved(self.chain, self.claims):
+            raise ValueError(
+                f"chain {list(self.chain)} contains a hop no approved claim supports. "
+                f"Synthesis may only see the approved claim set."
+            )
 
     @property
     def subject_id(self) -> str | None:
-        """The genre being asked about. At v0.1 every claim shares one subject."""
+        """The genre being asked about. At v0.1 every claim shares one subject.
+
+        Unchanged by the chain, deliberately: a chain has no single subject, so this returns ``None``
+        there — which is what ``synthesize`` branches on rather than inventing a head node.
+        """
         subjects = {c.subject_id for c in self.claims}
         return subjects.pop() if len(subjects) == 1 else None
 
@@ -149,21 +194,42 @@ class ApprovedClaimSet:
         return bool(self.claims)
 
 
+def chain_is_approved(chain: tuple[str, ...], claims: tuple[Claim, ...]) -> bool:
+    """Is every hop of ``chain`` an approved claim, in that orientation?
+
+    A chain of one node or none is not a chain. Orientation is not negotiable: ``(a, b)`` means *a came
+    out of b*, and accepting the reverse would let a chain narrate influence backwards in time out of a
+    claim set that never said so.
+    """
+    if len(chain) < 2:
+        return False
+    approved = {(c.subject_id, c.object_id) for c in claims}
+    return all(pair in approved for pair in pairwise(chain))
+
+
 def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Iterator[str]:
     """Prose from approved claims, and nothing but approved claims.
 
     Note the signature. There is no ``query`` parameter, no ``store``, no ``GateResult``, no message
-    history. If a future change needs one of those here, that change is reintroducing the leak.
+    history. If a future change needs one of those here, that change is reintroducing the leak. The
+    chain form added in phase 2 obeys that: the ordering rides *inside* the claim set, where it was
+    validated against the approved claims, rather than arriving as a second argument.
     """
     if not claim_set:
         raise ValueError(
             "synthesize() called with no approved claims; the caller must refuse instead"
         )
 
-    subject = claim_set.label_of(claim_set.subject_id or "")
-    influences = [claim_set.label_of(c.object_id) for c in claim_set.claims]
+    if claim_set.chain:
+        labelled = [claim_set.label_of(node_id) for node_id in claim_set.chain]
+        prompt = f"{CHAIN_SYNTHESIS_PROMPT}\n\nChain: {dumps(labelled)}"
+    else:
+        subject = claim_set.label_of(claim_set.subject_id or "")
+        influences = [claim_set.label_of(c.object_id) for c in claim_set.claims]
+        prompt = (
+            f"{SYNTHESIS_PROMPT}\n\nGenre: {subject}\nDocumented influences: {dumps(influences)}"
+        )
 
-    prompt = f"{SYNTHESIS_PROMPT}\n\nGenre: {subject}\nDocumented influences: {dumps(influences)}"
     yield from llm.stream([user_message(prompt)], max_tokens=200)
 
 
@@ -197,6 +263,7 @@ def run(
     usage = Usage()
     proposals: list[ClaimProposal] = []
     visited: list[str] = []
+    chain: tuple[str, ...] = ()
 
     for _turn in range(max_turns):
         response = llm.converse(messages, system=SYSTEM_PROMPT, tool_config=tool_config)
@@ -211,6 +278,12 @@ def run(
             yield ToolCalled(name=use.name, arguments=use.arguments, is_error=result.is_error)
 
             proposals.extend(result.proposals)
+            # The longest chain any single tool asserted. Read generically off ``ToolResult`` — the loop
+            # does not know which tool sets it, which is what keeps invariant 4 intact while the answer
+            # gains an ordering. It is a *candidate* only: nothing is narrated as a chain until the gate
+            # has approved every hop, checked below.
+            if len(result.chain) > len(chain):
+                chain = result.chain
             for node_id in result.visited:
                 if node_id not in visited:
                     visited.append(node_id)
@@ -223,8 +296,17 @@ def run(
     for rejection in decision.rejected:
         yield ClaimRejected(rejection)
 
-    labels = {node_id: _label(store, node_id) for node_id in visited}
-    yield PathWalked(node_ids=tuple(visited), labels=tuple(labels[node_id] for node_id in visited))
+    # A hop the gate rejected breaks the chain, and a broken chain must not be told as one — the honest
+    # fallback is the claims that did survive, listed rather than sequenced.
+    approved_chain = chain if chain_is_approved(chain, decision.approved) else ()
+
+    labels = {node_id: _label(store, node_id) for node_id in (*visited, *approved_chain)}
+    yield PathWalked(
+        node_ids=tuple(visited),
+        labels=tuple(labels[node_id] for node_id in visited),
+        chain=approved_chain,
+        chain_labels=tuple(labels[node_id] for node_id in approved_chain),
+    )
 
     if not decision.approved:
         reason = (
@@ -243,6 +325,7 @@ def run(
                 for claim in decision.approved
                 for node_id in (claim.subject_id, claim.object_id)
             },
+            chain=approved_chain,
         )
         for chunk in synthesize(claim_set, llm):
             yield Token(chunk)

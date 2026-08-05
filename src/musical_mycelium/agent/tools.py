@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from musical_mycelium.agent.claims import ClaimProposal
-from musical_mycelium.graph.memory import normalise
+from musical_mycelium.graph.memory import label_key
 from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY
 from musical_mycelium.graph.store import Direction, GraphStore
 
@@ -41,6 +41,13 @@ class ToolResult:
     #: knowing what any tool does — ``SPEC.md`` 5.3 makes path-in-payload non-negotiable at v0.1, and
     #: having the loop parse tool ``content`` to reconstruct it would break invariant 4.
     visited: tuple[str, ...] = ()
+    #: An ordered chain this result asserts, when it asserts one. **Contract: every consecutive pair
+    #: ``(chain[i], chain[i + 1])`` must be the ``(subject_id, object_id)`` of one of this result's own
+    #: proposals** — so a chain is always oriented descendant-first, whichever way the tool walked to
+    #: find it. Generic on purpose: the loop reads this field the way it already reads ``visited``, and
+    #: never learns which tool produced it (invariant 4). Empty when a result is a set rather than a
+    #: sequence — ``get_influences`` returns a fan-out, not a chain, and must leave this alone.
+    chain: tuple[str, ...] = ()
     is_error: bool = False
 
 
@@ -161,17 +168,20 @@ class ResolveGenre:
         if not candidates:
             return ToolResult(content={"node_id": None, "reason": "not in this graph"})
 
-        best = candidates[0]
-        if normalise(best.label) != normalise(name):
-            # A near miss is not a resolution. Report the alternatives and let the model ask again.
+        # Exactly one match resolves. Zero is a near miss and **two is ambiguity**, which is also a
+        # refusal: "heavy metal" may skip Wikidata's trailing "music" (``label_key``), but if that fold
+        # ever makes two nodes equally good the honest answer is to ask, not to take the first.
+        matches = [node for node in candidates if label_key(node.label) == label_key(name)]
+        if len(matches) != 1:
             return ToolResult(
                 content={
                     "node_id": None,
-                    "reason": "no exact match",
-                    "did_you_mean": [n.label for n in candidates[:5]],
+                    "reason": "no exact match" if not matches else "ambiguous",
+                    "did_you_mean": [n.label for n in (matches or candidates)[:5]],
                 }
             )
 
+        best = matches[0]
         return ToolResult(
             content={"node_id": best.id, "label": best.label},
             sources=(best.source_id,),
@@ -242,6 +252,111 @@ class GetInfluences:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class TraceLineage:
+    """The sourced chain between two genres, one ``ClaimProposal`` per hop.
+
+    **This tool is the seam test.** It is the third tool, it returns a shape the first two do not, and
+    adding it changed no branch of the loop — the loop harvests ``proposals``, ``visited`` and ``chain``
+    generically and still does not know this class exists (``CLAUDE.md`` invariant 4).
+
+    **It searches both directions and says which one it found**, because the two natural phrasings of
+    the same question put the arguments in opposite orders: "how did heavy metal come out of the blues"
+    is an ancestry walk from heavy metal, "how is the blues connected to heavy metal" is a descent walk
+    from the blues, and the model should not have to get that right to get an answer. Trying both is
+    safe precisely because a proposal is built from the **edge**, never from the argument order: an edge
+    is asserted in the direction the artifact stores it whichever way the traversal reached it, so a
+    reversed query cannot produce a reversed influence claim.
+
+    The chain it reports is therefore always descendant-first, matching claim orientation, regardless of
+    which walk found it. ``phase-2-corpus-and-traversal.md`` A5: two hops is the deepest chain this
+    corpus contains, and that is a published number rather than a hidden ceiling.
+    """
+
+    store: GraphStore
+    name: str = field(default="trace_lineage", init=False)
+    description: str = field(
+        default=(
+            "Trace the documented chain of influence between two genres, hop by hop. Give it two node "
+            "ids from resolve_genre, in either order. Returns an empty path when the graph holds no "
+            "sourced chain between them: that means this graph cannot connect the two genres, not that "
+            "they are unrelated. Do not bridge the gap yourself."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "from_id": {"type": "string", "description": "A node id from resolve_genre."},
+                "to_id": {"type": "string", "description": "The other node id from resolve_genre."},
+            },
+            "required": ["from_id", "to_id"],
+        }
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        from_id, to_id = kwargs["from_id"], kwargs["to_id"]
+        for node_id in (from_id, to_id):
+            if self.store.get_node(node_id) is None:
+                return ToolResult(
+                    content={"error": f"unknown node: {node_id}. Use resolve_genre first."},
+                    is_error=True,
+                )
+
+        edges = self.store.path(from_id, to_id, Direction.INFLUENCED_BY)
+        if not edges:
+            # A descent walk starts at the ancestor, so its traversal order is claim order backwards.
+            # Reversing here rather than at the end means the hops, the citations, the proposals and the
+            # chain all read descendant-first, and the rest of this method needs no direction branch.
+            edges = list(reversed(self.store.path(from_id, to_id, Direction.INFLUENCED)))
+
+        if not edges:
+            # A refusal, not an error. The model is told the graph cannot answer, and the deterministic
+            # gate will approve nothing, so the refusal template runs rather than prose.
+            return ToolResult(
+                content={
+                    "path": [],
+                    "hops": 0,
+                    "reason": "no sourced chain between these genres in either direction",
+                },
+                visited=(from_id, to_id),
+            )
+
+        # Read off the edges rather than off the arguments, so the chain states what the artifact says
+        # rather than the order the question happened to be asked in.
+        chain = (edges[0].subject_id, *(edge.object_id for edge in edges))
+
+        return ToolResult(
+            content={
+                "path": [
+                    {
+                        "subject": self._label(edge.subject_id),
+                        "predicate": edge.predicate,
+                        "object": self._label(edge.object_id),
+                    }
+                    for edge in edges
+                ],
+                "hops": len(edges),
+            },
+            sources=tuple(edge.source_id for edge in edges),
+            visited=chain,
+            chain=chain,
+            proposals=tuple(
+                ClaimProposal(
+                    subject_id=edge.subject_id,
+                    predicate=edge.predicate,
+                    object_id=edge.object_id,
+                )
+                for edge in edges
+            ),
+        )
+
+    def _label(self, node_id: str) -> str:
+        node = self.store.get_node(node_id)
+        return node.label if node else node_id
+
+
 def default_registry(store: GraphStore) -> ToolRegistry:
-    """The two v0.1 tools. Deliberately two — see the phase-1 scope fence."""
-    return ToolRegistry([ResolveGenre(store), GetInfluences(store)])
+    """The three tools as of v0.2. ``trace_lineage`` joined at phase 2 step 5 by registration alone."""
+    return ToolRegistry([ResolveGenre(store), GetInfluences(store), TraceLineage(store)])

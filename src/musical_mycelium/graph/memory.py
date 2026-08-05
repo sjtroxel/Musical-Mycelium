@@ -59,6 +59,32 @@ def normalise(text: str) -> str:
     return folded
 
 
+#: Wikidata labels a great many genres ``"<name> music"`` — 32 of the 169 nodes in v0.2.0, including
+#: ``heavy metal music``, ``classical music`` and ``electronic music``. Nobody types the suffix, so
+#: exact matching alone made **one node in five unreachable by its own name**, and the SPEC's signature
+#: query "How is the blues connected to heavy metal?" refused on it. Found 2026-08-05 by running it.
+#:
+#: This is not a step toward fuzzy matching. It is the same category of rule as stripping a leading
+#: "the": a documented, deterministic fold, applied to both sides, and it is checked for ambiguity by
+#: the caller — two nodes agreeing under it is a refusal, not a coin flip. It strips **zero** collisions
+#: out of the v0.2.0 corpus, verified before it was written; a future corpus that collides must refuse
+#: rather than pick.
+_OPTIONAL_SUFFIXES = (" music",)
+
+
+def label_key(text: str) -> str:
+    """``normalise``, with a trailing "music" made optional. See ``_OPTIONAL_SUFFIXES``.
+
+    A node labelled exactly "music" keeps its key, because folding it to the empty string would make it
+    match everything — the failure mode this whole module is written against.
+    """
+    folded = normalise(text)
+    for suffix in _OPTIONAL_SUFFIXES:
+        if folded.endswith(suffix) and folded != suffix.strip():
+            return folded[: -len(suffix)]
+    return folded
+
+
 class InMemoryGraphStore:
     """A ``GraphStore`` over an in-memory artifact. Satisfies the protocol structurally, not by
     inheritance, which is the point of using ``Protocol`` in the first place."""
