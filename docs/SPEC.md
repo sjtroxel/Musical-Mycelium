@@ -140,6 +140,19 @@ lands:
 - P279 (`subclass of`, taxonomic) and P737 (`influenced by`) are distinct and separately validated, with an
   explicit boundary predicate so P279 chains do not climb out of the genre domain.
 
+**Added 2026-08-04 (phase 2 step 3).** Every edge also carries `verification`, one of:
+
+| value | meaning |
+|---|---|
+| `HAND` | a human read the subject's article and judged that its prose asserts influence |
+| `PROSE_AUTO` | the automated prose check passed, and nothing more |
+
+It is **required, with no default**. `PROSE_AUTO` is strictly weaker: the check confirms the article
+names the object in body prose but cannot judge whether the sentence *asserts* influence, and it
+over-accepts at roughly 1 in 5. The manifest carries the per-level counts, derived from the edges rather
+than passed in. An unmarked mixture of the two tiers would be worse than either alone, which is why the
+field cannot be omitted.
+
 ## 6. API contract — OPEN
 
 Owned by the v0.1 IMPLEMENTATION doc, and it should be written **before** anything calls it. Fixed already:
@@ -147,6 +160,34 @@ Owned by the v0.1 IMPLEMENTATION doc, and it should be written **before** anythi
 - Response streaming, not request/response (invariant 9).
 - The payload includes the agent's walked **path, in order** — cheap now, annoying once the schema has
   consumers.
+
+**Added 2026-08-04 (phase 2 step 3).** `/health` and the `done` frame both carry a `corpus` object:
+
+```json
+{ "artifact_version": "0.2.0", "nodes": 169, "edges": 133,
+  "verification": { "HAND": 22, "PROSE_AUTO": 111 }, "predicate": "influenced_by" }
+```
+
+Coverage is on the screen, not in a footnote (`planning/04` §4.5), and `verification` is the honest half
+of it: a corpus that is mostly machine-verified is noisier per edge, and the product states the split
+rather than presenting one undifferentiated edge count.
+
+**Added 2026-08-05 (phase 2 step 4).** The corpus object also carries `structure`:
+
+```json
+{ "component_count": 41, "largest_component": 31, "diameter": 10,
+  "isolated_nodes": 0, "max_path_hops": 2 }
+```
+
+This is the connectivity half of the same honesty, and it is the half a visitor cannot infer. An edge
+count alone implies one connected graph; the corpus is **41 disconnected islands**, so relating two
+genres is a capability *within* a component and two genres in different components have no sourced path
+at all. `max_path_hops` is the deepest chain `path()` can return anywhere in the corpus. Publishing both
+is what keeps an empty answer legible as a **boundary rather than a failure** — which matters because
+refusal is correct behaviour here and has to be distinguishable from breakage.
+
+Derived, never stored: the store recomputes it on load rather than trusting the manifest, so it cannot
+drift from the corpus in hand.
 
 ## 7. Claim contract — OPEN in detail, fixed in shape
 

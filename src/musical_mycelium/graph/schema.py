@@ -149,6 +149,17 @@ class Manifest:
     #: never passed in**, so it cannot drift from what the artifact actually contains. Defaulted only
     #: so a pre-0.2.0 manifest still parses; a live build always fills it.
     verification_counts: dict[str, int] = field(default_factory=dict)
+    #: Connectivity of the artifact — component count, largest component, diameter, isolated nodes and
+    #: the deepest chain ``path()`` can return. **Derived by ``build_manifest`` from
+    #: ``graph.structure.analyse``, never passed in**, for the same anti-drift reason as
+    #: ``verification_counts``.
+    #:
+    #: A **record of the build, not an input to the runtime**: the store recomputes these at load rather
+    #: than trusting them, so a manifest that predates this field costs nothing and a manifest that
+    #: disagrees with its own corpus loses. Defaulted for exactly that reason — v0.2.0 was written
+    #: before this field existed and is immutable, so it carries an empty structure and the numbers come
+    #: from the corpus itself.
+    structure: dict[str, int] = field(default_factory=dict)
     verification_record: str = ""
     notes: str = ""
 

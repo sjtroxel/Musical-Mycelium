@@ -133,6 +133,86 @@ immutable artifact whose exclusion rate is a displayed number.
 
 ## 4. The build
 
+### Build log — updated 2026-08-04, end of day
+
+**Steps 1–3 are built and committed. Step 4 is next.** Where the plan below turned out to be wrong, the
+correction is recorded here rather than by editing the plan, so the two stay comparable.
+
+| step | state | what the plan did not predict |
+|---|---|---|
+| 1 | done | groove metal had 6–7 genuine prose sentences, not zero; `groove metal <- thrash metal` was a **false rejection** |
+| 2 | done | the population is **351 → 138 accepted**, not 158; redirect collapse was **8% of the corpus**; the derived-stem rule scored 0 true / 3 false and was deleted |
+| 3 | done | the hand-rejection list is **load-bearing** — the check re-admits 6 of the 7; corpus ships at **133**, not 138 |
+| 4 | done 2026-08-05 | **the corpus is broad and shallow: the deepest chain `path()` can return is 2 hops, so DoD #2 is not satisfiable from P737** |
+| 5 | **next** | — |
+
+Three plan assumptions that did not survive contact:
+
+1. **§4.2 budgeted ~15 minutes of crawl for "351 subject articles."** The crawl is per *subject*, not per
+   edge — 331 candidates cost ~114 article fetches, about 3 minutes. Re-running the checker is therefore
+   cheap, which is what made the stem-rule decision measurable rather than arguable.
+2. **§4.3 said "the 21 phase-1 edges keep `HAND` and everything new is `PROSE_AUTO`."** Incomplete: it did
+   not say what happens to the seven hand *rejections*, and the automated check accepts six of them.
+   `select_edges` applies both lists as an override. It is 22 `HAND` now, not 21.
+3. **§4.3's contested question resolves to "the data cannot decide it."** Contested means prose
+   *contradicting* an edge, and the prose check structurally cannot tell contradiction from support, so
+   the screening produces no count to decide on. Deferred to phase 6 for that reason, not for lack of
+   appetite.
+
+Adding a field to `Edge` also forced a corpus cutover in one commit: the pinned artifact had no
+`verification` key, so the field, the rebuild, `exclusions.json`, the `PINNED_ARTIFACT_VERSION` bump and
+the gold-set re-pin all had to land together or the runtime would load a corpus its schema rejects.
+
+#### Step 4 found a problem with the phase, not with the code — DECISION OWED
+
+**`path()` works. The corpus cannot feed it.** Measured over v0.2.0 (`docs/graph-semantics.md` §5.1):
+133 ordered pairs are one hop apart, **13 are two hops apart, and none are three or more.**
+
+§4.4 above assumed the diameter *was* the available path depth — it quoted "diameter 14 hops" as the
+raw material for traversal. That conflated two different measurements. **Diameter ignores edge
+direction; a path must follow it.** Recomputed over v0.2.0 the diameter is 10 and the deepest directed
+chain is **2**. The error was in the plan, not in the ingestion: the discovery query is already global
+over every genre carrying a P737 statement, so there is no frontier left to crawl. Wikidata's
+genre-level P737 is simply flat.
+
+**So DoD #2 — "a multi-hop query returns a path of three or more hops" — cannot be met by this phase as
+scoped.** Three ways forward, and this is sjtroxel's call:
+
+1. **Amend DoD #2 to two hops and publish the flatness.** Cheapest and most consistent with the
+   project's thesis: the honest claim becomes "the corpus supports 2-hop lineage, here is the measured
+   reason, here is what would deepen it." `structure` is already on `/health`, so the limit is stated
+   rather than hidden. Costs nothing and gives up the headline "multi-hop" demo.
+2. **Get depth from the artist axis (steps 6–8).** Artist-level influence is far denser than
+   genre-level, and chaining artist edges through their genres is where three-hop lineage plausibly
+   exists. This is the real fix and it is already in the phase, currently marked cuttable. It stops
+   being cuttable if DoD #2 stands.
+3. **Add a second genre-level predicate.** P279 is banned as taxonomic and that is a one-way door
+   (invariant 3), so this means a *new* source, not a new Wikidata property. Largest scope, and it is
+   phase 6's job, not this phase's.
+
+**Recommendation: 1 now, 2 as the phase's stretch.** Amending a DoD because the data said so — with the
+measurement written down — is the project working as designed. Quietly reporting a 2-hop path as
+"multi-hop" is the failure mode `CLAUDE.md` names.
+
+> **DECIDED 2026-08-05: option 1.** DoD #2 is amended in the scope doc as **A5**, which is where the
+> measurement and the diameter-versus-depth error now live, because the scope doc is what the phase is
+> judged against. The flatness ships as `structure` on `/health` and the `done` frame. **The artist axis
+> stays in steps 6–8 and stays cuttable** — it is the identified route to depth, not an obligation, and
+> if it is cut the honest claim is a two-hop corpus with the reason published.
+
+Two corpus properties the plan also assumed away, both now asserted in tests rather than hoped for: the
+graph **contains a cycle** (`post-rock` and `shoegaze` cite each other under P737, so it is not a DAG),
+and **same component does not imply a path** (a shared ancestor connects two genres undirected while
+leaving no directed chain either way).
+
+One deviation from §4.4 worth flagging: it said the structure numbers are "written to the manifest."
+They are — `build_manifest` derives them for every future build — but **v0.2.0's own manifest was not
+rewritten**, because artifacts are immutable and rewriting one under the same version is precisely what
+the pin exists to prevent. The store recomputes structure at load instead, which is strictly better: it
+cannot drift, and it works on an artifact built before the field existed.
+
+---
+
 Eight steps. **Steps 1–5 are the spine; 6–8 are the tail and are the cuttable part** if the session runs
 out. There is a natural checkpoint after step 5: at that point the deployed URL answers multi-hop lineage
 questions over a 6x corpus, which is the phase's product value.

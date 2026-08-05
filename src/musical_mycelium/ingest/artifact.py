@@ -31,6 +31,7 @@ from musical_mycelium.graph.schema import (
     verify,
 )
 from musical_mycelium.graph.schema import Artifact as Artifact
+from musical_mycelium.graph.structure import analyse
 
 __all__ = [
     "Artifact",
@@ -73,6 +74,9 @@ def build_manifest(
         # Derived, never a parameter: a caller-supplied count could disagree with the edges it claims
         # to describe, and a manifest that misreports verification strength is worse than none.
         verification_counts=artifact.verification_counts(),
+        # Same rule, same reason. Recorded here so a build is self-describing and an eval can read the
+        # connectivity it ran against without loading the corpus; the runtime still recomputes it.
+        structure=analyse(artifact).as_dict(),
         verification_record=verification_record,
         notes=notes,
     )

@@ -111,12 +111,18 @@ def corpus_summary() -> dict[str, Any]:
     confirms an article names the object but cannot tell whether the sentence *asserts* influence;
     a minority was read by a human. Publishing the split is what keeps "grounded" meaning traceable
     rather than correct.
+
+    ``structure`` is the other honest half, and it is the one a visitor cannot infer from an edge count.
+    The graph is not one organism yet — it is many disconnected islands — so relating two genres is a
+    capability *within* a component, and ``max_path_hops`` is the deepest chain the corpus can actually
+    return. Stating both is what stops an empty answer from reading as a failure when it is a boundary.
     """
     return {
         "artifact_version": STORE.artifact_version,
         "nodes": len(STORE),
         "edges": STORE.edge_count,
         "verification": STORE.verification_counts,
+        "structure": STORE.structure.as_dict(),
         "predicate": "influenced_by",
     }
 

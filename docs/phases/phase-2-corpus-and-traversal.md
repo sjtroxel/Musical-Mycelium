@@ -76,7 +76,26 @@ structure and states the constraint honestly; it does not fix it.
 
 1. The full corpus ingests locally, runs the prose check in-pipeline, and produces a versioned artifact,
    a manifest, and an **exclusions file with a per-edge reason for every rejected candidate**.
-2. A multi-hop query returns a path of three or more hops, with a source on every edge.
+2. A multi-hop query returns **the longest sourced path the corpus contains between the two genres**,
+   with a source on every edge, and the corpus publishes how deep that can go.
+
+   > **A5, 2026-08-05, decided by sjtroxel.** This read *"a path of three or more hops."* **The corpus
+   > cannot supply three.** Measured over artifact v0.2.0 (`docs/graph-semantics.md` §5.1): of 28,392
+   > ordered pairs, **133 are one hop apart, 13 are two, and none are three or more.**
+   >
+   > The original number came from reading the graph's **diameter** — 14 hops on the 7/31 estimate, 10
+   > on the real corpus — as though it were the available path depth. It is not. Diameter is measured
+   > *ignoring* edge direction; a path has to *follow* it. The two differ by a factor of five here.
+   >
+   > This is not an ingestion gap that more crawling closes. `ingest/discovery.py`'s query is already
+   > global over every music genre carrying a P737 statement, so there is no unexplored frontier —
+   > Wikidata's genre-level P737 is flat, and the graph is broad and shallow by nature, not by omission.
+   >
+   > So the item is amended to what the data supports, and the flatness becomes a **published number**
+   > rather than a missed target: `/health` and the `done` frame carry `structure`, including
+   > `max_path_hops`. Depth is a corpus problem, and the artist axis is where it plausibly comes from.
+   > Restating a two-hop result as "multi-hop" would be the exact overclaim `CLAUDE.md` exists to
+   > prevent.
 3. The artist axis answers at least one artist-influence query end to end, from Wikidata P737 only.
 4. **The type filter is a bounded membership test against `Q188451` on both ends of every edge**, with
    rejected entities recorded by reason. *(A3 — was: "P279 chains terminate at the genre-domain

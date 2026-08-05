@@ -18,7 +18,11 @@ from fastapi.testclient import TestClient
 os.environ.setdefault("MYCELIUM_LLM_PROVIDER", "local")
 
 from musical_mycelium.api.app import EVENT_NAMES, app, sse
-from musical_mycelium.graph.memory import PINNED_ARTIFACT_VERSION, artifact_directory
+from musical_mycelium.graph.memory import (
+    PINNED_ARTIFACT_VERSION,
+    artifact_directory,
+    default_store,
+)
 from musical_mycelium.graph.schema import read_manifest
 
 
@@ -178,6 +182,22 @@ def test_health_reports_the_corpus(client: TestClient) -> None:
     assert body["status"] == "ok"
     assert body["corpus"]["edges"] == pinned_manifest_counts()["edges"]
     assert body["corpus"]["artifact_version"] == PINNED_ARTIFACT_VERSION
+
+
+def test_the_corpus_states_its_connectivity(client: TestClient) -> None:
+    """The connectivity limit is a published number, not something a visitor infers from an empty
+    answer. "Relate two genres" is a capability *within* a component, and an edge count alone implies a
+    single connected graph that does not exist — 133 edges over 41 islands.
+
+    Cross-checked against the store rather than hardcoded, for the same reason the counts above are
+    read off the manifest: a literal here would go stale the moment the corpus moves.
+    """
+    structure = client.get("/health").json()["corpus"]["structure"]
+
+    assert structure == default_store().structure.as_dict()
+    assert structure["component_count"] > 1, "a single component would make the caveat unnecessary"
+    assert structure["max_path_hops"] >= 1
+    assert structure["largest_component"] <= pinned_manifest_counts()["nodes"]
 
 
 # --- the api owns no logic -------------------------------------------------------------------------

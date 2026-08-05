@@ -18,12 +18,14 @@ pin actually meaning something.
 from __future__ import annotations
 
 import unicodedata
-from collections import defaultdict
-from functools import lru_cache
+from collections import defaultdict, deque
+from collections.abc import Callable
+from functools import cached_property, lru_cache
 from pathlib import Path
 
 from musical_mycelium.graph.schema import Artifact, Edge, Manifest, Node, verify
 from musical_mycelium.graph.store import Direction
+from musical_mycelium.graph.structure import GraphStructure, analyse
 
 #: The pinned version. A **constant in code**, never "latest" — that is what stops a corpus change from
 #: silently invalidating a benchmark (``.claude/rules/evals.md``).
@@ -121,11 +123,66 @@ class InMemoryGraphStore:
         partial.sort(key=lambda node: (len(node.label), node.label))
         return exact + partial
 
-    def path(self, start_id: str, end_id: str) -> list[Edge]:
-        raise NotImplementedError(
-            "path() lands in phase 2 with the corpus it needs; SPEC.md 2.2 names the query it serves. "
-            "v0.1 answers single-hop origins only."
-        )
+    def path(
+        self,
+        start_id: str,
+        end_id: str,
+        direction: Direction = Direction.INFLUENCED_BY,
+    ) -> list[Edge]:
+        """Breadth-first, so the chain returned is the **shortest** sourced one.
+
+        Shortest rather than longest or prettiest because every extra hop is another edge the narrative
+        has to defend, and a longer chain between the same two genres is strictly more to get wrong.
+
+        Ties are broken by artifact order, which is stable within a pinned version and says nothing
+        across versions. That is the honest guarantee: the same query against the same pinned artifact
+        returns the same chain, and a re-ingest may legitimately return a different equally-short one.
+
+        The traversal is cycle-safe by construction rather than by assumption. The corpus contains a
+        genuine two-edge cycle at v0.2 — ``post-rock`` and ``shoegaze`` each cite the other under P737 —
+        and mutual influence is a real thing for a source to claim, so the graph is not a DAG and must
+        never be treated as one. The ``seen`` set is what makes that a non-event.
+        """
+        if start_id not in self._nodes or end_id not in self._nodes or start_id == end_id:
+            return []
+
+        if direction is Direction.INFLUENCED_BY:
+            index = self._by_subject
+            forward, backward = _object_of, _subject_of
+        else:
+            index = self._by_object
+            forward, backward = _subject_of, _object_of
+
+        # The edge each node was first reached by. First is shortest, because BFS.
+        arrived_by: dict[str, Edge] = {}
+        seen = {start_id}
+        queue: deque[str] = deque([start_id])
+
+        while queue:
+            current = queue.popleft()
+            for edge in index.get(current, ()):
+                nxt = forward(edge)
+                if nxt in seen:
+                    continue
+                seen.add(nxt)
+                arrived_by[nxt] = edge
+                if nxt == end_id:
+                    return _rebuild(arrived_by, start_id, end_id, backward)
+                queue.append(nxt)
+        return []
+
+    # --- structure ------------------------------------------------------------------------------
+
+    @cached_property
+    def structure(self) -> GraphStructure:
+        """Connectivity of the loaded corpus, computed once per store.
+
+        Computed rather than read from the manifest even when the manifest carries it, so the number the
+        product displays is a property of the corpus in hand rather than of whatever was true when
+        someone last ran a build. ``structure`` is the connectivity half of the displayed coverage
+        metric; ``verification_counts`` is the confidence half.
+        """
+        return analyse(self._artifact)
 
     # --- convenience ----------------------------------------------------------------------------
 
@@ -155,6 +212,37 @@ class InMemoryGraphStore:
             f"InMemoryGraphStore(version={self.artifact_version!r}, "
             f"nodes={len(self._nodes)}, edges={len(self._artifact.edges)})"
         )
+
+
+def _object_of(edge: Edge) -> str:
+    return edge.object_id
+
+
+def _subject_of(edge: Edge) -> str:
+    return edge.subject_id
+
+
+def _rebuild(
+    arrived_by: dict[str, Edge],
+    start_id: str,
+    end_id: str,
+    backward: Callable[[Edge], str],
+) -> list[Edge]:
+    """Walk the breadcrumb trail back from ``end_id`` and hand it back pointing forwards.
+
+    ``backward`` is the accessor for whichever end of an edge the traversal came *from*, which is the
+    opposite end from the one it walked *to*. Getting those two the same way round is the one place this
+    function can silently produce a chain that looks plausible and is wrong, so they are passed in from
+    the single branch that already decided the direction rather than re-derived here.
+    """
+    chain: list[Edge] = []
+    node = end_id
+    while node != start_id:
+        edge = arrived_by[node]
+        chain.append(edge)
+        node = backward(edge)
+    chain.reverse()
+    return chain
 
 
 def _contains_words(haystack: str, needle: str) -> bool:

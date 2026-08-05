@@ -146,6 +146,9 @@ than assumed, and the test should be re-run if the corpus is ever re-ingested.
 and the mention counter has three inflating defects (§4.6). The true usable count is lower and is not yet
 measured.*
 
+*Superseded 2026-08-04: it has now been measured. **This table is history — see §4.9 for the hardened
+numbers and §4.10 for the shipped corpus.** The count is 138 accepted and 133 ingested, not 158.*
+
 ### 4.5 Why this belongs in the pipeline, not in a curation pass
 
 The check is deterministic, free, requires no model call, and is reproducible. It therefore belongs in
@@ -206,7 +209,7 @@ that runs the wrong way in time ("the fall of dubstep" as a motive for returning
 PROSE.
 
 **The usable corpus is therefore smaller than 158.** Do not quote 158 as the sourced-edge count without
-this caveat.
+this caveat. *(2026-08-04: it is 133. See §4.10.)*
 
 ### 4.8 P737 is not uniformly historical — an open input to phase 2
 
@@ -220,9 +223,71 @@ That is a taxonomic statement riding on the influence predicate, and the prose c
 Phase 2's ingestion design has to confront this rather than inherit the assumption that P737 is
 uniformly historical. Recorded, not resolved.
 
+### 4.9 What the hardened checker actually measured — 2026-08-04
+
+Everything above §4.9 was measured with the 7/31 scripts. Phase 2 rebuilt the checker
+(`ingest/prosecheck.py`), ran it over the full population, and the numbers moved. **These supersede
+§4.4.**
+
+| bucket | 7/31 | hardened |
+|---|---|---|
+| discovered | 351 | 351 |
+| **PROSE (accepted)** | **158** | **138** |
+| subject has no English article | 124 | 116 |
+| ORPHAN | 58 | 35 |
+| **REDIRECTED** | *not detected* | **28** |
+| **NOT_A_GENRE** | *not filtered* | **20** |
+| INFOBOX_ONLY | 11 | 14 |
+
+Four findings, each of which was a guess before it was a measurement:
+
+1. **The redirect defect was 8% of the population, not an anecdote.** 28 edges were scored against a
+   *different genre's article*. `ambient pop <- ambient music` scored **108 hits** off a page that was
+   not its own — confident false support, the worst failure mode available to this check.
+2. **45% of the old hit counts were markup or self-match.** Across the 132 edges both runs accepted,
+   2057 hits collapsed to 1123. `blues rock <- blues` went 206 → 45. The tier survived; the confidence
+   attached to it should not have.
+3. **The derived-stem rule was removed.** It stripped generic suffixes ("country music" → "country") on
+   the assumption that aliases alone would miss the known under-accepts. Measured: Wikidata already
+   publishes `country`, `dub` and `heavy metal` as aliases, so the aliases rescue every real case, and
+   the stem rule's entire contribution was **three false accepts** (`folk punk <- traditional folk
+   music` matching "more traditional spaces"; `J-core <- anime music` matching the medium; `occult rock
+   <- occult music` matching the theme). Zero true positives. `name_variants` now derives nothing the
+   source did not publish.
+4. **Subject-side `P31/P279*` is a no-op.** Direct `P31` and the transitive climb both return 351 — every
+   genre carrying a P737 edge is typed directly as `Q188451`. The climb stays because it is the correct
+   membership test, not because it finds anything. The object-side filter is what costs: 351 → 331.
+
+**§4.7's "roughly a fifth" held.** Re-screened, the automated check accepts **6 of the 7** edges the
+hand-reading rejected — 6 of the 28 hand-read, or 21%. Quote it that way; 6/7 is a biased denominator,
+since those seven are the hard cases by construction.
+
+That over-accept rate is why `ingest.wikidata.REJECTED_EDGES` is applied as an **override** at build
+time rather than trusted to the checker. Building the corpus straight from the screening would have
+re-admitted five edges a human had thrown out.
+
+### 4.10 The shipped corpus — artifact v0.2.0
+
+138 accepted, minus 5 hand-rejected edges the check re-admitted, **= 133 edges over 169 genres.**
+`groove metal <- thrash metal` — §4.6's false rejection — is re-admitted and labelled `HAND`, because a
+human read the sentence.
+
+| verification | count | what it means |
+|---|---|---|
+| `HAND` | 22 | a human read the article and judged the prose asserts influence |
+| `PROSE_AUTO` | 111 | the automated check passed, and nothing more |
+
+The split is carried on every edge, in the manifest, and on the API. **A 111-edge machine-verified
+majority is noisier per edge than a 22-edge hand-read set, and the product says so rather than
+presenting one undifferentiated count.** 133 + 218 exclusions = 351, and the build asserts it.
+
 ---
 
 ## 5. The open question: 46 components
+
+*Measured against the 7/31 corpus. The hardened corpus is smaller (§4.9) so these numbers will move;
+recomputing component structure over artifact v0.2.0 is phase 2 step 4's job, and the question below is
+unchanged by it.*
 
 The 158 PROSE edges connect **198 genres in 46 disconnected components.**
 
@@ -244,6 +309,47 @@ product is built to narrate.
 **This decision is open and belongs to sjtroxel.** It determines whether "trace the lineage between two
 genres" is a general capability or a capability within one component. It is the substance of phase 6
 (density and coverage) and it constrains phase 2. It is recorded here, not resolved here.
+
+### 5.1 Recomputed over artifact v0.2.0 — 2026-08-05, phase 2 step 4
+
+`graph/structure.py` computes this from the pinned corpus on every load, so these numbers can no longer
+go stale silently. **They are worse than the estimates above, and the direction of the error is the
+point:** the hardened corpus is smaller, and the structure the 7/31 numbers implied was partly an
+artifact of the three inflating defects in §4.6.
+
+| | 7/31 estimate (158 edges) | **v0.2.0 (133 edges)** |
+|---|---|---|
+| components | 46 | **41** |
+| largest component | 44 genres | **31 genres** |
+| diameter of the largest component | 14 hops | **10 hops** |
+| isolated nodes | not measured | **0** |
+| **deepest chain `path()` can return** | *assumed to be the diameter* | **2 hops** |
+
+**The last row is the finding, and it was not predicted anywhere.** Diameter is measured *ignoring* edge
+direction; a path has to *follow* the arrows. Those two numbers were tacitly treated as the same
+quantity, and they differ by a factor of five here. Of the 28,392 ordered pairs of genres in the corpus,
+**133 are one hop apart, 13 are two hops apart, and none are three or more.**
+
+The graph is therefore **broad and shallow**: many genres, each citing one or two influences, with
+almost nothing chaining. It is closer to a field of stars than to a tree. The longest chain that exists
+at all is three hops — `Krautrock -> post-rock -> shoegaze -> blackgaze` — and it is not a shortest path,
+so `path()` will never return it: `Krautrock` also cites `shoegaze` directly, which short-circuits it.
+
+Two further properties worth recording, both of which the plan assumed away:
+
+- **The graph is not a DAG.** `post-rock` and `shoegaze` each cite the other under P737. Mutual
+  influence is a legitimate thing for a source to claim, so this is a corpus property to survive rather
+  than a defect to clean, and traversal is cycle-safe by construction.
+- **Same component does not imply a path.** A shared ancestor (`a -> c <- b`) puts two genres in one
+  component with no directed chain between them in either direction. Conflating the two is how a common
+  influence would get narrated as descent.
+
+**Consequence for phase 2, stated rather than absorbed:** DoD #2 asks for "a path of three or more hops,
+with a source on every edge." **The corpus cannot supply one**, and no amount of traversal work changes
+that — depth has to come from more edges, not better search. The discovery query
+(`ingest/discovery.py:105`) is already global over every music genre carrying a P737 statement, so there
+is no unexplored frontier to crawl; this is what Wikidata's genre-level P737 contains. See the phase-2
+IMPLEMENTATION build log for the options.
 
 ---
 

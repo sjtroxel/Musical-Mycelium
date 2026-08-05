@@ -48,17 +48,16 @@ def test_the_v01_backend_satisfies_the_protocol(store: InMemoryGraphStore) -> No
     assert isinstance(store, GraphStore)
 
 
-def test_path_is_declared_but_not_implemented(store: InMemoryGraphStore) -> None:
-    """Deliberate, not an oversight. It is on the protocol because retrofitting a protocol method
-    touches every implementation; it raises because v0.1's corpus is one hop deep.
+def test_path_is_implemented(store: InMemoryGraphStore) -> None:
+    """Replaces ``test_path_is_declared_but_not_implemented``, deleted 2026-08-05 in phase 2 step 4
+    exactly as that test's own docstring said it would be.
 
-    **This test caught the phase-5-to-phase-2 correction on 2026-08-04** — the message said phase 5 in
-    three places and the assertion pinned one of them. That is the test working, so it keeps asserting on
-    the phase, not merely on the exception type. It is expected to fail and be deleted in phase 2 when
-    `path()` is implemented.
+    It earned its keep first: it caught the phase-5-to-phase-2 correction on 2026-08-04 by asserting on
+    the *phase* named in the ``NotImplementedError`` rather than just the exception type. What survives
+    it is the assertion that the protocol method no longer raises at all. Traversal behaviour is tested
+    in ``test_path.py``.
     """
-    with pytest.raises(NotImplementedError, match="phase 2"):
-        store.path(BLUES, HEAVY_METAL)
+    assert store.path(HEAVY_METAL, BLUES) != []
 
 
 def test_direction_names_the_claim_not_the_arrow() -> None:

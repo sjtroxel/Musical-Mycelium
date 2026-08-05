@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+from musical_mycelium.graph import structure
 from musical_mycelium.graph.schema import (
     ARTIFACT_FILENAME,
     MANIFEST_FILENAME,
@@ -188,6 +189,28 @@ def test_the_manifest_verification_counts_match_the_edges(pinned: Artifact) -> N
 
     assert manifest.verification_counts == pinned.verification_counts()
     assert sum(manifest.verification_counts.values()) == manifest.edge_count
+
+
+def test_build_manifest_derives_structure_from_the_edges(pinned: Artifact) -> None:
+    """Same anti-drift rule as ``verification_counts``: ``structure`` is computed by ``build_manifest``
+    and is not a parameter, so a build cannot record connectivity that disagrees with its own corpus.
+
+    Note what this does **not** assert. The pinned v0.2.0 manifest on disk carries no ``structure`` at
+    all — it was written before the field existed and artifacts are immutable, so it stays that way and
+    the runtime recomputes instead (``test_structure.py``). This asserts the *next* build fills it.
+    """
+    manifest = artifact_io.build_manifest(
+        pinned,
+        artifact_version="0.0.0-test",
+        generator="test",
+        predicate="influenced_by",
+        source="wikidata",
+        graph_json=pinned.to_json(),
+    )
+
+    assert manifest.structure == structure.analyse(pinned).as_dict()
+    assert manifest.structure["component_count"] > 0
+    assert manifest.structure["largest_component"] <= manifest.node_count
 
 
 def test_rejected_edges_are_absent(pinned: Artifact) -> None:

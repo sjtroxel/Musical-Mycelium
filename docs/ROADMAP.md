@@ -48,7 +48,7 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 |---|---|---|
 | 0 | written (retroactively) | written (as-built) |
 | 1 | written | written (as-built) |
-| 2 | written; **amended 2026-08-04 (A1–A4)** | **written 2026-08-04** |
+| 2 | written; **amended 2026-08-04 (A1–A4)** | **written 2026-08-04; steps 1–3 built** |
 | 3 | written | at phase start |
 | 4 | written | at phase start |
 | 5 | written | at phase start |
@@ -63,6 +63,32 @@ be built on. See `docs/graph-semantics.md`.
 **v0.1 definition of done:** a public URL that streams a grounded, cited, two-sentence answer about one
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
+
+### Where the build actually is — 2026-08-05
+
+Phase 2 is mid-flight. **Steps 1–4 of 8 are built; step 5 is next.**
+
+| step | what | state |
+|---|---|---|
+| 1 | harden the prose check into `ingest/prosecheck.py` | done 2026-08-04 |
+| 2 | full P737 discovery replaces the hand-verified list | done 2026-08-04 |
+| 3 | the schema carries verification strength | done 2026-08-04 |
+| 4 | `path()` and the component structure | done 2026-08-05 |
+| **5** | **multi-hop through the agent, without touching the loop** | **next** |
+| 6–8 | the artist axis, S3 publish, coverage as a number | the cuttable tail |
+
+**Corpus as shipped: artifact `v0.2.0`, 169 nodes, 133 edges — 22 `HAND` + 111 `PROSE_AUTO`.** Pinned in
+`graph/memory.py`. `v0.1.0` is deliberately unloadable under the current schema and stays on disk as a
+frozen record.
+
+**Two v0.1 DoD items remain open** and are not phase 2's to close: the deployed stack runs on
+`llm_provider=local`, so the prose is a template and the token counts are synthetic. That is the Bedrock
+quota block, not a build gap. **The Lambda was redeployed 2026-08-05** and serves the 133-edge corpus;
+a further redeploy is owed for step 4's `structure` field and should be batched with step 5.
+
+**Connectivity, measured rather than assumed:** 41 components over 169 genres, largest 31, and the
+deepest chain `path()` can return anywhere in the corpus is **two hops**. DoD #2 was amended to match
+(scope doc A5). The graph is broad and shallow, and the product says so on `/health`.
 
 ## 3. Scaffolding ledger
 
@@ -187,6 +213,46 @@ exists.
   the hit count) but groove metal is a §4.7 case, and **`groove metal <- thrash metal` is a false rejection**
   — its lead sentence reads "primarily derived from thrash metal." Corrected in place; the v0.1 artifact is
   pinned and was not rewritten. The lesson is in the code now: a tier is not evidence, the sentences are.
+- **2026-08-04 — The derived-stem rule is deleted from the prose check; Wikidata aliases do the work.**
+  `name_variants` stripped generic suffixes ("country music" → "country") on the assumption that aliases
+  alone would miss the known under-accepts. Measured over the full population, the aliases rescue every
+  real case — Wikidata publishes `country`, `dub` and `heavy metal` — and the stem rule contributed
+  **three false accepts and zero true ones**. The structural worry (it also narrows the subject names
+  used for self-match masking) was settled by re-crawling and diffing: exactly the three predicted edges
+  left and **zero were gained**. The cause was a fixture gap — the tests that justified the rule passed
+  label and title but no aliases, while the live fetch has always requested them. `graph-semantics.md`
+  §4.9.
+- **2026-08-04 — The hand-verification lists override the automated check in BOTH directions.** The
+  prose check re-admits **six of the seven** edges the 2026-08-02 pass rejected; it cannot tell synonymy,
+  contradiction, taxonomy or a wrong-way-in-time mention from a real influence claim. Building the corpus
+  from the screening alone would have silently re-admitted five of them, which is exactly what
+  `REJECTED_EDGES` was written to prevent. `ingest.wikidata.select_edges` is now the corpus policy:
+  **`discovery` gathers evidence, `wikidata` decides the corpus.** `groove metal <- thrash metal` moved
+  the other way, into `HAND_VERIFIED_EDGES`, because a human read the sentence.
+- **2026-08-04 — `Edge.verification` is a required field with no default.** Decided by sjtroxel. Any
+  default is wrong for one half of the corpus — `HAND` overstates the 111 machine-verified edges,
+  `PROSE_AUTO` understates the 22 a human read — and silently mislabelling verification strength is the
+  "grounded slides into correct" failure `CLAUDE.md` forbids. The accepted consequence is that artifact
+  `v0.1.0` no longer loads and raises loudly rather than degrading quietly.
+- **2026-08-04 — The gold set was re-pinned to `v0.2.0`, not re-authored.** Safe only because the
+  neighbour set of all five case subjects is identical under both corpora, checked pair by pair rather
+  than assumed. The file now carries a `repin_history` note stating the rule for next time: **if a
+  corpus change moves any case's neighbours, re-author rather than re-pin** — re-pinning past a real
+  divergence is how a benchmark silently stops measuring anything.
+- **2026-08-05 — Diameter and path depth are different measurements, and the plan conflated them.**
+  Phase 2 §4.4 carried "diameter 14 hops" forward as the traversal depth available to `path()`.
+  Diameter is measured ignoring edge direction; a path has to follow it. Over artifact v0.2.0 the
+  diameter is 10 and **the deepest chain `path()` can return is 2** — 133 ordered pairs at one hop, 13 at
+  two, none at three or more. The corpus is broad and shallow, discovery is already global over P737, and
+  so **phase 2 DoD #2 ("three or more hops") is not satisfiable from genre-level P737 at all.** Recorded
+  as a measurement rather than quietly restated as a success. **Resolved the same day: DoD #2 is amended
+  to the depth the corpus supports (scope doc A5), and `max_path_hops` is published on `/health`.** The
+  artist axis is the identified route to depth and stays cuttable. Numbers in `docs/graph-semantics.md` §5.1.
+- **2026-08-05 — Structure is recomputed at load, not read from the manifest.** `build_manifest` records
+  it for every future build, but the pinned v0.2.0 manifest was **not** rewritten to add it: artifacts are
+  immutable, and rewriting one under its own version is what the pin exists to prevent. The runtime
+  computes connectivity from the corpus in hand, so the displayed number cannot drift from the graph it
+  describes, and an artifact built before the field existed still answers.
 - **2026-07-29 — Python 3.13, uv, ruff, mypy, pytest.** Lambda supports 3.13 as both a managed runtime and
   a container base image, and 3.13 is the current LTS with support through October 2029. 3.14 is available
   on Lambda but 3.13 has the wider dependency support today.
