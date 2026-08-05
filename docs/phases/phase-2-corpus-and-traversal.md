@@ -96,7 +96,36 @@ structure and states the constraint honestly; it does not fix it.
    > `max_path_hops`. Depth is a corpus problem, and the artist axis is where it plausibly comes from.
    > Restating a two-hop result as "multi-hop" would be the exact overclaim `CLAUDE.md` exists to
    > prevent.
-3. The artist axis answers at least one artist-influence query end to end, from Wikidata P737 only.
+3. The artist axis answers at least one artist-influence query end to end, from Wikidata P737 only,
+   **on edges that passed an influence-assertion filter** — not on the prose check alone.
+
+   > **A6, 2026-08-05, decided by sjtroxel.** The prose check **does not transfer to the artist axis**,
+   > and this was measured before anything was ingested rather than discovered afterwards.
+   >
+   > On a 300-candidate slice of the in-scope artist population, the check accepted 73. Reading the
+   > evidence it accepted: `Deep Purple <- The Rolling Stones` supported by a sentence about the
+   > **Rolling Stones Mobile Studio**, a recording truck. `Deep Purple <- Them` supported by the English
+   > **pronoun** "them". `Deep Purple <- Joe South` by *a cover of* his song. `Deep Purple <- Jeff Beck`
+   > by a gig *supporting* him. `Deep Purple <- Screaming Lord Sutch` by a band-**membership** list.
+   >
+   > The cause is structural, not incidental. The check's one documented blind spot is that it cannot
+   > tell whether a sentence **asserts influence** or merely **mentions** the object. On a genre article
+   > naming another genre is usually about derivation, so the blind spot is survivable. On an artist
+   > article, other artists are named constantly — tours, covers, studios, session work, band
+   > membership, chart comparisons — so mentions are cheap and mostly are not influence.
+   >
+   > Ingesting on the check alone would have written roughly 1,200 confidently wrong edges into a
+   > corpus whose entire genre graph is 133 edges. That is the "grounded slides into correct" failure
+   > `CLAUDE.md` forbids, at 9x the size of the honest data.
+   >
+   > **The filter is therefore in scope for this phase, not deferred to phase 6.** His call, and the
+   > reasoning is de-risking: if artist-level influence cannot be filtered deterministically, that
+   > bounds the product, and it is far cheaper to learn now than after two more weeks of building on
+   > the assumption that it can. **It is allowed to fail.** A measured "this cannot be done without a
+   > model in the loop" is a valid outcome of this item and must be published rather than buried.
+   >
+   > What it does **not** mean: the genre axis is unaffected and keeps working. The deployed URL
+   > answers the signature query today. A failed artist filter bounds the product; it does not void it.
 4. **The type filter is a bounded membership test against `Q188451` on both ends of every edge**, with
    rejected entities recorded by reason. *(A3 — was: "P279 chains terminate at the genre-domain
    boundary." P279 is not ingested, so the original item had nothing to apply to.)*

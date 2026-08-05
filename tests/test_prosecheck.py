@@ -32,6 +32,7 @@ from musical_mycelium.ingest.prosecheck import (
     find_mentions,
     has_taxonomic_lead,
     name_variants,
+    sitelink_matches_subject,
     strip_markup,
     stylistic_origins,
 )
@@ -223,6 +224,51 @@ def test_a_redirected_article_is_excluded_not_read() -> None:
     assert result.tier is Tier.REDIRECTED
     assert not result.usable
     assert "French house" in result.exclusion_reason, "the target is recorded so it can be rescued"
+
+
+# --- defect 4: the entity's label and its sitelink name different people -----------------------------
+
+
+def test_a_mislinked_entity_is_excluded_rather_than_read() -> None:
+    """The real case, found on the artist axis 2026-08-05.
+
+    Wikidata's ``Q58462848`` is labelled *TheGrefg* and its English sitelink points at the *Lola
+    Indigo* article. They are collaborators and two different people. Nothing here redirects, so
+    defect 3's guard is blind to it, and reading that article would score a stranger's influences.
+    """
+    mislinked = Article(
+        requested_title="Lola Índigo",
+        resolved_title="Lola Índigo",
+        wikitext="Lola Índigo is a Spanish singer influenced by flamenco and pop.",
+    )
+    result = check_edge(
+        subject_id="Q58462848",
+        object_id="Q000000",
+        subject_label="TheGrefg",
+        object_label="flamenco",
+        article=mislinked,
+    )
+
+    assert result.tier is Tier.MISLINKED
+    assert not result.usable
+    assert "TheGrefg" in result.exclusion_reason
+    assert "Lola Índigo" in result.exclusion_reason, "both names are recorded so it can be audited"
+
+
+def test_a_disambiguated_title_is_not_a_mislink() -> None:
+    """`David Gray` -> `David Gray (British musician)` is the same person and must survive. The guard
+    that cannot tell a disambiguator from a wrong entity would reject most of the artist axis."""
+    assert sitelink_matches_subject("David Gray (British musician)", "David Gray")
+    assert sitelink_matches_subject("Blink-182", "Blink-182")
+    assert sitelink_matches_subject("Rosalía", "Rosalia"), "diacritics are folded"
+    assert sitelink_matches_subject("", "anyone"), "an absent title is not evidence of a mislink"
+
+
+def test_an_alias_rescues_a_stage_name() -> None:
+    """A performer whose article sits at a stage name is under-described, not mislinked — so the
+    curated aliases are checked before flagging. This is the guard's known false-positive direction."""
+    assert sitelink_matches_subject("Lady Gaga", "Stefani Germanotta", ("Lady Gaga",))
+    assert not sitelink_matches_subject("Lady Gaga", "Stefani Germanotta", ("Miss Germanotta",))
 
 
 # --- the counter-defect: exact matching under-accepts -------------------------------------------------

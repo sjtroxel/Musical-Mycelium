@@ -42,8 +42,17 @@ confidently wrong artifact:
    a different genre's article, found "disco" discussed throughout, and produced **confident false
    support**. Fixed by :func:`resolve_article`, which reports the redirect instead of following it
    silently.
+4. **Mislinked entity**, found 2026-08-05 on the artist axis and *not* a defect in this code — it is bad
+   data upstream. ``Q58462848`` is labelled **TheGrefg** and its English sitelink points at the **Lola
+   Indigo** article. They are real-life collaborators and two different people. Defect 3's guard cannot
+   see this: the sitelink resolves cleanly, so requested and resolved titles agree, and the divergence
+   is between the entity's *label* and its *link*. Worse, :func:`check_edge` treats the sitelinked title
+   as one of the subject's own names, so the wrong person's name gets masked out of the search as though
+   it were the subject's. Fixed by :func:`sitelink_matches_subject`, which runs before the name variants
+   are built. Genre labels and sitelinks nearly always agree, which is why the genre axis never surfaced
+   it.
 
-A fourth defect runs the other way: exact-label matching **under**-accepts. ``country rock <- country
+A fifth defect runs the other way: exact-label matching **under**-accepts. ``country rock <- country
 music`` scores zero because the lead says "fuses rock and country", and ``dubstep <- dub music`` scores
 zero because the article says "sparse dub production". :func:`name_variants` tries **Wikidata aliases**
 for this, and every result records *which* name matched so the correction is auditable rather than
@@ -81,6 +90,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -115,6 +125,19 @@ class Tier(StrEnum):
     #: The subject's sitelink redirects to a *different* title. Defect 3: reading it would score another
     #: genre's article as support for this edge.
     REDIRECTED = "REDIRECTED"
+
+    #: The subject's **label and its sitelink disagree about who the subject is** — a fourth defect,
+    #: found 2026-08-05 on the artist axis. ``Q58462848`` is labelled *TheGrefg* and its English
+    #: sitelink points at the *Lola Indigo* article; they are real collaborators and two different
+    #: people. This is upstream bad data in Wikidata, not a fetch bug, and ``REDIRECTED`` cannot see
+    #: it: the sitelink resolves cleanly, so requested and resolved titles agree. The divergence is
+    #: between the label and the link.
+    #:
+    #: It matters more than it looks. ``check_edge`` treats ``article.requested_title`` as one of the
+    #: subject's own names (defect 2's self-match guard depends on that), so a mislinked entity makes
+    #: the checker read a stranger's article while masking the stranger's name as if it were the
+    #: subject's. That is the confident-false-support shape, exactly like defect 3.
+    MISLINKED = "MISLINKED"
 
     #: The article could not be read. Distinct from ORPHAN on purpose — absent evidence is not evidence
     #: of absence, and a network failure must never be recorded as a disconfirmation.
@@ -307,6 +330,40 @@ def name_variants(label: str, title: str = "", aliases: Iterable[str] = ()) -> t
     return tuple(sorted(names, key=lambda n: (-len(n), n)))
 
 
+#: A trailing Wikipedia disambiguator — "David Gray **(British musician)**". Legitimate and extremely
+#: common, so it is stripped before the mislink test rather than counted as divergence.
+_DISAMBIGUATOR = re.compile(r"\s*\([^)]*\)\s*$")
+
+
+def _fold_name(text: str) -> str:
+    """Case, punctuation and spacing folded away, for comparing a title to a name."""
+    text = _DISAMBIGUATOR.sub("", text.replace("_", " "))
+    text = unicodedata.normalize("NFKD", text.casefold())
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    return " ".join("".join(ch if ch.isalnum() else " " for ch in text).split())
+
+
+def sitelink_matches_subject(title: str, label: str, aliases: Iterable[str] = ()) -> bool:
+    """Does this article title plausibly name the same entity the label names?
+
+    The mislink test. ``True`` when the title matches the label or any curated alias once a trailing
+    disambiguator is stripped, so ``David Gray`` and ``David Gray (British musician)`` agree while
+    ``TheGrefg`` and ``Lola Indigo`` do not.
+
+    **It errs toward flagging and the rate must be reported with that caveat**, exactly as the
+    label-variant matching in :func:`name_variants` errs the other way. A performer whose Wikidata
+    label is a legal name, whose article is at a stage name, and whose aliases record neither will be
+    flagged as mislinked when it is merely under-described. Aliases are checked precisely to keep that
+    case small, and an empty title is not evidence of anything and passes.
+    """
+    if not title:
+        return True
+    folded = _fold_name(title)
+    if not folded:
+        return True
+    return any(folded == _fold_name(name) for name in (label, *aliases) if name)
+
+
 def _spans(text: str, names: Sequence[str]) -> list[tuple[int, int, str]]:
     found: list[tuple[int, int, str]] = []
     for name in names:
@@ -437,6 +494,7 @@ class ProseCheck:
             Tier.ORPHAN: "subject article never mentions the object",
             Tier.NO_ARTICLE: "subject has no English Wikipedia article",
             Tier.REDIRECTED: "subject article redirects to a different title",
+            Tier.MISLINKED: "subject's label and its sitelinked article name different entities",
             Tier.FETCH_FAILED: "article could not be read",
         }[self.tier]
         return f"{base}: {self.detail}" if self.detail else base
@@ -477,6 +535,20 @@ def check_edge(
 
     if article.tier is not None:
         return verdict(article.tier, detail=article.detail)
+
+    # The mislink test, and it must come BEFORE the name variants are built. `subject_names` folds
+    # `article.requested_title` in as one of the subject's own names, so on a mislinked entity the
+    # wrong person's name would be masked as if it were the subject's — the check would read a
+    # stranger's article with the stranger's name made invisible to it.
+    if not sitelink_matches_subject(article.requested_title, subject_label, subject_aliases):
+        return verdict(
+            Tier.MISLINKED,
+            detail=(
+                f"subject label {subject_label!r} does not match its sitelinked article "
+                f"{article.requested_title!r}; the entity's label and its link disagree about who "
+                f"the subject is"
+            ),
+        )
 
     object_names = name_variants(object_label, object_title, object_aliases)
     subject_names = name_variants(subject_label, article.requested_title, subject_aliases)

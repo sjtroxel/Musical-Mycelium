@@ -103,11 +103,11 @@ POPULATION_DRIFT_TOLERANCE = 0.25
 #: was timed at 2.2s against the 1.8s of the same query without it, so that legibility is close to
 #: free.
 DISCOVERY_QUERY = f"""
-SELECT ?s ?o ?statement ?objIsGenre WHERE {{
+SELECT ?s ?o ?statement ?objInAxis WHERE {{
   ?s wdt:P31/wdt:P279* wd:{QID_MUSIC_GENRE} .
   ?s p:{PROPERTY_INFLUENCED_BY} ?statement .
   ?statement ps:{PROPERTY_INFLUENCED_BY} ?o .
-  BIND(EXISTS {{ ?o wdt:P31/wdt:P279* wd:{QID_MUSIC_GENRE} }} AS ?objIsGenre)
+  BIND(EXISTS {{ ?o wdt:P31/wdt:P279* wd:{QID_MUSIC_GENRE} }} AS ?objInAxis)
 }}
 """
 
@@ -122,12 +122,22 @@ class DiscoveryError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class Candidate:
-    """One P737 statement whose subject is a music genre, before Wikipedia has been consulted."""
+    """One P737 statement whose subject is in the axis being ingested, before Wikipedia is consulted.
+
+    Axis-neutral on purpose. ``object_in_axis`` was ``object_is_genre`` until phase 2 step 6, when the
+    artist axis needed the identical screening pipeline with a different type test on both ends. The
+    genre axis asks "is the object a ``Q188451``"; the artist axis asks "is the object a human or a
+    musical group". Same question, different axis, and a field named for one of them would have made
+    the other read as a lie.
+
+    **The axes stay structurally distinct downstream** — see ``graph.schema.Node.kind``. This type is
+    shared because the *screening* is the same work, not because the edges are interchangeable.
+    """
 
     subject_id: str
     object_id: str
     statement_uri: str
-    object_is_genre: bool
+    object_in_axis: bool
 
     @property
     def pair(self) -> tuple[str, str]:
@@ -277,7 +287,7 @@ def parse_discovery(rows: Sequence[dict[str, Any]]) -> tuple[Candidate, ...]:
             subject_id=subject,
             object_id=obj,
             statement_uri=statement,
-            object_is_genre=row.get("objIsGenre", {}).get("value") == "true",
+            object_in_axis=row.get("objInAxis", {}).get("value") == "true",
         )
         existing = best.get(candidate.pair)
         if existing is None or candidate.statement_uri < existing.statement_uri:
@@ -305,18 +315,30 @@ def population_drift(discovered: int) -> str:
 
 
 def type_filter(
-    candidates: Sequence[Candidate], labels: dict[str, str] | None = None
+    candidates: Sequence[Candidate],
+    labels: dict[str, str] | None = None,
+    *,
+    reason_code: str = NOT_A_GENRE,
+    off_axis: str = (
+        f"does not reach {QID_MUSIC_GENRE} via P31/P279*; P737 is a general influence property "
+        f"and its objects include bands, people and techniques"
+    ),
 ) -> tuple[tuple[Candidate, ...], tuple[Exclusion, ...]]:
-    """Split candidates on filter (1). Objects that are not music genres become exclusions.
+    """Split candidates on filter (1). Objects outside the axis become exclusions.
 
     Labels are optional because this runs *before* the entity fetch when it is used to decide what
     to fetch; the exclusion reason is more useful once labels exist, so the caller may pass them.
+
+    ``reason_code`` and ``off_axis`` are parameters so the artist axis can reuse this unchanged
+    (step 6). The *filtering* is identical — "is the object in the axis this run is ingesting" — and
+    only the sentence explaining the rejection differs. An exclusion whose reason names the wrong
+    axis is worse than useless, because the exclusions file is a published number people read.
     """
     labels = labels or {}
     kept: list[Candidate] = []
     dropped: list[Exclusion] = []
     for candidate in candidates:
-        if candidate.object_is_genre:
+        if candidate.object_in_axis:
             kept.append(candidate)
             continue
         object_label = labels.get(candidate.object_id, "")
@@ -327,11 +349,8 @@ def type_filter(
                 object_id=candidate.object_id,
                 subject_label=labels.get(candidate.subject_id, ""),
                 object_label=object_label,
-                reason_code=NOT_A_GENRE,
-                reason=(
-                    f"object {named} does not reach {QID_MUSIC_GENRE} via P31/P279*; P737 is a "
-                    f"general influence property and its objects include bands, people and techniques"
-                ),
+                reason_code=reason_code,
+                reason=f"object {named} {off_axis}",
             )
         )
     return tuple(kept), tuple(dropped)

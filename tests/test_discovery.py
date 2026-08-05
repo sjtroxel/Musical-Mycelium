@@ -8,7 +8,7 @@ per-subject fetch plan, the screening partition and the round trip are all pure 
 arguments, so a fake ``sparql`` and a dict of fixture ``Article`` objects exercise the whole pipeline.
 
 The bindings below are shaped exactly like WDQS output, including the two things that bite: a
-``(subject, object)`` pair carrying more than one statement, and ``objIsGenre`` arriving as the
+``(subject, object)`` pair carrying more than one statement, and ``objInAxis`` arriving as the
 *string* ``"true"`` rather than a boolean.
 """
 
@@ -47,7 +47,7 @@ def binding(subject: str, obj: str, statement: str, is_genre: bool = True) -> di
         "s": {"value": WD + subject},
         "o": {"value": WD + obj},
         "statement": {"value": ST + statement},
-        "objIsGenre": {"value": "true" if is_genre else "false"},
+        "objInAxis": {"value": "true" if is_genre else "false"},
     }
 
 
@@ -98,8 +98,8 @@ def test_parse_extracts_qids_statement_uri_and_genreness() -> None:
     ]
     by_pair = {c.pair: c for c in candidates}
     assert by_pair[("Q193355", "Q9759")].statement_uri == ST + "s1"
-    assert by_pair[("Q193355", "Q9759")].object_is_genre is True
-    assert by_pair[("Q131755", "Q131144")].object_is_genre is False
+    assert by_pair[("Q193355", "Q9759")].object_in_axis is True
+    assert by_pair[("Q131755", "Q131144")].object_in_axis is False
 
 
 def test_parse_deduplicates_pairs_deterministically() -> None:

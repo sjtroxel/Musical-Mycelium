@@ -145,7 +145,9 @@ correction is recorded here rather than by editing the plan, so the two stay com
 | 3 | done | the hand-rejection list is **load-bearing** — the check re-admits 6 of the 7; corpus ships at **133**, not 138 |
 | 4 | done 2026-08-05 | **the corpus is broad and shallow: the deepest chain `path()` can return is 2 hops, so DoD #2 is not satisfiable from P737** |
 | 5 | done 2026-08-05 | **the signature query refused when worded the way the SPEC words it** — 32 of 169 labels carry a trailing "music" |
-| 6 | **next** | — |
+| 6 | **replanned 2026-08-05, not built** | **the prose check does not transfer to the artist axis.** §4.6 assumed it did. Measured before ingesting; see below |
+| 6a | **next** | the influence-assertion filter, which §4.6 never contemplated needing |
+| 6b | blocked on 6a | the artist ingest itself |
 
 Three plan assumptions that did not survive contact:
 
@@ -263,6 +265,65 @@ still a fixture, but it is now two scripts away from that line rather than one.
 
 **Redeploy is now owed for two steps** (step 4's `structure`, step 5's chain and third tool).
 
+#### Step 6 was replanned before it was built, on measurements — 2026-08-05
+
+**Nothing was ingested.** Every number below came from bounded measurement runs, which is the whole
+reason the step was replanned instead of debugged after the fact.
+
+**What §4.6 got right.** The bound works and the population is real: **4,549 distinct artist-subject
+P737 statements** where the artist's `P136` is one of the 169 corpus genres, of which **4,426 have an
+artist object**. The pipeline reuses `discovery`'s stages unchanged — only the query and the type test
+differ — and `Candidate.object_is_genre` was renamed `object_in_axis` so the artist axis could reuse it
+without the field name being a lie.
+
+**What §4.6 got wrong, and it is the load-bearing assumption.** It planned to prose-check artist
+articles "by the same hardened checker" and treated that as settled. It is not. On a 300-candidate
+slice: **123 NO_ARTICLE, 100 ORPHAN, 73 PROSE, 4 REDIRECTED** — a 24% acceptance rate that looks
+perfectly healthy and is mostly junk. The five accepted edges that make the point are quoted in the
+scope doc's **A6**; the short version is a recording truck, an English pronoun, a cover version, a
+support slot and a membership list.
+
+**Three requirements, where the plan assumed one.** Reading the accepted evidence, an artist edge needs
+all of:
+
+1. **A name match** — exists today, but needs a guard for names that are common English words. `Them`
+   is a real band and `find_mentions` cannot currently tell it from the pronoun.
+2. **Influence language in the same sentence.** Measured on the 73 accepted: **49 (67%) contain an
+   influence cue, 24 (33%) contain none at all.** So a cue requirement removes a third of the
+   accepted set immediately.
+3. **The asserted direction matching the edge direction.** This is the hard one and it is why a cue
+   rule alone is *necessary but not sufficient*. `Deep Purple <- Led Zeppelin` survives the cue test on
+   *"Deep Purple are **cited** as one of the pioneers of hard rock and heavy metal, along with Led
+   Zeppelin and Black Sabbath"* — influence language, zero assertion about Led Zeppelin influencing
+   anyone. They are listed as peers.
+
+**Whether requirement 3 can be met deterministically is the open question of this step, and it is
+allowed to answer no** (scope doc A6). "This needs a model in the loop" is a publishable finding, not
+a failure — but it would be a finding about a Tier-1 filter that is currently free and deterministic,
+so it is a real architectural fork rather than a detail.
+
+**A defect found on the way, and it is a keeper regardless of how the filter turns out.**
+`Tier.MISLINKED`: Wikidata's `Q58462848` is labelled **TheGrefg** and its English sitelink points at the
+**Lola Índigo** article. Real collaborators, two different people, confirmed independently. The redirect
+guard structurally cannot see this — the sitelink resolves cleanly, so requested and resolved titles
+agree, and the divergence is between the entity's *label* and its *link*. Worse, `check_edge` folds the
+sitelinked title into the subject's own names, so the wrong person's name gets **masked out of the
+search as though it were the subject's**. Fixed by `sitelink_matches_subject`, which runs before the
+name variants are built, errs toward flagging, and checks curated aliases so a stage name is not
+mistaken for a mislink. It applies to the genre axis too; genre labels and sitelinks nearly always
+agree, which is why the genre axis never surfaced it.
+
+**Two measurement corrections worth keeping.** The pre-build estimate of **10,504 in-scope outgoing
+statements was inflated** — `COUNT(*)` over a `?s wdt:P136 ?corpusGenre` join multiplies a row per
+matching genre, so an artist in three corpus genres counted three times. The distinct figure is 4,549.
+And **WDQS timed out on three separate heavier queries** during this step, so the incoming direction's
+article count is still unmeasured and nothing should be planned against it.
+
+**Direction asymmetry, measured.** Kate Bush — the artist `SPEC.md` 2.2 names — has **zero outgoing
+P737** and **44 incoming**. The scope doc's DoD #3 says "at least one artist-influence query" rather
+than naming her, so this needs no amendment; but any demo built on her must run descendant-first, which
+step 5's `trace_lineage` already supports.
+
 ---
 
 Eight steps. **Steps 1–5 are the spine; 6–8 are the tail and are the cuttable part** if the session runs
@@ -371,6 +432,65 @@ Then the two v0.1 assumptions from §1.4 get fixed:
   artists, no context not in the list.
 
 ### 4.6 Step 6 — the artist axis, bounded
+
+> **REPLANNED 2026-08-05, before any ingest.** Everything below the horizontal rule is the original
+> plan and is kept for comparison, as this doc does with every falsified assumption. Its fatal line is
+> "prose-checked by the same hardened checker" — measured, that produces a corpus of recording trucks
+> and pronouns. Step 6 is now **6a, the influence-assertion filter**, then **6b, the ingest**.
+
+#### 6a — the influence-assertion filter
+
+**The question, stated so it can come back "no":** can "this sentence asserts that X was influenced by
+Y" be decided deterministically, at Tier-1 cost, well enough to build a corpus on? Scope doc A6 makes a
+measured no a publishable outcome.
+
+**Ground truth first, and it is not optional.** The derived-stem rule died on 2026-08-04 because it was
+finally measured — zero true positives, three false. The same trap is open here and wider, because a
+cue list is easy to write and feels obviously right. So:
+
+1. **A hand-labelled sample of ~100 candidate artist edges**, drawn from the 300-slice already crawled
+   (73 accepted, plus ORPHAN cases so recall is measurable and not just precision). Each labelled
+   **ASSERTS / DOES NOT**, by hand, against the actual sentence. Nothing is built until this exists.
+   The sample is committed, because a filter measured against a sample nobody can re-inspect is a
+   number with no provenance.
+2. **He labels, or confirms proposed labels with the sentence in view.** Not me alone: a filter tuned
+   against labels the tuner invented measures agreement with itself.
+
+**Then the filter, in three parts, each measured separately against that sample** so it is knowable
+which part earns its place:
+
+| part | rule | the failure it targets |
+|---|---|---|
+| **common-word name guard** | a name that is a common English word must match **case-sensitively** | `Them` matching the pronoun "them" |
+| **cue requirement** | the supporting sentence must contain influence language | the truck, the cover, the support slot, the membership list |
+| **direction test** | the assertion must run **subject influenced-by object**, not the reverse and not peer co-mention | `Deep Purple <- Led Zeppelin` from "*cited as pioneers … along with Led Zeppelin*" |
+
+**Report precision and recall as a pair, always**, for the same reason refusal accuracy is reported as
+a pair (`.claude/rules/grounding-and-claims.md`): a filter that rejects everything scores perfectly on
+precision and is useless. **No threshold is invented before the baseline exists**
+(`.claude/rules/evals.md`).
+
+**The honest risk, named rather than smoothed over:** part 3 is the one that decides this. Parts 1 and
+2 are pattern work and will improve precision. Direction is a **semantic** judgment, and English
+expresses it in ways a sentence-level pattern will struggle with — "*X, an influence on Y*" and
+"*X, influenced by Y*" differ by one word and invert the claim. If the direction test cannot reach
+usable precision, the fork is: an LLM in the ingest path (offline, one-time, not in the agent loop —
+so it does not touch Tier-1 eval cost or the deterministic gate), or the artist axis ships as
+**flagged-and-separate** rather than as claim-grade edges, or it moves to phase 6 with the measurement
+published. **That decision is his, and it should be made on the measured number rather than in
+advance.**
+
+#### 6b — the ingest, unchanged in shape
+
+Only reachable if 6a produces a filter with a defensible measured precision. Then: the bounded
+population from the original plan below, run through prose check **and** filter, `verification`
+recording that these edges cleared a stricter bar than `PROSE_AUTO`, `Node.kind` separating the axes,
+and the gate refusing cross-axis claims. Publish the counts at every stage — discovered, on-axis,
+prose-accepted, filter-accepted — because the drop from 4,549 to whatever survives *is* the finding.
+
+---
+
+*Original §4.6, superseded above. Kept because the comparison is the point.*
 
 `SPEC.md` §2.2 assigns "Who influenced Kate Bush?" to phase 2, and DoD #3 requires it. The whole ~31k
 artist-level P737 edge set is **not** the deliverable — prose-checking 31k articles at 1/second is 8.6
