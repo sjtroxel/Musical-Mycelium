@@ -45,8 +45,20 @@ confidently wrong artifact:
 
 A fourth defect runs the other way: exact-label matching **under**-accepts. ``country rock <- country
 music`` scores zero because the lead says "fuses rock and country", and ``dubstep <- dub music`` scores
-zero because the article says "sparse dub production". :func:`name_variants` tries aliases and stems for
-this, and every result records **which** name matched so the correction is auditable rather than assumed.
+zero because the article says "sparse dub production". :func:`name_variants` tries **Wikidata aliases**
+for this, and every result records *which* name matched so the correction is auditable rather than
+assumed.
+
+*That audit was run on 2026-08-04, and it removed a rule.* An earlier version of this module also
+generated a **stem** by stripping generic trailing words ("country music" to "country"), on the
+assumption that the aliases alone would not reach those two edges. Measured across the full 351-candidate
+population, the assumption was wrong twice over: Wikidata already publishes ``country`` as an alias of
+``country music`` and ``dub`` as an alias of ``dub music``, so the aliases rescue both edges on their
+own — and the stem rule's *entire* contribution to the accepted corpus was **three false accepts**
+(``folk punk <- traditional folk music`` matching "more traditional spaces"; ``J-core <- anime music``
+matching the medium; ``occult rock <- occult music`` matching the theme). Zero true positives, three
+false positives, so it is gone. The lesson is the same one groove metal taught the day before: the tier
+is not the evidence, and a rule that has never been measured is a guess with good manners.
 
 ## What this check still cannot do, and must not claim to
 
@@ -125,15 +137,6 @@ _APPENDIX_HEADINGS = (
     "further reading",
     "external links",
 )
-
-#: Trailing words a genre label carries but prose routinely drops: "dub music" is discussed as "dub".
-#: Stripping these is what recovers the two known under-accepts, and it is also the riskiest thing this
-#: module does — "country music" becomes "country", which matches a nation. Hence
-#: :attr:`ProseCheck.stem_only`, which makes every such rescue countable.
-_GENERIC_SUFFIXES = ("music", "genre", "style", "movement")
-
-#: Shortest stem worth generating. "dub" is 3 and is a real, required case.
-_MIN_STEM_LEN = 3
 
 #: Phrases that mark a sentence as taxonomic rather than historical. Triage only — see the module
 #: docstring. Drawn from the real phase-1 rejections, not invented.
@@ -285,10 +288,15 @@ def stylistic_origins(wikitext: str) -> str:
 def name_variants(label: str, title: str = "", aliases: Iterable[str] = ()) -> tuple[str, ...]:
     """Every string a reader might use for this genre, longest first.
 
-    Wikidata aliases are the principled source. The stem rule is the pragmatic one: prose says "sparse
-    dub production" where the label is "dub music". Longest-first ordering matters because
-    :func:`find_mentions` attributes a hit to the first variant that matches, and attributing "heavy
-    metal music" to the bare stem "heavy metal" would misreport how the edge was rescued.
+    **Wikidata aliases are the only source, deliberately.** They are curated, they are attributable,
+    and measured against the full population they already carry the short forms prose actually uses —
+    ``country`` for ``country music``, ``dub`` for ``dub music``. The derived-stem rule that used to
+    supplement them was removed on 2026-08-04 after it scored zero true positives and three false
+    positives; see the module docstring. Anything added back here must clear the same bar.
+
+    Longest-first ordering is load-bearing: :func:`find_mentions` attributes a hit to the first variant
+    that matches, so a shortest-first list would report a full-label match as an alias rescue and
+    misdescribe how the edge was supported.
     """
     names: list[str] = []
     for raw in (label, title, *aliases):
@@ -296,23 +304,7 @@ def name_variants(label: str, title: str = "", aliases: Iterable[str] = ()) -> t
         if cleaned and cleaned.casefold() not in {n.casefold() for n in names}:
             names.append(cleaned)
 
-    for base in tuple(names):
-        words = base.split()
-        if len(words) > 1 and words[-1].casefold() in _GENERIC_SUFFIXES:
-            stem = " ".join(words[:-1])
-            if len(stem) >= _MIN_STEM_LEN and stem.casefold() not in {n.casefold() for n in names}:
-                names.append(stem)
-
     return tuple(sorted(names, key=lambda n: (-len(n), n)))
-
-
-def is_stem(name: str, label: str, title: str = "", aliases: Iterable[str] = ()) -> bool:
-    """True when ``name`` exists only because a generic suffix was stripped.
-
-    This is what makes the riskiest rescue countable rather than invisible.
-    """
-    given = {" ".join(raw.split()).casefold() for raw in (label, title, *aliases) if raw.strip()}
-    return name.casefold() not in given
 
 
 def _spans(text: str, names: Sequence[str]) -> list[tuple[int, int, str]]:
@@ -422,9 +414,6 @@ class ProseCheck:
     prose_hits: int = 0
     matched_names: tuple[str, ...] = ()
     sentences: tuple[str, ...] = ()
-    #: Every prose hit came from a suffix-stripped stem ("country" for "country music"). The riskiest
-    #: rescue, kept countable so the over-accept rate can be measured instead of assumed.
-    stem_only: bool = False
     #: The lead supporting sentence reads as category membership rather than history. Triage for the
     #: one thing this check structurally cannot do (module docstring), never an automatic rejection.
     taxonomic_lead: bool = False
@@ -503,9 +492,6 @@ def check_edge(
             prose_hits=len(mentions),
             matched_names=matched,
             sentences=sentences,
-            stem_only=all(
-                is_stem(name, object_label, object_title, object_aliases) for name in matched
-            ),
             taxonomic_lead=has_taxonomic_lead(sentences),
             taxonomic_hits=count_taxonomic(sentences),
         )
@@ -550,6 +536,11 @@ class ProseCheckError(RuntimeError):
     """The checker could not proceed. Distinct from an edge that simply failed the check."""
 
 
+#: Retryable status codes. Kept identical to ``ingest.wikidata._RETRYABLE`` and for the same reason:
+#: a transient 5xx from one article must not abort a crawl of several hundred.
+_RETRYABLE = frozenset({429, 500, 502, 503, 504})
+
+
 def _get(url: str, timeout: int = 45, attempts: int = 4) -> Any:
     """One polite GET with backoff. Mirrors ``ingest.wikidata._get`` deliberately."""
     request = urllib.request.Request(
@@ -561,7 +552,7 @@ def _get(url: str, timeout: int = 45, attempts: int = 4) -> Any:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return json.load(response)
         except urllib.error.HTTPError as exc:
-            if exc.code not in (429, 503) or attempt == attempts:
+            if exc.code not in _RETRYABLE or attempt == attempts:
                 raise
             time.sleep(delay)
             delay *= 2

@@ -128,6 +128,17 @@ class EntityFacts:
     is_genre: bool
 
 
+#: Status codes worth a second attempt. 429 and 503 are the documented rate-limit signals; 500, 502
+#: and 504 are WDQS being WDQS. **Measured 2026-08-04:** the phase-2 discovery query returned a 502 on
+#: its first run and the *identical* query returned 351 rows in 2.2 seconds minutes later, so a bare
+#: 502 says nothing about the query. Retrying is not optional politeness here — one transient gateway
+#: error would otherwise abort a 15-minute crawl at request 300.
+#:
+#: A genuine timeout also arrives as a 500 and will simply exhaust the attempts; a malformed query
+#: arrives as a 400 and is never retried, so this cannot silently paper over a broken query.
+_RETRYABLE = frozenset({429, 500, 502, 503, 504})
+
+
 def _get(url: str, timeout: int = 60, attempts: int = 4) -> Any:
     """One polite GET with backoff.
 
@@ -144,7 +155,7 @@ def _get(url: str, timeout: int = 60, attempts: int = 4) -> Any:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return json.load(response)
         except urllib.error.HTTPError as exc:
-            if exc.code not in (429, 503) or attempt == attempts:
+            if exc.code not in _RETRYABLE or attempt == attempts:
                 raise
             print(
                 f"  HTTP {exc.code}; backing off {delay:.0f}s (attempt {attempt}/{attempts})",

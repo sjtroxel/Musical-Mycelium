@@ -31,7 +31,6 @@ from musical_mycelium.ingest.prosecheck import (
     count_taxonomic,
     find_mentions,
     has_taxonomic_lead,
-    is_stem,
     name_variants,
     strip_markup,
     stylistic_origins,
@@ -229,10 +228,12 @@ def test_a_redirected_article_is_excluded_not_read() -> None:
 # --- the counter-defect: exact matching under-accepts -------------------------------------------------
 
 
-def test_name_variants_strips_a_generic_suffix() -> None:
-    assert "country" in name_variants("country music")
-    assert "dub" in name_variants("dub music")
-    assert "heavy metal" in name_variants("heavy metal music")
+def test_the_short_forms_that_matter_come_from_wikidata_aliases() -> None:
+    """The three short forms the removed stem rule was written to produce. Wikidata publishes all of
+    them, verified against the live entities on 2026-08-04."""
+    assert "country" in name_variants("country music", aliases=["country"])
+    assert "dub" in name_variants("dub music", aliases=["dub"])
+    assert "heavy metal" in name_variants("heavy metal music", aliases=["heavy metal"])
 
 
 def test_name_variants_keeps_a_bare_label_intact() -> None:
@@ -243,8 +244,8 @@ def test_name_variants_keeps_a_bare_label_intact() -> None:
 
 def test_name_variants_are_longest_first() -> None:
     """Ordering is load-bearing: `find_mentions` attributes a hit to the first variant that matches, so
-    a shortest-first list would report "heavy metal music" as having been rescued by the stem "metal"."""
-    variants = name_variants("heavy metal music", aliases=["metal"])
+    a shortest-first list would report a full-label match as an alias rescue."""
+    variants = name_variants("heavy metal music", aliases=["metal", "heavy metal"])
     assert variants[0] == "heavy metal music"
     assert variants.index("heavy metal") < variants.index("metal")
     assert list(variants) == sorted(variants, key=len, reverse=True)
@@ -253,14 +254,30 @@ def test_name_variants_are_longest_first() -> None:
 def test_name_variants_dedupes_case_variants() -> None:
     """The enwiki title differs from the label only by capitalisation on most genres, and matching is
     case-insensitive, so carrying both would double every variant list for nothing."""
-    assert name_variants("heavy metal music", "Heavy metal music") == (
-        "heavy metal music",
-        "heavy metal",
-    )
+    assert name_variants("heavy metal music", "Heavy metal music") == ("heavy metal music",)
 
 
-def test_country_rock_is_rescued_by_the_stem_and_the_rescue_is_recorded() -> None:
-    """`fuses rock and country` supports the edge; exact-label matching scores it zero."""
+def test_name_variants_derives_nothing_the_source_did_not_publish() -> None:
+    """The removed stem rule, kept as a standing guard.
+
+    It turned "country music" into "country" and "occult music" into "occult". Measured across the
+    full 351-candidate population on 2026-08-04 that produced **three false accepts and zero true
+    ones**, because Wikidata already publishes the short forms that matter as aliases. Anything
+    derived here in future has to clear the bar that rule failed, and this test is what makes adding
+    one back a deliberate act rather than a quiet one.
+    """
+    assert name_variants("country music") == ("country music",)
+    assert name_variants("occult music") == ("occult music",)
+    assert name_variants("traditional folk music") == ("traditional folk music",)
+
+
+def test_country_rock_is_rescued_by_the_alias_not_by_a_derived_stem() -> None:
+    """`fuses rock and country` supports the edge; exact-label matching alone scores it zero.
+
+    The aliases passed here are the real ones on Q83440. The earlier version of this test omitted
+    them, which is exactly why the stem rule looked necessary: the fixture was missing data the live
+    fetch has always supplied, since `fetch_entities` requests aliases in the same round trip.
+    """
     result = check_edge(
         subject_id="Q613408",
         object_id="Q83440",
@@ -268,14 +285,15 @@ def test_country_rock_is_rescued_by_the_stem_and_the_rescue_is_recorded() -> Non
         object_label="country music",
         article=article(COUNTRY_ROCK, "Country rock"),
         object_title="Country music",
+        object_aliases=("country and western", "country & western", "country"),
     )
 
     assert result.tier is Tier.PROSE
-    assert result.matched_names == ("country",)
-    assert result.stem_only, "the riskiest rescue has to stay countable"
+    assert "country" in result.matched_names
 
 
-def test_dubstep_is_rescued_by_the_stem() -> None:
+def test_dubstep_is_rescued_by_the_alias() -> None:
+    """Q212688 publishes `dub` as an alias of `dub music`. That is the whole rescue."""
     result = check_edge(
         subject_id="Q20474",
         object_id="Q212688",
@@ -283,37 +301,45 @@ def test_dubstep_is_rescued_by_the_stem() -> None:
         object_label="dub music",
         article=article(DUBSTEP, "Dubstep"),
         object_title="Dub music",
+        object_aliases=("dub",),
     )
 
     assert result.tier is Tier.PROSE
-    assert result.stem_only
+    assert "dub" in result.matched_names
 
 
-def test_a_full_label_match_is_not_flagged_stem_only() -> None:
+def test_without_an_alias_a_short_form_is_not_invented() -> None:
+    """The resulting under-accept is real, and is the safe direction.
+
+    `occult rock <- occult music` scored PROSE only because "occult" was derived, and every one of
+    those hits was the *theme*, not a genre name. Refusing to invent the short form makes this edge an
+    honest ORPHAN instead of a confident false accept.
+    """
     result = check_edge(
         subject_id="Q1",
         object_id="Q2",
-        subject_label="trip hop",
-        object_label="hip hop music",
-        article=article("Trip hop drew on hip hop music and dub.", "Trip hop"),
-        object_title="Hip hop music",
+        subject_label="occult rock",
+        object_label="occult music",
+        article=article(
+            "The genre commonly incorporates lyrics referencing the occult.", "Occult rock"
+        ),
+        object_title="Occult music",
     )
 
-    assert result.tier is Tier.PROSE
-    assert not result.stem_only
-
-
-def test_is_stem_distinguishes_a_given_name_from_a_derived_one() -> None:
-    assert is_stem("country", "country music")
-    assert not is_stem("country music", "country music")
-    assert not is_stem("metal", "heavy metal music", aliases=["metal"])
+    assert result.tier is Tier.ORPHAN
 
 
 # --- section 4.8: taxonomy riding on the influence predicate ------------------------------------------
 
 
 def test_extreme_metal_is_prose_but_flagged_taxonomic() -> None:
-    """The check cannot reject this and must not pretend to. It can flag it for triage."""
+    """The check cannot reject this and must not pretend to. It can flag it for triage.
+
+    The `heavy metal` alias is required and is real (Q38848, verified 2026-08-04): the article says
+    "heavy metal subgenres", never the full label "heavy metal music". Before the stem rule was
+    removed this fixture passed without it, which quietly hid the fact that the match depends on
+    Wikidata publishing the short form.
+    """
     result = check_edge(
         subject_id="Q465978",
         object_id="Q38848",
@@ -321,6 +347,7 @@ def test_extreme_metal_is_prose_but_flagged_taxonomic() -> None:
         object_label="heavy metal music",
         article=article(EXTREME_METAL, "Extreme metal"),
         object_title="Heavy metal music",
+        object_aliases=("heavy metal",),
     )
 
     assert result.tier is Tier.PROSE, (
