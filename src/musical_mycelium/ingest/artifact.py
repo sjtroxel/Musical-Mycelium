@@ -70,6 +70,9 @@ def build_manifest(
         sha256=sha256_of(graph_json),
         source=source,
         source_snapshot=source_snapshot or {},
+        # Derived, never a parameter: a caller-supplied count could disagree with the edges it claims
+        # to describe, and a manifest that misreports verification strength is worse than none.
+        verification_counts=artifact.verification_counts(),
         verification_record=verification_record,
         notes=notes,
     )

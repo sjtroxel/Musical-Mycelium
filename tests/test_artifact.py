@@ -22,6 +22,8 @@ from musical_mycelium.graph.schema import (
     MANIFEST_FILENAME,
     PREDICATE_INFLUENCED_BY,
     SOURCE_WIKIDATA,
+    VERIFICATION_HAND,
+    VERIFICATION_PROSE_AUTO,
     Artifact,
     Edge,
     Node,
@@ -55,6 +57,7 @@ def an_edge(**overrides: object) -> Edge:
         "source_id": "http://www.wikidata.org/entity/statement/Q193355-032451F3",
         "retrieved_at": RETRIEVED,
         "prose_tier": "PROSE",
+        "verification": VERIFICATION_PROSE_AUTO,
     }
     fields.update(overrides)
     return Edge(**fields)  # type: ignore[arg-type]
@@ -152,10 +155,39 @@ def test_pinned_artifact_hash_matches_its_manifest() -> None:
     artifact_io.verify(wikidata.artifact_dir())
 
 
-def test_pinned_artifact_matches_the_verified_edge_list(pinned: Artifact) -> None:
-    """The artifact claims exactly the edges the hand-verification pass accepted. No more."""
+def test_every_hand_verified_edge_is_in_the_artifact(pinned: Artifact) -> None:
+    """The hand-read edges are the corpus's strongest evidence and must never be dropped.
+
+    At v0.1 this was an equality: the artifact *was* the hand list. At v0.2 it is containment, because
+    the rest of the corpus comes from the automated screening. The complementary guarantee — that
+    nothing sneaks in past the hand rejections — is `test_rejected_edges_are_absent` below.
+    """
     in_artifact = {(e.subject_id, e.object_id) for e in pinned.edges}
-    assert in_artifact == set(wikidata.VERIFIED_EDGES)
+    assert set(wikidata.HAND_VERIFIED_EDGES) <= in_artifact
+
+
+def test_hand_verified_edges_are_labelled_hand_and_the_rest_are_not(pinned: Artifact) -> None:
+    """Verification strength has to match the record, in both directions.
+
+    A `PROSE_AUTO` edge mislabelled `HAND` claims a human read it when none did, which is the
+    "grounded slides into correct" failure `CLAUDE.md` forbids. The reverse understates the corpus.
+    """
+    hand = set(wikidata.HAND_VERIFIED_EDGES)
+    for edge in pinned.edges:
+        expected = (
+            VERIFICATION_HAND
+            if (edge.subject_id, edge.object_id) in hand
+            else VERIFICATION_PROSE_AUTO
+        )
+        assert edge.verification == expected, f"{edge.subject_id} <- {edge.object_id}"
+
+
+def test_the_manifest_verification_counts_match_the_edges(pinned: Artifact) -> None:
+    """The manifest is what the API quotes, so it must be derived from the edges, not asserted."""
+    manifest = artifact_io.read_manifest(wikidata.artifact_dir())
+
+    assert manifest.verification_counts == pinned.verification_counts()
+    assert sum(manifest.verification_counts.values()) == manifest.edge_count
 
 
 def test_rejected_edges_are_absent(pinned: Artifact) -> None:

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "authored_at": "2026-08-02",
   "authored_by": "sjtroxel",
-  "artifact_version_pin": "0.1.0",
+  "artifact_version_pin": "0.2.0",
   "provenance": {
     "derived_from": "docs/phases/phase-1-edge-verification.md",
     "method": "Hand-authored from the same verification pass that produced the v0.1 artifact, BEFORE the agent exists. Per .claude/rules/evals.md a gold set written after the agent exists is contaminated by its output.",
@@ -12,6 +12,9 @@
       "These are Wikipedia-MEDIATED citations to independent works. Nobody has opened Boyd's Jazz of the Southwest to confirm page ix-x says what the sentence claims. Doing so is manual and is not done. Treat these as 'a checkable source exists and is named', not as 'independently confirmed'.",
       "AllMusic, Britannica, RateYourMusic and similar return 403 to automated fetch (docs/graph-semantics.md 7), so citation retrieval cannot currently be automated.",
       "Grounded means traceable, not true. Every claim here traces to a checkable source. None of them is thereby correct."
+    ],
+    "repin_history": [
+      "Authored against artifact v0.1.0 (21 edges) on 2026-08-02. Re-pinned to v0.2.0 (133 edges) on 2026-08-04 when phase 2 replaced the hand-verified edge list with the full P737 discovery. Re-pinning is only safe because the neighbour set of every one of the five case subjects is IDENTICAL under both corpora -- checked pair-by-pair, not assumed -- so no case gained or lost an expected claim. The cases themselves are unchanged and remain pre-agent. If a future corpus change moves any case's neighbours, the gold set must be re-authored rather than re-pinned: re-pinning past a real divergence is exactly how a benchmark silently stops measuring anything."
     ]
   },
   "notes_on_composition": {
@@ -25,7 +28,10 @@
       "query": "Where did blues rock come from?",
       "shape": "origins",
       "difficulty": "trivial",
-      "expected_resolution": {"name": "blues rock", "node_id": "Q193355"},
+      "expected_resolution": {
+        "name": "blues rock",
+        "node_id": "Q193355"
+      },
       "expected_refusal": false,
       "expected_claims": [
         {
@@ -49,7 +55,10 @@
       "query": "Where did acid jazz come from?",
       "shape": "origins",
       "difficulty": "rich",
-      "expected_resolution": {"name": "acid jazz", "node_id": "Q221772"},
+      "expected_resolution": {
+        "name": "acid jazz",
+        "node_id": "Q221772"
+      },
       "expected_refusal": false,
       "expected_claims": [
         {
@@ -116,7 +125,10 @@
       "query": "Where did trip hop come from?",
       "shape": "origins",
       "difficulty": "middle",
-      "expected_resolution": {"name": "trip hop", "node_id": "Q205560"},
+      "expected_resolution": {
+        "name": "trip hop",
+        "node_id": "Q205560"
+      },
       "expected_refusal": false,
       "expected_claims": [
         {
@@ -153,7 +165,10 @@
       "query": "Where did Western swing come from?",
       "shape": "origins",
       "difficulty": "boring middle",
-      "expected_resolution": {"name": "Western swing", "node_id": "Q1730388"},
+      "expected_resolution": {
+        "name": "Western swing",
+        "node_id": "Q1730388"
+      },
       "expected_refusal": false,
       "expected_claims": [
         {
@@ -192,7 +207,10 @@
       "query": "Where did the blues come from?",
       "shape": "origins",
       "difficulty": "refusal",
-      "expected_resolution": {"name": "blues", "node_id": "Q9759"},
+      "expected_resolution": {
+        "name": "blues",
+        "node_id": "Q9759"
+      },
       "expected_refusal": true,
       "expected_claims": [],
       "expected_behavior": "The node RESOLVES -- blues is in the artifact and is cited as the source of blues rock in case 001 -- and has zero sourced parent edges. The correct output states that this graph has no sourced account of the origins of the blues. Naming any influence here is a hallucination, however historically defensible it would be.",

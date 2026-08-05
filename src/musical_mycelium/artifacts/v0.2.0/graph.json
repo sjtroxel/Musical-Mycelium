@@ -1,0 +1,2688 @@
+{
+  "edges": [
+    {
+      "object_id": "Q170435",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q101109587-4D113D8C-92F5-4ED4-B439-2760AF4D5CF3",
+      "subject_id": "Q101109587",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q997481",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q104695865-fd58d001-4a52-734d-8a60-debc3748369b",
+      "subject_id": "Q104695865",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q115691081",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q104847359-5f71016e-46a4-a038-a379-aada5afa928a",
+      "subject_id": "Q104847359",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q65943851",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q104847359-6FBF17E4-C2A7-454E-B41E-9E48D5757886",
+      "subject_id": "Q104847359",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q114880130",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q106369996-a7674787-4751-ebb4-b4c1-18128b8d13f2",
+      "subject_id": "Q106369996",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q16829781",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q106369996-adaec8f6-4f60-0aa0-922e-3a1c1fc8ed17",
+      "subject_id": "Q106369996",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1840167",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q106369996-76e5243b-4fd4-a2f7-4e95-563ddeafc82d",
+      "subject_id": "Q106369996",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q2913982",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q106369996-c8e35631-460a-fe5e-3c57-d006afb93481",
+      "subject_id": "Q106369996",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q7309098",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q108665706-38AC4D50-8482-4BE1-8731-99A599CC7061",
+      "subject_id": "Q108665706",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q869210",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q108665706-19603A1E-1E3B-41A6-9420-31DE13C2A7BA",
+      "subject_id": "Q108665706",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1102161",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1166726-2770298b-4ee4-176b-94de-0d60dce7d688",
+      "subject_id": "Q1166726",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1165777",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1166726-9b215855-4036-3d90-a1e9-1c186faf7ab0",
+      "subject_id": "Q1166726",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q1051735",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1191544-977D2EF6-71B7-4425-A532-9CAAC5A78787",
+      "subject_id": "Q1191544",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q170611",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1191544-3739D982-F27A-4FD4-ADFB-B303D611FF94",
+      "subject_id": "Q1191544",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q227045",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1191544-9CC28A0C-B727-43A5-B55F-84F818C2F434",
+      "subject_id": "Q1191544",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q30692559",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q120484427-04b3ee27-4e6a-966c-385c-6b36691bacfa",
+      "subject_id": "Q120484427",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q4965901",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q120484427-8a8727a5-4d5d-8a6b-e31f-2dcadde0a3d1",
+      "subject_id": "Q120484427",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q11325235",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1207347-ca94ef1b-4c37-b632-87b9-a3f7a7519fc1",
+      "subject_id": "Q1207347",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1636684",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1207347-de7375f9-485b-f533-9432-856665924761",
+      "subject_id": "Q1207347",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q486263",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1207347-d8af96ba-45b4-106b-ba36-78e3c95f3859",
+      "subject_id": "Q1207347",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q842324",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1207347-a3de4683-43d7-e96f-7606-972028b83f11",
+      "subject_id": "Q1207347",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q320592",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q121494463-d442efcd-4bb0-ffd7-d6f4-dbefafeab398",
+      "subject_id": "Q121494463",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q170611",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q123413364-10d6888d-4e2c-44e6-625b-15fc2a81546b",
+      "subject_id": "Q123413364",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q135239105",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q124692508-86a87d2e-420b-cd95-50ef-fe50fea5a929",
+      "subject_id": "Q124692508",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q188994",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1259016-d6717916-49d0-0776-0f65-e0eff4f4050a",
+      "subject_id": "Q1259016",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q212688",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1262781-DA09F09A-A174-41AE-8883-880D0367CA4C",
+      "subject_id": "Q1262781",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1055871",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q131425-05256c44-44d8-2a85-904c-b5181bc843d2",
+      "subject_id": "Q131425",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q188539",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q131425-c2485d69-48f7-dedb-912f-f273edc988a0",
+      "subject_id": "Q131425",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q76092",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q131425-c111b6d0-47b1-1cff-2329-6e8593718bf0",
+      "subject_id": "Q131425",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1418683",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q131578-456f8e9f-4c2a-b753-3d7f-924664487a32",
+      "subject_id": "Q131578",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q372103",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1403744-6e184627-4524-3255-eb2e-72c0b065413e",
+      "subject_id": "Q1403744",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q3071",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1425661-f0230ec0-4d7e-c105-dd53-4e4580d1ab87",
+      "subject_id": "Q1425661",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q650316",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1433387-3cdb4c67-4cbe-0490-4104-d31a50281516",
+      "subject_id": "Q1433387",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q131578",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q16096634-3e1c604f-4fb6-24ff-bbc4-5a2703187b87",
+      "subject_id": "Q16096634",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q209137",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q16855754-5e9333e3-41b5-f91d-15a3-2f82cc382773",
+      "subject_id": "Q16855754",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q272167",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q16855754-4aa5cb46-4f7d-17a4-f979-07f2516352b8",
+      "subject_id": "Q16855754",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q203775",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1730388-051185ea-428a-73db-4a35-d87389db8876",
+      "subject_id": "Q1730388",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q83440",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q1730388-47e47c60-4769-d053-fd9d-b150076d6da7",
+      "subject_id": "Q1730388",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q1425111",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q18217098-30EFBDDD-53B2-4936-B81A-8697928719AD",
+      "subject_id": "Q18217098",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1541229",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q18217098-e8947c96-4605-d3e3-4a5d-4f5eb8529888",
+      "subject_id": "Q18217098",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q9794",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q18393891-9C73FF60-31F1-4F25-8EF1-389D0D99037D",
+      "subject_id": "Q18393891",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q236932",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q186170-b74f43b7-4447-ae4d-6109-6577f47ff89f",
+      "subject_id": "Q186170",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q43343",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q186472-5188f3cd-4e68-c0a0-d6db-75b395d5e785",
+      "subject_id": "Q186472",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q861823",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q188450-C28D697F-A8F8-48F1-930A-7A2382621F84",
+      "subject_id": "Q188450",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q116690325",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q188539-5a20249a-4ade-2404-b7ba-76260335807d",
+      "subject_id": "Q188539",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q76092",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q188539-58ad7c22-4f00-784f-07e4-be9568f4efde",
+      "subject_id": "Q188539",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q9759",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q193355-032451F3-5016-4EA4-8E60-41EF70E3A812",
+      "subject_id": "Q193355",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q135637",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2035976-46009E75-A2DF-4CFE-900B-36ECE9A3C396",
+      "subject_id": "Q2035976",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1751409",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q20474-4bca51a9-4b56-ea8e-1145-4567fd6455d2",
+      "subject_id": "Q20474",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q212688",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q20474-fe57fecd-47fe-9bde-213b-5fa3d4c391a4",
+      "subject_id": "Q20474",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q11401",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q205560-FE6F9F90-41DE-410D-B18C-2A1AC0431884",
+      "subject_id": "Q205560",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q817138",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q205560-51b883ac-418f-27a9-aa27-d3ea5dd8bff6",
+      "subject_id": "Q205560",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q272167",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q209137-6b8217ad-42fc-3e07-7752-b1fc83372b66",
+      "subject_id": "Q209137",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q320592",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q209137-bc895084-4138-a9c8-99b8-914b23f8822a",
+      "subject_id": "Q209137",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q11401",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q221772-ccbc3469-47af-68c8-12bb-80777c53a297",
+      "subject_id": "Q221772",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q131272",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q221772-23d65809-4ac0-a94c-f24f-4d2fca4af9d5",
+      "subject_id": "Q221772",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q164444",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q221772-81549069-DE3C-464E-A00C-A6963D17AE7C",
+      "subject_id": "Q221772",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q8341",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q221772-a7f0dc04-48e4-919d-15fe-dca4f45579b1",
+      "subject_id": "Q221772",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q11401",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2256407-1d49d682-4875-e9f6-80bc-e1af74a58ed8",
+      "subject_id": "Q2256407",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q840065",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2256407-3b8516f1-4811-2dce-1207-061b60acaf07",
+      "subject_id": "Q2256407",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q170611",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q22909461-c2837de7-4ec1-5545-10e4-2e7eb8e14a63",
+      "subject_id": "Q22909461",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q663519",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q22909461-14094cf9-4b7a-5588-1814-fe354c329a91",
+      "subject_id": "Q22909461",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q170611",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2302695-31202daf-47a8-9ead-d9a3-2e71dbacfd57",
+      "subject_id": "Q2302695",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q483352",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q241662-edef41d5-4ad9-66e9-897c-fc6f03e9159f",
+      "subject_id": "Q241662",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q193207",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2465085-c7e544dc-4359-54c3-13c1-1e8477ef77b8",
+      "subject_id": "Q2465085",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q109941986",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q25040706-17741e06-4b5d-75ee-c138-70730d5e60be",
+      "subject_id": "Q25040706",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q131272",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2521569-C3A078B2-3F5A-47E5-AA0B-1FB0E3C18ADB",
+      "subject_id": "Q2521569",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q8341",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q255406-5E3EB567-AD7F-4EC6-8086-5D9CC8BF2741",
+      "subject_id": "Q255406",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q37073",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2572585-fe0ed50b-4da6-0d96-778c-e0993bab5e92",
+      "subject_id": "Q2572585",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q83440",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2706919-4d8b69ae-436f-9f16-c954-70c9912fcdbc",
+      "subject_id": "Q2706919",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q209137",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q272167-5adcd451-480e-ae61-6396-f879124502aa",
+      "subject_id": "Q272167",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q624044",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2738544-2821002f-4bb6-2328-2744-4a87bf7c46f1",
+      "subject_id": "Q2738544",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q187760",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q284543-B4F07318-340E-4984-AF9F-C3CA7F9C0F97",
+      "subject_id": "Q284543",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q485395",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q284543-F3654790-6C5F-4F24-9B59-4C4A90F61BB2",
+      "subject_id": "Q284543",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q206159",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q29025044-8856B655-D51E-44C1-8B6A-BF9ACC35CDED",
+      "subject_id": "Q29025044",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q757143",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q2963621-ddad6f8b-48d5-94ee-7e0c-61390efa8538",
+      "subject_id": "Q2963621",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q11660484",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q3098078-c9edabe6-4075-396a-ee57-706d42e58a0e",
+      "subject_id": "Q3098078",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q820049",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q3098078-5F4A8082-3519-452A-BCC8-88344C84A1E2",
+      "subject_id": "Q3098078",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q848457",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q3098078-816f3695-4128-930c-79ff-7f68e3850406",
+      "subject_id": "Q3098078",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q11403",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q3179786-dd4dfc48-41dc-882d-bc88-90261082117d",
+      "subject_id": "Q3179786",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q378988",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q3605852-7aef1ca0-4431-056c-842b-91c10a70c33e",
+      "subject_id": "Q3605852",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q320592",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q372103-b82e9d63-4bef-e746-11bf-6633687b9e97",
+      "subject_id": "Q372103",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q487965",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q372103-064b774e-43cc-539a-4235-1be1b011d923",
+      "subject_id": "Q372103",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q598929",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q372103-8f8d83a8-45a8-1bb3-3d45-19392abf9d2f",
+      "subject_id": "Q372103",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q936942",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q372103-cb7f2e03-4d98-21de-e343-968e73c58042",
+      "subject_id": "Q372103",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q193355",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q38848-2ff6204e-4d4f-2e65-0d27-dd0f7fcf34c8",
+      "subject_id": "Q38848",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q37073",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q3908370-27DB4C36-3A2A-4524-9736-AAA58353CE0C",
+      "subject_id": "Q3908370",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q209137",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q41343-841fc3a1-4fe4-ecad-fdaa-c67579b42ad7",
+      "subject_id": "Q41343",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q272167",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q41343-cfeee9ce-4d64-e34b-2f9b-43f694d8ff0b",
+      "subject_id": "Q41343",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q163775",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q446241-46e71523-439e-18f9-7a52-f035ce4a8fdb",
+      "subject_id": "Q446241",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q8361",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q46046-8A7B2399-36A1-4DB1-8748-B9F10E6A64EC",
+      "subject_id": "Q46046",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q3071",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q483352-8dcf27fc-4650-7158-d09a-6dcc39d85149",
+      "subject_id": "Q483352",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q1810546",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q483740-3f39d96c-41dd-94c2-dd6d-a72000d1bc38",
+      "subject_id": "Q483740",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q40461",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q4838724-3A78B0A8-7E48-4EF3-B052-A4917D9A954E",
+      "subject_id": "Q4838724",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q8341",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q486263-3EC9341F-CB07-402B-ABBB-3AE0B9FB9500",
+      "subject_id": "Q486263",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q9730",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q49451-4973f552-4e53-b9a6-95bc-54de0432a05a",
+      "subject_id": "Q49451",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1051735",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q4950496-9ba32c68-4124-e1b5-c27a-e1e9d75db749",
+      "subject_id": "Q4950496",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q2932658",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q4950496-1752e6cb-4e68-a08a-b672-2b7e73f0bfd0",
+      "subject_id": "Q4950496",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q474027",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q4950496-460c49f1-4d3d-5804-06e6-2f8138c80c95",
+      "subject_id": "Q4950496",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q6202259",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q4950496-f20573bf-4965-b883-cca3-97df27e3aa83",
+      "subject_id": "Q4950496",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q45981",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q4998143-8986b16c-402b-ff27-ea6c-dcf1d8910d92",
+      "subject_id": "Q4998143",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q115625176",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q5957561-f217abfb-4deb-801d-a509-432f4eb3cc7a",
+      "subject_id": "Q5957561",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q5612172",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q5957561-5df36418-48a3-e3c7-9f7a-1030152cbe0b",
+      "subject_id": "Q5957561",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q6826021",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q5957561-cd104baf-4f08-a71a-261e-753cdc077d36",
+      "subject_id": "Q5957561",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q7692752",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q5957561-397d3dfa-4e44-66cc-feef-f89c552b2398",
+      "subject_id": "Q5957561",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q170611",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q598593-97e6321d-4310-593f-57b4-09a26b184cab",
+      "subject_id": "Q598593",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q83440",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q613408-775C9B6C-EEA0-4E15-A9B1-4AD16E8A7A64",
+      "subject_id": "Q613408",
+      "verification": "HAND"
+    },
+    {
+      "object_id": "Q186170",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q617240-b23e3f36-43e5-7309-ead4-d0afd7fab613",
+      "subject_id": "Q617240",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q206159",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q617240-bd9eb9e9-408d-0603-8cc5-7b6da09d733c",
+      "subject_id": "Q617240",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q236932",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q617240-8da42c31-4a78-7d54-c33c-d676bb42cca3",
+      "subject_id": "Q617240",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q572901",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q650316-ebacb6af-45bd-82e2-4c62-19eccb45e598",
+      "subject_id": "Q650316",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q164444",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6749708-7BF7A947-E2B2-403C-906A-2E0F7F3702A8",
+      "subject_id": "Q6749708",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q217191",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6749708-96C1594E-6008-4332-8998-A7329BA45BF7",
+      "subject_id": "Q6749708",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q58339",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6749708-925FCF70-51B7-44C0-B8CF-1E7D0ED01DE0",
+      "subject_id": "Q6749708",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1298934",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6868046-5D298E07-045A-4F8F-9733-E9E1FD8E229E",
+      "subject_id": "Q6868046",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q187760",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6868046-C486DB8E-186C-446E-B602-16A3D591AD7D",
+      "subject_id": "Q6868046",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q180268",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6918602-c18d6e50-405d-9975-d56d-b7f2f186f7ea",
+      "subject_id": "Q6918602",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q9794",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6918602-7403d4f4-4ded-9fbb-5d5a-2ea201e8ff26",
+      "subject_id": "Q6918602",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q11401",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6956465-8d6af18e-4644-d80b-46e4-f90cd63964ec",
+      "subject_id": "Q6956465",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q9794",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q6956465-8d4aff72-458b-628e-e6b4-e9a23ec8cd57",
+      "subject_id": "Q6956465",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q11401",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q7196456-d1a83c2c-4ccb-10d6-737c-7a607c7cd0bd",
+      "subject_id": "Q7196456",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q9730",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q725011-6e3a7683-4dc9-da10-4f91-124cba8c7530",
+      "subject_id": "Q725011",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1344",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q7293812-fd6bb2dc-4bf3-c01e-4eb6-29446e9bb857",
+      "subject_id": "Q7293812",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q11401",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q7410145-4625291a-4f21-34c4-e226-c5424e74a526",
+      "subject_id": "Q7410145",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q9778",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q7410145-b92a8fcc-4daf-9e1e-fda7-0c4e963b4d04",
+      "subject_id": "Q7410145",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q2812726",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q7801106-F7E4846B-ACE8-42B1-8883-31D9124B9F77",
+      "subject_id": "Q7801106",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q135637",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q888137-6604B3AB-7DBD-49EC-9D77-A20D0F2AED01",
+      "subject_id": "Q888137",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q164444",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q888137-36F07F0D-7782-45A0-A231-6F686423AF9F",
+      "subject_id": "Q888137",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q2913982",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q90568328-3d4db35d-49a3-7a90-72f0-9e6b7500b060",
+      "subject_id": "Q90568328",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q193207",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q9149801-af14eb6b-43d6-0120-b470-d6eb6f73ac9c",
+      "subject_id": "Q9149801",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q757143",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q9149801-bba2e8c5-4bcd-fd31-11e7-01fff1e148af",
+      "subject_id": "Q9149801",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q1507298",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q97265899-6f202955-4608-a9f2-96ae-1e394e6e2dea",
+      "subject_id": "Q97265899",
+      "verification": "PROSE_AUTO"
+    },
+    {
+      "object_id": "Q180268",
+      "predicate": "influenced_by",
+      "prose_tier": "PROSE",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "source": "wikidata",
+      "source_id": "http://www.wikidata.org/entity/statement/Q97277483-9aedc8a4-449f-6f85-6c7c-07da4698aca8",
+      "subject_id": "Q97277483",
+      "verification": "PROSE_AUTO"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "Q101109587",
+      "label": "future rave",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2516474946,
+      "source": "wikidata",
+      "source_id": "Q101109587"
+    },
+    {
+      "id": "Q104695865",
+      "label": "hyperpop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2514028798,
+      "source": "wikidata",
+      "source_id": "Q104695865"
+    },
+    {
+      "id": "Q104847359",
+      "label": "Brooklyn drill",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2396744236,
+      "source": "wikidata",
+      "source_id": "Q104847359"
+    },
+    {
+      "id": "Q1051735",
+      "label": "soca music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2497984124,
+      "source": "wikidata",
+      "source_id": "Q1051735"
+    },
+    {
+      "id": "Q1055871",
+      "label": "Japanese rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2515842185,
+      "source": "wikidata",
+      "source_id": "Q1055871"
+    },
+    {
+      "id": "Q106369996",
+      "label": "wave",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2503097374,
+      "source": "wikidata",
+      "source_id": "Q106369996"
+    },
+    {
+      "id": "Q108665706",
+      "label": "corridos tumbados",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2506734081,
+      "source": "wikidata",
+      "source_id": "Q108665706"
+    },
+    {
+      "id": "Q109941986",
+      "label": "ratchet music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2387694980,
+      "source": "wikidata",
+      "source_id": "Q109941986"
+    },
+    {
+      "id": "Q1102161",
+      "label": "jungle",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2509265270,
+      "source": "wikidata",
+      "source_id": "Q1102161"
+    },
+    {
+      "id": "Q11325235",
+      "label": "neo-acoustic",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297724671,
+      "source": "wikidata",
+      "source_id": "Q11325235"
+    },
+    {
+      "id": "Q11401",
+      "label": "hip-hop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2517791719,
+      "source": "wikidata",
+      "source_id": "Q11401"
+    },
+    {
+      "id": "Q11403",
+      "label": "samba",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2506338195,
+      "source": "wikidata",
+      "source_id": "Q11403"
+    },
+    {
+      "id": "Q114880130",
+      "label": "bass music (EDM)",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2473963080,
+      "source": "wikidata",
+      "source_id": "Q114880130"
+    },
+    {
+      "id": "Q115625176",
+      "label": "Colombian cumbia",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297725800,
+      "source": "wikidata",
+      "source_id": "Q115625176"
+    },
+    {
+      "id": "Q115691081",
+      "label": "Chicago drill",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2470991118,
+      "source": "wikidata",
+      "source_id": "Q115691081"
+    },
+    {
+      "id": "Q1165777",
+      "label": "UK garage",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2374668241,
+      "source": "wikidata",
+      "source_id": "Q1165777"
+    },
+    {
+      "id": "Q11660484",
+      "label": "denpa song",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2514461955,
+      "source": "wikidata",
+      "source_id": "Q11660484"
+    },
+    {
+      "id": "Q1166726",
+      "label": "grime",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2484615910,
+      "source": "wikidata",
+      "source_id": "Q1166726"
+    },
+    {
+      "id": "Q116690325",
+      "label": "power ballad",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2520644435,
+      "source": "wikidata",
+      "source_id": "Q116690325"
+    },
+    {
+      "id": "Q1191544",
+      "label": "kuduro",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2524027078,
+      "source": "wikidata",
+      "source_id": "Q1191544"
+    },
+    {
+      "id": "Q120484427",
+      "label": "dariacore",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527232568,
+      "source": "wikidata",
+      "source_id": "Q120484427"
+    },
+    {
+      "id": "Q1207347",
+      "label": "Shibuya-kei",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2488737566,
+      "source": "wikidata",
+      "source_id": "Q1207347"
+    },
+    {
+      "id": "Q121494463",
+      "label": "Kosmische Musik",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2463148880,
+      "source": "wikidata",
+      "source_id": "Q121494463"
+    },
+    {
+      "id": "Q123413364",
+      "label": "Afro tech",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2390551019,
+      "source": "wikidata",
+      "source_id": "Q123413364"
+    },
+    {
+      "id": "Q124692508",
+      "label": "jerk",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2385051711,
+      "source": "wikidata",
+      "source_id": "Q124692508"
+    },
+    {
+      "id": "Q1259016",
+      "label": "drill and bass",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2483499473,
+      "source": "wikidata",
+      "source_id": "Q1259016"
+    },
+    {
+      "id": "Q1262781",
+      "label": "dub techno",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2473821238,
+      "source": "wikidata",
+      "source_id": "Q1262781"
+    },
+    {
+      "id": "Q1298934",
+      "label": "synth-pop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2498122673,
+      "source": "wikidata",
+      "source_id": "Q1298934"
+    },
+    {
+      "id": "Q131272",
+      "label": "soul",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523382369,
+      "source": "wikidata",
+      "source_id": "Q131272"
+    },
+    {
+      "id": "Q131425",
+      "label": "visual kei",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2497261226,
+      "source": "wikidata",
+      "source_id": "Q131425"
+    },
+    {
+      "id": "Q131578",
+      "label": "J-pop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2522600057,
+      "source": "wikidata",
+      "source_id": "Q131578"
+    },
+    {
+      "id": "Q1344",
+      "label": "opera",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2522561934,
+      "source": "wikidata",
+      "source_id": "Q1344"
+    },
+    {
+      "id": "Q135239105",
+      "label": "jerk rap",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2375814300,
+      "source": "wikidata",
+      "source_id": "Q135239105"
+    },
+    {
+      "id": "Q135637",
+      "label": "chiptune",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2522601798,
+      "source": "wikidata",
+      "source_id": "Q135637"
+    },
+    {
+      "id": "Q1403744",
+      "label": "electro-industrial",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2415820361,
+      "source": "wikidata",
+      "source_id": "Q1403744"
+    },
+    {
+      "id": "Q1418683",
+      "label": "kayōkyoku",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2412754650,
+      "source": "wikidata",
+      "source_id": "Q1418683"
+    },
+    {
+      "id": "Q1425111",
+      "label": "western music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2475435715,
+      "source": "wikidata",
+      "source_id": "Q1425111"
+    },
+    {
+      "id": "Q1425661",
+      "label": "folk punk",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2479625940,
+      "source": "wikidata",
+      "source_id": "Q1425661"
+    },
+    {
+      "id": "Q1433387",
+      "label": "drone metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2525578483,
+      "source": "wikidata",
+      "source_id": "Q1433387"
+    },
+    {
+      "id": "Q1507298",
+      "label": "lo-fi music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2515124851,
+      "source": "wikidata",
+      "source_id": "Q1507298"
+    },
+    {
+      "id": "Q1541229",
+      "label": "American folk music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2525617873,
+      "source": "wikidata",
+      "source_id": "Q1541229"
+    },
+    {
+      "id": "Q16096634",
+      "label": "kawaii metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2431747045,
+      "source": "wikidata",
+      "source_id": "Q16096634"
+    },
+    {
+      "id": "Q1636684",
+      "label": "yé-yé",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2467777647,
+      "source": "wikidata",
+      "source_id": "Q1636684"
+    },
+    {
+      "id": "Q163775",
+      "label": "medieval music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2525281318,
+      "source": "wikidata",
+      "source_id": "Q163775"
+    },
+    {
+      "id": "Q164444",
+      "label": "funk",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527186449,
+      "source": "wikidata",
+      "source_id": "Q164444"
+    },
+    {
+      "id": "Q16829781",
+      "label": "cloud rap",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2421863219,
+      "source": "wikidata",
+      "source_id": "Q16829781"
+    },
+    {
+      "id": "Q16855754",
+      "label": "blackgaze",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2525578949,
+      "source": "wikidata",
+      "source_id": "Q16855754"
+    },
+    {
+      "id": "Q170435",
+      "label": "trance",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2496829337,
+      "source": "wikidata",
+      "source_id": "Q170435"
+    },
+    {
+      "id": "Q170611",
+      "label": "techno",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2517998453,
+      "source": "wikidata",
+      "source_id": "Q170611"
+    },
+    {
+      "id": "Q1730388",
+      "label": "Western swing",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2525582651,
+      "source": "wikidata",
+      "source_id": "Q1730388"
+    },
+    {
+      "id": "Q1751409",
+      "label": "2-step garage",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2476293516,
+      "source": "wikidata",
+      "source_id": "Q1751409"
+    },
+    {
+      "id": "Q180268",
+      "label": "gospel music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2524541970,
+      "source": "wikidata",
+      "source_id": "Q180268"
+    },
+    {
+      "id": "Q1810546",
+      "label": "Turkish folk music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2477198410,
+      "source": "wikidata",
+      "source_id": "Q1810546"
+    },
+    {
+      "id": "Q18217098",
+      "label": "New Mexico music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2502328535,
+      "source": "wikidata",
+      "source_id": "Q18217098"
+    },
+    {
+      "id": "Q18393891",
+      "label": "reggaestep",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2474438968,
+      "source": "wikidata",
+      "source_id": "Q18393891"
+    },
+    {
+      "id": "Q1840167",
+      "label": "witch house",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2519955410,
+      "source": "wikidata",
+      "source_id": "Q1840167"
+    },
+    {
+      "id": "Q186170",
+      "label": "doom metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526821470,
+      "source": "wikidata",
+      "source_id": "Q186170"
+    },
+    {
+      "id": "Q186472",
+      "label": "folk rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2496929808,
+      "source": "wikidata",
+      "source_id": "Q186472"
+    },
+    {
+      "id": "Q187760",
+      "label": "new wave",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2524960512,
+      "source": "wikidata",
+      "source_id": "Q187760"
+    },
+    {
+      "id": "Q188450",
+      "label": "electropop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2513376718,
+      "source": "wikidata",
+      "source_id": "Q188450"
+    },
+    {
+      "id": "Q188539",
+      "label": "glam metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526812358,
+      "source": "wikidata",
+      "source_id": "Q188539"
+    },
+    {
+      "id": "Q188994",
+      "label": "drum and bass",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2493712906,
+      "source": "wikidata",
+      "source_id": "Q188994"
+    },
+    {
+      "id": "Q193207",
+      "label": "ambient music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2522618560,
+      "source": "wikidata",
+      "source_id": "Q193207"
+    },
+    {
+      "id": "Q193355",
+      "label": "blues rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2496979666,
+      "source": "wikidata",
+      "source_id": "Q193355"
+    },
+    {
+      "id": "Q2035976",
+      "label": "Nintendocore",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2503077489,
+      "source": "wikidata",
+      "source_id": "Q2035976"
+    },
+    {
+      "id": "Q203775",
+      "label": "swing",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526907371,
+      "source": "wikidata",
+      "source_id": "Q203775"
+    },
+    {
+      "id": "Q20474",
+      "label": "dubstep",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526239017,
+      "source": "wikidata",
+      "source_id": "Q20474"
+    },
+    {
+      "id": "Q205560",
+      "label": "trip hop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2496999215,
+      "source": "wikidata",
+      "source_id": "Q205560"
+    },
+    {
+      "id": "Q206159",
+      "label": "psychedelic rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523376516,
+      "source": "wikidata",
+      "source_id": "Q206159"
+    },
+    {
+      "id": "Q209137",
+      "label": "post-rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2517449295,
+      "source": "wikidata",
+      "source_id": "Q209137"
+    },
+    {
+      "id": "Q212688",
+      "label": "dub music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2525045586,
+      "source": "wikidata",
+      "source_id": "Q212688"
+    },
+    {
+      "id": "Q217191",
+      "label": "soft rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2515500201,
+      "source": "wikidata",
+      "source_id": "Q217191"
+    },
+    {
+      "id": "Q221772",
+      "label": "acid jazz",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2506170542,
+      "source": "wikidata",
+      "source_id": "Q221772"
+    },
+    {
+      "id": "Q2256407",
+      "label": "hip-hop soul",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2511947604,
+      "source": "wikidata",
+      "source_id": "Q2256407"
+    },
+    {
+      "id": "Q227045",
+      "label": "zouk",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2497050635,
+      "source": "wikidata",
+      "source_id": "Q227045"
+    },
+    {
+      "id": "Q22909461",
+      "label": "toytown techno",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523844050,
+      "source": "wikidata",
+      "source_id": "Q22909461"
+    },
+    {
+      "id": "Q2302695",
+      "label": "tech trance",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2414177744,
+      "source": "wikidata",
+      "source_id": "Q2302695"
+    },
+    {
+      "id": "Q236932",
+      "label": "acid rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2517561374,
+      "source": "wikidata",
+      "source_id": "Q236932"
+    },
+    {
+      "id": "Q241662",
+      "label": "groove metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2473802746,
+      "source": "wikidata",
+      "source_id": "Q241662"
+    },
+    {
+      "id": "Q2465085",
+      "label": "ambient house",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2415929795,
+      "source": "wikidata",
+      "source_id": "Q2465085"
+    },
+    {
+      "id": "Q25040706",
+      "label": "RnBass",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2191884872,
+      "source": "wikidata",
+      "source_id": "Q25040706"
+    },
+    {
+      "id": "Q2521569",
+      "label": "soul blues",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2512220701,
+      "source": "wikidata",
+      "source_id": "Q2521569"
+    },
+    {
+      "id": "Q255406",
+      "label": "jazz rap",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2484036813,
+      "source": "wikidata",
+      "source_id": "Q255406"
+    },
+    {
+      "id": "Q2572585",
+      "label": "pop rap",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2520357090,
+      "source": "wikidata",
+      "source_id": "Q2572585"
+    },
+    {
+      "id": "Q2706919",
+      "label": "country rap",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297717366,
+      "source": "wikidata",
+      "source_id": "Q2706919"
+    },
+    {
+      "id": "Q272167",
+      "label": "shoegaze",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2506818551,
+      "source": "wikidata",
+      "source_id": "Q272167"
+    },
+    {
+      "id": "Q2738544",
+      "label": "Mizrahi music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2524833869,
+      "source": "wikidata",
+      "source_id": "Q2738544"
+    },
+    {
+      "id": "Q2812726",
+      "label": "banda music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2339168842,
+      "source": "wikidata",
+      "source_id": "Q2812726"
+    },
+    {
+      "id": "Q284543",
+      "label": "ethereal wave",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2416996671,
+      "source": "wikidata",
+      "source_id": "Q284543"
+    },
+    {
+      "id": "Q29025044",
+      "label": "psychedelic funk",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2358514444,
+      "source": "wikidata",
+      "source_id": "Q29025044"
+    },
+    {
+      "id": "Q2913982",
+      "label": "trap music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2498799220,
+      "source": "wikidata",
+      "source_id": "Q2913982"
+    },
+    {
+      "id": "Q2932658",
+      "label": "cadence-lypso",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297725458,
+      "source": "wikidata",
+      "source_id": "Q2932658"
+    },
+    {
+      "id": "Q2963621",
+      "label": "chillstep",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2394305559,
+      "source": "wikidata",
+      "source_id": "Q2963621"
+    },
+    {
+      "id": "Q30692559",
+      "label": "Weird Soundcloud",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2496076889,
+      "source": "wikidata",
+      "source_id": "Q30692559"
+    },
+    {
+      "id": "Q3071",
+      "label": "punk rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527080865,
+      "source": "wikidata",
+      "source_id": "Q3071"
+    },
+    {
+      "id": "Q3098078",
+      "label": "J-core",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2327745611,
+      "source": "wikidata",
+      "source_id": "Q3098078"
+    },
+    {
+      "id": "Q3179786",
+      "label": "sambass",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2254039830,
+      "source": "wikidata",
+      "source_id": "Q3179786"
+    },
+    {
+      "id": "Q320592",
+      "label": "Krautrock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523390091,
+      "source": "wikidata",
+      "source_id": "Q320592"
+    },
+    {
+      "id": "Q3605852",
+      "label": "adult album alternative",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2299682253,
+      "source": "wikidata",
+      "source_id": "Q3605852"
+    },
+    {
+      "id": "Q37073",
+      "label": "pop music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527196728,
+      "source": "wikidata",
+      "source_id": "Q37073"
+    },
+    {
+      "id": "Q372103",
+      "label": "electronic body music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2482614098,
+      "source": "wikidata",
+      "source_id": "Q372103"
+    },
+    {
+      "id": "Q378988",
+      "label": "adult contemporary music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2517681314,
+      "source": "wikidata",
+      "source_id": "Q378988"
+    },
+    {
+      "id": "Q38848",
+      "label": "heavy metal music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527087543,
+      "source": "wikidata",
+      "source_id": "Q38848"
+    },
+    {
+      "id": "Q3908370",
+      "label": "pop metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2492563143,
+      "source": "wikidata",
+      "source_id": "Q3908370"
+    },
+    {
+      "id": "Q40461",
+      "label": "bachata",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2486762367,
+      "source": "wikidata",
+      "source_id": "Q40461"
+    },
+    {
+      "id": "Q41343",
+      "label": "post-metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2525581288,
+      "source": "wikidata",
+      "source_id": "Q41343"
+    },
+    {
+      "id": "Q43343",
+      "label": "folk music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527198967,
+      "source": "wikidata",
+      "source_id": "Q43343"
+    },
+    {
+      "id": "Q446241",
+      "label": "neo-medieval music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2471150570,
+      "source": "wikidata",
+      "source_id": "Q446241"
+    },
+    {
+      "id": "Q45981",
+      "label": "rhythm and blues",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523387672,
+      "source": "wikidata",
+      "source_id": "Q45981"
+    },
+    {
+      "id": "Q46046",
+      "label": "baroque pop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2516787802,
+      "source": "wikidata",
+      "source_id": "Q46046"
+    },
+    {
+      "id": "Q474027",
+      "label": "dancehall",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2516305747,
+      "source": "wikidata",
+      "source_id": "Q474027"
+    },
+    {
+      "id": "Q483352",
+      "label": "thrash metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526812733,
+      "source": "wikidata",
+      "source_id": "Q483352"
+    },
+    {
+      "id": "Q483740",
+      "label": "Anatolian rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2525928428,
+      "source": "wikidata",
+      "source_id": "Q483740"
+    },
+    {
+      "id": "Q4838724",
+      "label": "bachatón",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297718203,
+      "source": "wikidata",
+      "source_id": "Q4838724"
+    },
+    {
+      "id": "Q485395",
+      "label": "gothic rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526791919,
+      "source": "wikidata",
+      "source_id": "Q485395"
+    },
+    {
+      "id": "Q486263",
+      "label": "bossa nova",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2522519590,
+      "source": "wikidata",
+      "source_id": "Q486263"
+    },
+    {
+      "id": "Q487965",
+      "label": "industrial music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523389729,
+      "source": "wikidata",
+      "source_id": "Q487965"
+    },
+    {
+      "id": "Q49451",
+      "label": "progressive rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523376002,
+      "source": "wikidata",
+      "source_id": "Q49451"
+    },
+    {
+      "id": "Q4950496",
+      "label": "bouyon",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2517341180,
+      "source": "wikidata",
+      "source_id": "Q4950496"
+    },
+    {
+      "id": "Q4965901",
+      "label": "Jersey club",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2472622155,
+      "source": "wikidata",
+      "source_id": "Q4965901"
+    },
+    {
+      "id": "Q4998143",
+      "label": "Burban",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 1832373552,
+      "source": "wikidata",
+      "source_id": "Q4998143"
+    },
+    {
+      "id": "Q5612172",
+      "label": "grupera",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2385249865,
+      "source": "wikidata",
+      "source_id": "Q5612172"
+    },
+    {
+      "id": "Q572901",
+      "label": "minimalist music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2515873492,
+      "source": "wikidata",
+      "source_id": "Q572901"
+    },
+    {
+      "id": "Q58339",
+      "label": "disco",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2515835600,
+      "source": "wikidata",
+      "source_id": "Q58339"
+    },
+    {
+      "id": "Q5957561",
+      "label": "cachaca",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2461900398,
+      "source": "wikidata",
+      "source_id": "Q5957561"
+    },
+    {
+      "id": "Q598593",
+      "label": "tech house",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2432800037,
+      "source": "wikidata",
+      "source_id": "Q598593"
+    },
+    {
+      "id": "Q598929",
+      "label": "post-punk",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526751879,
+      "source": "wikidata",
+      "source_id": "Q598929"
+    },
+    {
+      "id": "Q613408",
+      "label": "country rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2521774737,
+      "source": "wikidata",
+      "source_id": "Q613408"
+    },
+    {
+      "id": "Q617240",
+      "label": "stoner rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523393262,
+      "source": "wikidata",
+      "source_id": "Q617240"
+    },
+    {
+      "id": "Q6202259",
+      "label": "Jing ping",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297725378,
+      "source": "wikidata",
+      "source_id": "Q6202259"
+    },
+    {
+      "id": "Q624044",
+      "label": "Arabic music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2515875426,
+      "source": "wikidata",
+      "source_id": "Q624044"
+    },
+    {
+      "id": "Q650316",
+      "label": "drone music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2516072184,
+      "source": "wikidata",
+      "source_id": "Q650316"
+    },
+    {
+      "id": "Q65943851",
+      "label": "UK drill",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297713645,
+      "source": "wikidata",
+      "source_id": "Q65943851"
+    },
+    {
+      "id": "Q663519",
+      "label": "breakbeat",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2504593985,
+      "source": "wikidata",
+      "source_id": "Q663519"
+    },
+    {
+      "id": "Q6749708",
+      "label": "Manila sound",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2329739142,
+      "source": "wikidata",
+      "source_id": "Q6749708"
+    },
+    {
+      "id": "Q6826021",
+      "label": "Mexican cumbia",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2457573827,
+      "source": "wikidata",
+      "source_id": "Q6826021"
+    },
+    {
+      "id": "Q6868046",
+      "label": "Minneapolis sound",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2342417827,
+      "source": "wikidata",
+      "source_id": "Q6868046"
+    },
+    {
+      "id": "Q6918602",
+      "label": "motswako",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2454920725,
+      "source": "wikidata",
+      "source_id": "Q6918602"
+    },
+    {
+      "id": "Q6956465",
+      "label": "Na mele paleoleo",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2404986029,
+      "source": "wikidata",
+      "source_id": "Q6956465"
+    },
+    {
+      "id": "Q7196456",
+      "label": "Pinoy hip hop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2404972755,
+      "source": "wikidata",
+      "source_id": "Q7196456"
+    },
+    {
+      "id": "Q725011",
+      "label": "neo-classical metal",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2498703077,
+      "source": "wikidata",
+      "source_id": "Q725011"
+    },
+    {
+      "id": "Q7293812",
+      "label": "rap opera",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2516330408,
+      "source": "wikidata",
+      "source_id": "Q7293812"
+    },
+    {
+      "id": "Q7309098",
+      "label": "regional Mexican",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2513327145,
+      "source": "wikidata",
+      "source_id": "Q7309098"
+    },
+    {
+      "id": "Q7410145",
+      "label": "sampledelia",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2475319478,
+      "source": "wikidata",
+      "source_id": "Q7410145"
+    },
+    {
+      "id": "Q757143",
+      "label": "chill-out music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2469700163,
+      "source": "wikidata",
+      "source_id": "Q757143"
+    },
+    {
+      "id": "Q76092",
+      "label": "glam rock",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526811830,
+      "source": "wikidata",
+      "source_id": "Q76092"
+    },
+    {
+      "id": "Q7692752",
+      "label": "tecnocumbia",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2446301489,
+      "source": "wikidata",
+      "source_id": "Q7692752"
+    },
+    {
+      "id": "Q7801106",
+      "label": "Tierra Caliente music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2424336908,
+      "source": "wikidata",
+      "source_id": "Q7801106"
+    },
+    {
+      "id": "Q817138",
+      "label": "electronica",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2526867877,
+      "source": "wikidata",
+      "source_id": "Q817138"
+    },
+    {
+      "id": "Q820049",
+      "label": "gabber",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2497735181,
+      "source": "wikidata",
+      "source_id": "Q820049"
+    },
+    {
+      "id": "Q8341",
+      "label": "jazz",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2522000332,
+      "source": "wikidata",
+      "source_id": "Q8341"
+    },
+    {
+      "id": "Q83440",
+      "label": "country music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527335531,
+      "source": "wikidata",
+      "source_id": "Q83440"
+    },
+    {
+      "id": "Q8361",
+      "label": "Baroque music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2517801107,
+      "source": "wikidata",
+      "source_id": "Q8361"
+    },
+    {
+      "id": "Q840065",
+      "label": "new jack swing",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527256410,
+      "source": "wikidata",
+      "source_id": "Q840065"
+    },
+    {
+      "id": "Q842324",
+      "label": "indie pop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2497768747,
+      "source": "wikidata",
+      "source_id": "Q842324"
+    },
+    {
+      "id": "Q848457",
+      "label": "speedcore",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2480717584,
+      "source": "wikidata",
+      "source_id": "Q848457"
+    },
+    {
+      "id": "Q861823",
+      "label": "electroclash",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2501171008,
+      "source": "wikidata",
+      "source_id": "Q861823"
+    },
+    {
+      "id": "Q869210",
+      "label": "corrido",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297727273,
+      "source": "wikidata",
+      "source_id": "Q869210"
+    },
+    {
+      "id": "Q888137",
+      "label": "skweee",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2297708295,
+      "source": "wikidata",
+      "source_id": "Q888137"
+    },
+    {
+      "id": "Q90568328",
+      "label": "phonk",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2511822293,
+      "source": "wikidata",
+      "source_id": "Q90568328"
+    },
+    {
+      "id": "Q9149801",
+      "label": "ambient techno",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2501355452,
+      "source": "wikidata",
+      "source_id": "Q9149801"
+    },
+    {
+      "id": "Q936942",
+      "label": "post-industrial music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2479589046,
+      "source": "wikidata",
+      "source_id": "Q936942"
+    },
+    {
+      "id": "Q97265899",
+      "label": "lofi hip-hop",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2411371606,
+      "source": "wikidata",
+      "source_id": "Q97265899"
+    },
+    {
+      "id": "Q97277483",
+      "label": "New Jersey sound",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2471287629,
+      "source": "wikidata",
+      "source_id": "Q97277483"
+    },
+    {
+      "id": "Q9730",
+      "label": "classical music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2517796753,
+      "source": "wikidata",
+      "source_id": "Q9730"
+    },
+    {
+      "id": "Q9759",
+      "label": "blues",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2527339820,
+      "source": "wikidata",
+      "source_id": "Q9759"
+    },
+    {
+      "id": "Q9778",
+      "label": "electronic music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523392258,
+      "source": "wikidata",
+      "source_id": "Q9778"
+    },
+    {
+      "id": "Q9794",
+      "label": "reggae",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2523392289,
+      "source": "wikidata",
+      "source_id": "Q9794"
+    },
+    {
+      "id": "Q997481",
+      "label": "bubblegum music",
+      "retrieved_at": "2026-08-05T01:46:08+00:00",
+      "revision_id": 2501097710,
+      "source": "wikidata",
+      "source_id": "Q997481"
+    }
+  ]
+}

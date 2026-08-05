@@ -1,9 +1,12 @@
 """Full P737 discovery: every genre-to-genre influence candidate, screened by the prose check.
 
-**Runs locally, never in Lambda.** This is the phase-2 replacement for
-``wikidata.VERIFIED_EDGES`` — the 21 pairs a human read by hand on 2026-08-02. The pipeline shape
-``wikidata`` promised phase 2 would inherit is unchanged (*fetch, type-filter, stamp provenance,
-write*); only the origin of the candidate pairs moves, from a literal tuple to a discovery query.
+**Runs locally, never in Lambda.** This is the phase-2 replacement for the literal edge tuple v0.1
+shipped. The pipeline shape ``wikidata`` promised phase 2 would inherit is unchanged (*fetch,
+type-filter, stamp provenance, write*); only the origin of the candidate pairs moves.
+
+Note what this module does **not** decide: an accepted candidate is not automatically an ingested edge.
+``wikidata.select_edges`` applies the hand-verification lists over this output, and it rejects six
+candidates this check accepts. Screening is evidence-gathering; corpus policy lives there.
 
 ## The two filters, and why they are separate
 
@@ -26,8 +29,9 @@ fetch. Filter (2) is a crawl and is the expensive half.
 Every candidate that does not survive lands in :class:`Exclusion` with a machine-readable
 ``reason_code`` and a human-readable ``reason``. The exclusion *rate* is a displayed coverage number
 (``docs/planning/04-RISK-REGISTER.md`` 4.5), which is only honest if nothing is discarded off the
-books. ``REJECTED_EDGES`` in :mod:`~musical_mycelium.ingest.wikidata` was the seven-entry hand-built
-version of this file; :class:`Screening` is its generated successor.
+books. ``REJECTED_EDGES`` in :mod:`~musical_mycelium.ingest.wikidata` was the hand-built ancestor of
+this file; :class:`Screening` is its generated successor, and ``wikidata.collect_exclusions`` merges
+the two into the ``exclusions.json`` that ships beside the artifact.
 
 ## What a screening is worth
 

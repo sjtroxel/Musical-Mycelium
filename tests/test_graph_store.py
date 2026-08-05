@@ -19,7 +19,13 @@ from musical_mycelium.graph.memory import (
     default_store,
     normalise,
 )
-from musical_mycelium.graph.schema import Artifact, ArtifactCorruptError, Edge, Node
+from musical_mycelium.graph.schema import (
+    VERIFICATION_PROSE_AUTO,
+    Artifact,
+    ArtifactCorruptError,
+    Edge,
+    Node,
+)
 from musical_mycelium.graph.store import Direction, GraphStore
 from musical_mycelium.ingest import wikidata
 
@@ -151,10 +157,19 @@ def test_search_resolves_human_typed_names(
 
 def test_exact_match_outranks_a_longer_containing_genre(store: InMemoryGraphStore) -> None:
     """``blues`` must not resolve to ``blues rock`` or ``soul blues``. A resolver that prefers a more
-    specific genre than the one asked for answers a question nobody asked, with citations."""
+    specific genre than the one asked for answers a question nobody asked, with citations.
+
+    Asserts the ranking rule, not the membership of the corpus. An earlier version enumerated the runner
+    -up set exhaustively, which was only ever true at the 28-node v0.1 scale — v0.2 added ``rhythm and
+    blues`` and broke it without anything being wrong. A test that fails whenever the corpus grows
+    teaches people to edit tests instead of reading them.
+    """
     results = store.search("blues")
-    assert results[0].id == BLUES
-    assert {n.label for n in results[1:]} == {"blues rock", "soul blues"}
+
+    assert results[0].id == BLUES, "the exact match ranks first"
+    labels = {n.label for n in results[1:]}
+    assert {"blues rock", "soul blues"} <= labels
+    assert all("blues" in label for label in labels), "every runner-up genuinely contains the query"
 
 
 def test_search_does_not_match_word_fragments(store: InMemoryGraphStore) -> None:
@@ -263,6 +278,7 @@ def test_store_works_without_a_manifest() -> None:
         source_id="stmt/1",
         retrieved_at="2026-01-01T00:00:00+00:00",
         prose_tier="PROSE",
+        verification=VERIFICATION_PROSE_AUTO,
     )
     store = InMemoryGraphStore(Artifact(nodes=(node, other), edges=(edge,)))
 

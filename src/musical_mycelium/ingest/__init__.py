@@ -26,7 +26,12 @@ pure analysis layer and a thin fetch layer so it is testable without a network. 
 free, which is what lets one piece of code be a corpus filter, a displayed coverage metric and a Tier 1
 eval at once.
 
-v0.1 ingests a **hand-verified list** of 21 edges rather than running a discovery query; the record is
-``docs/phases/phase-1-edge-verification.md``. The pipeline shape is the real one, so phase 2 step 2
-replaces only where the candidate pairs come from.
+**Added 2026-08-04 (phase 2, steps 2-3).** ``discovery.py`` runs the full P737 discovery query and
+screens every candidate through ``prosecheck``, writing a reusable screening cache. ``wikidata.py``
+then applies the hand-verification lists over that screening and writes the pinned artifact.
+
+The two-stage split is the load-bearing part: **screening gathers evidence, and ``wikidata`` decides
+the corpus.** A human's reading beats the automated check in both directions — the 22 hand-accepted
+edges go in regardless, and the six hand-rejected ones stay out even though the check now accepts
+them. The v0.1 record is ``docs/phases/phase-1-edge-verification.md``.
 """

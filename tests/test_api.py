@@ -18,6 +18,8 @@ from fastapi.testclient import TestClient
 os.environ.setdefault("MYCELIUM_LLM_PROVIDER", "local")
 
 from musical_mycelium.api.app import EVENT_NAMES, app, sse
+from musical_mycelium.graph.memory import PINNED_ARTIFACT_VERSION, artifact_directory
+from musical_mycelium.graph.schema import read_manifest
 
 
 @pytest.fixture(scope="module")
@@ -125,17 +127,45 @@ def test_done_carries_usage_cost_inputs_and_the_pin(client: TestClient) -> None:
     done = next(payload for name, payload in events if name == "done")
 
     assert done["usage"]["input_tokens"] > 0
-    assert done["artifact_version"] == "0.1.0"
+    assert done["artifact_version"] == PINNED_ARTIFACT_VERSION
     assert done["elapsed_seconds"] >= 0
     assert done["model_id"]
 
 
 def test_done_states_the_corpus_size(client: TestClient) -> None:
-    """Coverage on the screen, not in a footnote. The corpus is 21 edges and the product says so."""
+    """Coverage on the screen, not in a footnote — and the number has to be the real one."""
     events = frames(client.get("/lineage", params={"q": "acid jazz"}).text)
     corpus = next(payload for name, payload in events if name == "done")["corpus"]
-    assert corpus["nodes"] == 28
-    assert corpus["edges"] == 21
+
+    assert corpus["nodes"] == pinned_manifest_counts()["nodes"]
+    assert corpus["edges"] == pinned_manifest_counts()["edges"]
+
+
+def test_done_states_how_the_corpus_was_verified(client: TestClient) -> None:
+    """The honest half of coverage. A corpus that is mostly machine-verified is noisier per edge, and
+    the product says so rather than presenting one undifferentiated edge count."""
+    events = frames(client.get("/lineage", params={"q": "acid jazz"}).text)
+    corpus = next(payload for name, payload in events if name == "done")["corpus"]
+
+    assert corpus["verification"] == pinned_manifest_counts()["verification"]
+    assert sum(corpus["verification"].values()) == corpus["edges"]
+    assert corpus["verification"]["HAND"] > 0, "the hand-read edges must not vanish from the corpus"
+
+
+def pinned_manifest_counts() -> dict[str, Any]:
+    """The corpus numbers read straight off disk.
+
+    Deliberately an independent read rather than a hardcoded count. The thing worth testing is that
+    the API reports the *actual* corpus, and a literal `21` did that only until the corpus changed —
+    at which point it tested nothing and had to be edited. Cross-checking against the artifact
+    catches a stale or fabricated number at any corpus size.
+    """
+    manifest = read_manifest(artifact_directory())
+    return {
+        "nodes": manifest.node_count,
+        "edges": manifest.edge_count,
+        "verification": manifest.verification_counts,
+    }
 
 
 def test_an_empty_query_is_rejected(client: TestClient) -> None:
@@ -146,8 +176,8 @@ def test_an_empty_query_is_rejected(client: TestClient) -> None:
 def test_health_reports_the_corpus(client: TestClient) -> None:
     body = client.get("/health").json()
     assert body["status"] == "ok"
-    assert body["corpus"]["edges"] == 21
-    assert body["corpus"]["artifact_version"] == "0.1.0"
+    assert body["corpus"]["edges"] == pinned_manifest_counts()["edges"]
+    assert body["corpus"]["artifact_version"] == PINNED_ARTIFACT_VERSION
 
 
 # --- the api owns no logic -------------------------------------------------------------------------

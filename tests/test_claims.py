@@ -20,7 +20,7 @@ from musical_mycelium.agent.claims import (
     resolve_sources,
 )
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import Artifact, Edge, Node
+from musical_mycelium.graph.schema import VERIFICATION_PROSE_AUTO, Artifact, Edge, Node
 
 BLUES_ROCK, BLUES = "Q193355", "Q9759"
 ACID_JAZZ, JAZZ = "Q221772", "Q8341"
@@ -175,6 +175,7 @@ def synthetic_store(source_id: str, source: str = "wikidata") -> InMemoryGraphSt
         source_id=source_id,
         retrieved_at=when,
         prose_tier="PROSE",
+        verification=VERIFICATION_PROSE_AUTO,
     )
     return InMemoryGraphStore(Artifact(nodes=nodes, edges=(edge,)))
 

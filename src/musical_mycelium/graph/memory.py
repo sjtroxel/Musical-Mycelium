@@ -27,7 +27,7 @@ from musical_mycelium.graph.store import Direction
 
 #: The pinned version. A **constant in code**, never "latest" — that is what stops a corpus change from
 #: silently invalidating a benchmark (``.claude/rules/evals.md``).
-PINNED_ARTIFACT_VERSION = "0.1.0"
+PINNED_ARTIFACT_VERSION = "0.2.0"
 
 #: Leading words to ignore when resolving a typed name. Exactly one, deliberately: "the blues" must
 #: resolve to ``blues`` (gold case 5 is phrased that way) and that is the whole of the ambition.
@@ -137,6 +137,18 @@ class InMemoryGraphStore:
         """Public because coverage is a displayed metric, not a debugging aid — the API states the
         corpus size on the screen rather than letting a visitor assume it (``04`` 4.5)."""
         return len(self._artifact.edges)
+
+    @property
+    def verification_counts(self) -> dict[str, int]:
+        """How many edges a human read, and how many only cleared the automated check.
+
+        Displayed for the same reason ``edge_count`` is, and it is the more honest of the two. A
+        corpus that is mostly machine-verified is noisier per edge than one that is not, and stating
+        the split is what keeps "grounded" from being read as "correct" (``CLAUDE.md``).
+
+        Read from the artifact rather than the manifest so an unpinned store still answers.
+        """
+        return self._artifact.verification_counts()
 
     def __repr__(self) -> str:
         return (

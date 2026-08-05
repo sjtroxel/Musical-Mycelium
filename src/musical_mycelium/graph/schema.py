@@ -32,6 +32,25 @@ SOURCE_WIKIDATA = "wikidata"
 #: number rather than a silent filter.
 PROSE_TIERS = frozenset({"PROSE", "INFOBOX_ONLY", "ORPHAN"})
 
+#: A human read the subject's article and judged that its prose **asserts influence**. 22 edges at
+#: v0.2, recorded per-edge with supporting quotations in ``docs/phases/phase-1-edge-verification.md``
+#: and listed as ``ingest.wikidata.HAND_VERIFIED_EDGES``.
+VERIFICATION_HAND = "HAND"
+
+#: The automated prose check passed, and nothing else. Strictly weaker than ``HAND``: the check confirms
+#: the subject's article names the object in genuine body prose, but it **structurally cannot tell
+#: whether that sentence asserts influence** rather than synonymy, taxonomy, contradiction, or a mention
+#: running the wrong way in time (``ingest.prosecheck`` module docstring). Measured against the 28 edges
+#: phase 1 hand-read, it over-accepts at roughly 1 in 5.
+VERIFICATION_PROSE_AUTO = "PROSE_AUTO"
+
+#: How strongly an edge was verified. **A required field with no default, deliberately.** A default
+#: would have to be wrong for one half of the corpus or the other — ``HAND`` overstates the machine-
+#: verified majority, ``PROSE_AUTO`` understates the edges a human actually read — and silently
+#: mislabelling verification strength is precisely the "grounded slides into correct" failure
+#: ``CLAUDE.md`` forbids. Every construction site states which it is.
+VERIFICATION_LEVELS = frozenset({VERIFICATION_HAND, VERIFICATION_PROSE_AUTO})
+
 ARTIFACT_FILENAME = "graph.json"
 MANIFEST_FILENAME = "manifest.json"
 
@@ -73,6 +92,12 @@ class Edge:
     ``source_id`` is the Wikidata **statement** URI, not the subject QID. That distinction is the whole
     point: a statement identifier resolves to the specific assertion being cited, so a claim's citation
     can be checked rather than merely gestured at.
+
+    ``verification`` says **how strongly** the claim was checked, and it is required for the same reason
+    the provenance fields are. The 111 machine-verified edges at v0.2 are noisier per edge than the 22
+    a human read; carrying that difference on the row keeps it visible in the manifest and the API
+    instead of averaging it away. Provenance is not truth, and verification strength is not either —
+    but an unmarked mixture of the two is worse than either alone.
     """
 
     subject_id: str
@@ -82,6 +107,7 @@ class Edge:
     source_id: str
     retrieved_at: str
     prose_tier: str
+    verification: str
 
     def __post_init__(self) -> None:
         row = f"edge {self.subject_id} -{self.predicate}-> {self.object_id}"
@@ -94,6 +120,11 @@ class Edge:
         if self.prose_tier not in PROSE_TIERS:
             raise ValueError(
                 f"{row} has prose_tier {self.prose_tier!r}, expected one of {sorted(PROSE_TIERS)}"
+            )
+        if self.verification not in VERIFICATION_LEVELS:
+            raise ValueError(
+                f"{row} has verification {self.verification!r}, expected one of "
+                f"{sorted(VERIFICATION_LEVELS)}"
             )
 
 
@@ -114,6 +145,10 @@ class Manifest:
     sha256: str
     source: str
     source_snapshot: dict[str, int] = field(default_factory=dict)
+    #: Edge count per ``VERIFICATION_LEVELS`` entry. **Derived from the edges by ``build_manifest``,
+    #: never passed in**, so it cannot drift from what the artifact actually contains. Defaulted only
+    #: so a pre-0.2.0 manifest still parses; a live build always fills it.
+    verification_counts: dict[str, int] = field(default_factory=dict)
     verification_record: str = ""
     notes: str = ""
 
@@ -124,6 +159,17 @@ class Artifact:
 
     nodes: tuple[Node, ...]
     edges: tuple[Edge, ...]
+
+    def verification_counts(self) -> dict[str, int]:
+        """How many edges carry each verification level, including the levels that scored zero.
+
+        Zeroes are included on purpose: a corpus with no hand-verified edges should say ``"HAND": 0``
+        rather than omit the key, because a missing key reads as "not measured" and this is measured.
+        """
+        counts = dict.fromkeys(sorted(VERIFICATION_LEVELS), 0)
+        for edge in self.edges:
+            counts[edge.verification] += 1
+        return counts
 
     def to_json(self) -> str:
         payload = {

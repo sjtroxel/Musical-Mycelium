@@ -1,20 +1,30 @@
-"""Build the v0.1 artifact from Wikidata P737 (``influenced by``) genre-to-genre edges.
+"""Build the pinned artifact from Wikidata P737 (``influenced by``) genre-to-genre edges.
 
 **Runs locally, never in Lambda.** Nothing here is imported by the runtime packages, and the agent never
 queries Wikidata live — every agent tool call hits the pre-built artifact
 (``.claude/rules/graph-semantics.md``).
 
-At v0.1 the edge set is a **hand-verified list**, not a discovery query. The 2026-08-02 verification pass
-read 26 candidates from the PROSE tier and rejected 5; the survivors are ``VERIFIED_EDGES`` below and the
-full record with per-edge supporting prose is ``docs/phases/phase-1-edge-verification.md``.
+The pipeline shape is the one v0.1 promised phase 2 would inherit — **fetch, type-filter, stamp
+provenance, write**. What changed at v0.2 is only where the candidate pairs come from: a
+:mod:`~musical_mycelium.ingest.discovery` screening rather than a literal tuple.
 
-The pipeline shape is nonetheless the real one — **fetch, type-filter, stamp provenance, write** — so
-phase 2 replaces only where the candidate pairs come from (a full P737 query plus the automated prose
-check) without touching ``artifact.py`` or the schema.
+## Two tiers of verification, and the hand lists still govern
+
+Every edge carries ``verification``:
+
+* ``HAND`` — a human read the subject's article and judged that its prose asserts influence.
+  :data:`HAND_VERIFIED_EDGES`, recorded per-edge in ``docs/phases/phase-1-edge-verification.md``.
+* ``PROSE_AUTO`` — the automated prose check passed and nothing more. Strictly weaker: the check
+  cannot tell whether a sentence *asserts* influence, and over-accepts at roughly 1 in 5.
+
+:func:`select_edges` applies the hand lists as an **override in both directions**, which matters more
+than it sounds: the automated check accepts six of the seven edges the 2026-08-02 pass rejected, so
+building straight from the screening would quietly re-admit every one of them.
 
 Usage::
 
-    python -m musical_mycelium.ingest.wikidata          # build the pinned version
+    python -m musical_mycelium.ingest.discovery         # crawl, writing data/screening.json
+    python -m musical_mycelium.ingest.wikidata          # build the pinned version from it
     python -m musical_mycelium.ingest.wikidata --force  # rebuild it in place
 """
 
@@ -27,7 +37,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -35,14 +46,25 @@ from typing import Any
 from musical_mycelium.graph.schema import (
     PREDICATE_INFLUENCED_BY,
     SOURCE_WIKIDATA,
+    VERIFICATION_HAND,
+    VERIFICATION_PROSE_AUTO,
     Artifact,
     Edge,
     Node,
 )
 from musical_mycelium.ingest import artifact as artifact_io
+from musical_mycelium.ingest.discovery import Exclusion, Screening
 
-ARTIFACT_VERSION = "0.1.0"
+ARTIFACT_VERSION = "0.2.0"
 VERIFICATION_RECORD = "docs/phases/phase-1-edge-verification.md"
+
+#: Written beside the artifact: every discovered candidate that did not make the corpus, with a
+#: machine-readable reason. The exclusion rate is a displayed coverage number, never a silent filter
+#: (``docs/planning/04-RISK-REGISTER.md`` 4.5).
+EXCLUSIONS_FILENAME = "exclusions.json"
+
+#: Reason code for a candidate the automated check accepted and a human had already rejected.
+OVERRULED = "HAND_REJECTED"
 
 WDQS = "https://query.wikidata.org/sparql"
 WD_API = "https://www.wikidata.org/w/api.php"
@@ -58,11 +80,18 @@ PROPERTY_INFLUENCED_BY = "P737"
 #: roughly 6% of P737 objects are bands, techniques or instruments (``docs/graph-semantics.md`` 3.1).
 QID_MUSIC_GENRE = "Q188451"
 
-#: The 21 edges that survived hand-verification on 2026-08-02. Only Q-ids appear here on purpose —
-#: labels are fetched live, because a label can drift and because a hand-typed identifier is a
-#: hallucination with a plausible shape. Two rounds of recalled Q-ids during this phase resolved to a
-#: spider, a Polish municipality and gravity; the type filter is what caught them.
-VERIFIED_EDGES: tuple[tuple[str, str], ...] = (
+#: The edges a **human read and accepted**: 21 from the 2026-08-02 verification pass, plus one added
+#: 2026-08-04 (see below). Only Q-ids appear here on purpose — labels are fetched live, because a label
+#: can drift and because a hand-typed identifier is a hallucination with a plausible shape. Two rounds
+#: of recalled Q-ids during this phase resolved to a spider, a Polish municipality and gravity; the type
+#: filter is what caught them.
+#:
+#: **At v0.2 this is no longer the corpus — it is the ``HAND`` slice of it.** The rest of the corpus
+#: comes from the discovery screening and carries ``PROSE_AUTO``. This list still overrides the
+#: automated check, because a human reading the sentence is the stronger signal in both directions:
+#: these go in even if the check were to miss them, and :data:`REJECTED_EDGES` stays out even though
+#: the check now accepts six of the seven.
+HAND_VERIFIED_EDGES: tuple[tuple[str, str], ...] = (
     ("Q193355", "Q9759"),  # blues rock <- blues
     ("Q38848", "Q193355"),  # heavy metal music <- blues rock
     ("Q483352", "Q3071"),  # thrash metal <- punk rock
@@ -84,27 +113,32 @@ VERIFIED_EDGES: tuple[tuple[str, str], ...] = (
     ("Q1166726", "Q1165777"),  # grime <- UK garage
     ("Q20474", "Q1751409"),  # dubstep <- 2-step garage
     ("Q20474", "Q212688"),  # dubstep <- dub music
+    # Added 2026-08-04, and it is HAND rather than PROSE_AUTO because a human read the sentence. The
+    # 08-02 pass rejected it on a recorded belief — "zero genuine prose" — that live measurement
+    # disproved: the lead reads "The genre is primarily derived from thrash metal, but played in
+    # slower tempos", which is the exact claim shape this product promises. Record: the 4.6 correction
+    # in ``docs/graph-semantics.md``.
+    ("Q241662", "Q483352"),  # groove metal <- thrash metal
 )
 
-#: Rejected during the same pass, recorded so they are not quietly re-added. The exclusion rate is a
-#: displayed coverage number, not a silent filter (``docs/planning/04-RISK-REGISTER.md`` 4.5).
+#: Edges a **human read and rejected**, recorded so they are not quietly re-added.
 #:
-#: **Two reasons corrected 2026-08-04** while building ``prosecheck.py``, which re-measured every case
-#: against the live articles. The count is unchanged at 7 — the v0.1 artifact is pinned and is not being
-#: rewritten — but the *record* was wrong and one of these is a false rejection worth re-admitting when
-#: phase 2 rebuilds the corpus. See ``docs/graph-semantics.md`` 4.6.
+#: **This list is load-bearing at v0.2 in a way it was not at v0.1.** The automated prose check accepts
+#: **six of these seven** — it cannot tell synonymy, contradiction, taxonomy or a wrong-way-in-time
+#: mention from a genuine influence claim (``ingest.prosecheck``). Building the corpus straight from the
+#: screening would therefore re-admit every one of them. :func:`select_edges` applies this list as an
+#: override, and ``tests/test_artifact.py::test_rejected_edges_are_absent`` fails if it ever stops.
+#:
+#: Six entries, not seven: ``groove metal <- thrash metal`` was a **false rejection** — recorded as
+#: having "zero genuine prose" when it has seven sentences led by "primarily derived from thrash metal"
+#: — and moved to :data:`HAND_VERIFIED_EDGES` on 2026-08-04. The remaining reasons were re-measured
+#: against the live articles at the same time. See ``docs/graph-semantics.md`` 4.6.
 REJECTED_EDGES: tuple[tuple[str, str, str], ...] = (
     (
         "Q241662",
         "Q38848",
         "groove metal <- heavy metal: taxonomic. 6 genuine prose mentions, but the lead reads "
         "'is a subgenre of heavy metal music'. (Was recorded as 'zero genuine prose'; that was wrong.)",
-    ),
-    (
-        "Q241662",
-        "Q483352",
-        "groove metal <- thrash metal: FALSE REJECTION. Recorded as 'zero genuine prose'; it has 7, "
-        "led by 'primarily derived from thrash metal'. Re-admit in phase 2.",
     ),
     ("Q38848", "Q83270", "heavy metal <- hard rock: prose asserts synonymy, not derivation"),
     ("Q38848", "Q9730", "heavy metal <- classical music: prose contradicts it"),
@@ -244,14 +278,77 @@ def fetch_entities(qids: list[str]) -> dict[str, EntityFacts]:
     return facts
 
 
-def build(pairs: tuple[tuple[str, str], ...] = VERIFIED_EDGES) -> tuple[Artifact, dict[str, int]]:
-    """Fetch, type-filter, stamp provenance, and return the artifact plus its revision snapshot."""
+@dataclass(frozen=True, slots=True)
+class SelectedEdge:
+    """One edge chosen for the corpus, carrying how strongly it was verified."""
+
+    subject_id: str
+    object_id: str
+    verification: str
+
+    @property
+    def pair(self) -> tuple[str, str]:
+        return (self.subject_id, self.object_id)
+
+
+def select_edges(
+    auto_accepted: Iterable[tuple[str, str]],
+) -> tuple[tuple[SelectedEdge, ...], tuple[tuple[tuple[str, str], str], ...]]:
+    """Apply the hand judgments over the automated screening. Pure — this is the corpus policy.
+
+    Two rules, and the second is the one that matters:
+
+    1. Everything in :data:`HAND_VERIFIED_EDGES` is in, marked ``HAND``.
+    2. Everything in :data:`REJECTED_EDGES` is **out**, even though the automated check accepts six of
+       the seven. A human read those sentences and judged that they do not assert influence; the check
+       structurally cannot make that judgement, so it does not get to overrule one.
+
+    Returns the selection and the **overruled** list: hand-rejected pairs the automated check accepted,
+    which is a number worth publishing rather than a silent subtraction. It is the over-accept rate
+    caught in the act.
+    """
+    rejected = {(subject, obj): reason for subject, obj, reason in REJECTED_EDGES}
+    hand = set(HAND_VERIFIED_EDGES)
+
+    conflict = hand & set(rejected)
+    if conflict:
+        raise IngestError(
+            f"{sorted(conflict)} is in both HAND_VERIFIED_EDGES and REJECTED_EDGES. "
+            f"A pair cannot be both hand-accepted and hand-rejected; fix the lists."
+        )
+
+    selected = {pair: SelectedEdge(*pair, VERIFICATION_HAND) for pair in sorted(hand)}
+    overruled: list[tuple[tuple[str, str], str]] = []
+
+    for pair in sorted(set(auto_accepted)):
+        if pair in rejected:
+            overruled.append((pair, rejected[pair]))
+            continue
+        selected.setdefault(pair, SelectedEdge(*pair, VERIFICATION_PROSE_AUTO))
+
+    return tuple(selected[pair] for pair in sorted(selected)), tuple(overruled)
+
+
+def build(
+    selected: tuple[SelectedEdge, ...],
+    statement_uris: dict[tuple[str, str], str],
+) -> tuple[Artifact, dict[str, int]]:
+    """Fetch, type-filter, stamp provenance, and return the artifact plus its revision snapshot.
+
+    ``statement_uris`` comes from the discovery screening rather than a second WDQS round trip: the
+    statement URI an edge cites should be the one discovery actually saw, and re-fetching it would
+    introduce a window in which the two could disagree.
+    """
     retrieved_at = datetime.now(UTC).isoformat(timespec="seconds")
+    pairs = tuple(edge.pair for edge in selected)
 
-    print(f"Confirming {len(pairs)} P737 statements against Wikidata...")
-    statements = fetch_statements(pairs)
-    time.sleep(3.0)
+    missing_uri = [pair for pair in pairs if pair not in statement_uris]
+    if missing_uri:
+        print(f"Confirming {len(missing_uri)} statement(s) not present in the screening...")
+        statement_uris = {**statement_uris, **fetch_statements(tuple(missing_uri))}
+        time.sleep(3.0)
 
+    statements = statement_uris
     qids = sorted({q for pair in pairs for q in pair})
     print(f"Reading {len(qids)} entities (label, revision, type)...")
     facts = fetch_entities(qids)
@@ -289,15 +386,16 @@ def build(pairs: tuple[tuple[str, str], ...] = VERIFIED_EDGES) -> tuple[Artifact
 
     edges = tuple(
         Edge(
-            subject_id=subject,
+            subject_id=edge.subject_id,
             predicate=PREDICATE_INFLUENCED_BY,
-            object_id=obj,
+            object_id=edge.object_id,
             source=SOURCE_WIKIDATA,
-            source_id=statements[(subject, obj)],
+            source_id=statements[edge.pair],
             retrieved_at=retrieved_at,
             prose_tier="PROSE",
+            verification=edge.verification,
         )
-        for subject, obj in pairs
+        for edge in selected
     )
 
     snapshot = {qid: facts[qid].revision_id for qid in qids}
@@ -314,15 +412,80 @@ def artifact_dir(version: str = ARTIFACT_VERSION) -> Path:
     return Path(__file__).resolve().parent.parent / "artifacts" / f"v{version}"
 
 
+def collect_exclusions(
+    screening: Screening, overruled: tuple[tuple[tuple[str, str], str], ...]
+) -> tuple[Exclusion, ...]:
+    """Every discovered candidate that did not reach the corpus, from both filters plus the override.
+
+    The screening's own exclusions cover the type filter and the prose check. This adds the third
+    reason, which only exists once the hand lists are applied: the check accepted it and a human had
+    already said no.
+    """
+    labels = {qid: entity.label for qid, entity in screening.entities.items()}
+    overrides = tuple(
+        Exclusion(
+            subject_id=subject,
+            object_id=obj,
+            subject_label=labels.get(subject, ""),
+            object_label=labels.get(obj, ""),
+            reason_code=OVERRULED,
+            reason=(
+                f"the automated prose check accepted this edge and the 2026-08-02 hand-verification "
+                f"pass rejected it; the hand judgement governs. {reason}"
+            ),
+        )
+        for (subject, obj), reason in overruled
+    )
+    return tuple(sorted(screening.excluded + overrides, key=lambda e: (e.subject_id, e.object_id)))
+
+
+def write_exclusions(exclusions: tuple[Exclusion, ...], directory: Path) -> Path:
+    """Write ``exclusions.json`` beside the artifact."""
+    path = directory / EXCLUSIONS_FILENAME
+    payload = {
+        "count": len(exclusions),
+        "by_reason": {
+            code: sum(1 for e in exclusions if e.reason_code == code)
+            for code in sorted({e.reason_code for e in exclusions})
+        },
+        "excluded": [asdict(e) for e in exclusions],
+    }
+    directory.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    return path
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--force", action="store_true", help="rebuild the pinned version in place")
     parser.add_argument("--version", default=ARTIFACT_VERSION, help="artifact version to write")
+    parser.add_argument(
+        "--screening",
+        type=Path,
+        default=None,
+        help="screening cache to build from (default: ingest.discovery's)",
+    )
     args = parser.parse_args(argv)
 
-    artifact, snapshot = build()
+    screening = Screening.load(args.screening) if args.screening is not None else Screening.load()
+    selected, overruled = select_edges(screening.pairs)
+    hand = sum(1 for edge in selected if edge.verification == VERIFICATION_HAND)
+
+    print(
+        f"Screening {screening.generated_at}: {len(screening.candidates)} candidates, "
+        f"{len(screening.accepted)} passed the prose check."
+    )
+    print(f"Selected {len(selected)} edges: {hand} HAND, {len(selected) - hand} PROSE_AUTO.")
+    if overruled:
+        print(f"Overruled {len(overruled)} auto-accepted edge(s) on the hand rejections:")
+        for pair, reason in overruled:
+            print(f"  {pair[0]} <- {pair[1]}: {reason}")
+
+    artifact, snapshot = build(selected, screening.statement_uris())
     directory = artifact_dir(args.version)
 
     manifest = artifact_io.write(
@@ -335,22 +498,37 @@ def main(argv: list[str] | None = None) -> int:
         source_snapshot=snapshot,
         verification_record=VERIFICATION_RECORD,
         notes=(
-            f"{len(VERIFIED_EDGES)} hand-verified edges; {len(REJECTED_EDGES)} candidates rejected. "
-            f"Every edge cleared four gates: the statement exists, both ends type as a music genre, the "
-            f"subject's Wikipedia article contains genuine prose naming the object, and that prose "
-            f"asserts influence rather than co-occurrence, synonymy or taxonomy."
+            f"{manifest_counts(artifact)}. HAND edges were read by a human who judged the prose to "
+            f"assert influence; PROSE_AUTO edges cleared the automated prose check only, which "
+            f"confirms the subject's article names the object in body prose but cannot judge whether "
+            f"that sentence asserts influence. Measured against the 28 edges hand-read on 2026-08-02, "
+            f"the automated check over-accepts at roughly 1 in 5. Every edge in both tiers cites a "
+            f"Wikidata statement URI and types as a music genre at both ends."
         ),
         overwrite=args.force,
     )
 
+    exclusions = collect_exclusions(screening, overruled)
+    exclusions_path = write_exclusions(exclusions, directory)
+
     artifact_io.verify(directory)
     print(
         f"\nWrote {directory}\n"
-        f"  {manifest.node_count} nodes, {manifest.edge_count} edges\n"
+        f"  {manifest.node_count} nodes, {manifest.edge_count} edges "
+        f"({manifest.verification_counts})\n"
         f"  sha256 {manifest.sha256}\n"
+        f"  {exclusions_path.name}: {len(exclusions)} excluded candidates\n"
         f"  verified: graph.json hashes to its manifest"
     )
     return 0
+
+
+def manifest_counts(artifact: Artifact) -> str:
+    counts = artifact.verification_counts()
+    return (
+        f"{counts[VERIFICATION_HAND]} hand-verified edges and "
+        f"{counts[VERIFICATION_PROSE_AUTO]} machine-verified edges"
+    )
 
 
 if __name__ == "__main__":

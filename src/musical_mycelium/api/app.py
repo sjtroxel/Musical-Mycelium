@@ -102,15 +102,21 @@ def stream_answer(query: str) -> Iterator[str]:
 
 
 def corpus_summary() -> dict[str, Any]:
-    """How much graph there actually is.
+    """How much graph there actually is, and how hard each edge was checked.
 
-    On the screen, not in a footnote. ``04`` 4.5 makes coverage a displayed first-class metric, and the
-    corpus is 21 edges — a number the product should state plainly rather than let a visitor assume.
+    On the screen, not in a footnote. ``04`` 4.5 makes coverage a displayed first-class metric, and
+    both numbers here are ones a visitor would otherwise have to assume.
+
+    ``verification`` is the honest half. Most of the corpus cleared an automated prose check that
+    confirms an article names the object but cannot tell whether the sentence *asserts* influence;
+    a minority was read by a human. Publishing the split is what keeps "grounded" meaning traceable
+    rather than correct.
     """
     return {
         "artifact_version": STORE.artifact_version,
         "nodes": len(STORE),
         "edges": STORE.edge_count,
+        "verification": STORE.verification_counts,
         "predicate": "influenced_by",
     }
 

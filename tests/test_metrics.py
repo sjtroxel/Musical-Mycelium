@@ -16,7 +16,7 @@ import pytest
 from musical_mycelium.agent.claims import Claim, ClaimProposal, gate
 from musical_mycelium.eval.metrics import Groundedness, edge_groundedness
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import Artifact, Edge, Node
+from musical_mycelium.graph.schema import VERIFICATION_PROSE_AUTO, Artifact, Edge, Node
 
 INFLUENCED_BY = "influenced_by"
 WHEN = "2026-01-01T00:00:00+00:00"
@@ -45,6 +45,7 @@ def toy() -> InMemoryGraphStore:
             source_id=statement,
             retrieved_at=WHEN,
             prose_tier="PROSE",
+            verification=VERIFICATION_PROSE_AUTO,
         )
         for (subject, obj), statement in STATEMENTS.items()
     )

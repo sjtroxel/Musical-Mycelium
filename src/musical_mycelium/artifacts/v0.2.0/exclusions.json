@@ -1,0 +1,1757 @@
+{
+  "by_reason": {
+    "HAND_REJECTED": 5,
+    "INFOBOX_ONLY": 14,
+    "NOT_A_GENRE": 20,
+    "NO_ARTICLE": 116,
+    "ORPHAN": 35,
+    "REDIRECTED": 28
+  },
+  "count": 218,
+  "excluded": [
+    {
+      "object_id": "Q110185782",
+      "object_label": "melodic techno",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q101109587",
+      "subject_label": "future rave"
+    },
+    {
+      "object_id": "Q111182811",
+      "object_label": "peak time techno",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q101109587",
+      "subject_label": "future rave"
+    },
+    {
+      "object_id": "Q15300817",
+      "object_label": "big room house",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: [[Big room house]], [[Trance music|trance]], [[techno]], [[tech trance]], [[tech house]], [[progressive house]]",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q101109587",
+      "subject_label": "future rave"
+    },
+    {
+      "object_id": "Q598593",
+      "object_label": "tech house",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: [[Big room house]], [[Trance music|trance]], [[techno]], [[tech trance]], [[tech house]], [[progressive house]]",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q101109587",
+      "subject_label": "future rave"
+    },
+    {
+      "object_id": "Q753679",
+      "object_label": "gangsta rap",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: {{hlist|[[Drill music|Drill]]|[[UK drill]]|[[East Coast hip-hop]]|[[gangsta rap]]}}",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q104847359",
+      "subject_label": "Brooklyn drill"
+    },
+    {
+      "object_id": "Q876171",
+      "object_label": "East Coast hip-hop",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: {{hlist|[[Drill music|Drill]]|[[UK drill]]|[[East Coast hip-hop]]|[[gangsta rap]]}}",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q104847359",
+      "subject_label": "Brooklyn drill"
+    },
+    {
+      "object_id": "Q10286190",
+      "object_label": "full-on",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q105404852",
+      "subject_label": "hi-tech psytrance"
+    },
+    {
+      "object_id": "Q1136045",
+      "object_label": "wonky",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q106130091",
+      "subject_label": "post-dubstep"
+    },
+    {
+      "object_id": "Q5510816",
+      "object_label": "future garage",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q106130091",
+      "subject_label": "post-dubstep"
+    },
+    {
+      "object_id": "Q1403744",
+      "object_label": "electro-industrial",
+      "reason": "subject article redirects to a different title: 'Midtempo bass' redirects to 'New beat'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q106477753",
+      "subject_label": "midtempo bass"
+    },
+    {
+      "object_id": "Q1890098",
+      "object_label": "new beat",
+      "reason": "subject article redirects to a different title: 'Midtempo bass' redirects to 'New beat'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q106477753",
+      "subject_label": "midtempo bass"
+    },
+    {
+      "object_id": "Q3658336",
+      "object_label": "New Orleans rhythm and blues",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q106520951",
+      "subject_label": "bayou funk"
+    },
+    {
+      "object_id": "Q117824251",
+      "object_label": "dembow",
+      "reason": "object dembow (Q117824251) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q106560663",
+      "subject_label": "reggaeton underground"
+    },
+    {
+      "object_id": "Q1606591",
+      "object_label": "reggae fusion",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q106560663",
+      "subject_label": "reggaeton underground"
+    },
+    {
+      "object_id": "Q263734",
+      "object_label": "nu metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q106560663",
+      "subject_label": "reggaeton underground"
+    },
+    {
+      "object_id": "Q3827483",
+      "object_label": "Latin hip-hop",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q106560663",
+      "subject_label": "reggaeton underground"
+    },
+    {
+      "object_id": "Q56465221",
+      "object_label": "plena de Panamá",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q106560663",
+      "subject_label": "reggaeton underground"
+    },
+    {
+      "object_id": "Q174526",
+      "object_label": "cyberpunk",
+      "reason": "object cyberpunk (Q174526) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q106582942",
+      "subject_label": "cyberpunk music"
+    },
+    {
+      "object_id": "Q132438",
+      "object_label": "black metal",
+      "reason": "subject article redirects to a different title: 'Black ambient' redirects to 'Dark ambient'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q106642137",
+      "subject_label": "black ambient"
+    },
+    {
+      "object_id": "Q235858",
+      "object_label": "traditional folk music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q106917640",
+      "subject_label": "kleinkunst"
+    },
+    {
+      "object_id": "Q106404229",
+      "object_label": "melodic dubstep",
+      "reason": "subject article redirects to a different title: 'Colour bass' redirects to 'Dubstep'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q108197774",
+      "subject_label": "colour bass"
+    },
+    {
+      "object_id": "Q65065491",
+      "object_label": "riddim",
+      "reason": "subject article redirects to a different title: 'Colour bass' redirects to 'Dubstep'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q108197774",
+      "subject_label": "colour bass"
+    },
+    {
+      "object_id": "Q3827483",
+      "object_label": "Latin hip-hop",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: * [[Corrido]] * [[narcocorrido]] * [[Latin hip hop]] * [[reggaeton]] * [[urbano music|urbano]] * [[Latin trap]]",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q108665706",
+      "subject_label": "corridos tumbados"
+    },
+    {
+      "object_id": "Q30632022",
+      "object_label": "synth funk",
+      "reason": "subject article redirects to a different title: 'Funktronica' redirects to 'Funk'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q1091056",
+      "subject_label": "funktronica"
+    },
+    {
+      "object_id": "Q744417",
+      "object_label": "Italo disco",
+      "reason": "subject article redirects to a different title: 'Funktronica' redirects to 'Funk'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q1091056",
+      "subject_label": "funktronica"
+    },
+    {
+      "object_id": "Q203775",
+      "object_label": "swing",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109555263",
+      "subject_label": "Broadway music"
+    },
+    {
+      "object_id": "Q2452152",
+      "object_label": "dark psytrance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109714084",
+      "subject_label": "twilight psytrance"
+    },
+    {
+      "object_id": "Q2452152",
+      "object_label": "dark psytrance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109714096",
+      "subject_label": "forest psytrance"
+    },
+    {
+      "object_id": "Q835131",
+      "object_label": "Goa trance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109715091",
+      "subject_label": "morning psytrance"
+    },
+    {
+      "object_id": "Q2452152",
+      "object_label": "dark psytrance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109715837",
+      "subject_label": "zenonesque"
+    },
+    {
+      "object_id": "Q25389065",
+      "object_label": "minimal psytrance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109715837",
+      "subject_label": "zenonesque"
+    },
+    {
+      "object_id": "Q739138",
+      "object_label": "teen pop",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109873092",
+      "subject_label": "social media pop"
+    },
+    {
+      "object_id": "Q1890098",
+      "object_label": "new beat",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109873537",
+      "subject_label": "dark disco"
+    },
+    {
+      "object_id": "Q2343562",
+      "object_label": "coldwave",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109873537",
+      "subject_label": "dark disco"
+    },
+    {
+      "object_id": "Q372103",
+      "object_label": "electronic body music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q109873537",
+      "subject_label": "dark disco"
+    },
+    {
+      "object_id": "Q475221",
+      "object_label": "deathcore",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q110121422",
+      "subject_label": "downtempo deathcore"
+    },
+    {
+      "object_id": "Q170435",
+      "object_label": "trance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q110185782",
+      "subject_label": "melodic techno"
+    },
+    {
+      "object_id": "Q1374731",
+      "object_label": "Eurodisco",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q110226234",
+      "subject_label": "red disco"
+    },
+    {
+      "object_id": "Q108064332",
+      "object_label": "nature recording",
+      "reason": "object nature recording (Q108064332) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q110592449",
+      "subject_label": "environmental music"
+    },
+    {
+      "object_id": "Q213121",
+      "object_label": "new age music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q110592449",
+      "subject_label": "environmental music"
+    },
+    {
+      "object_id": "Q2662072",
+      "object_label": "indigenous music of North America",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q112593424",
+      "subject_label": "Native American new age music"
+    },
+    {
+      "object_id": "Q186170",
+      "object_label": "doom metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q11320601",
+      "subject_label": "deathrash"
+    },
+    {
+      "object_id": "Q38848",
+      "object_label": "heavy metal music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q11320601",
+      "subject_label": "deathrash"
+    },
+    {
+      "object_id": "Q83270",
+      "object_label": "hard rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q11320601",
+      "subject_label": "deathrash"
+    },
+    {
+      "object_id": "Q1207347",
+      "object_label": "Shibuya-kei",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q11325235",
+      "subject_label": "neo-acoustic"
+    },
+    {
+      "object_id": "Q2494570",
+      "object_label": "Cherry Red",
+      "reason": "object Cherry Red (Q2494570) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q11325235",
+      "subject_label": "neo-acoustic"
+    },
+    {
+      "object_id": "Q276460",
+      "object_label": "Les Disques du Crépuscule",
+      "reason": "object Les Disques du Crépuscule (Q276460) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q11325235",
+      "subject_label": "neo-acoustic"
+    },
+    {
+      "object_id": "Q598929",
+      "object_label": "post-punk",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q11325235",
+      "subject_label": "neo-acoustic"
+    },
+    {
+      "object_id": "Q11401",
+      "object_label": "hip-hop",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q113332645",
+      "subject_label": "mumble rock"
+    },
+    {
+      "object_id": "Q3071",
+      "object_label": "punk rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q113332645",
+      "subject_label": "mumble rock"
+    },
+    {
+      "object_id": "Q1062400",
+      "object_label": "chanson",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q113509746",
+      "subject_label": "French contemporary R&B"
+    },
+    {
+      "object_id": "Q1162954",
+      "object_label": "French pop",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q113509746",
+      "subject_label": "French contemporary R&B"
+    },
+    {
+      "object_id": "Q131272",
+      "object_label": "soul",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q113509746",
+      "subject_label": "French contemporary R&B"
+    },
+    {
+      "object_id": "Q138020",
+      "object_label": "French hip-hop",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q113509746",
+      "subject_label": "French contemporary R&B"
+    },
+    {
+      "object_id": "Q206159",
+      "object_label": "psychedelic rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1143741",
+      "subject_label": "chicha"
+    },
+    {
+      "object_id": "Q2307786",
+      "object_label": "huayno",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1143741",
+      "subject_label": "chicha"
+    },
+    {
+      "object_id": "Q108297238",
+      "object_label": "euphoric hardstyle",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q114594005",
+      "subject_label": "rawphoric"
+    },
+    {
+      "object_id": "Q622871",
+      "object_label": "psychedelic trance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q114743580",
+      "subject_label": "psystyle"
+    },
+    {
+      "object_id": "Q4965901",
+      "object_label": "Jersey club",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q115483855",
+      "subject_label": "Jersey drill"
+    },
+    {
+      "object_id": "Q109148913",
+      "object_label": "organic house",
+      "reason": "subject article redirects to a different title: 'Melodic house' redirects to 'Progressive house'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q116296482",
+      "subject_label": "melodic house"
+    },
+    {
+      "object_id": "Q874038",
+      "object_label": "deep house",
+      "reason": "subject article redirects to a different title: 'Melodic house' redirects to 'Progressive house'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q116296482",
+      "subject_label": "melodic house"
+    },
+    {
+      "object_id": "Q915152",
+      "object_label": "progressive house",
+      "reason": "subject article redirects to a different title: 'Melodic house' redirects to 'Progressive house'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q116296482",
+      "subject_label": "melodic house"
+    },
+    {
+      "object_id": "Q116972319",
+      "object_label": "first wave black metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1166197",
+      "subject_label": "dark metal"
+    },
+    {
+      "object_id": "Q15141477",
+      "object_label": "proto-metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1166197",
+      "subject_label": "dark metal"
+    },
+    {
+      "object_id": "Q186170",
+      "object_label": "doom metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1166197",
+      "subject_label": "dark metal"
+    },
+    {
+      "object_id": "Q20474",
+      "object_label": "dubstep",
+      "reason": "the automated prose check accepted this edge and the 2026-08-02 hand-verification pass rejected it; the hand judgement governs. grime <- dubstep: cites the *fall* of dubstep; grime predates it",
+      "reason_code": "HAND_REJECTED",
+      "subject_id": "Q1166726",
+      "subject_label": "grime"
+    },
+    {
+      "object_id": "Q1756101",
+      "object_label": "nu skool breaks",
+      "reason": "subject article redirects to a different title: 'Psychedelic breakbeat' redirects to 'Breakbeat'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q11680297",
+      "subject_label": "psybreaks"
+    },
+    {
+      "object_id": "Q622871",
+      "object_label": "psychedelic trance",
+      "reason": "subject article redirects to a different title: 'Psychedelic breakbeat' redirects to 'Breakbeat'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q11680297",
+      "subject_label": "psybreaks"
+    },
+    {
+      "object_id": "Q180268",
+      "object_label": "gospel music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q116875230",
+      "subject_label": "gospel house"
+    },
+    {
+      "object_id": "Q928825",
+      "object_label": "garage house",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q116875230",
+      "subject_label": "gospel house"
+    },
+    {
+      "object_id": "Q1102161",
+      "object_label": "jungle",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q11693017",
+      "subject_label": "darkcore"
+    },
+    {
+      "object_id": "Q216961",
+      "object_label": "Eurodance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q11696996",
+      "subject_label": "epic house"
+    },
+    {
+      "object_id": "Q627906",
+      "object_label": "electro house",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q11877639",
+      "subject_label": "electro trance"
+    },
+    {
+      "object_id": "Q928825",
+      "object_label": "garage house",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q1191544",
+      "subject_label": "kuduro"
+    },
+    {
+      "object_id": "Q106528420",
+      "object_label": "deathstep",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q119259589",
+      "subject_label": "tearout brostep"
+    },
+    {
+      "object_id": "Q4846346",
+      "object_label": "bassline",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q119438497",
+      "subject_label": "UK jackin'"
+    },
+    {
+      "object_id": "Q8341",
+      "object_label": "jazz",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q120233553",
+      "subject_label": "jazz guachaca"
+    },
+    {
+      "object_id": "Q109322851",
+      "object_label": "mashcore",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q120484427",
+      "subject_label": "dariacore"
+    },
+    {
+      "object_id": "Q16235124",
+      "object_label": "Vektroid",
+      "reason": "object Vektroid (Q16235124) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q120484427",
+      "subject_label": "dariacore"
+    },
+    {
+      "object_id": "Q20903",
+      "object_label": "brostep",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q120484427",
+      "subject_label": "dariacore"
+    },
+    {
+      "object_id": "Q388906",
+      "object_label": "hardcore",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q120484427",
+      "subject_label": "dariacore"
+    },
+    {
+      "object_id": "Q1856554",
+      "object_label": "Wall of Sound",
+      "reason": "object Wall of Sound (Q1856554) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q1207347",
+      "subject_label": "Shibuya-kei"
+    },
+    {
+      "object_id": "Q235858",
+      "object_label": "traditional folk music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q121032006",
+      "subject_label": "national music"
+    },
+    {
+      "object_id": "Q16625659",
+      "object_label": "space ambient",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q121494463",
+      "subject_label": "Kosmische Musik"
+    },
+    {
+      "object_id": "Q110592506",
+      "object_label": "modern dancehall",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q122034475",
+      "subject_label": "gengetone"
+    },
+    {
+      "object_id": "Q202930",
+      "object_label": "reggaeton",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q122034475",
+      "subject_label": "gengetone"
+    },
+    {
+      "object_id": "Q22908553",
+      "object_label": "future bass",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q122910849",
+      "subject_label": "future trap"
+    },
+    {
+      "object_id": "Q3085519",
+      "object_label": "pipe band",
+      "reason": "object pipe band (Q3085519) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q12302",
+      "subject_label": "bagad"
+    },
+    {
+      "object_id": "Q7679165",
+      "object_label": "talempong",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q123141133",
+      "subject_label": "talempong goyang"
+    },
+    {
+      "object_id": "Q852209",
+      "object_label": "riddim",
+      "reason": "object riddim (Q852209) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q123421084",
+      "subject_label": "briddim"
+    },
+    {
+      "object_id": "Q1191299",
+      "object_label": "industrial hardcore",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q123543092",
+      "subject_label": "darkcore"
+    },
+    {
+      "object_id": "Q1242484",
+      "object_label": "doomcore",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q123543092",
+      "subject_label": "darkcore"
+    },
+    {
+      "object_id": "Q1983750",
+      "object_label": "mainstream hardcore",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q123543092",
+      "subject_label": "darkcore"
+    },
+    {
+      "object_id": "Q20378",
+      "object_label": "alternative metal",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q12362064",
+      "subject_label": "emo rap"
+    },
+    {
+      "object_id": "Q3930216",
+      "object_label": "rapcore",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q12362064",
+      "subject_label": "emo rap"
+    },
+    {
+      "object_id": "Q25099840",
+      "object_label": "Afrobeats",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q123707590",
+      "subject_label": "pop urbaine"
+    },
+    {
+      "object_id": "Q2572585",
+      "object_label": "pop rap",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q123707590",
+      "subject_label": "pop urbaine"
+    },
+    {
+      "object_id": "Q850412",
+      "object_label": "contemporary R&B",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q123707590",
+      "subject_label": "pop urbaine"
+    },
+    {
+      "object_id": "Q16625659",
+      "object_label": "space ambient",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q124099574",
+      "subject_label": "cosmic black metal"
+    },
+    {
+      "object_id": "Q236913",
+      "object_label": "space rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q124099574",
+      "subject_label": "cosmic black metal"
+    },
+    {
+      "object_id": "Q170611",
+      "object_label": "techno",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1242484",
+      "subject_label": "doomcore"
+    },
+    {
+      "object_id": "Q54864794",
+      "object_label": "horror music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1242484",
+      "subject_label": "doomcore"
+    },
+    {
+      "object_id": "Q756956",
+      "object_label": "dark ambient",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1242484",
+      "subject_label": "doomcore"
+    },
+    {
+      "object_id": "Q4965901",
+      "object_label": "Jersey club",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q124399713",
+      "subject_label": "Jersey club rap"
+    },
+    {
+      "object_id": "Q106560663",
+      "object_label": "reggaeton underground",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q124705104",
+      "subject_label": "trapeton"
+    },
+    {
+      "object_id": "Q54329757",
+      "object_label": "Latin trap",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q124705104",
+      "subject_label": "trapeton"
+    },
+    {
+      "object_id": "Q106594102",
+      "object_label": "Philly club",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q125653755",
+      "subject_label": "Philly club rap"
+    },
+    {
+      "object_id": "Q2710523",
+      "object_label": "ragga jungle",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1275972",
+      "subject_label": "raggacore"
+    },
+    {
+      "object_id": "Q573484",
+      "object_label": "rocksteady",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1277532",
+      "subject_label": "early reggae"
+    },
+    {
+      "object_id": "Q8341",
+      "object_label": "jazz",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1277532",
+      "subject_label": "early reggae"
+    },
+    {
+      "object_id": "Q9759",
+      "object_label": "blues",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1277532",
+      "subject_label": "early reggae"
+    },
+    {
+      "object_id": "Q997481",
+      "object_label": "bubblegum music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q128792684",
+      "subject_label": "bubblegum punk"
+    },
+    {
+      "object_id": "Q1123745",
+      "object_label": "glam punk",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q131425",
+      "subject_label": "visual kei"
+    },
+    {
+      "object_id": "Q1785028",
+      "object_label": "sleaze rock",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q131425",
+      "subject_label": "visual kei"
+    },
+    {
+      "object_id": "Q3840596",
+      "object_label": "dark wave",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q131425",
+      "subject_label": "visual kei"
+    },
+    {
+      "object_id": "Q1325963",
+      "object_label": "electro funk",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q131440882",
+      "subject_label": "electro hip-hop"
+    },
+    {
+      "object_id": "Q660984",
+      "object_label": "intelligent dance music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q135437342",
+      "subject_label": "microfunk"
+    },
+    {
+      "object_id": "Q22908553",
+      "object_label": "future bass",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q135493744",
+      "subject_label": "melodic bass"
+    },
+    {
+      "object_id": "Q20474",
+      "object_label": "dubstep",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q135553474",
+      "subject_label": "autonomic"
+    },
+    {
+      "object_id": "Q5510816",
+      "object_label": "future garage",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q135553474",
+      "subject_label": "autonomic"
+    },
+    {
+      "object_id": "Q2913982",
+      "object_label": "trap music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q137441533",
+      "subject_label": "trap dancehall"
+    },
+    {
+      "object_id": "Q15733887",
+      "object_label": "vaporwave",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q137442003",
+      "subject_label": "spamwave"
+    },
+    {
+      "object_id": "Q179448",
+      "object_label": "noise",
+      "reason": "object noise (Q179448) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q137442003",
+      "subject_label": "spamwave"
+    },
+    {
+      "object_id": "Q3879179",
+      "object_label": "nu gaze",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: * [[Shoegaze]] * [[nu gaze (2020s)|nu-gaze]] * [[digicore]] * [[hyperpop]] * [[electronic music|electronic]]",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q138605895",
+      "subject_label": "zoomergaze"
+    },
+    {
+      "object_id": "Q1323698",
+      "object_label": "Indian classical music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q138807858",
+      "subject_label": "Afro-raga"
+    },
+    {
+      "object_id": "Q1770695",
+      "object_label": "Hindustani classical music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q138807858",
+      "subject_label": "Afro-raga"
+    },
+    {
+      "object_id": "Q216926",
+      "object_label": "raga",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q138807858",
+      "subject_label": "Afro-raga"
+    },
+    {
+      "object_id": "Q511054",
+      "object_label": "griot",
+      "reason": "object griot (Q511054) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q138807858",
+      "subject_label": "Afro-raga"
+    },
+    {
+      "object_id": "Q531426",
+      "object_label": "music of India",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q138807858",
+      "subject_label": "Afro-raga"
+    },
+    {
+      "object_id": "Q6942329",
+      "object_label": "music of West Africa",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q138807858",
+      "subject_label": "Afro-raga"
+    },
+    {
+      "object_id": "Q7800608",
+      "object_label": "desert blues",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q138807858",
+      "subject_label": "Afro-raga"
+    },
+    {
+      "object_id": "Q202930",
+      "object_label": "reggaeton",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q139551738",
+      "subject_label": "urban merengue"
+    },
+    {
+      "object_id": "Q2529400",
+      "object_label": "urban contemporary",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q139551738",
+      "subject_label": "urban merengue"
+    },
+    {
+      "object_id": "Q3827483",
+      "object_label": "Latin hip-hop",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q139551738",
+      "subject_label": "urban merengue"
+    },
+    {
+      "object_id": "Q547137",
+      "object_label": "Latin pop",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q139551738",
+      "subject_label": "urban merengue"
+    },
+    {
+      "object_id": "Q106634944",
+      "object_label": "festival progressive house",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q139807789",
+      "subject_label": "trance 2.0"
+    },
+    {
+      "object_id": "Q627906",
+      "object_label": "electro house",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q139807789",
+      "subject_label": "trance 2.0"
+    },
+    {
+      "object_id": "Q2907232",
+      "object_label": "Antropophagia",
+      "reason": "object Antropophagia (Q2907232) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q1413061",
+      "subject_label": "tropicália"
+    },
+    {
+      "object_id": "Q235858",
+      "object_label": "traditional folk music",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q1425661",
+      "subject_label": "folk punk"
+    },
+    {
+      "object_id": "Q211573",
+      "object_label": "garage rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q15141477",
+      "subject_label": "proto-metal"
+    },
+    {
+      "object_id": "Q7749",
+      "object_label": "rock and roll",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q15141477",
+      "subject_label": "proto-metal"
+    },
+    {
+      "object_id": "Q116958268",
+      "object_label": "occult music",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q16254929",
+      "subject_label": "Italian occult psychedelia"
+    },
+    {
+      "object_id": "Q41343",
+      "object_label": "post-metal",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: {{hlist|[[Shoegaze]]|[[atmospheric black metal]]<ref>{{cite web|url=https://www.stereogum.com/1617782/deconstructing-alcests-shelter-and-metal-in-a-post-deafheaven-world/franchises/deconstructing/|title=Deconstructing Alcest's Shelter And Metal In A Post-Deafheaven World|author=Michael Nelson|date=J",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q16855754",
+      "subject_label": "blackgaze"
+    },
+    {
+      "object_id": "Q186170",
+      "object_label": "doom metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1772422",
+      "subject_label": "stoner metal"
+    },
+    {
+      "object_id": "Q193355",
+      "object_label": "blues rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1772422",
+      "subject_label": "stoner metal"
+    },
+    {
+      "object_id": "Q206159",
+      "object_label": "psychedelic rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1772422",
+      "subject_label": "stoner metal"
+    },
+    {
+      "object_id": "Q1123745",
+      "object_label": "glam punk",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1785028",
+      "subject_label": "sleaze rock"
+    },
+    {
+      "object_id": "Q193355",
+      "object_label": "blues rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1785028",
+      "subject_label": "sleaze rock"
+    },
+    {
+      "object_id": "Q379033",
+      "object_label": "arena rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1785028",
+      "subject_label": "sleaze rock"
+    },
+    {
+      "object_id": "Q3908370",
+      "object_label": "pop metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1785028",
+      "subject_label": "sleaze rock"
+    },
+    {
+      "object_id": "Q76092",
+      "object_label": "glam rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1785028",
+      "subject_label": "sleaze rock"
+    },
+    {
+      "object_id": "Q83270",
+      "object_label": "hard rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q1785028",
+      "subject_label": "sleaze rock"
+    },
+    {
+      "object_id": "Q47670",
+      "object_label": "Black Sabbath",
+      "reason": "object Black Sabbath (Q47670) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q186170",
+      "subject_label": "doom metal"
+    },
+    {
+      "object_id": "Q627906",
+      "object_label": "electro house",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q188450",
+      "subject_label": "electropop"
+    },
+    {
+      "object_id": "Q3008180",
+      "object_label": "cybergrind",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q2035976",
+      "subject_label": "Nintendocore"
+    },
+    {
+      "object_id": "Q465978",
+      "object_label": "extreme metal",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: {{hlist|[[Chiptune]]|[[hardcore punk]]|[[video game music]]|[[heavy metal music|heavy metal]]|[[post-hardcore]]|[[metalcore]]|[[extreme metal]]}}",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q2035976",
+      "subject_label": "Nintendocore"
+    },
+    {
+      "object_id": "Q7927912",
+      "object_label": "video game culture",
+      "reason": "object video game culture (Q7927912) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q2035976",
+      "subject_label": "Nintendocore"
+    },
+    {
+      "object_id": "Q58339",
+      "object_label": "disco",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: {{hlist|[[Jazz fusion]]|[[soul music|soul]]|[[disco]]|[[dance-rock]]|[[Hip hop music|hip hop]]|[[funk]]|[[Psychedelic music|psychedelia]]}}",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q221772",
+      "subject_label": "acid jazz"
+    },
+    {
+      "object_id": "Q241662",
+      "object_label": "groove metal",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q2265866",
+      "subject_label": "brutal death metal"
+    },
+    {
+      "object_id": "Q832665",
+      "object_label": "hard trance",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: {{hlist|[[Techno]]|[[trance music|trance]]|[[hard trance]]|[[psychedelic music]]}}",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q2302695",
+      "subject_label": "tech trance"
+    },
+    {
+      "object_id": "Q38848",
+      "object_label": "heavy metal music",
+      "reason": "the automated prose check accepted this edge and the 2026-08-02 hand-verification pass rejected it; the hand judgement governs. groove metal <- heavy metal: taxonomic. 6 genuine prose mentions, but the lead reads 'is a subgenre of heavy metal music'. (Was recorded as 'zero genuine prose'; that was wrong.)",
+      "reason_code": "HAND_REJECTED",
+      "subject_id": "Q241662",
+      "subject_label": "groove metal"
+    },
+    {
+      "object_id": "Q212688",
+      "object_label": "dub music",
+      "reason": "subject article redirects to a different title: 'Dubtronica' redirects to 'Dub music'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q2478478",
+      "subject_label": "dubtronica"
+    },
+    {
+      "object_id": "Q12826678",
+      "object_label": "Arabic maqam",
+      "reason": "object Arabic maqam (Q12826678) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q2738544",
+      "subject_label": "Mizrahi music"
+    },
+    {
+      "object_id": "Q1507298",
+      "object_label": "lo-fi music",
+      "reason": "subject article redirects to a different title: 'Bedroom pop' redirects to 'Lo-fi music'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q28746819",
+      "subject_label": "bedroom pop"
+    },
+    {
+      "object_id": "Q1091450",
+      "object_label": "aggrotech",
+      "reason": "subject article redirects to a different title: 'Cyber metal' redirects to 'Industrial metal'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q3008122",
+      "subject_label": "cyber metal"
+    },
+    {
+      "object_id": "Q1621467",
+      "object_label": "symphonic black metal",
+      "reason": "subject article redirects to a different title: 'Cyber metal' redirects to 'Industrial metal'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q3008122",
+      "subject_label": "cyber metal"
+    },
+    {
+      "object_id": "Q253918",
+      "object_label": "melodic death metal",
+      "reason": "subject article redirects to a different title: 'Cyber metal' redirects to 'Industrial metal'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q3008122",
+      "subject_label": "cyber metal"
+    },
+    {
+      "object_id": "Q372103",
+      "object_label": "electronic body music",
+      "reason": "subject article redirects to a different title: 'Cyber metal' redirects to 'Industrial metal'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q3008122",
+      "subject_label": "cyber metal"
+    },
+    {
+      "object_id": "Q17191592",
+      "object_label": "anime music",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q3098078",
+      "subject_label": "J-core"
+    },
+    {
+      "object_id": "Q339906",
+      "object_label": "happy hardcore",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: * [[Hardcore (electronic dance music genre)|Hardcore]] * [[speedcore]] * [[gabber]] * [[happy hardcore]] * [[doujin music]] * [[denpa song]]s * [[anisong]]s",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q3098078",
+      "subject_label": "J-core"
+    },
+    {
+      "object_id": "Q903735",
+      "object_label": "breakcore",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q3098078",
+      "subject_label": "J-core"
+    },
+    {
+      "object_id": "Q202925",
+      "object_label": "tribal house",
+      "reason": "subject article redirects to a different title: 'Jungle terror' redirects to 'Electro house'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q31836693",
+      "subject_label": "jungle terror"
+    },
+    {
+      "object_id": "Q186170",
+      "object_label": "doom metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q31837446",
+      "subject_label": "dark jazz"
+    },
+    {
+      "object_id": "Q193207",
+      "object_label": "ambient music",
+      "reason": "subject article redirects to a different title: 'Ambient pop' redirects to 'Ambient music'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q33160145",
+      "subject_label": "ambient pop"
+    },
+    {
+      "object_id": "Q341395",
+      "object_label": "acid techno",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q341396",
+      "subject_label": "acidcore"
+    },
+    {
+      "object_id": "Q58339",
+      "object_label": "disco",
+      "reason": "subject article redirects to a different title: 'Disco house' redirects to 'French house'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q360596",
+      "subject_label": "disco house"
+    },
+    {
+      "object_id": "Q1990122",
+      "object_label": "Celtic punk",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q3683985",
+      "subject_label": "combat folk"
+    },
+    {
+      "object_id": "Q2662148",
+      "object_label": "Celtic rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q3683985",
+      "subject_label": "combat folk"
+    },
+    {
+      "object_id": "Q3827483",
+      "object_label": "Latin hip-hop",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q3855113",
+      "subject_label": "merenhouse"
+    },
+    {
+      "object_id": "Q83270",
+      "object_label": "hard rock",
+      "reason": "the automated prose check accepted this edge and the 2026-08-02 hand-verification pass rejected it; the hand judgement governs. heavy metal <- hard rock: prose asserts synonymy, not derivation",
+      "reason_code": "HAND_REJECTED",
+      "subject_id": "Q38848",
+      "subject_label": "heavy metal music"
+    },
+    {
+      "object_id": "Q9730",
+      "object_label": "classical music",
+      "reason": "the automated prose check accepted this edge and the 2026-08-02 hand-verification pass rejected it; the hand judgement governs. heavy metal <- classical music: prose contradicts it",
+      "reason_code": "HAND_REJECTED",
+      "subject_id": "Q38848",
+      "subject_label": "heavy metal music"
+    },
+    {
+      "object_id": "Q37073",
+      "object_label": "pop music",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q4034145",
+      "subject_label": "antipop"
+    },
+    {
+      "object_id": "Q38848",
+      "object_label": "heavy metal music",
+      "reason": "the automated prose check accepted this edge and the 2026-08-02 hand-verification pass rejected it; the hand judgement governs. extreme metal <- heavy metal: taxonomic, not historical",
+      "reason_code": "HAND_REJECTED",
+      "subject_id": "Q465978",
+      "subject_label": "extreme metal"
+    },
+    {
+      "object_id": "Q170435",
+      "object_label": "trance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q4993553",
+      "subject_label": "ambient trance"
+    },
+    {
+      "object_id": "Q1132127",
+      "object_label": "hip hop culture",
+      "reason": "object hip hop culture (Q1132127) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q4998143",
+      "subject_label": "Burban"
+    },
+    {
+      "object_id": "Q1166726",
+      "object_label": "grime",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: [[contemporary R&B|R&B]] • [[British hip hop|hip hop]] • [[Grime (music genre)|grime]] • [[UK garage]] • [[Bhangra (music)|Bhangra]] • [[Indian folk music|Indian folk]] • [[Bollywood]]",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q4998143",
+      "subject_label": "Burban"
+    },
+    {
+      "object_id": "Q223685",
+      "object_label": "steampunk",
+      "reason": "object steampunk (Q223685) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q5072880",
+      "subject_label": "chap hop"
+    },
+    {
+      "object_id": "Q116958268",
+      "object_label": "occult music",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q55296418",
+      "subject_label": "occult rock"
+    },
+    {
+      "object_id": "Q12326776",
+      "object_label": "metal music",
+      "reason": "subject article redirects to a different title: 'Trap metal' redirects to 'Rap metal'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q55644985",
+      "subject_label": "trap metal"
+    },
+    {
+      "object_id": "Q9730",
+      "object_label": "classical music",
+      "reason": "subject article redirects to a different title: 'Classical crossover' redirects to 'Crossover music'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q56342556",
+      "subject_label": "classical crossover"
+    },
+    {
+      "object_id": "Q848457",
+      "object_label": "speedcore",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q5978495",
+      "subject_label": "lolicore"
+    },
+    {
+      "object_id": "Q2607836",
+      "object_label": "freakbeat",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q60462608",
+      "subject_label": "biker metal"
+    },
+    {
+      "object_id": "Q55296418",
+      "object_label": "occult rock",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q60462608",
+      "subject_label": "biker metal"
+    },
+    {
+      "object_id": "Q640097",
+      "object_label": "electric blues",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q60462608",
+      "subject_label": "biker metal"
+    },
+    {
+      "object_id": "Q113493820",
+      "object_label": "French electro",
+      "reason": "subject article redirects to a different title: 'Darksynth' redirects to 'Synthwave'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q60973191",
+      "subject_label": "darksynth"
+    },
+    {
+      "object_id": "Q893474",
+      "object_label": "pedal",
+      "reason": "object pedal (Q893474) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q650316",
+      "subject_label": "drone music"
+    },
+    {
+      "object_id": "Q118798959",
+      "object_label": "tearout dubstep",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q65065491",
+      "subject_label": "riddim"
+    },
+    {
+      "object_id": "Q263734",
+      "object_label": "nu metal",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q65204373",
+      "subject_label": "lazer"
+    },
+    {
+      "object_id": "Q325504",
+      "object_label": "electronic rock",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q65204373",
+      "subject_label": "lazer"
+    },
+    {
+      "object_id": "Q956717",
+      "object_label": "kwaito",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q6918602",
+      "subject_label": "motswako"
+    },
+    {
+      "object_id": "Q3135787",
+      "object_label": "American hip-hop",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q6956465",
+      "subject_label": "Na mele paleoleo"
+    },
+    {
+      "object_id": "Q1132127",
+      "object_label": "hip hop culture",
+      "reason": "object hip hop culture (Q1132127) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q7196456",
+      "subject_label": "Pinoy hip hop"
+    },
+    {
+      "object_id": "Q164444",
+      "object_label": "funk",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q7196456",
+      "subject_label": "Pinoy hip hop"
+    },
+    {
+      "object_id": "Q3135787",
+      "object_label": "American hip-hop",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q7196456",
+      "subject_label": "Pinoy hip hop"
+    },
+    {
+      "object_id": "Q573484",
+      "object_label": "rocksteady",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: {{hlist|[[Reggae]]|[[Rock music|rock]]|[[reggae fusion]]|[[ska]]|[[rocksteady]]}}",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q7308175",
+      "subject_label": "reggae rock"
+    },
+    {
+      "object_id": "Q7749",
+      "object_label": "rock and roll",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q7308175",
+      "subject_label": "reggae rock"
+    },
+    {
+      "object_id": "Q703778",
+      "object_label": "neo-psychedelia",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q7410145",
+      "subject_label": "sampledelia"
+    },
+    {
+      "object_id": "Q188450",
+      "object_label": "electropop",
+      "reason": "subject article redirects to a different title: 'Electro hop' redirects to 'Hip house'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q784310",
+      "subject_label": "electro hop"
+    },
+    {
+      "object_id": "Q2572585",
+      "object_label": "pop rap",
+      "reason": "subject article redirects to a different title: 'Electro hop' redirects to 'Hip house'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q784310",
+      "subject_label": "electro hop"
+    },
+    {
+      "object_id": "Q627906",
+      "object_label": "electro house",
+      "reason": "subject article redirects to a different title: 'Electro hop' redirects to 'Hip house'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q784310",
+      "subject_label": "electro hop"
+    },
+    {
+      "object_id": "Q213714",
+      "object_label": "bluegrass music",
+      "reason": "subject article never mentions the object",
+      "reason_code": "ORPHAN",
+      "subject_id": "Q7988543",
+      "subject_label": "Western swing fiddle"
+    },
+    {
+      "object_id": "Q756956",
+      "object_label": "dark ambient",
+      "reason": "subject article redirects to a different title: 'Ambient black metal' redirects to 'Black metal'",
+      "reason_code": "REDIRECTED",
+      "subject_id": "Q8197165",
+      "subject_label": "ambient black metal"
+    },
+    {
+      "object_id": "Q820049",
+      "object_label": "gabber",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q922865",
+      "subject_label": "trancecore"
+    },
+    {
+      "object_id": "Q832665",
+      "object_label": "hard trance",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q922865",
+      "subject_label": "trancecore"
+    },
+    {
+      "object_id": "Q131272",
+      "object_label": "soul",
+      "reason": "mentioned only in the infobox; genre infoboxes are weak evidence: {{hlist|[[Disco]]|[[house music|house]]|[[garage house]]|[[deep house]]|[[soul (music)|soul]]|[[gospel music|gospel]]}}",
+      "reason_code": "INFOBOX_ONLY",
+      "subject_id": "Q97277483",
+      "subject_label": "New Jersey sound"
+    },
+    {
+      "object_id": "Q377141",
+      "object_label": "sinfonia",
+      "reason": "object sinfonia (Q377141) does not reach Q188451 via P31/P279*; P737 is a general influence property and its objects include bands, people and techniques",
+      "reason_code": "NOT_A_GENRE",
+      "subject_id": "Q9734",
+      "subject_label": "symphony"
+    },
+    {
+      "object_id": "Q131272",
+      "object_label": "soul",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q97378346",
+      "subject_label": "Black Rio"
+    },
+    {
+      "object_id": "Q164444",
+      "object_label": "funk",
+      "reason": "subject has no English Wikipedia article: no enwiki sitelink on the subject entity",
+      "reason_code": "NO_ARTICLE",
+      "subject_id": "Q97378346",
+      "subject_label": "Black Rio"
+    }
+  ]
+}
