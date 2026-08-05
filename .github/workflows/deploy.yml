@@ -20,6 +20,23 @@ on:
         required: false
         type: string
 
+      # These two are inputs rather than hardcoded values because `main/variables.tf`'s defaults
+      # express the intended end state and not this account's current one. An apply that omits them
+      # takes those defaults and silently reverts what a local apply established — see the comment on
+      # the apply step, which is the failure this cost an afternoon to find on 2026-08-05.
+      llm_provider:
+        description: "Which LLM the deployed function builds. `bedrock` requires a non-zero quota."
+        required: false
+        type: choice
+        default: local
+        options: [local, bedrock]
+
+      reserved_concurrency:
+        description: "Lambda reserved concurrency. -1 leaves the account ceiling in charge."
+        required: false
+        type: string
+        default: "-1"
+
   # push:
   #   branches: [main]
   #   paths-ignore:
@@ -108,12 +125,28 @@ jobs:
           terraform -chdir=infra/terraform/main init \
             -backend-config=bucket=${{ steps.names.outputs.state_bucket }}
 
+      # All three -vars are load-bearing, and this step failed without two of them on 2026-08-05:
+      #
+      #   llm_provider         `main/variables.tf` defaults it to `bedrock`, and every daily-token
+      #                        quota on the account still reads 0. Deploying that way leaves /health
+      #                        green while /lineage dies with Runtime.StreamError on the first
+      #                        converse call — a healthy health check over a dead stream IS the
+      #                        signature of this, not an LWA or streaming bug. Choose `bedrock` at
+      #                        dispatch time once the quota clears.
+      #   reserved_concurrency defaults to 5; this account's entire concurrency ceiling is ~10, so
+      #                        PutFunctionConcurrency is refused and the apply fails AFTER it has
+      #                        already updated the function. -1 leaves the account ceiling in charge.
+      #
+      # Both were measured on 2026-08-03 and are documented in main/variables.tf. The `||` fallbacks
+      # are for the commented-out `push:` trigger, where the inputs context is empty.
       - name: Terraform apply
         env:
           TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
         run: |
           terraform -chdir=infra/terraform/main apply -auto-approve \
-            -var="image_tag=${{ steps.names.outputs.image_tag }}"
+            -var="image_tag=${{ steps.names.outputs.image_tag }}" \
+            -var="llm_provider=${{ inputs.llm_provider || 'local' }}" \
+            -var="reserved_concurrency=${{ inputs.reserved_concurrency || -1 }}"
 
       # The deploy is not finished when apply succeeds. It is finished when the URL streams.
       #

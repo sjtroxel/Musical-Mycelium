@@ -104,6 +104,11 @@ data "aws_iam_policy_document" "github_deploy" {
     resources = ["*"] # This action does not support resource-level permissions.
   }
 
+  # ListTagsForResource is not a push permission and is here anyway: `data "aws_ecr_repository"` in
+  # main/ reads tags as part of resolving the repository, so the *plan* fails without it, before a
+  # single resource is touched. Added 2026-08-05 after the workflow's first successful credential
+  # exchange got eight steps in and died here. A local apply never finds this — `mycelium-dev` is a
+  # broader key, and a least-privilege CI role is only ever proven by CI.
   statement {
     sid    = "EcrPush"
     effect = "Allow"
@@ -116,6 +121,7 @@ data "aws_iam_policy_document" "github_deploy" {
       "ecr:GetDownloadUrlForLayer",
       "ecr:InitiateLayerUpload",
       "ecr:ListImages",
+      "ecr:ListTagsForResource",
       "ecr:PutImage",
       "ecr:UploadLayerPart",
     ]

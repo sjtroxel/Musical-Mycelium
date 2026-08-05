@@ -11,9 +11,30 @@ variable "region" {
 }
 
 variable "github_repo" {
-  description = "owner/repo that CI runs from. Used to scope which workflow may assume the deploy role."
+  description = <<-EOT
+    The repository whose workflows may assume the deploy role, in the exact form GitHub puts in the
+    OIDC token's `sub` claim. Not a display name — a string AWS compares with `StringEquals`.
+
+    **It carries numeric IDs, and that is not a typo.** Repositories created on or after
+    2026-07-15 — and older ones that opted in — emit an *immutable* subject claim, which appends the
+    permanent owner ID and repository ID after each name:
+
+        repo:<owner>@<owner_id>/<repo>@<repo_id>:ref:refs/heads/<branch>
+
+    The IDs are what make the claim immutable: deleting a repo and recreating one with the same name
+    produces a new ID, so a stale trust policy cannot be used to mint credentials for it. A policy
+    written against the old name-only form fails closed, with
+    `Not authorized to perform sts:AssumeRoleWithWebIdentity` and no hint as to why — which is exactly
+    what happened on 2026-08-05, on this workflow's first real run.
+
+    Read the current value rather than assembling it by hand:
+
+        gh api repos/<owner>/<repo>/actions/oidc/customization/sub
+
+    and use its `sub_claim_prefix` verbatim.
+  EOT
   type        = string
-  default     = "sjtroxel/Musical-Mycelium"
+  default     = "sjtroxel@183318591/Musical-Mycelium@1316585483"
 }
 
 variable "github_branch" {
