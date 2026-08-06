@@ -128,7 +128,29 @@ class Node:
     kind: str
     revision_id: int | None = None
 
+    #: Year of P571 (inception), where Wikidata has one. **Optional, and the absence is the point** —
+    #: DoD #7 wants coverage to be a recorded quantity rather than a disclaimer, and the share of nodes
+    #: with no inception is the honest measure of how thin the early eras are. 28 of 169 genres had none
+    #: at v0.5.0.
+    inception_year: int | None = None
+
+    #: Wikidata's own precision code for that year: 7 century, 8 decade, 9 year, 10 month, 11 day.
+    #: **Carried rather than discarded because 22 of the 141 dated genres are coarser than year-precision
+    #: (20 decade, 2 century).** Rendering a decade-precision value as "1975" states something Wikidata
+    #: does not, which is the "grounded slides into correct" failure in miniature.
+    inception_precision: int | None = None
+
+    #: P495 (country of origin) labels. **A tuple because it is genuinely multi-valued** — a genre may
+    #: be credited to two countries at once, and collapsing that to one would invent a fact. Labels
+    #: rather than QIDs, consistent with this node already storing its own label; the node's
+    #: ``source_id`` and ``retrieved_at`` are what keep the row checkable.
+    countries: tuple[str, ...] = ()
+
     def __post_init__(self) -> None:
+        # JSON round-trips a tuple as a list, so ``Artifact.from_json`` would otherwise rebuild this
+        # field as an unhashable list and break equality against a freshly-built node.
+        if not isinstance(self.countries, tuple):
+            object.__setattr__(self, "countries", tuple(self.countries))
         _require(self.id, "id", "node")
         _require(self.label, "label", f"node {self.id}")
         _require(self.source, "source", f"node {self.id}")
@@ -215,6 +237,11 @@ class Manifest:
     #: before this field existed and is immutable, so it carries an empty structure and the numbers come
     #: from the corpus itself.
     structure: dict[str, int] = field(default_factory=dict)
+
+    #: Coverage by era and region, from ``graph.coverage.analyse``. Defaulted for the same reason
+    #: ``structure`` is: artifacts through v0.4.0 were written before this field existed and are
+    #: immutable, so they carry an empty dict and the runtime recomputes.
+    coverage: dict[str, Any] = field(default_factory=dict)
     verification_record: str = ""
     notes: str = ""
 

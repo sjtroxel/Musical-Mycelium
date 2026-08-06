@@ -1,0 +1,236 @@
+"""``graph.coverage`` — the corpus skew as arithmetic.
+
+Same two-layer shape as ``test_structure``: synthetic graphs whose answer is known by construction
+carry the weight, and the assertions against the pinned corpus are a weaker second layer that pins what
+v0.5.0 actually measures so a corpus change has to be acknowledged rather than absorbed.
+
+Those pinned numbers are **measurements, not targets.** When a re-ingest moves them, update them here
+and say so; do not treat the movement as a failure.
+"""
+
+from __future__ import annotations
+
+import pytest
+
+from musical_mycelium.graph.coverage import ERA_BOUNDS, analyse, era_of
+from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.schema import (
+    NODE_KIND_ARTIST,
+    NODE_KIND_GENRE,
+    Artifact,
+    Node,
+)
+
+WHEN = "2026-08-06T00:00:00+00:00"
+
+
+def node(
+    qid: str,
+    *,
+    kind: str = NODE_KIND_GENRE,
+    year: int | None = None,
+    precision: int | None = None,
+    countries: tuple[str, ...] = (),
+) -> Node:
+    return Node(
+        id=qid,
+        label=f"node {qid}",
+        source="wikidata",
+        source_id=qid,
+        retrieved_at=WHEN,
+        kind=kind,
+        inception_year=year,
+        inception_precision=precision,
+        countries=countries,
+    )
+
+
+# --- known by construction ---------------------------------------------------------------------
+
+
+def test_an_empty_corpus_measures_zero_rather_than_erroring() -> None:
+    """The vacuous guard ``.claude/rules/evals.md`` requires. An empty corpus must report emptiness,
+    not crash and not produce a healthy-looking default."""
+    result = analyse(Artifact(nodes=(), edges=()))
+
+    assert result.genres == 0
+    assert result.without_inception == 0
+    assert result.top_country == ""
+    assert result.top_country_share == 0.0
+    assert sum(result.eras.values()) == 0
+
+
+def test_the_undated_are_counted_not_dropped() -> None:
+    """The whole point of DoD #7. A genre with no P571 is the measurement, not a hole in it — so it
+    appears in ``without_inception`` **and** as ``unknown`` in the era histogram. An era breakdown that
+    silently omitted it would make the covered eras look more complete than they are."""
+    result = analyse(Artifact(nodes=(node("Q1", year=1975), node("Q2")), edges=()))
+
+    assert result.without_inception == 1
+    assert result.eras["unknown"] == 1
+    assert sum(result.eras.values()) == result.genres, "every genre lands in exactly one bucket"
+
+
+def test_every_era_bucket_is_present_even_at_zero() -> None:
+    """A missing key reads as "not measured" and this is measured — the same rule
+    ``Artifact.verification_counts`` follows."""
+    result = analyse(Artifact(nodes=(node("Q1", year=1975),), edges=()))
+
+    assert set(result.eras) == {name for name, _, _ in ERA_BOUNDS} | {"unknown"}
+    assert result.eras["pre-1900"] == 0
+
+
+@pytest.mark.parametrize(
+    ("year", "era"),
+    [
+        (500, "pre-1900"),
+        (1899, "pre-1900"),
+        (1900, "1900-1949"),
+        (1969, "1950-1969"),
+        (2026, "2010-"),
+    ],
+)
+def test_era_boundaries_are_inclusive(year: int, era: str) -> None:
+    assert era_of(year) == era
+
+
+def test_a_genre_with_two_countries_counts_once_for_each() -> None:
+    """P495 is genuinely multi-valued — one v0.5.0 genre is credited to both the US and the UK.
+    Collapsing that to one country would invent a fact; so the country histogram sums to more than the
+    number of genres that have any country at all, and that is correct rather than a bug."""
+    result = analyse(
+        Artifact(nodes=(node("Q1", countries=("United States", "United Kingdom")),), edges=())
+    )
+
+    assert result.countries == {"United States": 1, "United Kingdom": 1}
+    assert result.without_country == 0
+    assert sum(result.countries.values()) > result.genres - result.without_country
+
+
+def test_coarse_precision_is_counted_so_the_eras_can_be_read_as_approximate() -> None:
+    """19 of v0.5.0's dated genres carry decade or century precision. Rendering those as exact years
+    would state something Wikidata does not."""
+    result = analyse(
+        Artifact(
+            nodes=(
+                node("Q1", year=1975, precision=9),
+                node("Q2", year=1970, precision=8),
+                node("Q3", year=1600, precision=7),
+            ),
+            edges=(),
+        )
+    )
+    assert result.coarser_than_year == 2
+
+
+def test_artist_nodes_are_not_in_the_genre_denominator() -> None:
+    """P571 and P495 are genre properties; an artist's equivalents are different properties and are not
+    ingested. Counting 804 never-asked artist nodes as "no country recorded" would dilute the genre
+    figure toward zero and read as a far thinner corpus than it is."""
+    result = analyse(
+        Artifact(
+            nodes=(
+                node("Q1", year=1975, countries=("United States",)),
+                node("Q9", kind=NODE_KIND_ARTIST),
+                node("Q10", kind=NODE_KIND_ARTIST),
+            ),
+            edges=(),
+        )
+    )
+
+    assert result.genres == 1
+    assert result.without_country == 0, "the artists must not be counted as missing a country"
+
+
+def test_top_country_share_is_of_those_that_have_one() -> None:
+    """The denominator is genres with *any* country, not all genres. Dividing by all of them would
+    understate the concentration by folding the unmeasured in with the diverse."""
+    result = analyse(
+        Artifact(
+            nodes=(
+                node("Q1", countries=("United States",)),
+                node("Q2", countries=("United States",)),
+                node("Q3", countries=("Japan",)),
+                node("Q4"),
+            ),
+            edges=(),
+        )
+    )
+    assert result.top_country == "United States"
+    assert result.top_country_share == pytest.approx(2 / 3, abs=0.001)
+
+
+# --- the pinned corpus -------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def store() -> InMemoryGraphStore:
+    return InMemoryGraphStore.from_directory(artifact_directory())
+
+
+def test_the_pinned_corpus_coverage(store: InMemoryGraphStore) -> None:
+    """v0.5.0 as measured 2026-08-06. Update deliberately when the corpus moves; do not delete.
+
+    **These numbers are the DoD #7 deliverable.** The corpus skews Western, anglophone and recent by
+    construction, and this is that skew as arithmetic rather than as a disclaimer.
+    """
+    c = store.coverage
+
+    assert c.genres == 169
+    assert c.without_inception == 28
+    assert c.without_country == 48
+    assert c.coarser_than_year == 19
+    assert c.top_country == "United States"
+
+
+def test_the_corpus_is_recent_and_says_so(store: InMemoryGraphStore) -> None:
+    """Only 13 of 169 genres originate before 1950, against 47 in 1970-1989 alone. A product built on
+    this corpus cannot speak about early music history, and the number is what makes that checkable
+    rather than a matter of impression."""
+    c = store.coverage
+    before_1950 = c.eras["pre-1900"] + c.eras["1900-1949"]
+
+    assert before_1950 == 13
+    assert c.eras["1970-1989"] > before_1950 * 3
+
+
+def test_the_corpus_is_anglophone_dense_and_says_so(store: InMemoryGraphStore) -> None:
+    """Dense, not exclusive — and the arithmetic has to say which.
+
+    This assertion originally read ``countries["United States"] + countries["United Kingdom"] == 93``
+    and called that 77% of the 121 country-bearing genres. **That was wrong**: it adds two country
+    totals, so every genre credited to both is counted twice, inflating the apparent concentration.
+    The honest figure is a count of *genres*.
+    """
+    c = store.coverage
+    with_country = c.genres - c.without_country
+    naming_us_or_uk = with_country - c.genres_without_us_or_uk
+
+    assert with_country == 121
+    assert naming_us_or_uk == 77
+    assert 0.6 < naming_us_or_uk / with_country < 0.7
+
+
+def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
+    store: InMemoryGraphStore,
+) -> None:
+    """The counterweight, asserted so a bias figure can never ship without it.
+
+    44 genres name no US or UK connection at all, across 29 distinct places — kuduro, bachata,
+    cadence-lypso, bossa nova, Mizrahi music, Anatolian rock, Manila sound. **Concentration and absence
+    are different claims**, and reporting only the first invites the second to be inferred. That
+    inference was made on 2026-08-06 and corrected by sjtroxel, who was reading the corpus rather than
+    the aggregate.
+    """
+    c = store.coverage
+
+    assert c.genres_without_us_or_uk == 44
+    assert c.distinct_countries == 29
+
+
+def test_the_corpus_spans_far_more_than_the_post_war_era(store: InMemoryGraphStore) -> None:
+    """The same correction on the time axis. The earliest genres date to 500 — medieval and classical
+    music — with opera and Baroque at 1600 and blues at 1890. Thin is not empty, and "post-war" is a
+    description of where the mass sits, never of what the corpus contains."""
+    c = store.coverage
+    assert c.eras["pre-1900"] == 6

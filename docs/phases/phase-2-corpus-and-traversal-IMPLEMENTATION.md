@@ -724,6 +724,22 @@ error against the $20 ceiling. **No new always-on resource.**
 >
 > **Ordering is not optional:** `bootstrap/` apply (locally, his credentials) → commit → deploy. The
 > `aws_s3_object` resources in `main/` reference the bucket by name, so the bucket must exist first.
+>
+> **DONE 2026-08-06.** Nine objects published — `graph.json` and `manifest.json` for v0.1.0 through
+> v0.4.0, plus v0.2.0's `exclusions.json`. `/health` still reports 0.4.0 / 973 / 950, which is the
+> check that matters: the upload is a record, and it must not change what the Lambda serves.
+>
+> **It cost one failed deploy, and the cause is a pattern worth naming (run 31129597446).** Every
+> upload returned 403 on **`s3:PutObjectTagging`** — an action the Terraform config never mentions.
+> `provider "aws"` in `main/` sets `default_tags`, the provider applies them to `aws_s3_object` too, and
+> **tagging an object is a separate IAM action from writing it.** `GetObjectTagging` was added at the
+> same time because refresh reads tags, so its absence fails the *plan* rather than the apply.
+>
+> This is the **third** time on this project that a tagging permission was the missing one while the
+> obvious permission was present — `ecr:ListTagsForResource` at plan time (step 8 of phase 1), the
+> `logs:*TagResource` set, and now this. **Standing heuristic: a 403 naming an action the config never
+> mentions is almost always `default_tags`.** The failure was clean — it happened at apply time against
+> an empty bucket, so there was no partial upload to reconcile.
 
 ### 4.8 Step 8 — coverage as a number
 
@@ -736,6 +752,62 @@ The corpus skews Western, anglophone and recent by construction, and §3.2 of `g
 skews further: a fair sample of the 351 is dominated by recent electronic and hip-hop micro-genres, and
 **`bebop <- swing`, the edge the product was originally pitched on, is not in the corpus at all.** That
 goes on the screen, not in a footnote.
+
+> **DONE 2026-08-06 — v0.5.0. The skew is arithmetic now, and it is on `/health`.**
+>
+> `Node` gains three optional fields — `inception_year`, `inception_precision`, `countries` — filled from
+> **one** SPARQL read of P571 and P495. Optional, and defaulted, so v0.4.0 stays loadable; **the absences
+> are the measurement, not a gap in it.** `graph/coverage.py` computes the numbers, `ingest/coverage.py`
+> does the fetch, and `InMemoryGraphStore.coverage` recomputes at runtime the same way `structure` does.
+>
+> | measured over 169 genres | |
+> |---|---|
+> | no inception date | **28** |
+> | no country of origin | **48** |
+> | originating before 1950 | **13** (6 pre-1900, 7 in 1900-49) |
+> | 1970-1989 alone | **47** |
+> | naming the US or UK | **77 of 121, or 64%** |
+> | naming **neither** the US nor the UK | **44** |
+> | distinct places represented | **29** |
+> | dated coarser than a year | **19** |
+>
+> **CORRECTION, same evening, and it matters more than the numbers it fixes.** The first write-up of this
+> section said the honest name for the corpus was *"post-war popular music, mostly anglophone"* and
+> advised putting that in the README. **sjtroxel pushed back, and he was right.** He was reading the
+> corpus; the write-up was reading the aggregate.
+>
+> The corpus contains **medieval music and classical music dated to 500**, opera and Baroque at 1600,
+> blues at 1890, samba at 1914. It contains **44 genres naming no US or UK connection at all across 29
+> places** — kuduro, bachata, cadence-lypso, bossa nova, Mizrahi music, Anatolian rock, Manila sound,
+> Krautrock, kayōkyoku, dancehall, corrido, banda. **A 1,500-year span across five continents is not a
+> post-war anglophone corpus.**
+>
+> **Concentration is not absence.** The corpus is *dense* in post-war anglophone material and *thin*
+> elsewhere, and collapsing those into "it is only Western recent music" is the same overclaiming
+> failure as the opposite direction — it just errs toward false modesty instead of false reach. The
+> identity of the product does not change: it is a music-history app whose coverage is uneven and
+> **says so with numbers**.
+>
+> **A real arithmetic bug was found while checking this.** The original "US + UK = 93, or 77%" added the
+> US total to the UK total, double-counting every genre credited to both and inflating the apparent
+> concentration. `Coverage` gained `genres_without_us_or_uk` and `distinct_countries` so the counterweight
+> ships with the bias figure and cannot be quoted without it; `test_the_corpus_is_not_only_anglophone_
+> and_the_numbers_must_say_that_too` pins that.
+>
+> **Precision is carried, not flattened.** 19 dated genres are decade- or century-precision, so the era
+> histogram is approximate at its edges and `inception_precision` is what lets a reader know which rows
+> those are. Rendering a decade value as an exact year would be "grounded slides into correct" in
+> miniature.
+>
+> **Artist nodes are deliberately unmeasured.** P571 and P495 are genre properties; an artist's
+> equivalents are different properties entirely. Reporting one figure across both axes would let 804
+> never-asked artist nodes dilute the genre number toward zero and read as a far thinner corpus than it
+> is. `test_artist_nodes_are_not_in_the_genre_denominator` pins that.
+>
+> **One honest data-quality wrinkle, recorded rather than cleaned:** P495 does not return only countries.
+> The v0.5.0 values include `Brixton`, `Hawaii`, `Scandinavia` and `Europe`. It does not invalidate the
+> concentration figure, but "country of origin" is Wikidata's label for the property, not a guarantee
+> about its values.
 
 ---
 

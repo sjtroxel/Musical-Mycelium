@@ -112,6 +112,11 @@ def corpus_summary() -> dict[str, Any]:
     a minority was read by a human. Publishing the split is what keeps "grounded" meaning traceable
     rather than correct.
 
+    ``coverage`` is the third honest half and the bluntest one: 28 of 169 genres carry no inception date
+    at all, only 13 originate before 1950, and the United States and United Kingdom account for 77% of
+    the genres that name any country of origin. The corpus skews Western, anglophone and recent **by
+    construction**, and ``CLAUDE.md`` requires that to be visible in output rather than footnoted.
+
     ``structure`` is the other honest half, and it is the one a visitor cannot infer from an edge count.
     The graph is not one organism yet — it is many disconnected islands — so relating two genres is a
     capability *within* a component, and ``max_path_hops`` is the deepest chain the corpus can actually
@@ -123,6 +128,7 @@ def corpus_summary() -> dict[str, Any]:
         "edges": STORE.edge_count,
         "verification": STORE.verification_counts,
         "structure": STORE.structure.as_dict(),
+        "coverage": STORE.coverage.as_dict(),
         "predicate": "influenced_by",
     }
 

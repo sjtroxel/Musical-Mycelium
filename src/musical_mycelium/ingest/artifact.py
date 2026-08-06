@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from musical_mycelium.graph.coverage import analyse as analyse_coverage
 from musical_mycelium.graph.schema import (
     ARTIFACT_FILENAME,
     MANIFEST_FILENAME,
@@ -125,6 +126,9 @@ def build_manifest(
         # Same rule, same reason. Recorded here so a build is self-describing and an eval can read the
         # connectivity it ran against without loading the corpus; the runtime still recomputes it.
         structure=analyse(artifact).as_dict(),
+        # Same rule again: derived, never a parameter. DoD #7 wants the corpus skew to be a recorded
+        # quantity, and a caller-supplied coverage figure could disagree with the nodes it describes.
+        coverage=analyse_coverage(artifact).as_dict(),
         verification_record=verification_record,
         notes=notes,
     )

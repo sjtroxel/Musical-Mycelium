@@ -29,7 +29,7 @@ every future addition lands in a slot that already exists.
 |---|---|---|---|
 | **0** `scaffold-and-spine` | — | The repo itself | Complete 2026-07-29 |
 | **1** `walking-skeleton` | **v0.1** | Everything present, connected, deployed, and tiny | — |
-| **2** `corpus-and-traversal` | **v0.2** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
+| **2** `corpus-and-traversal` **DONE 2026-08-06** | **v0.5.0** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
 | **3** `agent-loop` | **v0.3** | Real agent loop: planning, 5–8 tools, cross-referencing | Tool registry; loop untouched |
 | **4** `eval-suite` | **v0.4** | The eval suite proper | Independent scorers over a pinned artifact |
 | **5** `spa-and-visualization` | **v0.5** | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
@@ -64,9 +64,9 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-08-05
+### Where the build actually is — 2026-08-06
 
-Phase 2 is mid-flight. **Steps 1–4 of 8 are built; step 5 is next.**
+**Phase 2 is COMPLETE. All eight steps are built, tested and deployed.**
 
 | step | what | state |
 |---|---|---|
@@ -74,21 +74,64 @@ Phase 2 is mid-flight. **Steps 1–4 of 8 are built; step 5 is next.**
 | 2 | full P737 discovery replaces the hand-verified list | done 2026-08-04 |
 | 3 | the schema carries verification strength | done 2026-08-04 |
 | 4 | `path()` and the component structure | done 2026-08-05 |
-| **5** | **multi-hop through the agent, without touching the loop** | **next** |
-| 6–8 | the artist axis, S3 publish, coverage as a number | the cuttable tail |
+| 5 | multi-hop through the agent, without touching the loop | done 2026-08-05 |
+| 6 | the artist axis — filter, held-out measurement, ingest | done 2026-08-06 |
+| 7 | publish every artifact version to a versioned S3 record | done 2026-08-06 |
+| 8 | coverage as a recorded number | done 2026-08-06 |
 
-**Corpus as shipped: artifact `v0.2.0`, 169 nodes, 133 edges — 22 `HAND` + 111 `PROSE_AUTO`.** Pinned in
-`graph/memory.py`. `v0.1.0` is deliberately unloadable under the current schema and stays on disk as a
-frozen record.
+**Corpus as shipped: artifact `v0.5.0`, 973 nodes, 950 edges** — 22 `HAND`, 111 `PROSE_AUTO`, 760
+`ASSERTS_AUTO`, 57 `EXPOSURE_AUTO`. Live on AWS. `v0.1.0` through `v0.4.0` stay on disk and in S3 as
+frozen records; `v0.1.0` and `v0.2.0` are deliberately unloadable under the current schema.
 
-**Two v0.1 DoD items remain open** and are not phase 2's to close: the deployed stack runs on
-`llm_provider=local`, so the prose is a template and the token counts are synthetic. That is the Bedrock
-quota block, not a build gap. **The Lambda was redeployed 2026-08-05** and serves the 133-edge corpus;
-a further redeploy is owed for step 4's `structure` field and should be batched with step 5.
+**The one thing still blocking, and it is not a build gap:** the deployed stack runs on
+`llm_provider=local`, so the prose is a template and the token counts are synthetic. **Two v0.1 DoD
+items (#1 and #7) stay open until Bedrock has a non-zero quota.** Support case `178545883500013`; a
+reproducible two-region defect report was submitted 2026-08-06 and nothing further is owed on it. Every
+other part of the stack — Lambda, ECR, S3, CloudFront, Terraform, IAM, OIDC, CloudWatch, Budgets — is
+applied and working.
 
-**Connectivity, measured rather than assumed:** 41 components over 169 genres, largest 31, and the
-deepest chain `path()` can return anywhere in the corpus is **two hops**. DoD #2 was amended to match
-(scope doc A5). The graph is broad and shallow, and the product says so on `/health`.
+#### Phase 2's definition of done, item by item
+
+| # | item | state |
+|---|---|---|
+| 1 | corpus ingests locally, artifact + manifest + per-edge exclusions | **met** |
+| 2 | a path of three or more hops, sourced on every edge | **met** — 5 hops: `Nine Inch Nails -> The Clash -> Ramones -> The Beatles -> Bob Dylan -> Woody Guthrie` |
+| 3 | the artist axis answers "Who influenced Kate Bush?" end to end | **partially — see below** |
+| 4 | type filter is a bounded membership test against `Q188451` | **met** |
+| 5 | phase 1's five gold cases pass against the new pin | **met** |
+| 6 | `run()` and `gate()` not edited to accommodate the corpus | **met with one named exception — see below** |
+| 7 | coverage is a recorded number | **met** |
+| 8 | the artifact is published to S3, versioned and immutable | **met** |
+
+**DoD #3, stated honestly.** The artist axis works: `U2` resolves and returns six gated claims, each
+citing a Wikidata statement URI. But **Kate Bush specifically has zero outgoing `P737` and seven
+incoming** — Wikidata records nobody as having influenced her, while seven artists cite her. So the
+literal SPEC query *"Who influenced Kate Bush?"* **correctly refuses**, and that refusal is right rather
+than broken. The capability is delivered; the example chosen for it in `SPEC.md` §2.2 happens to be a
+node with no parents. Either the DoD item or the SPEC example should be restated — a decision, not a
+fix, and it is not phase 2's to make unilaterally.
+
+**DoD #6, stated honestly.** `run()` was not edited. **`gate()` was**, once: it gained a `CROSS_AXIS`
+rejection when the artist axis landed, so a genre-to-artist claim is refused rather than narrated. That
+is invariant 3 being enforced rather than the corpus being accommodated, but it *is* an edit to `gate()`
+caused by a corpus change, and calling it anything else would be reading the item generously.
+
+**Connectivity, measured rather than assumed:** 169 components over 973 nodes, largest 458, diameter 16,
+and the deepest chain `path()` can return is **six hops**.
+
+Those numbers replace the genre-only ones — 41 components, largest 31, deepest chain **two** hops — and
+the change is a finding rather than a drift. Step 4 measured that the genre axis could not supply depth
+and said the depth would have to come from somewhere other than P737 among genres; **the artist axis is
+that somewhere.** DoD #2 was amended to match the old constraint (scope doc A5); that amendment stands
+as a decision about what to promise, but the constraint it reasoned around is gone.
+`tests/test_structure.py::test_the_depth_arrived_with_the_artist_axis` records both halves.
+
+**Coverage, also measured rather than assumed** (DoD #7, step 8): over 169 genres, **28 carry no
+inception date and 48 no country of origin**. The corpus spans **500 CE to the present across 29
+places** — medieval and classical music at 500, opera and Baroque at 1600, samba, kuduro, bachata,
+Anatolian rock, kayōkyoku — and **44 genres name no US or UK connection at all**, while 77 of the 121
+with any country do. **It is dense in post-war anglophone material and thin elsewhere; concentration is
+not absence, and both halves ship together on `/health`** so neither can be quoted without the other.
 
 ## 3. Scaffolding ledger
 

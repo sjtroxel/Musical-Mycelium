@@ -414,6 +414,26 @@ structure and states the constraint honestly; it does not fix it.
    the image copy keeps the cold path free of a network fetch; the S3 copy is what makes a pin provable
    months later.
 
+> ## STATUS — PHASE 2 IS COMPLETE, 2026-08-06
+>
+> All eight steps built, tested and deployed. Corpus **v0.5.0: 973 nodes, 950 edges**, live on AWS.
+> **333 tests.** Item-by-item DoD status lives in `docs/ROADMAP.md`; two items are honest partials and
+> are named there rather than rounded up:
+>
+> - **DoD #3** — the artist axis works (`U2` returns six gated claims), but **Kate Bush has zero
+>   outgoing P737 and seven incoming**, so the literal SPEC query *"Who influenced Kate Bush?"*
+>   **correctly refuses**. The capability shipped; the example chosen for it is a node with no parents.
+>   Restating the DoD item or the SPEC example is a decision, not a fix.
+> - **DoD #6** — `run()` was untouched. **`gate()` was edited once**, gaining `CROSS_AXIS` when the
+>   artist axis landed. That is invariant 3 enforced rather than the corpus accommodated, but it is an
+>   edit caused by a corpus change and is recorded as one.
+>
+> **The only thing still blocking is Bedrock, and it is not a build gap.** `llm_provider=local` means
+> prose is a template and token counts are synthetic, so **v0.1 DoD #1 and #7 stay open** until the
+> account has a non-zero quota. Case `178545883500013`; a reproducible two-region defect report was
+> submitted 2026-08-06 and **nothing further is owed on it**. Everything else — Lambda, ECR, S3,
+> CloudFront, Terraform, IAM, OIDC, CloudWatch, Budgets — is applied and working.
+
 ## Data rules that govern this phase
 
 - **Never query Wikidata live from the agent.** WDQS is materially degraded — queries that once took 9

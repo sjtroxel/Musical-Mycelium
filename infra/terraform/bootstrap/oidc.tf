@@ -114,7 +114,19 @@ data "aws_iam_policy_document" "github_deploy" {
     # **No DeleteObject, deliberately.** Published artifacts are immutable and a deploy has no business
     # removing one; the state bucket needs delete only because its lock IS an object. GetObject is here
     # so `terraform plan` can read existing object metadata without a permissions failure.
-    actions   = ["s3:GetObject", "s3:PutObject"]
+    #
+    # **The *Tagging actions are not optional and cost a failed deploy to learn (2026-08-06, run
+    # 31129597446).** `provider "aws"` in main/ sets `default_tags`, which the provider applies to
+    # `aws_s3_object` too — and tagging an object is a SEPARATE IAM action from writing it. With
+    # PutObject alone every upload returns 403 on `s3:PutObjectTagging`, naming an action nothing in
+    # the Terraform config mentions. GetObjectTagging is here for the same reason ecr:ListTagsForResource
+    # is in the EcrPush statement below: refresh reads tags, so its absence fails the *plan*.
+    actions = [
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+    ]
     resources = ["${aws_s3_bucket.artifacts.arn}/*"]
   }
 

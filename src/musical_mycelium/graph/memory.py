@@ -23,13 +23,15 @@ from collections.abc import Callable
 from functools import cached_property, lru_cache
 from pathlib import Path
 
+from musical_mycelium.graph.coverage import Coverage
+from musical_mycelium.graph.coverage import analyse as analyse_coverage
 from musical_mycelium.graph.schema import Artifact, Edge, Manifest, Node, verify
 from musical_mycelium.graph.store import Direction
 from musical_mycelium.graph.structure import GraphStructure, analyse
 
 #: The pinned version. A **constant in code**, never "latest" — that is what stops a corpus change from
 #: silently invalidating a benchmark (``.claude/rules/evals.md``).
-PINNED_ARTIFACT_VERSION = "0.4.0"
+PINNED_ARTIFACT_VERSION = "0.5.0"
 
 #: Leading words to ignore when resolving a typed name. Exactly one, deliberately: "the blues" must
 #: resolve to ``blues`` (gold case 5 is phrased that way) and that is the whole of the ambition.
@@ -209,6 +211,17 @@ class InMemoryGraphStore:
         metric; ``verification_counts`` is the confidence half.
         """
         return analyse(self._artifact)
+
+    @cached_property
+    def coverage(self) -> Coverage:
+        """Era and region coverage of the loaded corpus, computed once per store.
+
+        Recomputed rather than read from the manifest for the same reason ``structure`` is: the number
+        the product displays should be a property of the corpus in hand. This is the third honest half —
+        confidence (``verification_counts``), connectivity (``structure``), and **what the corpus can
+        speak about at all**. DoD #7 requires it to be a recorded quantity rather than a disclaimer.
+        """
+        return analyse_coverage(self._artifact)
 
     # --- convenience ----------------------------------------------------------------------------
 
