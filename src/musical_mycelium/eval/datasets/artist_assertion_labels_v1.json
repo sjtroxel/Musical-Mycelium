@@ -31,13 +31,13 @@
       "object": "Alice Cooper",
       "subject_id": "Q106662",
       "object_id": "Q332032",
-      "sentence": "As a teenager, he listened to rock bands like Hawkwind, Captain Beefheart, Alice Cooper, and the Stooges – bands his mother also used to like, which somewhat embarrassed him – as well as more mainstream acts such as David Bowie, T.",
+      "sentence": "As a teenager, he listened to rock bands like Hawkwind, Captain Beefheart, Alice Cooper, and the Stooges \u2013 bands his mother also used to like, which somewhat embarrassed him \u2013 as well as more mainstream acts such as David Bowie, T.",
       "proposed": "EXPOSURE",
       "verdict": "ASSERTS",
       "note": "re-checked 2026-08-05 on full evidence: sang Alice Cooper's song at the audition that made him a vocalist",
       "final": "ASSERTS",
       "sentences": [
-        "As a teenager, he listened to rock bands like Hawkwind, Captain Beefheart, Alice Cooper, and the Stooges – bands his mother also used to like, which somewhat embarrassed him – as well as more mainstream acts such as David Bowie, T.",
+        "As a teenager, he listened to rock bands like Hawkwind, Captain Beefheart, Alice Cooper, and the Stooges \u2013 bands his mother also used to like, which somewhat embarrassed him \u2013 as well as more mainstream acts such as David Bowie, T.",
         "After tunelessly singing Alice Cooper's \"I'm Eighteen\" to the accompaniment of the shop's jukebox, Lydon was chosen as the band's lead vocalist."
       ]
     },
@@ -60,16 +60,16 @@
     {
       "n": 4,
       "subject": "Villano Antillano",
-      "object": "Rubén Blades",
+      "object": "Rub\u00e9n Blades",
       "subject_id": "Q112323640",
       "object_id": "Q474980",
-      "sentence": "From an early stage, Antillano had an interest in music, one of her first musical inspirations being Rubén Blades.",
+      "sentence": "From an early stage, Antillano had an interest in music, one of her first musical inspirations being Rub\u00e9n Blades.",
       "proposed": "ASSERTS",
       "verdict": "",
       "note": "",
       "final": "ASSERTS",
       "sentences": [
-        "From an early stage, Antillano had an interest in music, one of her first musical inspirations being Rubén Blades."
+        "From an early stage, Antillano had an interest in music, one of her first musical inspirations being Rub\u00e9n Blades."
       ]
     },
     {
@@ -93,13 +93,13 @@
       "object": "Pharrell Williams",
       "subject_id": "Q110929442",
       "object_id": "Q14313",
-      "sentence": "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loïc Nottet.",
+      "sentence": "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Lo\u00efc Nottet.",
       "proposed": "ASSERTS",
       "verdict": "",
       "note": "",
       "final": "ASSERTS",
       "sentences": [
-        "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loïc Nottet."
+        "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Lo\u00efc Nottet."
       ]
     },
     {
@@ -227,7 +227,7 @@
     },
     {
       "n": 15,
-      "subject": "Doc Gynéco",
+      "subject": "Doc Gyn\u00e9co",
       "object": "Wu-Tang Clan",
       "subject_id": "Q1233700",
       "object_id": "Q52463",
@@ -278,14 +278,14 @@
       "object": "Anton Webern",
       "subject_id": "Q127330",
       "object_id": "Q190933",
-      "sentence": "According to The Rough Guide to Rock (2003), \"as a teenager Zappa was simultaneously enthralled by black R&B (Johnny 'Guitar' Watson, Guitar Slim), doo-wop (The Channels, The Velvets), and modern composers, such as Igor Stravinsky, Anton Webern and Edgard Varèse.\"",
+      "sentence": "According to The Rough Guide to Rock (2003), \"as a teenager Zappa was simultaneously enthralled by black R&B (Johnny 'Guitar' Watson, Guitar Slim), doo-wop (The Channels, The Velvets), and modern composers, such as Igor Stravinsky, Anton Webern and Edgard Var\u00e8se.\"",
       "proposed": "ASSERTS",
       "verdict": "",
       "note": "",
       "final": "ASSERTS",
       "sentences": [
-        "According to The Rough Guide to Rock (2003), \"as a teenager Zappa was simultaneously enthralled by black R&B (Johnny 'Guitar' Watson, Guitar Slim), doo-wop (The Channels, The Velvets), and modern composers, such as Igor Stravinsky, Anton Webern and Edgard Varèse.\"",
-        "Zappa grew up influenced by avant-garde composers such as Edgard Varèse, Igor Stravinsky, and Anton Webern; 1950s blues artists Clarence \"Gatemouth\" Brown, Guitar Slim, Howlin' Wolf, Johnny \"Guitar\" Watson, and B.B."
+        "According to The Rough Guide to Rock (2003), \"as a teenager Zappa was simultaneously enthralled by black R&B (Johnny 'Guitar' Watson, Guitar Slim), doo-wop (The Channels, The Velvets), and modern composers, such as Igor Stravinsky, Anton Webern and Edgard Var\u00e8se.\"",
+        "Zappa grew up influenced by avant-garde composers such as Edgard Var\u00e8se, Igor Stravinsky, and Anton Webern; 1950s blues artists Clarence \"Gatemouth\" Brown, Guitar Slim, Howlin' Wolf, Johnny \"Guitar\" Watson, and B.B."
       ]
     },
     {
@@ -364,7 +364,7 @@
       "final": "ASSERTS",
       "sentences": [
         "He was inspired to take up the tenor saxophone after hearing Coleman Hawkins on tour.",
-        "During the period 1934–1939, while saxophone pioneer Coleman Hawkins was playing in Europe, Berry was one of several younger tenor saxophonists, such as Budd Johnson, Ben Webster, and Lester Young, who vied for supremacy on their instrument."
+        "During the period 1934\u20131939, while saxophone pioneer Coleman Hawkins was playing in Europe, Berry was one of several younger tenor saxophonists, such as Budd Johnson, Ben Webster, and Lester Young, who vied for supremacy on their instrument."
       ]
     },
     {
@@ -435,13 +435,13 @@
       "object": "",
       "subject_id": "Q127310755",
       "object_id": "Q26876",
-      "sentence": "Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Reneé Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences in her music that blends pop, funk and disco.",
+      "sentence": "Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Rene\u00e9 Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences in her music that blends pop, funk and disco.",
       "proposed": "NO",
       "verdict": "",
       "note": "",
       "final": "NO",
       "sentences": [
-        "Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Reneé Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences in her music that blends pop, funk and disco."
+        "Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Rene\u00e9 Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences in her music that blends pop, funk and disco."
       ]
     },
     {
@@ -476,32 +476,32 @@
     },
     {
       "n": 31,
-      "subject": "Gabriel Fauré",
-      "object": "Camille Saint-Saëns",
+      "subject": "Gabriel Faur\u00e9",
+      "object": "Camille Saint-Sa\u00ebns",
       "subject_id": "Q104919",
       "object_id": "Q150445",
-      "sentence": "Among his teachers was Camille Saint-Saëns, who became a lifelong friend.",
+      "sentence": "Among his teachers was Camille Saint-Sa\u00ebns, who became a lifelong friend.",
       "proposed": "ASSERTS",
       "verdict": "",
       "note": "teacher relationship stated plainly - counted as an assertion",
       "final": "ASSERTS",
       "sentences": [
-        "Among his teachers was Camille Saint-Saëns, who became a lifelong friend.",
-        "When Niedermeyer died in March 1861, Camille Saint-Saëns took charge of piano studies and introduced contemporary music, including that of Schumann, Liszt and Wagner.",
-        "Saint-Saëns took great pleasure in his pupil's progress, which he helped whenever he could; Nectoux comments that at each step in Fauré's career \"Saint-Saëns's shadow can effectively be taken for granted.\" The close friendship between them lasted until Saint-Saëns died sixty years later.",
-        "At Saint-Saëns's regular prompting he continued to compose, but none of his works from this period survive.",
-        "Almost immediately, with the discreet aid of Saint-Saëns, he secured the post of assistant organist at the church of Notre-Dame de Clignancourt, in the north of Paris.",
-        "Some of his colleagues, including Saint-Saëns, Gounod and Franck, produced elegies and patriotic odes.",
-        "Fauré regularly attended Saint-Saëns's musical salons and those of Pauline Viardot, to whom Saint-Saëns introduced him.",
-        "Fauré was a founding member of the Société Nationale de Musique, formed in February 1871 under the joint chairmanship of Romain Bussine and Saint-Saëns, to promote new French music.",
-        "In 1874 Fauré moved from Saint-Sulpice to the Église de la Madeleine, acting as deputy for the principal organist, Saint-Saëns, during the latter's many absences on tour.",
-        "He was renowned for his improvisations, and Saint-Saëns said of him that he was \"a first class organist when he wanted to be\".",
-        "In March, Saint-Saëns retired from the Madeleine, succeeded as organist by Théodore Dubois, his choirmaster; Fauré was appointed to take over from Dubois.",
-        "To distract Fauré, Saint-Saëns took him to Weimar and introduced him to Franz Liszt.",
-        "When Ernest Guiraud, professor of composition at the Paris Conservatoire, died in 1892, Saint-Saëns encouraged Fauré to apply for the vacant post.",
-        "Fauré was elected to the Institut de France in 1909, after his father-in-law and Saint-Saëns, both long-established members, had canvassed strongly on his behalf.",
-        "When a group of French musicians led by Saint-Saëns tried to organise a boycott of German music, Fauré and Messager dissociated themselves from the idea, though the disagreement did not affect their friendship with Saint-Saëns.",
-        "In a centenary tribute in 1945, the musicologist Leslie Orrey wrote in The Musical Times, \"'More profound than Saint-Saëns, more varied than Lalo, more spontaneous than d'Indy, more classic than Debussy, Gabriel Fauré is the master par excellence of French music, the perfect mirror of our musical genius.' Perhaps, when English musicians get to know his work better, these words of Roger-Ducasse will seem, not over-praise, but no more than his due.\""
+        "Among his teachers was Camille Saint-Sa\u00ebns, who became a lifelong friend.",
+        "When Niedermeyer died in March 1861, Camille Saint-Sa\u00ebns took charge of piano studies and introduced contemporary music, including that of Schumann, Liszt and Wagner.",
+        "Saint-Sa\u00ebns took great pleasure in his pupil's progress, which he helped whenever he could; Nectoux comments that at each step in Faur\u00e9's career \"Saint-Sa\u00ebns's shadow can effectively be taken for granted.\" The close friendship between them lasted until Saint-Sa\u00ebns died sixty years later.",
+        "At Saint-Sa\u00ebns's regular prompting he continued to compose, but none of his works from this period survive.",
+        "Almost immediately, with the discreet aid of Saint-Sa\u00ebns, he secured the post of assistant organist at the church of Notre-Dame de Clignancourt, in the north of Paris.",
+        "Some of his colleagues, including Saint-Sa\u00ebns, Gounod and Franck, produced elegies and patriotic odes.",
+        "Faur\u00e9 regularly attended Saint-Sa\u00ebns's musical salons and those of Pauline Viardot, to whom Saint-Sa\u00ebns introduced him.",
+        "Faur\u00e9 was a founding member of the Soci\u00e9t\u00e9 Nationale de Musique, formed in February 1871 under the joint chairmanship of Romain Bussine and Saint-Sa\u00ebns, to promote new French music.",
+        "In 1874 Faur\u00e9 moved from Saint-Sulpice to the \u00c9glise de la Madeleine, acting as deputy for the principal organist, Saint-Sa\u00ebns, during the latter's many absences on tour.",
+        "He was renowned for his improvisations, and Saint-Sa\u00ebns said of him that he was \"a first class organist when he wanted to be\".",
+        "In March, Saint-Sa\u00ebns retired from the Madeleine, succeeded as organist by Th\u00e9odore Dubois, his choirmaster; Faur\u00e9 was appointed to take over from Dubois.",
+        "To distract Faur\u00e9, Saint-Sa\u00ebns took him to Weimar and introduced him to Franz Liszt.",
+        "When Ernest Guiraud, professor of composition at the Paris Conservatoire, died in 1892, Saint-Sa\u00ebns encouraged Faur\u00e9 to apply for the vacant post.",
+        "Faur\u00e9 was elected to the Institut de France in 1909, after his father-in-law and Saint-Sa\u00ebns, both long-established members, had canvassed strongly on his behalf.",
+        "When a group of French musicians led by Saint-Sa\u00ebns tried to organise a boycott of German music, Faur\u00e9 and Messager dissociated themselves from the idea, though the disagreement did not affect their friendship with Saint-Sa\u00ebns.",
+        "In a centenary tribute in 1945, the musicologist Leslie Orrey wrote in The Musical Times, \"'More profound than Saint-Sa\u00ebns, more varied than Lalo, more spontaneous than d'Indy, more classic than Debussy, Gabriel Faur\u00e9 is the master par excellence of French music, the perfect mirror of our musical genius.' Perhaps, when English musicians get to know his work better, these words of Roger-Ducasse will seem, not over-praise, but no more than his due.\""
       ]
     },
     {
@@ -598,17 +598,17 @@
     },
     {
       "n": 38,
-      "subject": "François Adrien Boieldieu",
-      "object": "André Grétry",
+      "subject": "Fran\u00e7ois Adrien Boieldieu",
+      "object": "Andr\u00e9 Gr\u00e9try",
       "subject_id": "Q109875",
       "object_id": "Q210962",
-      "sentence": "The spiritual heir of André Grétry, Boieldieu focused on melodies that avoided too much ornamentation, set to light, but intelligent, orchestration.",
+      "sentence": "The spiritual heir of Andr\u00e9 Gr\u00e9try, Boieldieu focused on melodies that avoided too much ornamentation, set to light, but intelligent, orchestration.",
       "proposed": "ASSERTS",
       "verdict": "",
       "note": "",
       "final": "ASSERTS",
       "sentences": [
-        "The spiritual heir of André Grétry, Boieldieu focused on melodies that avoided too much ornamentation, set to light, but intelligent, orchestration."
+        "The spiritual heir of Andr\u00e9 Gr\u00e9try, Boieldieu focused on melodies that avoided too much ornamentation, set to light, but intelligent, orchestration."
       ]
     },
     {
@@ -735,7 +735,8 @@
       "sentences": [
         "He grew up listening mainly to soul and hard rock music, his favourite musicians included Aretha Franklin, Led Zeppelin, Deep Purple and Peter Gabriel.",
         "Peter Gabriel's guitarist David Rhodes and Simple Minds's drummer Mel Gaynor played on the record."
-      ]
+      ],
+      "recheck": "RESOLVED 2026-08-06, NO CHANGE. Re-read against held-out row 17 (The Rolling Stones <- Chuck Berry, ruled ASSERTS on the same heard-them-and-rated-them-highly shape). sjtroxel kept EXPOSURE: 'we know that peter gabriel was one of mango's favorite artists as a kid but no more than that', and he tied it to held-out row 26 (Famous Oberogo <- Alicia Keys, listening for comfort). final unchanged at EXPOSURE - the yardstick did not move."
     },
     {
       "n": 47,
@@ -789,13 +790,13 @@
       "object": "Allan Kaprow",
       "subject_id": "Q117012",
       "object_id": "Q366380",
-      "sentence": "She was introduced to more of Cage's unconventional neo-Dadaism first hand, and via his New York City protégés Allan Kaprow, Brecht, Mac Low, Al Hansen and the poet Dick Higgins.",
+      "sentence": "She was introduced to more of Cage's unconventional neo-Dadaism first hand, and via his New York City prot\u00e9g\u00e9s Allan Kaprow, Brecht, Mac Low, Al Hansen and the poet Dick Higgins.",
       "proposed": "ASSERTS",
       "verdict": "",
       "note": "",
       "final": "ASSERTS",
       "sentences": [
-        "She was introduced to more of Cage's unconventional neo-Dadaism first hand, and via his New York City protégés Allan Kaprow, Brecht, Mac Low, Al Hansen and the poet Dick Higgins."
+        "She was introduced to more of Cage's unconventional neo-Dadaism first hand, and via his New York City prot\u00e9g\u00e9s Allan Kaprow, Brecht, Mac Low, Al Hansen and the poet Dick Higgins."
       ]
     },
     {
@@ -871,18 +872,18 @@
     },
     {
       "n": 55,
-      "subject": "Christophe Maé",
+      "subject": "Christophe Ma\u00e9",
       "object": "Bob Marley",
       "subject_id": "Q1086377",
       "object_id": "Q409",
-      "sentence": "He also discovered Bob Marley's music to whom, years later, he dedicates a song: \"Mon père spirituel\".",
+      "sentence": "He also discovered Bob Marley's music to whom, years later, he dedicates a song: \"Mon p\u00e8re spirituel\".",
       "proposed": "ASSERTS",
       "verdict": "ASSERTS",
       "note": "sjtroxel 2026-08-05: dedicating 'Mon pere spirituel' to him is sufficient evidence of influence",
       "final": "ASSERTS",
       "sentences": [
-        "He also discovered Bob Marley's music to whom, years later, he dedicates a song: \"Mon père spirituel\".",
-        "He has cited Bob Marley, Ben Harper, Tracy Chapman, and Jack Johnson as well as French singer-songwriters Francis Cabrel and Gérald De Palmas as musical influences."
+        "He also discovered Bob Marley's music to whom, years later, he dedicates a song: \"Mon p\u00e8re spirituel\".",
+        "He has cited Bob Marley, Ben Harper, Tracy Chapman, and Jack Johnson as well as French singer-songwriters Francis Cabrel and G\u00e9rald De Palmas as musical influences."
       ]
     },
     {
@@ -935,16 +936,16 @@
     {
       "n": 59,
       "subject": "Pierre Gallon",
-      "object": "Pierre Hantaï",
+      "object": "Pierre Hanta\u00ef",
       "subject_id": "Q108909092",
       "object_id": "Q1370295",
-      "sentence": "According to his biography on his website, he considers his encounters with Blandine Verlet, Élisabeth Joyé, and Pierre Hantaï as key moments in his learning journey.",
+      "sentence": "According to his biography on his website, he considers his encounters with Blandine Verlet, \u00c9lisabeth Joy\u00e9, and Pierre Hanta\u00ef as key moments in his learning journey.",
       "proposed": "ASSERTS",
       "verdict": "",
       "note": "",
       "final": "ASSERTS",
       "sentences": [
-        "According to his biography on his website, he considers his encounters with Blandine Verlet, Élisabeth Joyé, and Pierre Hantaï as key moments in his learning journey."
+        "According to his biography on his website, he considers his encounters with Blandine Verlet, \u00c9lisabeth Joy\u00e9, and Pierre Hanta\u00ef as key moments in his learning journey."
       ]
     },
     {
@@ -960,7 +961,8 @@
       "final": "EXPOSURE",
       "sentences": [
         "Aged 8 years, he discovered the songs of popular rappers such as Tupac, Eminem and 50 Cent and later came across Christian rappers such as Lecrae, the Ambassador, Andy Mineo, Da' T.R.U.T.H."
-      ]
+      ],
+      "recheck": "RESOLVED 2026-08-06, NO CHANGE. Re-read against held-out row 17. sjtroxel kept EXPOSURE and gave the governing principle: 'exposure at an early age, but short of the standard needed to establish professional/career influence as a mature musician.' Tied to the Mango <- Peter Gabriel re-check. Note the stored sentence may be truncated at Da' T.R.U.T.H. by the abbreviation defect, but that is past Eminem and cannot affect this call. final unchanged at EXPOSURE."
     }
   ],
   "reviewed_by": "sjtroxel",
@@ -972,5 +974,8 @@
     "a critic's attribution never elevates a label - it is evidence about the music, not a record of contact",
     "label what the sentence asserts, not what the world knows; the filter only ever sees the sentence",
     "extra sentences can only raise a label, never lower it"
-  ]
+  ],
+  "label_field": "final",
+  "label_field_note": "`final` is the authoritative hand label. `verdict` is a SUPERSEDED single-sentence first pass and is retained only as history - it is populated on 19 of 60 rows and must never be scored against. `proposed` is the filter's own output, not a label.",
+  "recheck_outcome": "Both rows flagged on 2026-08-06 (Mango <- Peter Gabriel, Limoblaze <- Eminem) were re-read and KEPT at EXPOSURE. The gold set's `final` labels are therefore unchanged since the 2026-08-05 full-evidence pass, and the held-out measurement in scope-doc A6.5 stands as computed."
 }

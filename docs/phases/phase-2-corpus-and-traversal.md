@@ -199,6 +199,144 @@ structure and states the constraint honestly; it does not fix it.
    > The product can then show which edges rest on *"he cited them as an influence"* and which rest on
    > *"he grew up listening to them"*, and the split is a published number.
 
+   > **A6.4, 2026-08-06, decided by sjtroxel — the EXPOSURE tier keeps its broad definition and the
+   > under-catch is published rather than engineered away.** The fork was: narrow the tier to its lexical
+   > core, put a model in the ingest path, or keep the agreed floor and state the miss rate. He chose the
+   > third. Dropping the tier entirely had already been ruled out on 2026-08-05.
+   >
+   > The reasoning is the shape of the failure. The filter is **98% precision, 80% recall**, and every
+   > miss is in `EXPOSURE`. **A recall miss makes the corpus smaller; a precision miss makes it wrong.**
+   > Every hard rule in this repo — the deterministic gate, "grounded is provenance not truth", "never
+   > claim coverage the graph does not have" — is aimed at not being wrong. An under-caught subjective
+   > tier with a published miss rate is a coverage limit stated out loud, which is the thing this project
+   > already does on Western/anglophone/recent skew. It is not an overclaim.
+   >
+   > Narrowing the tier was rejected because its lexical core excludes collaboration, tours and covers —
+   > the documented-contact class A6.3's floor exists to admit — so it is a partial version of the move
+   > already ruled out.
+   >
+   > **Consequence: the standard the held-out set is labelled against is A6.3's floor, unchanged.** No
+   > amendment to the label rules, no re-label of the 60-row gold set. The 37 sealed rows can be labelled
+   > against the same standard rows 1–13 already were.
+   >
+   > > **A6.4.1 — the future model pass, as he framed it, and it is NOT the option that was rejected.**
+   > > The rejected option put a model *in place of* the patterns for the `EXPOSURE` decision. His is a
+   > > **second pass over what the deterministic filter already produced**: patterns classify, a small
+   > > cheap model (Haiku, or a free open-weight model) reviews the verdicts. That ordering matters —
+   > > the deterministic filter stays the thing of record, the model is an additive layer, and backing it
+   > > out is a config change rather than a re-ingest.
+   > >
+   > > Deferred, not scheduled. It stays offline, one-time, local, and never in the agent loop, so
+   > > invariant 1 and Tier-1 eval cost are untouched. **Latency is not a constraint on it** — ingest is
+   > > a batch job, so cost and throughput bind, not speed. And it would be validated against this same
+   > > hand-labelled set, which is the reason the labelling work is required either way.
+   > >
+   > > **The measured miss rate from the held-out set is what decides whether it is worth building.**
+   > >
+   > > **A6.4.2, 2026-08-06, during held-out labelling — the case for that pass got sharper, and the
+   > > split is now clean.** `ASSERTS` reaches 98% precision / 81% recall because influence vocabulary
+   > > is *bounded*: cites, credits, influenced, inspired, idol. Patterns genuinely reach it, and no
+   > > model is needed there.
+   > >
+   > > `EXPOSURE` is the opposite, and labelling row 22 (`Donald Glover <- Justice`) showed why. The
+   > > floor's second prong — **engagement**, as distinct from contact — is satisfied by a speaker
+   > > demonstrating first-hand familiarity with music. *"if you went to a Justice show, the kids were
+   > > losing their minds"* records engagement without containing a single contact verb. There is no
+   > > word list for it. It is a semantic judgement about what a passage shows, which is the one thing
+   > > a small model does well and a pattern provably cannot.
+   > >
+   > > **So the division of labour is now specific rather than speculative: patterns own `ASSERTS`, a
+   > > model pass would own `EXPOSURE` recall only.** That is a narrower and more defensible scope than
+   > > "put an LLM in the ingest path", and it keeps the deterministic filter as the thing of record.
+   > >
+   > > It does not change what happens tonight. The model pass would still be validated against this
+   > > same hand-labelled set, so **the labelling is a prerequisite for it, not an alternative to it.**
+
+   > **A6.5, 2026-08-06 — THE HELD-OUT MEASUREMENT. The first non-training number this filter has
+   > ever had, and the objective/subjective split held on unseen data.**
+   >
+   > The 50-row held-out set was labelled to completion against the A6.3 floor as settled by A6.4.
+   > One row was excluded (row 41, empty object label), leaving **49 scored**.
+   >
+   > | metric | training (60-row gold) | **held-out (49 rows)** |
+   > |---|---|---|
+   > | `ASSERTS` precision | 98% | **97%** (35 of 36 predicted) |
+   > | `ASSERTS` recall | 81% | **95%** (35 of 37 true) |
+   > | `EXPOSURE` recall | — | **20%** (2 of 10) |
+   > | `NO` recall | — | **100%** (2 of 2) |
+   > | 3-way agreement | 72% | **80%** (39 of 49) |
+   >
+   > **`ASSERTS` did not degrade off the training set — it improved.** That is the result. A frozen
+   > deterministic filter, committed before the set was drawn, held 97% precision on data it had never
+   > seen. The recall jump from 81% to 95% is not a real gain in the filter; it reflects that this set
+   > is denser in explicit assertions than the gold set was.
+   >
+   > **`EXPOSURE` collapsed to 20%.** Eight of the ten disagreements are `EXPOSURE` rows the filter
+   > called `NONE`. This is A6.3's prediction *confirmed on unseen data* rather than restated: the tier
+   > defined by explicit textual markers is reachable by patterns; the tier defined by a reader's
+   > judgement is not. Under A6.4 that gap is published, not tuned away, and **20% is the number that
+   > gets published.**
+   >
+   > **The single false assertion is row 42** (`Alexander Hawkins <- Cecil Taylor`), and it is
+   > instructive: the sentence contains the word *influence*, bound to **Marilyn Crispell**. Row 43 is
+   > the same sentence with Crispell as the object and is correctly `ASSERTS`. One sentence, two edges,
+   > two different right answers — the clearest demonstration in the set that the label follows what
+   > the influence word is bound to, not what it co-occurs with.
+   >
+   > **Honest limits on this number, all recorded in the dataset file:**
+   > - n=49 is small, and the set is **not** a random sample of the population. It was drawn from
+   >   *prose-accepted* candidates, which is why 37 of 49 are `ASSERTS`. These numbers describe the
+   >   filter operating on what the prose check already passed, not on raw candidates.
+   > - Only **2** `NO` rows, so refusal accuracy is effectively unmeasured here.
+   > - Row 15 was **not a blind label** — its evidence was shown during the 8/5 correction discussion.
+   > - On rows 17, 22 and 32, Claude raised conflicts with earlier rulings before the label was
+   >   recorded. The rulings were his; they were not independent of the prompt.
+   >
+   > **Verdict on DoD item 3: the artist axis can be filtered deterministically for the objective
+   > tier and cannot for the subjective one.** That bounds the product honestly and it is a real
+   > answer, which is what A6.3 said this item was allowed to produce.
+   >
+   > > **A6.5.1, same night — the two flagged gold rows were re-read and BOTH KEPT at `EXPOSURE`, so
+   > > the yardstick did not move and the numbers above stand as computed.** Ruling row 17 `ASSERTS`
+   > > had put `Mango <- Peter Gabriel` and `Limoblaze <- Eminem` in question, since both rest on the
+   > > same heard-them-early shape. He kept both, and gave the governing principle:
+   > >
+   > > > **exposure at an early age is short of the standard needed to establish professional or
+   > > > career influence on a mature musician.**
+   > >
+   > > Row 17 is elevated above that line by **attribution strength** — Jagger himself, in a modern
+   > > attributable interview, naming what he heard as *"the most real thing"* — not by the early
+   > > hearing itself. That is the distinction doing the work, and it is now recorded on all three rows.
+   >
+   > > **A6.5.2 — the label field is `final` on both datasets, declared explicitly in each file.**
+   > > The two files had diverged: the gold set's `final` is the corrected full-evidence label while
+   > > its `verdict` is a superseded single-sentence first pass populated on only 19 of 60 rows, and
+   > > the held-out set used `verdict` for its authoritative label. A scorer written for one field
+   > > would silently find nothing in the other and report a vacuous result. The held-out field was
+   > > renamed to `final`, both files now carry a top-level `label_field` key, and the measurement was
+   > > recomputed through it to confirm the identical 80% agreement.
+
+   > **A6.6, 2026-08-06 — defects found by labelling, all of them his catches.** The pattern from
+   > 8/5 repeated: hand-reading the evidence is what finds the extraction bugs.
+   >
+   > - **Abbreviation truncation was still present in the STORED evidence though fixed in code** —
+   >   `Sgt.` (row 32), `C.L.` (row 2), `B.B.` (rows 27, 44), `Dr.` (row 16). The held-out sentences
+   >   were never regenerated after the fix landed. Rows 32 and 44 were relabelled on refetched text.
+   > - **A wholesale regeneration was attempted and reverted.** Refetching pulls current article text,
+   >   and **row 33 proved the corpus moves**: its sentence no longer exists in the live `Wisp`
+   >   article. Only the two genuinely truncated rows kept refetched evidence.
+   > - **Name collision, row 48** — `Elvis` matched *Elvis Costello* on an *Elvis Presley* edge. Scored
+   >   `NO` rather than excluded, because the object label is valid and the question has a real answer.
+   > - **Empty object label, row 41** — an entity with no English label cleared the type filter, and an
+   >   empty name matches anywhere, so it inherited another row's sentence. Excluded from the
+   >   denominator and reported, never silently dropped.
+   > - **Referents the filter structurally cannot resolve** — pronouns (`"It"` in row 46, `"He"` in
+   >   row 24) and real-name-vs-stage-name (row 45: the sentence says *Morisco-Tarr*, the edge says
+   >   *Vibe Chemistry*). Each was settled by fetching the article, which the filter cannot do.
+   > - **Member-vs-band attribution, row 40** — *"Ravi Shankar ... had a significant effect on his
+   >   musical development"* states the effect on **Harrison** while the edge is on **The Beatles**.
+   >   Ruled `ASSERTS` because it occurred while the band was active. This will recur on band articles.
+
    > **Two further name collisions found while labelling, both the `Them` shape:** `Queen` matched
    > *"performed at the **Queen's** Platinum Jubilee concert"*, and one candidate carried an **empty
    > object label**, meaning an entity with no English label cleared the type filter. Band names that
