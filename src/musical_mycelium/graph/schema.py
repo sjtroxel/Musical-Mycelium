@@ -44,12 +44,39 @@ VERIFICATION_HAND = "HAND"
 #: phase 1 hand-read, it over-accepts at roughly 1 in 5.
 VERIFICATION_PROSE_AUTO = "PROSE_AUTO"
 
+#: The prose check passed **and** the influence-assertion filter judged the sentence to *assert*
+#: influence. Stronger than ``PROSE_AUTO`` and only meaningful on the artist axis, where a mention is
+#: cheap: artists are named constantly for tours, covers, session work and chart comparisons, so
+#: "the article names the object in body prose" is close to no evidence at all (``ingest.assertion``).
+#: Measured on a held-out set the filter never saw: **97% precision, 95% recall** (scope doc A6.5).
+VERIFICATION_ASSERTS_AUTO = "ASSERTS_AUTO"
+
+#: The prose check passed and the filter found **formative exposure rather than an assertion** — *"as a
+#: teenager he listened to Alice Cooper"*, *"his sister took him to the Apollo to see James Brown"*.
+#: Deliberately ingested rather than dropped (scope doc A6.1, and dropping was ruled out 2026-08-05),
+#: and deliberately *not* labelled the same as an assertion, because "grounded" must never quietly come
+#: to rest on a listening habit. **This tier's recall is 20%** — proximity is a semantic category, not a
+#: linguistic one, and no pattern list closes that gap. The miss rate is published, not engineered away
+#: (A6.4). Read it as a floor on what exists, never as a count of what there is.
+VERIFICATION_EXPOSURE_AUTO = "EXPOSURE_AUTO"
+
 #: How strongly an edge was verified. **A required field with no default, deliberately.** A default
 #: would have to be wrong for one half of the corpus or the other — ``HAND`` overstates the machine-
 #: verified majority, ``PROSE_AUTO`` understates the edges a human actually read — and silently
 #: mislabelling verification strength is precisely the "grounded slides into correct" failure
 #: ``CLAUDE.md`` forbids. Every construction site states which it is.
-VERIFICATION_LEVELS = frozenset({VERIFICATION_HAND, VERIFICATION_PROSE_AUTO})
+#:
+#: The two ``*_AUTO`` artist tiers were added at v0.4.0. This is a **widening**, so every earlier
+#: artifact stays valid; ``verification_counts`` reports the new levels at zero for a genre-only corpus,
+#: which is the honest reading rather than an omission.
+VERIFICATION_LEVELS = frozenset(
+    {
+        VERIFICATION_HAND,
+        VERIFICATION_PROSE_AUTO,
+        VERIFICATION_ASSERTS_AUTO,
+        VERIFICATION_EXPOSURE_AUTO,
+    }
+)
 
 #: A genre: bebop, trip hop, blues rock. Every node through v0.2 was one, which is why this field did not
 #: need to exist until the artist axis arrived.

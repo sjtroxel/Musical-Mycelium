@@ -1,12 +1,12 @@
 {
-  "artifact_version": "0.3.0",
-  "edge_count": 133,
-  "generated_at": "2026-08-06T20:06:02+00:00",
-  "generator": "migration from v0.2.0 (kind stamp, no refetch)",
-  "node_count": 169,
-  "notes": "Derived from v0.2.0 by stamping kind=\"genre\" on all 169 nodes. No refetch: every node and edge, and every provenance field on them, is carried across from v0.2.0 byte for byte, so the revision ids in source_snapshot still pin the exact text that was read. Stamping genre unconditionally is true by construction rather than assumed \u2014 v0.2.0's ingest type-filtered both ends of every edge to reach Q188451 (music genre), so the corpus contained nothing else. The artist axis is not in this version; kind exists here so that when it arrives the two axes cannot be silently interchanged. Edge counts and verification tiers are unchanged from v0.2.0: 22 hand-verified edges and 111 machine-verified edges. HAND edges were read by a human who judged the prose to assert influence; PROSE_AUTO edges cleared the automated prose check only, which confirms the subject's article names the object in body prose but cannot judge whether that sentence asserts influence. Measured against the 28 edges hand-read on 2026-08-02, the automated check over-accepts at roughly 1 in 5. Every edge in both tiers cites a Wikidata statement URI and types as a music genre at both ends.",
+  "artifact_version": "0.4.0",
+  "edge_count": 950,
+  "generated_at": "2026-08-06T21:17:46+00:00",
+  "generator": "musical_mycelium.ingest.artists --build",
+  "node_count": 973,
+  "notes": "Adds the artist axis (outgoing P737) to the genre corpus carried across from v0.3.0 untouched. Stage counts, published because the drop is the finding: 4555 statements discovered, 4432 with an artist at both ends, 1320 cleared the Wikipedia prose check, and of those the influence-assertion filter judged 777 to assert influence, 57 to record formative exposure only, and refused 486. A further 17 were dropped at build time (14 with an unlabelled endpoint, 3 whose statement URI does not name the edge's subject and which the gate could therefore never approve), leaving 817 artist edges over 804 artist nodes. EXPOSURE_AUTO recall is 20% measured on a held-out set (scope doc A6.5): that tier is a floor on what exists in the sources, never a count of it. Artist nodes carry no revision_id \u2014 the genre axis pins an exact Wikidata revision per node and the artist axis does not yet. Genre corpus notes follow. Derived from v0.2.0 by stamping kind=\"genre\" on all 169 nodes. No refetch: every node and edge, and every provenance field on them, is carried across from v0.2.0 byte for byte, so the revision ids in source_snapshot still pin the exact text that was read. Stamping genre unconditionally is true by construction rather than assumed \u2014 v0.2.0's ingest type-filtered both ends of every edge to reach Q188451 (music genre), so the corpus contained nothing else. The artist axis is not in this version; kind exists here so that when it arrives the two axes cannot be silently interchanged. Edge counts and verification tiers are unchanged from v0.2.0: 22 hand-verified edges and 111 machine-verified edges. HAND edges were read by a human who judged the prose to assert influence; PROSE_AUTO edges cleared the automated prose check only, which confirms the subject's article names the object in body prose but cannot judge whether that sentence asserts influence. Measured against the 28 edges hand-read on 2026-08-02, the automated check over-accepts at roughly 1 in 5. Every edge in both tiers cites a Wikidata statement URI and types as a music genre at both ends.",
   "predicate": "P737 (influenced_by)",
-  "sha256": "4ad1d114ae1620fe935b299becc96caa2077d20c9490672533293a101040ec69",
+  "sha256": "7b6774c133bda2aa8118628ac7a9f30b0d0a8133d9908c69b2d34362f947dc00",
   "source": "wikidata",
   "source_snapshot": {
     "Q101109587": 2516474946,
@@ -180,15 +180,15 @@
     "Q997481": 2501097710
   },
   "structure": {
-    "component_count": 41,
-    "diameter": 10,
+    "component_count": 169,
+    "diameter": 16,
     "isolated_nodes": 0,
-    "largest_component": 31,
-    "max_path_hops": 2
+    "largest_component": 458,
+    "max_path_hops": 6
   },
   "verification_counts": {
-    "ASSERTS_AUTO": 0,
-    "EXPOSURE_AUTO": 0,
+    "ASSERTS_AUTO": 760,
+    "EXPOSURE_AUTO": 57,
     "HAND": 22,
     "PROSE_AUTO": 111
   },

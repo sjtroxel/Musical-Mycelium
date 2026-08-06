@@ -20,6 +20,7 @@ import json
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from musical_mycelium.graph.schema import (
     ARTIFACT_FILENAME,
@@ -37,7 +38,9 @@ __all__ = [
     "Artifact",
     "ArtifactCorruptError",
     "ArtifactExistsError",
+    "AxisCollisionError",
     "build_manifest",
+    "merge_axes",
     "read_manifest",
     "sha256_of",
     "verify",
@@ -47,6 +50,51 @@ __all__ = [
 
 class ArtifactExistsError(FileExistsError):
     """The target version already exists. Artifacts are immutable; build a new version."""
+
+
+class AxisCollisionError(ValueError):
+    """One entity was ingested on two axes. Its ``kind`` would then depend on which row won."""
+
+
+def merge_axes(*artifacts: Artifact) -> Artifact:
+    """Combine per-axis artifacts into one graph, refusing anything that blurs the axes.
+
+    The merge lives here rather than in ``ingest.artists`` on purpose: each axis module produces its
+    own rows and never reaches across, so there is exactly one place where the two become one corpus
+    and exactly one place to enforce what that is allowed to mean.
+
+    **A node id may appear in more than one input, but only at the same ``kind``.** The same QID
+    arriving as a genre from one crawl and an artist from another is not a duplicate to be
+    de-duplicated — it means the two type filters disagree, and silently keeping whichever row sorted
+    last would make ``Node.kind`` depend on iteration order. That is invariant 3 failing quietly,
+    which is the only way it ever fails.
+    """
+    by_id: dict[str, Any] = {}
+    for artifact in artifacts:
+        for node in artifact.nodes:
+            existing = by_id.get(node.id)
+            if existing is not None and existing.kind != node.kind:
+                raise AxisCollisionError(
+                    f"{node.id} ({node.label!r}) was ingested as both {existing.kind!r} and "
+                    f"{node.kind!r}; the two axis type filters disagree and Node.kind cannot be "
+                    f"decided by whichever row sorted last"
+                )
+            by_id.setdefault(node.id, node)
+
+    edges = {(e.subject_id, e.predicate, e.object_id): e for a in artifacts for e in a.edges}
+    dangling = sorted(
+        {q for triple in edges for q in (triple[0], triple[2])} - set(by_id),
+    )
+    if dangling:
+        raise AxisCollisionError(
+            f"{len(dangling)} edge endpoint(s) have no node: {dangling[:5]}. An edge to a node the "
+            f"corpus does not contain cannot be gated, because the gate resolves both endpoints first"
+        )
+
+    return Artifact(
+        nodes=tuple(sorted(by_id.values(), key=lambda n: n.id)),
+        edges=tuple(sorted(edges.values(), key=lambda e: (e.subject_id, e.object_id))),
+    )
 
 
 def build_manifest(

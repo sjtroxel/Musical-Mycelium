@@ -574,8 +574,8 @@ survives *is* the finding.
 > | 1 | `Node.kind`, required, two values | **DONE** — `graph/schema.py`, decision recorded as scope-doc A6.7 |
 > | 2 | v0.3.0 by stamping, no refetch | **DONE** — 169 nodes / 133 edges, structure identical to v0.2.0 |
 > | 3 | the gate refuses cross-axis claims | **DONE** — `RejectionReason.CROSS_AXIS` in `agent/claims.py` |
-> | 4 | the artist ingest itself | **OPEN** — the batch job; discovery, prose check, filter, counts |
-> | 5 | `workflow_dispatch` redeploy | **OPEN**, and owed once 4 lands |
+> | 4 | the artist ingest itself | **DONE** — crawled 2026-08-06, v0.4.0 written; counts below |
+> | 5 | `workflow_dispatch` redeploy | **OPEN**, and owed now that 4 has landed |
 >
 > `make check` green at **290 tests**, up from 269. Pins moved together and must stay together:
 > `ingest/wikidata.py` `ARTIFACT_VERSION`, `graph/memory.py` `PINNED_ARTIFACT_VERSION`, and
@@ -589,6 +589,57 @@ survives *is* the finding.
 > **Deploy note:** the live Lambda reads an artifact baked into its image, so it keeps serving v0.2.0
 > until a redeploy. Deploy is `workflow_dispatch` only, so nothing breaks on its own — but the repo and
 > the live site now disagree about the corpus until step 5 runs.
+>
+> ---
+>
+> #### 6c.4 — the crawl, 2026-08-06. **The drop is the finding, so here is every stage of it.**
+>
+> One WDQS query bounded by the 169 corpus genres, then ~1,200 Wikipedia article fetches at the
+> mandated 1/second. About 25 minutes, $0, no Bedrock.
+>
+> | stage | count | what removed the rest |
+> |---|---|---|
+> | discovered | 4,555 | distinct subject-object P737 pairs |
+> | on-axis | 4,432 | 123 `NOT_AN_ARTIST` — P737 objects include genres, works, labels |
+> | prose-accepted | 1,320 | 1,422 `NO_ARTICLE`, 1,611 `ORPHAN`, 42 `REDIRECTED`, 37 `MISLINKED` |
+> | filter `ASSERTS` | 777 | |
+> | filter `EXPOSURE` | 57 | |
+> | filter `NONE` | **486 refused** | **the number that says what 6a was worth** |
+> | build-time drops | 17 | 14 `NO_LABEL`, 3 `UNCITABLE_STATEMENT` |
+> | **ingested** | **817 edges / 804 nodes** | 760 `ASSERTS_AUTO` + 57 `EXPOSURE_AUTO` |
+>
+> **486 edges cleared the prose check and the filter threw them out** — 37% of everything prose
+> accepted. Without 6a those would be in the corpus right now, cited as influence. That is the
+> justification for the whole 6a/6b detour, measured rather than argued.
+>
+> **v0.4.0: 973 nodes, 950 edges.** Verification counts `{HAND: 22, PROSE_AUTO: 111, ASSERTS_AUTO: 760,
+> EXPOSURE_AUTO: 57}`.
+>
+> **THE STRUCTURAL RESULT — `max_path_hops` went from 2 to 6.** Step 4 found the genre axis could not
+> supply depth and said so in a test: *"the depth has to come from somewhere other than P737 among
+> genres."* The artist axis is that somewhere. Largest component 31 → 458, diameter 10 → 16, components
+> 41 → 169. `tests/test_structure.py::test_the_depth_arrived_with_the_artist_axis` records both halves
+> so neither the old finding nor its overturning is lost.
+>
+> **Two defects the crawl surfaced, both now enforced in code rather than remembered:**
+> - **14 endpoints with no English label** — row 41's evidence-inheritance defect at scale. An early
+>   `artist_rows` *raised* on the first one, which would have thrown away 834 good edges over 14 bad
+>   endpoints, on input that costs a 20-minute crawl to regenerate. Now excluded and reported.
+> - **3 edges whose statement URI does not name their subject.** `agent.claims.resolve_sources`
+>   resolves a citation by exactly that match, so these would have sat in the corpus present in every
+>   count and absent from every answer. Refused at build time.
+>
+> **A Wikidata error worth keeping as the honest example:** `AC/DC <- Airbourne` is ingested, and the
+> supporting sentence says AC/DC were among the influences *on* the next generation. The edge points
+> the wrong way in Wikidata itself. It stays, with its citation, because grounded means traceable and
+> not true — this is that distinction with a name attached.
+>
+> **Known gap, deliberately not closed today:** artist nodes carry no `revision_id`. Genre nodes pin the
+> exact Wikidata revision read; artists do not, because the build reads labels off the crawl rather than
+> re-reading entities. `wikidata.fetch_entities` would supply them but front-loads a SPARQL query with
+> 800+ `VALUES` bindings purely to compute a genre-ness flag the artist axis discards, which is a heavy
+> ask of a degraded WDQS. `tests/test_artifact.py::test_manifest_records_a_revision_for_every_node` is
+> written to **fail the day this is fixed**, so it cannot be quietly forgotten.
 
 ---
 

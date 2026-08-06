@@ -370,6 +370,24 @@ structure and states the constraint honestly; it does not fix it.
    > `max_path_hops` 2 — which `tests/test_structure.py` now pins as evidence the migration changed the
    > schema and not the corpus. v0.3.0's manifest gains the `structure` block v0.2.0 predated.
    >
+   > **A6.8, 2026-08-06 — the artist axis is INGESTED, and it supplied the depth the genre axis could
+   > not.** v0.4.0: **973 nodes, 950 edges**, of which 817 edges over 804 artist nodes are new. Stage
+   > counts are in the IMPLEMENTATION doc 4.6 and every one of them is published.
+   >
+   > **The headline: the assertion filter refused 486 edges that the prose check had accepted** — 37% of
+   > everything prose passed. Those would otherwise be in the corpus, cited as influence. 6a and 6b were
+   > a two-day detour off the build, and this is the number that says they were worth it.
+   >
+   > **`max_path_hops` moved from 2 to 6.** Step 4 measured that the genre axis could not supply depth,
+   > and A5 settled DoD #2 against that fact. The fact has changed: the corpus now holds six-hop
+   > directed chains and its largest component went from 31 nodes to 458. **A5's decision is not
+   > reopened** — it was a decision about what to promise, not about what the corpus contained — but the
+   > constraint it was reasoning around is gone, and phase 5 should be planned knowing that.
+   >
+   > **`EXPOSURE_AUTO` landed at 57 edges**, against 760 `ASSERTS_AUTO`. At the 20% recall A6.5
+   > measured, the real proximity population is several times that. The tier is a floor on what exists
+   > in the sources and must never be quoted as a count of it.
+   >
    > **The gate enforces the axis boundary rather than trusting the ingest to.** `gate()` grew a
    > `CROSS_AXIS` rejection, checked after both nodes resolve and before the edge lookup so the reported
    > reason names the real problem instead of a misleading "no such edge". The ingest bounds each axis
