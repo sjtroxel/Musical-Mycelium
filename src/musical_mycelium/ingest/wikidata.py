@@ -44,6 +44,7 @@ from pathlib import Path
 from typing import Any
 
 from musical_mycelium.graph.schema import (
+    NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
     SOURCE_WIKIDATA,
     VERIFICATION_HAND,
@@ -55,7 +56,7 @@ from musical_mycelium.graph.schema import (
 from musical_mycelium.ingest import artifact as artifact_io
 from musical_mycelium.ingest.discovery import Exclusion, Screening
 
-ARTIFACT_VERSION = "0.2.0"
+ARTIFACT_VERSION = "0.3.0"
 VERIFICATION_RECORD = "docs/phases/phase-1-edge-verification.md"
 
 #: Written beside the artifact: every discovered candidate that did not make the corpus, with a
@@ -379,6 +380,10 @@ def build(
             source=SOURCE_WIKIDATA,
             source_id=qid,
             retrieved_at=retrieved_at,
+            # Unconditional, and safe to be: the type filter above has already refused every qid that
+            # does not reach QID_MUSIC_GENRE, so by the time we get here every node is a genre by
+            # construction. The artist axis builds its nodes in ingest/artists.py, not here.
+            kind=NODE_KIND_GENRE,
             revision_id=facts[qid].revision_id,
         )
         for qid in qids

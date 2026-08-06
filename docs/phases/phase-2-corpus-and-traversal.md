@@ -341,6 +341,42 @@ structure and states the constraint honestly; it does not fix it.
    > *"performed at the **Queen's** Platinum Jubilee concert"*, and one candidate carried an **empty
    > object label**, meaning an entity with no English label cleared the type filter. Band names that
    > are common English words are a systematic hazard on this axis, not a curiosity.
+
+   > **A6.7, 2026-08-06 — `Node.kind` is REQUIRED with no default, and the artifact is v0.3.0. Decided
+   > by sjtroxel; do not re-litigate.** 6b's numbers cleared the artist axis for ingest, and 6c puts
+   > artists and genres in one graph for the first time. `Node`'s docstring said, literally, *"A genre"* —
+   > the corpus had never contained anything else, so nothing had to declare what it was.
+   >
+   > **The decision was required-versus-defaulted, and it went the same way `verification` did in step
+   > 3, for the same written reason:** a default would have to be wrong for one half of the corpus. A
+   > `kind` defaulting to `genre` is right for the 169 nodes that predate the field and silently wrong
+   > for every artist node after it, and a node that quietly reads as the wrong axis is precisely the
+   > conflation the field exists to prevent. **Two values, not three** — `genre` and `artist`. The
+   > distinction the gate needs is the *axis*; person-versus-band is a detail inside the artist axis
+   > (see the row-40 member-vs-band finding in A6.6), and widening a frozenset later is trivial where
+   > narrowing one that edges depend on is not.
+   >
+   > **Consequence, accepted: v0.2.0 is unloadable, exactly as v0.1.0 became at step 3.** Both remain on
+   > disk. Artifacts are versioned and immutable, so this is a new directory rather than a migration.
+   >
+   > **v0.3.0 was derived from v0.2.0 by stamping, with NO refetch — and the no-refetch is the load-
+   > bearing part.** A6.6 established that the corpus moves: row 33's sentence no longer exists in the
+   > live article. Rebuilding by refetch would have silently produced a *different* corpus and broken the
+   > hand-written evidence in `phase-1-edge-verification.md`. Every provenance field carries across
+   > untouched, so `source_snapshot`'s revision ids still pin the exact text that was read. Stamping
+   > `genre` unconditionally is **true by construction rather than assumed**: v0.2.0's ingest type-filtered
+   > both ends of every edge to `Q188451`, so the corpus contained nothing else. Counts unchanged at
+   > **169 nodes / 133 edges**, and `structure` is unchanged at 41 components / largest 31 / diameter 10 /
+   > `max_path_hops` 2 — which `tests/test_structure.py` now pins as evidence the migration changed the
+   > schema and not the corpus. v0.3.0's manifest gains the `structure` block v0.2.0 predated.
+   >
+   > **The gate enforces the axis boundary rather than trusting the ingest to.** `gate()` grew a
+   > `CROSS_AXIS` rejection, checked after both nodes resolve and before the edge lookup so the reported
+   > reason names the real problem instead of a misleading "no such edge". The ingest bounds each axis
+   > separately, so a cross-axis edge should never reach the artifact at all — this is the second,
+   > independent lock, the same belt-and-braces as `ALLOWED_PREDICATES` against P279. **A corpus bug must
+   > not become a narration bug.** The load-bearing test constructs an artifact where the cross-axis edge
+   > genuinely exists *and* its citation resolves, so every other check would pass it.
 4. **The type filter is a bounded membership test against `Q188451` on both ends of every edge**, with
    rejected entities recorded by reason. *(A3 — was: "P279 chains terminate at the genre-domain
    boundary." P279 is not ingested, so the original item had nothing to apply to.)*

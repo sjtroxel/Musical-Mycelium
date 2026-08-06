@@ -51,6 +51,24 @@ VERIFICATION_PROSE_AUTO = "PROSE_AUTO"
 #: ``CLAUDE.md`` forbids. Every construction site states which it is.
 VERIFICATION_LEVELS = frozenset({VERIFICATION_HAND, VERIFICATION_PROSE_AUTO})
 
+#: A genre: bebop, trip hop, blues rock. Every node through v0.2 was one, which is why this field did not
+#: need to exist until the artist axis arrived.
+NODE_KIND_GENRE = "genre"
+
+#: A person or a musical group. Person-versus-group is deliberately **not** a third value: the distinction
+#: the gate needs is the *axis*, and member-versus-band is a detail inside the artist axis rather than a
+#: separate one. Widening a frozenset later is trivial; narrowing one that edges already depend on is not.
+NODE_KIND_ARTIST = "artist"
+
+#: What kind of thing a node is. **A required field with no default, for the same reason ``verification``
+#: is one.** Genre and artist are structurally distinct axes of the same predicate: "Kate Bush influenced
+#: by Peter Gabriel" and "trip hop influenced by hip-hop" are not the same kind of assertion and must
+#: never be narrated as interchangeable (invariant 3). A default of ``genre`` would be right for the 169
+#: nodes that predate the field and silently wrong for every artist node added after it — and a node that
+#: quietly reads as the wrong axis is exactly the conflation this field exists to prevent. See
+#: ``docs/phases/phase-2-corpus-and-traversal.md`` A6.7.
+NODE_KINDS = frozenset({NODE_KIND_GENRE, NODE_KIND_ARTIST})
+
 ARTIFACT_FILENAME = "graph.json"
 MANIFEST_FILENAME = "manifest.json"
 
@@ -68,13 +86,19 @@ def _require(value: str, field_name: str, row: str) -> None:
 
 @dataclass(frozen=True, slots=True)
 class Node:
-    """A genre. ``source_id`` is the Wikidata QID; ``revision_id`` pins the exact revision read."""
+    """A genre or an artist, told apart by ``kind``.
+
+    ``source_id`` is the Wikidata QID; ``revision_id`` pins the exact revision read. ``kind`` is required
+    and carries no default, because the two axes must never be silently interchangeable — see
+    ``NODE_KINDS``.
+    """
 
     id: str
     label: str
     source: str
     source_id: str
     retrieved_at: str
+    kind: str
     revision_id: int | None = None
 
     def __post_init__(self) -> None:
@@ -83,6 +107,10 @@ class Node:
         _require(self.source, "source", f"node {self.id}")
         _require(self.source_id, "source_id", f"node {self.id}")
         _require(self.retrieved_at, "retrieved_at", f"node {self.id}")
+        if self.kind not in NODE_KINDS:
+            raise ValueError(
+                f"node {self.id} has kind {self.kind!r}, expected one of {sorted(NODE_KINDS)}"
+            )
 
 
 @dataclass(frozen=True, slots=True)

@@ -11,13 +11,19 @@ is to update them here and say so in ``docs/graph-semantics.md``, not to treat t
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import Artifact, Edge, Node
+from musical_mycelium.graph.schema import NODE_KIND_GENRE, Artifact, Edge, Node
 from musical_mycelium.graph.structure import analyse, components
 
-# What v0.2.0 measures. 41 islands over 169 genres, the biggest holding 31 of them.
+# What the pinned corpus measures. 41 islands over 169 genres, the biggest holding 31 of them.
+#
+# Identical to v0.2.0, and that is the point rather than a coincidence: v0.3.0 was derived by stamping
+# ``kind`` onto v0.2.0's rows with no refetch, so any movement in these four numbers would mean the
+# migration changed the corpus when it was supposed to change only the schema.
 V020_COMPONENTS = 41
 V020_LARGEST = 31
 V020_DIAMETER = 10
@@ -33,7 +39,15 @@ def _artifact(pairs: list[tuple[str, str]], extra_nodes: list[str] | None = None
     ids = sorted({n for pair in pairs for n in pair} | set(extra_nodes or []))
     return Artifact(
         nodes=tuple(
-            Node(id=i, label=i, source="t", source_id=i, retrieved_at="2026-08-05") for i in ids
+            Node(
+                id=i,
+                label=i,
+                source="t",
+                source_id=i,
+                retrieved_at="2026-08-05",
+                kind=NODE_KIND_GENRE,
+            )
+            for i in ids
         ),
         edges=tuple(
             Edge(
@@ -161,8 +175,15 @@ def test_components_partition_every_node(store: InMemoryGraphStore) -> None:
 
 
 def test_structure_is_computed_not_read_from_the_manifest(store: InMemoryGraphStore) -> None:
-    """v0.2.0 predates the manifest field and is immutable, so its manifest carries no structure. The
-    store must still answer — the manifest is a record of a build, not an input to the runtime."""
+    """The manifest is a record of a build, not an input to the runtime.
+
+    This assertion used to lean on v0.2.0 happening to predate the field, so its manifest carried no
+    structure at all. That stopped testing anything the moment a manifest had one — v0.3.0's does. The
+    real property is stronger and survives the corpus changing underneath it: hand the store a manifest
+    whose structure block is *wrong* and it must still answer with what the corpus actually says.
+    """
     assert store._manifest is not None
-    assert store._manifest.structure == {}
-    assert store.structure.component_count == V020_COMPONENTS
+    lying = replace(store._manifest, structure={"component_count": 1, "diameter": 999})
+    lied_to = InMemoryGraphStore(store._artifact, lying)
+    assert lied_to.structure.component_count == V020_COMPONENTS
+    assert lied_to.structure.diameter == V020_DIAMETER

@@ -29,7 +29,7 @@ from musical_mycelium.graph.structure import GraphStructure, analyse
 
 #: The pinned version. A **constant in code**, never "latest" — that is what stops a corpus change from
 #: silently invalidating a benchmark (``.claude/rules/evals.md``).
-PINNED_ARTIFACT_VERSION = "0.2.0"
+PINNED_ARTIFACT_VERSION = "0.3.0"
 
 #: Leading words to ignore when resolving a typed name. Exactly one, deliberately: "the blues" must
 #: resolve to ``blues`` (gold case 5 is phrased that way) and that is the whole of the ambition.

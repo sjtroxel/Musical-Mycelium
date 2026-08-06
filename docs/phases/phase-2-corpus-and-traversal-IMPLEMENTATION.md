@@ -565,6 +565,31 @@ below, run through prose check **and** filter, `verification` recording which ti
 stage — discovered, on-axis, prose-accepted, filter-accepted — because the drop from 4,549 to whatever
 survives *is* the finding.
 
+> **6c STARTED 2026-08-06. The held-out number held (A6.5), so the axis is cleared for ingest.** The
+> work splits into a deterministic half that touches no network and no spend, and a batch half that
+> does. The deterministic half is **DONE**:
+>
+> | | | |
+> |---|---|---|
+> | 1 | `Node.kind`, required, two values | **DONE** — `graph/schema.py`, decision recorded as scope-doc A6.7 |
+> | 2 | v0.3.0 by stamping, no refetch | **DONE** — 169 nodes / 133 edges, structure identical to v0.2.0 |
+> | 3 | the gate refuses cross-axis claims | **DONE** — `RejectionReason.CROSS_AXIS` in `agent/claims.py` |
+> | 4 | the artist ingest itself | **OPEN** — the batch job; discovery, prose check, filter, counts |
+> | 5 | `workflow_dispatch` redeploy | **OPEN**, and owed once 4 lands |
+>
+> `make check` green at **290 tests**, up from 269. Pins moved together and must stay together:
+> `ingest/wikidata.py` `ARTIFACT_VERSION`, `graph/memory.py` `PINNED_ARTIFACT_VERSION`, and
+> `eval/datasets/gold_v0_1.json` `artifact_version_pin` — `tests/test_graph_store.py` asserts the first
+> two agree and `tests/test_gold_set.py` asserts the third matches what the suite loads.
+>
+> **Step 3 landed before step 4 on purpose.** The gate is the thing that makes a cross-axis edge
+> unnarratable; putting it in before any artist data exists means the artist ingest cannot quietly
+> introduce one during development.
+>
+> **Deploy note:** the live Lambda reads an artifact baked into its image, so it keeps serving v0.2.0
+> until a redeploy. Deploy is `workflow_dispatch` only, so nothing breaks on its own — but the repo and
+> the live site now disagree about the corpus until step 5 runs.
+
 ---
 
 *Original §4.6, superseded above. Kept because the comparison is the point.*

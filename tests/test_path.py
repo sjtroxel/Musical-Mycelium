@@ -19,7 +19,7 @@ import itertools
 import pytest
 
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import Edge, Node
+from musical_mycelium.graph.schema import NODE_KIND_GENRE, Edge, Node
 from musical_mycelium.graph.store import Direction
 
 BLUES = "Q9759"
@@ -208,7 +208,15 @@ def _tiny_store(pairs: list[tuple[str, str]]) -> InMemoryGraphStore:
 
     ids = sorted({nid for pair in pairs for nid in pair})
     nodes = tuple(
-        Node(id=i, label=i, source="test", source_id=i, retrieved_at="2026-08-05") for i in ids
+        Node(
+            id=i,
+            label=i,
+            source="test",
+            source_id=i,
+            retrieved_at="2026-08-05",
+            kind=NODE_KIND_GENRE,
+        )
+        for i in ids
     )
     edges = tuple(
         Edge(

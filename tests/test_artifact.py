@@ -21,6 +21,7 @@ from musical_mycelium.graph import structure
 from musical_mycelium.graph.schema import (
     ARTIFACT_FILENAME,
     MANIFEST_FILENAME,
+    NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
     SOURCE_WIKIDATA,
     VERIFICATION_HAND,
@@ -43,6 +44,7 @@ def a_node(**overrides: object) -> Node:
         "source": SOURCE_WIKIDATA,
         "source_id": "Q193355",
         "retrieved_at": RETRIEVED,
+        "kind": NODE_KIND_GENRE,
         "revision_id": 1,
     }
     fields.update(overrides)
@@ -88,6 +90,33 @@ def test_whitespace_does_not_count_as_provenance() -> None:
 def test_edge_rejects_an_unknown_prose_tier() -> None:
     with pytest.raises(ValueError, match="prose_tier"):
         an_edge(prose_tier="probably fine")
+
+
+def test_node_rejects_an_unknown_kind() -> None:
+    with pytest.raises(ValueError, match="kind"):
+        a_node(kind="album")
+
+
+def test_node_kind_has_no_default() -> None:
+    """The whole point of the field. A default would have to be ``genre``, which is right for the 169
+    nodes that predate it and silently wrong for every artist node after it — and a node that quietly
+    reads as the wrong axis is the conflation ``kind`` exists to prevent. Constructing without one is
+    a TypeError at the call site, not a shrug at read time."""
+    fields = {
+        "id": "Q193355",
+        "label": "blues rock",
+        "source": SOURCE_WIKIDATA,
+        "source_id": "Q193355",
+        "retrieved_at": RETRIEVED,
+    }
+    with pytest.raises(TypeError, match="kind"):
+        Node(**fields)  # type: ignore[arg-type]
+
+
+def test_an_empty_kind_is_not_a_kind() -> None:
+    """Same erosion path as the whitespace-provenance case above."""
+    with pytest.raises(ValueError, match="kind"):
+        a_node(kind="")
 
 
 # --- the pin --------------------------------------------------------------------------------------

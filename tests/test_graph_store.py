@@ -20,6 +20,7 @@ from musical_mycelium.graph.memory import (
     normalise,
 )
 from musical_mycelium.graph.schema import (
+    NODE_KIND_GENRE,
     VERIFICATION_PROSE_AUTO,
     Artifact,
     ArtifactCorruptError,
@@ -261,6 +262,7 @@ def test_store_works_without_a_manifest() -> None:
         source="test",
         source_id="Q1",
         retrieved_at="2026-01-01T00:00:00+00:00",
+        kind=NODE_KIND_GENRE,
     )
     other = Node(
         id="Q2",
@@ -268,6 +270,7 @@ def test_store_works_without_a_manifest() -> None:
         source="test",
         source_id="Q2",
         retrieved_at="2026-01-01T00:00:00+00:00",
+        kind=NODE_KIND_GENRE,
     )
     edge = Edge(
         subject_id="Q1",

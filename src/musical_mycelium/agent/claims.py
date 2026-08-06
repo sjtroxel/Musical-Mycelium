@@ -44,6 +44,7 @@ class RejectionReason(StrEnum):
     UNKNOWN_SUBJECT = "unknown_subject"
     UNKNOWN_OBJECT = "unknown_object"
     UNSUPPORTED_PREDICATE = "unsupported_predicate"
+    CROSS_AXIS = "cross_axis"
     NOT_IN_GRAPH = "not_in_graph"
     UNRESOLVABLE_SOURCE = "unresolvable_source"
     DUPLICATE = "duplicate"
@@ -145,15 +146,17 @@ def resolve_sources(edge: Edge) -> tuple[str, ...]:
 def gate(proposals: list[ClaimProposal], store: GraphStore) -> GateResult:
     """Approve each proposal that the pinned artifact actually supports. Reject everything else.
 
-    A proposal passes only if all four hold:
+    A proposal passes only if all five hold:
 
     1. the predicate is one v0.1 permits,
     2. both endpoints are nodes in the artifact,
-    3. the edge exists in the artifact in the stated direction, and
-    4. that edge's sources resolve.
+    3. both endpoints sit on the **same axis** — genre-to-genre or artist-to-artist, never across,
+    4. the edge exists in the artifact in the stated direction, and
+    5. that edge's sources resolve.
 
     Order matters for the reported reason — the first failure wins, so "I made up a genre" is reported as
-    an unknown node rather than as a missing edge.
+    an unknown node rather than as a missing edge, and a cross-axis proposal is reported as cross-axis
+    rather than as a merely absent edge.
     """
     approved: list[Claim] = []
     rejected: list[Rejection] = []
@@ -177,14 +180,31 @@ def gate(proposals: list[ClaimProposal], store: GraphStore) -> GateResult:
             )
             continue
 
-        if store.get_node(proposal.subject_id) is None:
+        subject = store.get_node(proposal.subject_id)
+        if subject is None:
             rejected.append(
                 Rejection(proposal, RejectionReason.UNKNOWN_SUBJECT, proposal.subject_id)
             )
             continue
 
-        if store.get_node(proposal.object_id) is None:
+        obj = store.get_node(proposal.object_id)
+        if obj is None:
             rejected.append(Rejection(proposal, RejectionReason.UNKNOWN_OBJECT, proposal.object_id))
+            continue
+
+        # Invariant 3, enforced rather than assumed. The ingest bounds each axis separately so a
+        # cross-axis edge should never reach the artifact at all; this is the second lock on that door,
+        # the same belt-and-braces as ALLOWED_PREDICATES against P279. A chain that steps from a genre
+        # to an artist and back reads as one continuous line of influence, and it is not one.
+        if subject.kind != obj.kind:
+            rejected.append(
+                Rejection(
+                    proposal,
+                    RejectionReason.CROSS_AXIS,
+                    f"{proposal.subject_id} is a {subject.kind}, "
+                    f"{proposal.object_id} is a {obj.kind}",
+                )
+            )
             continue
 
         edge = _find_edge(store, proposal)

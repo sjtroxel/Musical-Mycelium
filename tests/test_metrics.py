@@ -16,7 +16,13 @@ import pytest
 from musical_mycelium.agent.claims import Claim, ClaimProposal, gate
 from musical_mycelium.eval.metrics import Groundedness, edge_groundedness
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import VERIFICATION_PROSE_AUTO, Artifact, Edge, Node
+from musical_mycelium.graph.schema import (
+    NODE_KIND_GENRE,
+    VERIFICATION_PROSE_AUTO,
+    Artifact,
+    Edge,
+    Node,
+)
 
 INFLUENCED_BY = "influenced_by"
 WHEN = "2026-01-01T00:00:00+00:00"
@@ -33,7 +39,14 @@ STATEMENTS = {
 @pytest.fixture(scope="module")
 def toy() -> InMemoryGraphStore:
     nodes = tuple(
-        Node(id=q, label=f"genre {q}", source="wikidata", source_id=q, retrieved_at=WHEN)
+        Node(
+            id=q,
+            label=f"genre {q}",
+            source="wikidata",
+            source_id=q,
+            retrieved_at=WHEN,
+            kind=NODE_KIND_GENRE,
+        )
         for q in ("Q1", "Q2", "Q3", "Q4")
     )
     edges = tuple(

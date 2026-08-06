@@ -20,7 +20,14 @@ from musical_mycelium.agent.claims import (
     resolve_sources,
 )
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import VERIFICATION_PROSE_AUTO, Artifact, Edge, Node
+from musical_mycelium.graph.schema import (
+    NODE_KIND_ARTIST,
+    NODE_KIND_GENRE,
+    VERIFICATION_PROSE_AUTO,
+    Artifact,
+    Edge,
+    Node,
+)
 
 BLUES_ROCK, BLUES = "Q193355", "Q9759"
 ACID_JAZZ, JAZZ = "Q221772", "Q8341"
@@ -160,12 +167,32 @@ def test_the_first_failure_is_the_reported_reason(store: InMemoryGraphStore) -> 
 # --- source resolution ------------------------------------------------------------------------
 
 
-def synthetic_store(source_id: str, source: str = "wikidata") -> InMemoryGraphStore:
+def synthetic_store(
+    source_id: str,
+    source: str = "wikidata",
+    *,
+    subject_kind: str = NODE_KIND_GENRE,
+    object_kind: str = NODE_KIND_GENRE,
+) -> InMemoryGraphStore:
     """One real-looking edge whose citation is under test."""
     when = "2026-01-01T00:00:00+00:00"
     nodes = (
-        Node(id="Q1", label="alpha", source="wikidata", source_id="Q1", retrieved_at=when),
-        Node(id="Q2", label="beta", source="wikidata", source_id="Q2", retrieved_at=when),
+        Node(
+            id="Q1",
+            label="alpha",
+            source="wikidata",
+            source_id="Q1",
+            retrieved_at=when,
+            kind=subject_kind,
+        ),
+        Node(
+            id="Q2",
+            label="beta",
+            source="wikidata",
+            source_id="Q2",
+            retrieved_at=when,
+            kind=object_kind,
+        ),
     )
     edge = Edge(
         subject_id="Q1",
@@ -201,6 +228,45 @@ def test_a_citation_pointing_at_the_wrong_entity_is_rejected() -> None:
 
 def test_a_citation_naming_its_own_subject_resolves() -> None:
     store = synthetic_store("http://www.wikidata.org/entity/statement/Q1-DEADBEEF")
+    assert len(gate([proposal("Q1", "Q2")], store).approved) == 1
+
+
+# --- the axis boundary (invariant 3) ----------------------------------------------------------
+
+
+GOOD_CITATION = "http://www.wikidata.org/entity/statement/Q1-DEADBEEF"
+
+
+def test_a_cross_axis_claim_is_refused_even_though_the_edge_is_really_there() -> None:
+    """The load-bearing case. This edge exists in the artifact *and* its citation resolves, so every
+    other check the gate makes would pass it. It is refused purely because a genre and an artist are
+    not the same kind of assertion and must never be narrated as one continuous line of influence.
+
+    The ingest bounds each axis separately, so this artifact should be impossible. That is the point:
+    the gate is a second, independent lock, the same belt-and-braces as ALLOWED_PREDICATES against
+    P279. A corpus bug must not become a narration bug."""
+    store = synthetic_store(GOOD_CITATION, object_kind=NODE_KIND_ARTIST)
+    result = gate([proposal("Q1", "Q2")], store)
+    assert not result.approved
+    assert result.rejected[0].reason is RejectionReason.CROSS_AXIS
+
+
+def test_cross_axis_is_reported_as_cross_axis_not_as_a_missing_edge() -> None:
+    """Reason ordering. The check sits after both nodes resolve and before the edge lookup, so a
+    cross-axis proposal names the real problem instead of the misleading "no such edge"."""
+    store = synthetic_store("not-a-url", subject_kind=NODE_KIND_ARTIST)
+    rejection = gate([proposal("Q1", "Q2")], store).rejected[0]
+    assert rejection.reason is RejectionReason.CROSS_AXIS
+    # ...and it says which side is which, because "cross axis" alone is not diagnosable.
+    assert "artist" in rejection.detail and "genre" in rejection.detail
+
+
+def test_artist_to_artist_is_the_same_axis_and_passes() -> None:
+    """The rule is same-axis, not genre-only. Once the artist axis is ingested, an artist-to-artist
+    edge is a perfectly ordinary claim and the gate must not treat 'not a genre' as disqualifying."""
+    store = synthetic_store(
+        GOOD_CITATION, subject_kind=NODE_KIND_ARTIST, object_kind=NODE_KIND_ARTIST
+    )
     assert len(gate([proposal("Q1", "Q2")], store).approved) == 1
 
 
