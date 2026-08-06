@@ -1,0 +1,976 @@
+{
+  "generated_at": "2026-08-05",
+  "source": "900-candidate slice of the outgoing artist axis, prose-check-accepted only, max 2 per subject",
+  "labels": {
+    "ASSERTS": "the sentence asserts that the subject was influenced by the object",
+    "EXPOSURE": "formative exposure only - listened to, fan of, saw perform - no influence claim (scope doc A6.1)",
+    "NO": "the sentence does not support the edge at all"
+  },
+  "instructions": "Set `verdict` to ASSERTS / EXPOSURE / NO. Leaving it blank accepts `proposed`.",
+  "rows": [
+    {
+      "n": 1,
+      "subject": "Dave Brubeck",
+      "object": "Darius Milhaud",
+      "subject_id": "Q108597",
+      "object_id": "Q186264",
+      "sentence": "Like many of his contemporaries, Brubeck played into the style of the French composer Darius Milhaud, especially his earlier works, including \"Serenade Suite\" and \"Playland-at-the-Beach\".",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Like many of his contemporaries, Brubeck played into the style of the French composer Darius Milhaud, especially his earlier works, including \"Serenade Suite\" and \"Playland-at-the-Beach\".",
+        "He was a student of composer Darius Milhaud's, who encouraged him to study fugue and orchestration, but not classical piano.",
+        "The eldest, Darius, named after Brubeck's mentor Darius Milhaud, is a pianist, producer, educator, and performer."
+      ]
+    },
+    {
+      "n": 2,
+      "subject": "John Lydon",
+      "object": "Alice Cooper",
+      "subject_id": "Q106662",
+      "object_id": "Q332032",
+      "sentence": "As a teenager, he listened to rock bands like Hawkwind, Captain Beefheart, Alice Cooper, and the Stooges – bands his mother also used to like, which somewhat embarrassed him – as well as more mainstream acts such as David Bowie, T.",
+      "proposed": "EXPOSURE",
+      "verdict": "ASSERTS",
+      "note": "re-checked 2026-08-05 on full evidence: sang Alice Cooper's song at the audition that made him a vocalist",
+      "final": "ASSERTS",
+      "sentences": [
+        "As a teenager, he listened to rock bands like Hawkwind, Captain Beefheart, Alice Cooper, and the Stooges – bands his mother also used to like, which somewhat embarrassed him – as well as more mainstream acts such as David Bowie, T.",
+        "After tunelessly singing Alice Cooper's \"I'm Eighteen\" to the accompaniment of the shop's jukebox, Lydon was chosen as the band's lead vocalist."
+      ]
+    },
+    {
+      "n": 3,
+      "subject": "Yoohei Kawakami",
+      "object": "Oasis",
+      "subject_id": "Q108109919",
+      "object_id": "Q382890",
+      "sentence": "Kawakami has cited the British rock band Oasis and its guitarist Noel Gallagher as major influences on his musical style.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Kawakami has cited the British rock band Oasis and its guitarist Noel Gallagher as major influences on his musical style.",
+        "The band's former name, Champagne, was derived from the Oasis song \"Champagne Supernova\"."
+      ]
+    },
+    {
+      "n": 4,
+      "subject": "Villano Antillano",
+      "object": "Rubén Blades",
+      "subject_id": "Q112323640",
+      "object_id": "Q474980",
+      "sentence": "From an early stage, Antillano had an interest in music, one of her first musical inspirations being Rubén Blades.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "From an early stage, Antillano had an interest in music, one of her first musical inspirations being Rubén Blades."
+      ]
+    },
+    {
+      "n": 5,
+      "subject": "Giuseppe Tartini",
+      "object": "Francesco Maria Veracini",
+      "subject_id": "Q108555",
+      "object_id": "Q713268",
+      "sentence": "Legend says when Tartini heard Francesco Maria Veracini's playing in 1716, he was impressed by it and dissatisfied with his own skill.",
+      "proposed": "ASSERTS",
+      "verdict": "EXPOSURE",
+      "note": "sjtroxel 2026-08-05: legend or not, Tartini plainly knew of Veracini and the timeline matches; exposure is the honest middle",
+      "final": "EXPOSURE",
+      "sentences": [
+        "Legend says when Tartini heard Francesco Maria Veracini's playing in 1716, he was impressed by it and dissatisfied with his own skill."
+      ]
+    },
+    {
+      "n": 6,
+      "subject": "Famous Oberogo",
+      "object": "Pharrell Williams",
+      "subject_id": "Q110929442",
+      "object_id": "Q14313",
+      "sentence": "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loïc Nottet.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loïc Nottet."
+      ]
+    },
+    {
+      "n": 7,
+      "subject": "Donald Glover",
+      "object": "Ghostface Killah",
+      "subject_id": "Q1239933",
+      "object_id": "Q323463",
+      "sentence": "In an interview with The Guardian, Glover stated, \"I'm influenced by LCD Soundsystem as much as Ghostface Killah.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "In an interview with The Guardian, Glover stated, \"I'm influenced by LCD Soundsystem as much as Ghostface Killah."
+      ]
+    },
+    {
+      "n": 8,
+      "subject": "Sirah",
+      "object": "Joni Mitchell",
+      "subject_id": "Q11739784",
+      "object_id": "Q205721",
+      "sentence": "Mitchell is influenced by Joni Mitchell, Big Pun, WHY?, Qwel, Black Thought, Erykah Badu, Lauryn Hill, Jewel, and Cat Stevens.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Mitchell is influenced by Joni Mitchell, Big Pun, WHY?, Qwel, Black Thought, Erykah Badu, Lauryn Hill, Jewel, and Cat Stevens."
+      ]
+    },
+    {
+      "n": 9,
+      "subject": "Alexander Hawkins",
+      "object": "Art Tatum",
+      "subject_id": "Q1237463",
+      "object_id": "Q109053",
+      "sentence": "His main idol is Art Tatum; others from around Tatum's era that Hawkins learned from listening to included Earl Hines, Fats Waller and Teddy Wilson.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "His main idol is Art Tatum; others from around Tatum's era that Hawkins learned from listening to included Earl Hines, Fats Waller and Teddy Wilson."
+      ]
+    },
+    {
+      "n": 10,
+      "subject": "Sexyy Red",
+      "object": "Gucci Mane",
+      "subject_id": "Q119842023",
+      "object_id": "Q206032",
+      "sentence": "Growing up, Red listened to artists such as Gucci Mane, Lil Wayne, Nicki Minaj, Project Pat, Juicy J, Three 6 Mafia, Chief Keef, Webbie, Boosie Badazz, and Trina.",
+      "proposed": "EXPOSURE",
+      "verdict": "ASSERTS",
+      "note": "re-checked 2026-08-05 on full evidence: called 'Female Gucci Mane' and embraced it as a song title",
+      "final": "ASSERTS",
+      "sentences": [
+        "Growing up, Red listened to artists such as Gucci Mane, Lil Wayne, Nicki Minaj, Project Pat, Juicy J, Three 6 Mafia, Chief Keef, Webbie, Boosie Badazz, and Trina.",
+        "She has frequently been called the \"Female Gucci Mane\" in particular and released a song with that title on her mixtape Hood Hottest Princess."
+      ]
+    },
+    {
+      "n": 11,
+      "subject": "Daniele Negroni",
+      "object": "Xavier Naidoo",
+      "subject_id": "Q1163771",
+      "object_id": "Q178391",
+      "sentence": "He is a fan of James Blunt, James Morrison and Xavier Naidoo.",
+      "proposed": "EXPOSURE",
+      "verdict": "",
+      "note": "",
+      "final": "EXPOSURE",
+      "sentences": [
+        "He is a fan of James Blunt, James Morrison and Xavier Naidoo."
+      ]
+    },
+    {
+      "n": 12,
+      "subject": "Finger Eleven",
+      "object": "Alice in Chains",
+      "subject_id": "Q1071154",
+      "object_id": "Q484255",
+      "sentence": "He was replaced by Rich Beddoe, whom James Black had met at an Alice in Chains concert in Toronto several years earlier.",
+      "proposed": "NO",
+      "verdict": "",
+      "note": "",
+      "final": "NO",
+      "sentences": [
+        "He was replaced by Rich Beddoe, whom James Black had met at an Alice in Chains concert in Toronto several years earlier."
+      ]
+    },
+    {
+      "n": 13,
+      "subject": "Hiro",
+      "object": "Papa Wemba",
+      "subject_id": "Q106159055",
+      "object_id": "Q736274",
+      "sentence": "Major inspirations are Papa Wemba and Koffi Olomide.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Major inspirations are Papa Wemba and Koffi Olomide."
+      ]
+    },
+    {
+      "n": 14,
+      "subject": "Sam Ryder",
+      "object": "Queen",
+      "subject_id": "Q111179156",
+      "object_id": "Q15862",
+      "sentence": "In June 2022, Ryder performed \"Space Man\" at the Queen's Platinum Jubilee concert, Platinum Party at the Palace.",
+      "proposed": "NO",
+      "verdict": "ASSERTS",
+      "note": "re-checked 2026-08-05 on full evidence: 'cites ... Queen among his music influences' - the band is in the article after all",
+      "final": "ASSERTS",
+      "sentences": [
+        "In June 2022, Ryder performed \"Space Man\" at the Queen's Platinum Jubilee concert, Platinum Party at the Palace.",
+        "On 3 September, he performed Queen's \"Somebody to Love\" along with Queen members Brian May and Roger Taylor, at a tribute concert for Taylor Hawkins at London's Wembley Stadium.",
+        "He cites David Bowie, Elton John, Freddie Mercury, and Queen among his music influences."
+      ]
+    },
+    {
+      "n": 15,
+      "subject": "Doc Gynéco",
+      "object": "Wu-Tang Clan",
+      "subject_id": "Q1233700",
+      "object_id": "Q52463",
+      "sentence": "Guest stars on the album included the Wu-Tang Clan and Gregory Isaac.",
+      "proposed": "NO",
+      "verdict": "EXPOSURE",
+      "note": "collaboration (guest stars) - sjtroxel 2026-08-05: collaboration is EXPOSURE",
+      "final": "EXPOSURE",
+      "sentences": [
+        "Guest stars on the album included the Wu-Tang Clan and Gregory Isaac."
+      ]
+    },
+    {
+      "n": 16,
+      "subject": "Aretha Franklin",
+      "object": "Mahalia Jackson",
+      "subject_id": "Q125121",
+      "object_id": "Q206466",
+      "sentence": "Several women, including Aretha's grandmother Rachel and Mahalia Jackson, took turns helping with the children at the Franklin home.",
+      "proposed": "NO",
+      "verdict": "EXPOSURE",
+      "note": "re-checked 2026-08-05 on full evidence: sjtroxel: reinterpreting a song shows contact, not adoption - arguably the opposite",
+      "final": "EXPOSURE",
+      "sentences": [
+        "Several women, including Aretha's grandmother Rachel and Mahalia Jackson, took turns helping with the children at the Franklin home.",
+        "In January 1972, she returned to gospel music in a two-night, live-church recording, with the album Amazing Grace, in which she reinterpreted standards such as Mahalia Jackson's \"How I Got Over\"."
+      ]
+    },
+    {
+      "n": 17,
+      "subject": "Wisp",
+      "object": "Whirr",
+      "subject_id": "Q125546993",
+      "object_id": "Q17091415",
+      "sentence": "Her musical influences include Whirr, Ovlov, Title Fight, the Cocteau Twins, Nothing, My Chemical Romance and Deftones.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Her musical influences include Whirr, Ovlov, Title Fight, the Cocteau Twins, Nothing, My Chemical Romance and Deftones.",
+        "While some critics described \"Your Face\" as a shoegaze, nu gaze, and alternative rock song, Phares found If Not Winter to be influenced by American rock bands Whirr, Nothing, and Deftones, and felt that Wisp \"took her time writing and recording, creating a more dramatic, mature kind of shoegaze\" with it."
+      ]
+    },
+    {
+      "n": 18,
+      "subject": "Frank Zappa",
+      "object": "Anton Webern",
+      "subject_id": "Q127330",
+      "object_id": "Q190933",
+      "sentence": "According to The Rough Guide to Rock (2003), \"as a teenager Zappa was simultaneously enthralled by black R&B (Johnny 'Guitar' Watson, Guitar Slim), doo-wop (The Channels, The Velvets), and modern composers, such as Igor Stravinsky, Anton Webern and Edgard Varèse.\"",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "According to The Rough Guide to Rock (2003), \"as a teenager Zappa was simultaneously enthralled by black R&B (Johnny 'Guitar' Watson, Guitar Slim), doo-wop (The Channels, The Velvets), and modern composers, such as Igor Stravinsky, Anton Webern and Edgard Varèse.\"",
+        "Zappa grew up influenced by avant-garde composers such as Edgard Varèse, Igor Stravinsky, and Anton Webern; 1950s blues artists Clarence \"Gatemouth\" Brown, Guitar Slim, Howlin' Wolf, Johnny \"Guitar\" Watson, and B.B."
+      ]
+    },
+    {
+      "n": 19,
+      "subject": "CJ",
+      "object": "50 Cent",
+      "subject_id": "Q103868817",
+      "object_id": "Q6060",
+      "sentence": "Soriano's music is influenced from various artist such as 50 Cent, Jay-Z, Wu-Tang Clan, and Pop Smoke.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Soriano's music is influenced from various artist such as 50 Cent, Jay-Z, Wu-Tang Clan, and Pop Smoke."
+      ]
+    },
+    {
+      "n": 20,
+      "subject": "Cheap Trick",
+      "object": "Led Zeppelin",
+      "subject_id": "Q1068713",
+      "object_id": "Q2331",
+      "sentence": "However, the album's high-class background did not save it from descriptions like \"Led Zeppelin gone psycho\".",
+      "proposed": "NO",
+      "verdict": "",
+      "note": "",
+      "final": "NO",
+      "sentences": [
+        "However, the album's high-class background did not save it from descriptions like \"Led Zeppelin gone psycho\"."
+      ]
+    },
+    {
+      "n": 21,
+      "subject": "Rachel Grae",
+      "object": "Billie Eilish",
+      "subject_id": "Q123681028",
+      "object_id": "Q29564107",
+      "sentence": "When writing music, she embraces the imperfections in life and vulnerability in all its forms, naming other young pop artists like Billie Eilish, Olivia Rodrigo, and Tate McRae as inspiration in her songwriting, and drawing vocal comparisons to artists like Adele, Kelly Clarkson, and Demi Lovato.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "When writing music, she embraces the imperfections in life and vulnerability in all its forms, naming other young pop artists like Billie Eilish, Olivia Rodrigo, and Tate McRae as inspiration in her songwriting, and drawing vocal comparisons to artists like Adele, Kelly Clarkson, and Demi Lovato."
+      ]
+    },
+    {
+      "n": 22,
+      "subject": "Charles Bradley",
+      "object": "James Brown",
+      "subject_id": "Q1063796",
+      "object_id": "Q5950",
+      "sentence": "In 1962, his sister took him to the Apollo Theater to see James Brown perform.",
+      "proposed": "EXPOSURE",
+      "verdict": "ASSERTS",
+      "note": "re-checked 2026-08-05 on full evidence: made a living as a James Brown impersonator",
+      "final": "ASSERTS",
+      "sentences": [
+        "In 1962, his sister took him to the Apollo Theater to see James Brown perform.",
+        "A co-worker told him he looked like James Brown and asked if he could sing; Bradley overcame his stage fright (when a crew member pushed him through the curtains onto the stage) and performed five or six times with a band.",
+        "He earned extra money doing James Brown performances, where he used such stage names as the Screaming Eagle of Soul, Black Velvet and even James Brown Jr.",
+        "It was there he began making a living moonlighting as a James Brown impersonator in local clubs under the name Black Velvet."
+      ]
+    },
+    {
+      "n": 23,
+      "subject": "Chu Berry",
+      "object": "Coleman Hawkins",
+      "subject_id": "Q1089014",
+      "object_id": "Q217812",
+      "sentence": "He was inspired to take up the tenor saxophone after hearing Coleman Hawkins on tour.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "He was inspired to take up the tenor saxophone after hearing Coleman Hawkins on tour.",
+        "During the period 1934–1939, while saxophone pioneer Coleman Hawkins was playing in Europe, Berry was one of several younger tenor saxophonists, such as Budd Johnson, Ben Webster, and Lester Young, who vied for supremacy on their instrument."
+      ]
+    },
+    {
+      "n": 24,
+      "subject": "Jean-Michel Jarre",
+      "object": "Pierre Soulages",
+      "subject_id": "Q104326",
+      "object_id": "Q708631",
+      "sentence": "From an early age, he was introduced to a variety of art forms, including street performers, jazz musicians and the artist Pierre Soulages.",
+      "proposed": "EXPOSURE",
+      "verdict": "ASSERTS",
+      "note": "re-checked 2026-08-05 on full evidence: 'He was also influenced by the work of ... Soulages'",
+      "final": "ASSERTS",
+      "sentences": [
+        "From an early age, he was introduced to a variety of art forms, including street performers, jazz musicians and the artist Pierre Soulages.",
+        "He was also influenced by the work of French artist Pierre Soulages, whose exhibition at the he attended."
+      ]
+    },
+    {
+      "n": 25,
+      "subject": "Nikolai Demidenko",
+      "object": "Dimitri Bashkirov",
+      "subject_id": "Q1093588",
+      "object_id": "Q1232378",
+      "sentence": "Demidenko studied at the Gnessin State Musical College with Anna Kantor for 12 years, and at the Moscow Conservatoire under Dmitri Bashkirov, whom he described as \"an extraordinary and volatile man and for me the greatest of all teachers.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Demidenko studied at the Gnessin State Musical College with Anna Kantor for 12 years, and at the Moscow Conservatoire under Dmitri Bashkirov, whom he described as \"an extraordinary and volatile man and for me the greatest of all teachers."
+      ]
+    },
+    {
+      "n": 26,
+      "subject": "The Jezabels",
+      "object": "Kate Bush",
+      "subject_id": "Q128220",
+      "object_id": "Q636",
+      "sentence": "Channelling Kate Bush, Freddie Mercury and Cyndi Lauper, Mary's vocals are a force to be reckoned with\".",
+      "proposed": "NO",
+      "verdict": "NO",
+      "note": "re-checked 2026-08-05 on full evidence: sjtroxel: two critics comparing them is evidence about the music, not a record of contact",
+      "final": "NO",
+      "sentences": [
+        "Channelling Kate Bush, Freddie Mercury and Cyndi Lauper, Mary's vocals are a force to be reckoned with\".",
+        "Reviewing the record song for song, XS Noize's Sandra Blemster compared Mary to Kate Bush and Chrissie Hynde."
+      ]
+    },
+    {
+      "n": 27,
+      "subject": "Kenshi Yonezu",
+      "object": "Radwimps",
+      "subject_id": "Q11604296",
+      "object_id": "Q1196122",
+      "sentence": "Yonezu considers Japanese bands Bump of Chicken, Asian Kung-Fu Generation and Radwimps big influences on his work, and Japanese authors Kenji Miyazawa and Yukio Mishima on his lyrics.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Yonezu considers Japanese bands Bump of Chicken, Asian Kung-Fu Generation and Radwimps big influences on his work, and Japanese authors Kenji Miyazawa and Yukio Mishima on his lyrics."
+      ]
+    },
+    {
+      "n": 28,
+      "subject": "Molly Grace",
+      "object": "",
+      "subject_id": "Q127310755",
+      "object_id": "Q26876",
+      "sentence": "Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Reneé Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences in her music that blends pop, funk and disco.",
+      "proposed": "NO",
+      "verdict": "",
+      "note": "",
+      "final": "NO",
+      "sentences": [
+        "Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Reneé Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences in her music that blends pop, funk and disco."
+      ]
+    },
+    {
+      "n": 29,
+      "subject": "Pooh",
+      "object": "The Beatles",
+      "subject_id": "Q1242174",
+      "object_id": "Q1299",
+      "sentence": "The album also featured \"Solo voci\", an a cappella piece inspired by the Beatles' \"Because\".",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "The album also featured \"Solo voci\", an a cappella piece inspired by the Beatles' \"Because\"."
+      ]
+    },
+    {
+      "n": 30,
+      "subject": "Em Beihold",
+      "object": "Regina Spektor",
+      "subject_id": "Q111333139",
+      "object_id": "Q229274",
+      "sentence": "Beihold grew up listening to Feist, Fiona Apple, Kate Nash, Sara Bareilles, and Lily Allen, and cites Queen and Regina Spektor as among her influences.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Beihold grew up listening to Feist, Fiona Apple, Kate Nash, Sara Bareilles, and Lily Allen, and cites Queen and Regina Spektor as among her influences."
+      ]
+    },
+    {
+      "n": 31,
+      "subject": "Gabriel Fauré",
+      "object": "Camille Saint-Saëns",
+      "subject_id": "Q104919",
+      "object_id": "Q150445",
+      "sentence": "Among his teachers was Camille Saint-Saëns, who became a lifelong friend.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "teacher relationship stated plainly - counted as an assertion",
+      "final": "ASSERTS",
+      "sentences": [
+        "Among his teachers was Camille Saint-Saëns, who became a lifelong friend.",
+        "When Niedermeyer died in March 1861, Camille Saint-Saëns took charge of piano studies and introduced contemporary music, including that of Schumann, Liszt and Wagner.",
+        "Saint-Saëns took great pleasure in his pupil's progress, which he helped whenever he could; Nectoux comments that at each step in Fauré's career \"Saint-Saëns's shadow can effectively be taken for granted.\" The close friendship between them lasted until Saint-Saëns died sixty years later.",
+        "At Saint-Saëns's regular prompting he continued to compose, but none of his works from this period survive.",
+        "Almost immediately, with the discreet aid of Saint-Saëns, he secured the post of assistant organist at the church of Notre-Dame de Clignancourt, in the north of Paris.",
+        "Some of his colleagues, including Saint-Saëns, Gounod and Franck, produced elegies and patriotic odes.",
+        "Fauré regularly attended Saint-Saëns's musical salons and those of Pauline Viardot, to whom Saint-Saëns introduced him.",
+        "Fauré was a founding member of the Société Nationale de Musique, formed in February 1871 under the joint chairmanship of Romain Bussine and Saint-Saëns, to promote new French music.",
+        "In 1874 Fauré moved from Saint-Sulpice to the Église de la Madeleine, acting as deputy for the principal organist, Saint-Saëns, during the latter's many absences on tour.",
+        "He was renowned for his improvisations, and Saint-Saëns said of him that he was \"a first class organist when he wanted to be\".",
+        "In March, Saint-Saëns retired from the Madeleine, succeeded as organist by Théodore Dubois, his choirmaster; Fauré was appointed to take over from Dubois.",
+        "To distract Fauré, Saint-Saëns took him to Weimar and introduced him to Franz Liszt.",
+        "When Ernest Guiraud, professor of composition at the Paris Conservatoire, died in 1892, Saint-Saëns encouraged Fauré to apply for the vacant post.",
+        "Fauré was elected to the Institut de France in 1909, after his father-in-law and Saint-Saëns, both long-established members, had canvassed strongly on his behalf.",
+        "When a group of French musicians led by Saint-Saëns tried to organise a boycott of German music, Fauré and Messager dissociated themselves from the idea, though the disagreement did not affect their friendship with Saint-Saëns.",
+        "In a centenary tribute in 1945, the musicologist Leslie Orrey wrote in The Musical Times, \"'More profound than Saint-Saëns, more varied than Lalo, more spontaneous than d'Indy, more classic than Debussy, Gabriel Fauré is the master par excellence of French music, the perfect mirror of our musical genius.' Perhaps, when English musicians get to know his work better, these words of Roger-Ducasse will seem, not over-praise, but no more than his due.\""
+      ]
+    },
+    {
+      "n": 32,
+      "subject": "Red Hot Chili Peppers",
+      "object": "Sly and the Family Stone",
+      "subject_id": "Q10708",
+      "object_id": "Q1133807",
+      "sentence": "At one time, people put us together in a category with Fishbone and Faith No More, but we were always different from those bands, and they were always different from us.\" The band's influences include Parliament-Funkadelic, Defunkt, Jimi Hendrix, the Misfits, Black Sabbath, Metallica, James Brown, G",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "At one time, people put us together in a category with Fishbone and Faith No More, but we were always different from those bands, and they were always different from us.\" The band's influences include Parliament-Funkadelic, Defunkt, Jimi Hendrix, the Misfits, Black Sabbath, Metallica, James Brown, Gang of Four, Bob Marley, Big Boys, Bad Brains, Sly and the Family Stone, Ohio Players, Queen, Stevie Wonder, Elvis Presley, Deep Purple, the Beach Boys, Black Flag, Ornette Coleman, Led Zeppelin, Yes, Fugazi, Fishbone, Marvin Gaye, Billie Holiday, Santana, Elvis Costello, the Stooges, the Clash, Siouxsie and the Banshees, Devo, and Miles Davis."
+      ]
+    },
+    {
+      "n": 33,
+      "subject": "Kenshi Yonezu",
+      "object": "Bump of Chicken",
+      "subject_id": "Q11604296",
+      "object_id": "Q1062152",
+      "sentence": "When he was in fifth grade, he watched a Flash animation that was popular on the internet at the time, and was impressed by the music used by Japanese rock band Bump of Chicken.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "When he was in fifth grade, he watched a Flash animation that was popular on the internet at the time, and was impressed by the music used by Japanese rock band Bump of Chicken.",
+        "Yonezu considers Japanese bands Bump of Chicken, Asian Kung-Fu Generation and Radwimps big influences on his work, and Japanese authors Kenji Miyazawa and Yukio Mishima on his lyrics.",
+        "When his parents bought a computer when he was 10, Yonezu made and uploaded flash animation videos for Bump of Chicken songs on the Internet."
+      ]
+    },
+    {
+      "n": 34,
+      "subject": "Charlie Parker",
+      "object": "Buster Smith",
+      "subject_id": "Q103767",
+      "object_id": "Q1017770",
+      "sentence": "Struggling with poverty, Parker went to the home of fellow alto saxophone player Buster Smith to ask for help.",
+      "proposed": "NO",
+      "verdict": "EXPOSURE",
+      "note": "sjtroxel 2026-08-05: Parker knew who Smith was and sought him out, so the encounter was not random. NOTE: this reads influence the sentence only IMPLIES, so a sentence-level filter is expected to MISS it - counted as known recall loss, not as filter failure",
+      "final": "EXPOSURE",
+      "sentences": [
+        "Struggling with poverty, Parker went to the home of fellow alto saxophone player Buster Smith to ask for help."
+      ]
+    },
+    {
+      "n": 35,
+      "subject": "Cheap Trick",
+      "object": "Big Star",
+      "subject_id": "Q1068713",
+      "object_id": "Q72608",
+      "sentence": "In 1999, the band recorded a cover of Big Star's 1972 song \"In the Street\" that was used as the theme song for the Fox sitcom That '70s Show.",
+      "proposed": "NO",
+      "verdict": "EXPOSURE",
+      "note": "recorded their song - sjtroxel 2026-08-05, consistent with the Peter and Gordon ruling",
+      "final": "EXPOSURE",
+      "sentences": [
+        "In 1999, the band recorded a cover of Big Star's 1972 song \"In the Street\" that was used as the theme song for the Fox sitcom That '70s Show."
+      ]
+    },
+    {
+      "n": 36,
+      "subject": "Andrea Koevska",
+      "object": "",
+      "subject_id": "Q106602773",
+      "object_id": "Q214226",
+      "sentence": "She has also cited Lauryn Hill and Hayley Williams as being some of her musical inspirations.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "She has also cited Lauryn Hill and Hayley Williams as being some of her musical inspirations."
+      ]
+    },
+    {
+      "n": 37,
+      "subject": "Vibe Chemistry",
+      "object": "Chase & Status",
+      "subject_id": "Q118874538",
+      "object_id": "Q1067983",
+      "sentence": "Morisco-Tarr takes inspiration from by Chase & Status, Netsky, Alcemist, goddard., and Disrupta.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Morisco-Tarr takes inspiration from by Chase & Status, Netsky, Alcemist, goddard., and Disrupta."
+      ]
+    },
+    {
+      "n": 38,
+      "subject": "François Adrien Boieldieu",
+      "object": "André Grétry",
+      "subject_id": "Q109875",
+      "object_id": "Q210962",
+      "sentence": "The spiritual heir of André Grétry, Boieldieu focused on melodies that avoided too much ornamentation, set to light, but intelligent, orchestration.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "The spiritual heir of André Grétry, Boieldieu focused on melodies that avoided too much ornamentation, set to light, but intelligent, orchestration."
+      ]
+    },
+    {
+      "n": 39,
+      "subject": "Chappell Roan",
+      "object": "Lady Gaga",
+      "subject_id": "Q110281146",
+      "object_id": "Q19848",
+      "sentence": "She has also cited Lady Gaga and Nicki Minaj as inspiration for her attitude towards making people feel confident with her music.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "She has also cited Lady Gaga and Nicki Minaj as inspiration for her attitude towards making people feel confident with her music."
+      ]
+    },
+    {
+      "n": 40,
+      "subject": "Toshinobu Kubota",
+      "object": "Marvin Gaye",
+      "subject_id": "Q1052053",
+      "object_id": "Q189758",
+      "sentence": "His artistic influences include Michael Jackson, Stevie Wonder, Marvin Gaye, Donny Hathaway, and Sly Stone.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "His artistic influences include Michael Jackson, Stevie Wonder, Marvin Gaye, Donny Hathaway, and Sly Stone.",
+        "He has cited several musicians as his inspirations, including Stevie Wonder, Sly Stone, Michael Jackson, Marvin Gaye, and Donny Hathaway."
+      ]
+    },
+    {
+      "n": 41,
+      "subject": "Cartel",
+      "object": "Simple Plan",
+      "subject_id": "Q1045827",
+      "object_id": "Q485825",
+      "sentence": "Following the release of Cycles, the band supported All Time Low, Boys Like Girls, Third Eye Blind, and LMFAO for part of The Bamboozle Roadshow 2010, along with numerous other supporting acts, including 3OH!3, Good Charlotte, Forever The Sickest Kids, and Simple Plan.",
+      "proposed": "NO",
+      "verdict": "EXPOSURE",
+      "note": "toured together - sjtroxel 2026-08-05, consistent with the Shpongle ruling",
+      "final": "EXPOSURE",
+      "sentences": [
+        "Following the release of Cycles, the band supported All Time Low, Boys Like Girls, Third Eye Blind, and LMFAO for part of The Bamboozle Roadshow 2010, along with numerous other supporting acts, including 3OH!3, Good Charlotte, Forever The Sickest Kids, and Simple Plan."
+      ]
+    },
+    {
+      "n": 42,
+      "subject": "The Clash",
+      "object": "Mott the Hoople",
+      "subject_id": "Q125603",
+      "object_id": "Q1126287",
+      "sentence": "In August and September 1979, the Clash recorded the double album London Calling, which Guy Stevens, a former A&R executive who had worked with Mott the Hoople and Traffic, produced.",
+      "proposed": "NO",
+      "verdict": "",
+      "note": "",
+      "final": "NO",
+      "sentences": [
+        "In August and September 1979, the Clash recorded the double album London Calling, which Guy Stevens, a former A&R executive who had worked with Mott the Hoople and Traffic, produced."
+      ]
+    },
+    {
+      "n": 43,
+      "subject": "Vibe Chemistry",
+      "object": "goddard.",
+      "subject_id": "Q118874538",
+      "object_id": "Q118948422",
+      "sentence": "Morisco-Tarr takes inspiration from by Chase & Status, Netsky, Alcemist, goddard., and Disrupta.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Morisco-Tarr takes inspiration from by Chase & Status, Netsky, Alcemist, goddard., and Disrupta."
+      ]
+    },
+    {
+      "n": 44,
+      "subject": "Chappell Roan",
+      "object": "Nicki Minaj",
+      "subject_id": "Q110281146",
+      "object_id": "Q162202",
+      "sentence": "In 2023, a Variety article described Roan as \"glammy and pop and embracing her femininity and [...] very queer-positive.\" Roan credited Madonna, Rihanna and Nicki Minaj as women who made queer music mainstream at the red carpet of the 67th Annual Grammy Awards.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "In 2023, a Variety article described Roan as \"glammy and pop and embracing her femininity and [...] very queer-positive.\" Roan credited Madonna, Rihanna and Nicki Minaj as women who made queer music mainstream at the red carpet of the 67th Annual Grammy Awards.",
+        "She has also cited Lady Gaga and Nicki Minaj as inspiration for her attitude towards making people feel confident with her music."
+      ]
+    },
+    {
+      "n": 45,
+      "subject": "Britney Spears",
+      "object": "Janet Jackson",
+      "subject_id": "Q11975",
+      "object_id": "Q131324",
+      "sentence": "Its peak in the United States tied Spears with Mariah Carey and Janet Jackson for the third-most number ones among women.",
+      "proposed": "NO",
+      "verdict": "ASSERTS",
+      "note": "re-checked 2026-08-05 on full evidence: 'cited Madonna, Janet Jackson and Whitney Houston as major influences'",
+      "final": "ASSERTS",
+      "sentences": [
+        "Its peak in the United States tied Spears with Mariah Carey and Janet Jackson for the third-most number ones among women.",
+        "Spears has cited Madonna, Janet Jackson, and Whitney Houston as major influences, her \"three favorite artists\" as a child, whom she would \"sing along to&nbsp;...",
+        "like, you know, Janet Jackson and Madonna.",
+        "I would really, really like to be a legend like Madonna.\" Spears cited \"That's the Way Love Goes\" as the inspiration for her song \"Touch of My Hand\" from her album In the Zone, saying \"I like to compare it to 'That's the Way Love Goes,' kind of a Janet Jackson thing.\" She also said her song \"Just Luv Me\" from her Glory album also reminded her of \"That's the Way Love Goes\"."
+      ]
+    },
+    {
+      "n": 46,
+      "subject": "Mango",
+      "object": "Peter Gabriel",
+      "subject_id": "Q1054564",
+      "object_id": "Q175195",
+      "sentence": "He grew up listening mainly to soul and hard rock music, his favourite musicians included Aretha Franklin, Led Zeppelin, Deep Purple and Peter Gabriel.",
+      "proposed": "EXPOSURE",
+      "verdict": "EXPOSURE",
+      "note": "re-checked 2026-08-05 on full evidence: sjtroxel: the extra sentence is Gabriel's guitarist, not Gabriel",
+      "final": "EXPOSURE",
+      "sentences": [
+        "He grew up listening mainly to soul and hard rock music, his favourite musicians included Aretha Franklin, Led Zeppelin, Deep Purple and Peter Gabriel.",
+        "Peter Gabriel's guitarist David Rhodes and Simple Minds's drummer Mel Gaynor played on the record."
+      ]
+    },
+    {
+      "n": 47,
+      "subject": "Towa Bird",
+      "object": "The Beatles",
+      "subject_id": "Q128904177",
+      "object_id": "Q1299",
+      "sentence": "The Beatles inspired her musically and aesthetically, and she has called them \"the best band in the world\" and Abbey Road one of her favourite albums.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "The Beatles inspired her musically and aesthetically, and she has called them \"the best band in the world\" and Abbey Road one of her favourite albums."
+      ]
+    },
+    {
+      "n": 48,
+      "subject": "Daniele Negroni",
+      "object": "James Morrison",
+      "subject_id": "Q1163771",
+      "object_id": "Q316301",
+      "sentence": "He is a fan of James Blunt, James Morrison and Xavier Naidoo.",
+      "proposed": "EXPOSURE",
+      "verdict": "",
+      "note": "",
+      "final": "EXPOSURE",
+      "sentences": [
+        "He is a fan of James Blunt, James Morrison and Xavier Naidoo."
+      ]
+    },
+    {
+      "n": 49,
+      "subject": "Karl Wallinger",
+      "object": "The Beach Boys",
+      "subject_id": "Q1302516",
+      "object_id": "Q183048",
+      "sentence": "Peppers Lonely Hearts Club Band and attempting not only to sing the words but to vocally recreate all of the sounds on the record), the Beach Boys, Bob Dylan, the Kinks, Buddy Holly and the Motown label.",
+      "proposed": "EXPOSURE",
+      "verdict": "ASSERTS",
+      "note": "re-checked 2026-08-05: sjtroxel reads the immersion sentence as influence for the Beach Boys too",
+      "final": "ASSERTS",
+      "sentences": [
+        "Peppers Lonely Hearts Club Band and attempting not only to sing the words but to vocally recreate all of the sounds on the record), the Beach Boys, Bob Dylan, the Kinks, Buddy Holly and the Motown label.",
+        "In 2024, The Guardians Graeme Thomson would summarise the band's best work as \"sound(ing) like a man trying to cram all the love and joy of his own fandom into four minutes, to distil the essence of Bob Dylan, Prince, The Rolling Stones, Sly Stone, Van Morrison, The Beach Boys, perhaps above all The Beatles, into one bubbling, funky, heartfelt and slightly ramshackle homebrew.\" Thompson also noted that \"the big hitters in the World Party canon..."
+      ]
+    },
+    {
+      "n": 50,
+      "subject": "Yoko Ono",
+      "object": "Allan Kaprow",
+      "subject_id": "Q117012",
+      "object_id": "Q366380",
+      "sentence": "She was introduced to more of Cage's unconventional neo-Dadaism first hand, and via his New York City protégés Allan Kaprow, Brecht, Mac Low, Al Hansen and the poet Dick Higgins.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "She was introduced to more of Cage's unconventional neo-Dadaism first hand, and via his New York City protégés Allan Kaprow, Brecht, Mac Low, Al Hansen and the poet Dick Higgins."
+      ]
+    },
+    {
+      "n": 51,
+      "subject": "The Rolling Stones",
+      "object": "The Beatles",
+      "subject_id": "Q11036",
+      "object_id": "Q1299",
+      "sentence": "In 1964, they beat the Beatles as the number one United Kingdom band in two surveys.",
+      "proposed": "NO",
+      "verdict": "EXPOSURE",
+      "note": "re-checked 2026-08-05 on full evidence: sjtroxel: 12 sentences of documented proximity is exposure even though each is about rivalry",
+      "final": "EXPOSURE",
+      "sentences": [
+        "In 1964, they beat the Beatles as the number one United Kingdom band in two surveys.",
+        "He had been directed to them by his previous clients, the Beatles.",
+        "Oldham initially tried applying the strategy used by Brian Epstein, the manager of the Beatles, and have the Rolling Stones wear suits.",
+        "He later changed his mind and imagined a band that contrasted with the Beatles, featuring unmatched clothing, long hair, and an unclean appearance.",
+        "Decca Records, which had declined to sign a deal with the Beatles, gave the Rolling Stones a recording contract with favourable terms.",
+        "Oldham contrasted the Rolling Stones' independence with the Beatles' obligation to record in EMI's studios, saying it made the Beatles appear as \"mere mortals&nbsp;...",
+        "He promoted the Rolling Stones as the nasty counterpoint to the Beatles, by having the band pose unsmiling on the cover of their first album.",
+        "The Beatles' own recording of the song is included on the 1963 album With the Beatles.",
+        "It drew unfavourable reviews and was widely regarded as a poor imitation of the Beatles' Sgt.",
+        "Reviewing the single for The Telegraph, Neil McCormick called it a \"raucously fun belter that wouldn't sound out of place on Exile on Main Street\", declaring \"it might just be the summer of The Beatles and the Stones.",
+        "In '64, the Beatles were perfect: the hair, the harmonies, the suits.",
+        "The only artists to top the UK Album Charts in six different decades, they are tied for the second most number&nbsp;1 albums on the Official UK Chart, surpassed only by the Beatles."
+      ]
+    },
+    {
+      "n": 52,
+      "subject": "The Beatles",
+      "object": "Timothy Leary",
+      "subject_id": "Q1299",
+      "object_id": "Q211731",
+      "sentence": "Among the experimental songs on Revolver was \"Tomorrow Never Knows\", the lyrics for which Lennon drew from Timothy Leary's The Psychedelic Experience: A Manual Based on the Tibetan Book of the Dead.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Among the experimental songs on Revolver was \"Tomorrow Never Knows\", the lyrics for which Lennon drew from Timothy Leary's The Psychedelic Experience: A Manual Based on the Tibetan Book of the Dead."
+      ]
+    },
+    {
+      "n": 53,
+      "subject": "Rachel Grae",
+      "object": "Olivia Rodrigo",
+      "subject_id": "Q123681028",
+      "object_id": "Q63243883",
+      "sentence": "When writing music, she embraces the imperfections in life and vulnerability in all its forms, naming other young pop artists like Billie Eilish, Olivia Rodrigo, and Tate McRae as inspiration in her songwriting, and drawing vocal comparisons to artists like Adele, Kelly Clarkson, and Demi Lovato.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "When writing music, she embraces the imperfections in life and vulnerability in all its forms, naming other young pop artists like Billie Eilish, Olivia Rodrigo, and Tate McRae as inspiration in her songwriting, and drawing vocal comparisons to artists like Adele, Kelly Clarkson, and Demi Lovato."
+      ]
+    },
+    {
+      "n": 54,
+      "subject": "Donald Glover",
+      "object": "Kanye West",
+      "subject_id": "Q1239933",
+      "object_id": "Q15935",
+      "sentence": "Later in the month, Glover previewed a track featuring a Kanye West verse on his Gilga Radio show.",
+      "proposed": "NO",
+      "verdict": "EXPOSURE",
+      "note": "collaboration (featured verse) - sjtroxel 2026-08-05",
+      "final": "EXPOSURE",
+      "sentences": [
+        "Later in the month, Glover previewed a track featuring a Kanye West verse on his Gilga Radio show."
+      ]
+    },
+    {
+      "n": 55,
+      "subject": "Christophe Maé",
+      "object": "Bob Marley",
+      "subject_id": "Q1086377",
+      "object_id": "Q409",
+      "sentence": "He also discovered Bob Marley's music to whom, years later, he dedicates a song: \"Mon père spirituel\".",
+      "proposed": "ASSERTS",
+      "verdict": "ASSERTS",
+      "note": "sjtroxel 2026-08-05: dedicating 'Mon pere spirituel' to him is sufficient evidence of influence",
+      "final": "ASSERTS",
+      "sentences": [
+        "He also discovered Bob Marley's music to whom, years later, he dedicates a song: \"Mon père spirituel\".",
+        "He has cited Bob Marley, Ben Harper, Tracy Chapman, and Jack Johnson as well as French singer-songwriters Francis Cabrel and Gérald De Palmas as musical influences."
+      ]
+    },
+    {
+      "n": 56,
+      "subject": "Pooh Shiesty",
+      "object": "Lil Wayne",
+      "subject_id": "Q105105274",
+      "object_id": "Q15615",
+      "sentence": "Pooh Shiesty is influenced by Chief Keef, Gucci Mane, Kodak Black, and Lil Wayne.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "Pooh Shiesty is influenced by Chief Keef, Gucci Mane, Kodak Black, and Lil Wayne.",
+        "He listened to Lil Wayne for the longest, who arguably has influenced him the most."
+      ]
+    },
+    {
+      "n": 57,
+      "subject": "Chiara Oliver",
+      "object": "Olivia Rodrigo",
+      "subject_id": "Q123503941",
+      "object_id": "Q63243883",
+      "sentence": "In addition, she finds inspiration in artists such as American singer Olivia Rodrigo.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "In addition, she finds inspiration in artists such as American singer Olivia Rodrigo."
+      ]
+    },
+    {
+      "n": 58,
+      "subject": "Karl Wallinger",
+      "object": "The Beatles",
+      "subject_id": "Q1302516",
+      "object_id": "Q1299",
+      "sentence": "He showed musical promise from an early age, immersing himself in the music of the Beatles (notably studying Sgt.",
+      "proposed": "EXPOSURE",
+      "verdict": "ASSERTS",
+      "note": "re-checked 2026-08-05 on full evidence: the truncation hid it: he studied Sgt. Pepper 'attempting ... to vocally recreate all of the sounds on the record'",
+      "final": "ASSERTS",
+      "sentences": [
+        "He showed musical promise from an early age, immersing himself in the music of the Beatles (notably studying Sgt.",
+        "In 2024, The Guardians Graeme Thomson would summarise the band's best work as \"sound(ing) like a man trying to cram all the love and joy of his own fandom into four minutes, to distil the essence of Bob Dylan, Prince, The Rolling Stones, Sly Stone, Van Morrison, The Beach Boys, perhaps above all The Beatles, into one bubbling, funky, heartfelt and slightly ramshackle homebrew.\" Thompson also noted that \"the big hitters in the World Party canon..."
+      ]
+    },
+    {
+      "n": 59,
+      "subject": "Pierre Gallon",
+      "object": "Pierre Hantaï",
+      "subject_id": "Q108909092",
+      "object_id": "Q1370295",
+      "sentence": "According to his biography on his website, he considers his encounters with Blandine Verlet, Élisabeth Joyé, and Pierre Hantaï as key moments in his learning journey.",
+      "proposed": "ASSERTS",
+      "verdict": "",
+      "note": "",
+      "final": "ASSERTS",
+      "sentences": [
+        "According to his biography on his website, he considers his encounters with Blandine Verlet, Élisabeth Joyé, and Pierre Hantaï as key moments in his learning journey."
+      ]
+    },
+    {
+      "n": 60,
+      "subject": "Limoblaze",
+      "object": "Eminem",
+      "subject_id": "Q120635829",
+      "object_id": "Q5608",
+      "sentence": "Aged 8 years, he discovered the songs of popular rappers such as Tupac, Eminem and 50 Cent and later came across Christian rappers such as Lecrae, the Ambassador, Andy Mineo, Da' T.R.U.T.H.",
+      "proposed": "EXPOSURE",
+      "verdict": "",
+      "note": "",
+      "final": "EXPOSURE",
+      "sentences": [
+        "Aged 8 years, he discovered the songs of popular rappers such as Tupac, Eminem and 50 Cent and later came across Christian rappers such as Lecrae, the Ambassador, Andy Mineo, Da' T.R.U.T.H."
+      ]
+    }
+  ],
+  "reviewed_by": "sjtroxel",
+  "reviewed_at": "2026-08-05",
+  "review_note": "7 borderline rows were put to him explicitly; he overruled 2 (#5, #34) and confirmed 5. `final` is the label to measure against. AMENDED 2026-08-05: he ruled that collaboration, touring together, covering a song and shared presence are all EXPOSURE. Five rows lifted from NO. Both label sets now encode one standard.",
+  "evidence_note": "`sentences` carries EVERY matching sentence. Earlier revisions showed only the first, which is wrong for the 38% of edges with more than one - found 2026-08-05.",
+  "standing_rules": [
+    "collaboration, touring together, covering a song and shared presence are EXPOSURE",
+    "a critic's attribution never elevates a label - it is evidence about the music, not a record of contact",
+    "label what the sentence asserts, not what the world knows; the filter only ever sees the sentence",
+    "extra sentences can only raise a label, never lower it"
+  ]
+}

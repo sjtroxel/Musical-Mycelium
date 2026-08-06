@@ -145,9 +145,10 @@ correction is recorded here rather than by editing the plan, so the two stay com
 | 3 | done | the hand-rejection list is **load-bearing** — the check re-admits 6 of the 7; corpus ships at **133**, not 138 |
 | 4 | done 2026-08-05 | **the corpus is broad and shallow: the deepest chain `path()` can return is 2 hops, so DoD #2 is not satisfiable from P737** |
 | 5 | done 2026-08-05 | **the signature query refused when worded the way the SPEC words it** — 32 of 169 labels carry a trailing "music" |
-| 6 | **replanned 2026-08-05, not built** | **the prose check does not transfer to the artist axis.** §4.6 assumed it did. Measured before ingesting; see below |
-| 6a | **next** | the influence-assertion filter, which §4.6 never contemplated needing |
-| 6b | blocked on 6a | the artist ingest itself |
+| 6 | **replanned 2026-08-05, not built** | §4.6 assumed the prose check transfers to artists. It half-does — see 6a |
+| 6a | **built + training-measured 2026-08-05** | the filter exists and scores 98% precision / **80% recall**. The recall gap is the finding: **EXPOSURE has no lexical signature** |
+| 6b | **NEXT — blocked on one decision** | settle the EXPOSURE tier, *then* label the 35 sealed held-out rows and get the real number |
+| 6c | blocked on 6b | the artist ingest itself |
 
 Three plan assumptions that did not survive contact:
 
@@ -301,6 +302,21 @@ all of:
 allowed to answer no** (scope doc A6). "This needs a model in the loop" is a publishable finding, not
 a failure — but it would be a finding about a Tier-1 filter that is currently free and deterministic,
 so it is a real architectural fork rather than a detail.
+
+**Four defects found by hand-labelling, three of them in this project's own code.** Every one was
+surfaced by sjtroxel reading evidence and asking why it looked wrong, and none would have been found by
+running the pipeline and inspecting counts:
+
+| defect | how it surfaced | fix |
+|---|---|---|
+| **sentences truncated at abbreviations** | *"…all became friends of C."* — the splitter cut at the initial in **C. L. Franklin**, leaving a row nobody could label | `_NON_TERMINAL_ABBREVIATIONS` + `split_sentences`. **The list is never complete**: `Sgt.` was missing on the first pass and truncated *Sgt. Pepper* mid-title on the one article where the rest of that sentence was the whole case |
+| **section headings served as prose** | `==== 1964 world tour, meeting Bob Dylan ====` was handed over as a supporting sentence | `_HEADING_LINE_RE`, applied after the appendix truncation, which needs the headings to find where prose ends |
+| **only the first matching sentence was used** | he asked whether Sam Ryder's article mentioned Elton John anywhere else. It did — *"cites … Elton John … among his music influences"*, the opposite of the shown sentence's meaning | `classify_all()` takes the strongest verdict across all sentences. **38% of accepted edges have more than one** |
+| **mislinked entity** (upstream, not ours) | see below | `sitelink_matches_subject` |
+
+The third one is the reason the first conclusion was wrong, and it is worth stating plainly: **a
+sampling artifact in the evidence display produced a false finding about the data**, and it survived
+until a human read the underlying article. Counts and rates would never have caught it.
 
 **A defect found on the way, and it is a keeper regardless of how the filter turns out.**
 `Tier.MISLINKED`: Wikidata's `Q58462848` is labelled **TheGrefg** and its English sitelink points at the
@@ -480,13 +496,74 @@ so it does not touch Tier-1 eval cost or the deterministic gate), or the artist 
 published. **That decision is his, and it should be made on the measured number rather than in
 advance.**
 
-#### 6b — the ingest, unchanged in shape
+#### 6a — WHERE IT ACTUALLY LANDED, 2026-08-05
 
-Only reachable if 6a produces a filter with a defensible measured precision. Then: the bounded
-population from the original plan below, run through prose check **and** filter, `verification`
-recording that these edges cleared a stricter bar than `PROSE_AUTO`, `Node.kind` separating the axes,
-and the gate refusing cross-axis claims. Publish the counts at every stage — discovered, on-axis,
-prose-accepted, filter-accepted — because the drop from 4,549 to whatever survives *is* the finding.
+Built, and measured against the gold set. **The plan above was right that a filter was needed and wrong
+about which half of the problem was hard.**
+
+**The first conclusion was overstated and is corrected in scope doc A6.2.** It rested on judging each
+edge by one supporting sentence, and **38% of prose-accepted artist edges carry more than one** (one
+carries sixteen). Re-labelled on full evidence the sample is **43 ASSERTS / 12 EXPOSURE / 5 NO**, so
+the prose check accepts something genuinely supported **92%** of the time and the junk rate is **8%**,
+not the ~25% first reported. `classify_all()` now takes the strongest verdict across all sentences,
+which is the correct unit; `classify()` alone is not.
+
+**Measured against the corrected labels — a TRAINING number, since the patterns were derived from this
+same set:**
+
+| | |
+|---|---|
+| keep-vs-drop precision | 98% |
+| keep-vs-drop recall | **80%** |
+| three-way exact agreement | 72% |
+| `ASSERTS` recall specifically | 81% |
+
+**The result that matters is the shape of the errors, not the headline.** One false positive; eleven
+false negatives. Every false negative is the same thing: an edge sjtroxel labelled `EXPOSURE` under the
+rule that **collaboration, touring together, covering a song and shared presence all count**. Wu-Tang
+as guest stars; Mahalia Jackson in the Franklin household; a Big Star cover; Cartel on a tour; a Kanye
+verse; twelve sentences of Stones-versus-Beatles rivalry.
+
+> **`ASSERTS` is detectable. `EXPOSURE`, as defined, is not.** Influence assertions use a bounded
+> vocabulary — *influenced, inspired, cited, credits, idol*. Proximity does not: *"guest stars on the
+> album included"* and *"took turns helping with the children"* mean the same thing to a reader and
+> share nothing a pattern can see. Proximity is a semantic category about human relationships, not a
+> linguistic one, and no cue list will close that gap.
+
+#### 6b — the decision, then the held-out number. **THE NEXT SESSION'S WORK.**
+
+**The 35 unlabelled held-out rows are sealed and must stay sealed until the decision below is made.**
+Labelling them under a standard that is about to change spends a set that can only be spent once.
+
+**The decision, and it is a product decision as much as a technical one** — it sets what "grounded"
+means on the artist axis:
+
+1. ~~**Ingest `ASSERTS` only**, dropping `EXPOSURE` as un-automatable.~~ **RULED OUT 2026-08-05 by
+   sjtroxel: the exposure tier is necessary even though it is hard to define. Do not re-propose it.**
+2. **Narrow `EXPOSURE` to its lexical core** — *listened to, fan of, grew up with, discovered* — and
+   put collaboration and proximity out of scope entirely. Keeps a tier, at the cost of a definition
+   narrower than the one A6.1 recorded, which means A6.1 gets amended and the 60-row gold set gets
+   re-labelled against the narrower rule.
+3. **An LLM in the ingest path, for the `EXPOSURE` tier only.** Offline, one-time, local — never in the
+   agent loop, so invariant 1, the deterministic gate and Tier-1 eval cost are untouched. It would need
+   validating against this same gold set, which is why the labelling was worth doing either way.
+4. **Keep the broad definition, accept the under-catch, and publish the miss rate.** No amendment, no
+   re-label, no spend: ingest what the patterns reach and state plainly that proximity expressed in
+   ways a pattern cannot see is missed. **This is the option most in keeping with how this project has
+   handled every other limit** — `max_path_hops`, the `HAND`/`PROSE_AUTO` split, the exclusion rate —
+   all published rather than hidden. It is also the cheapest, and it leaves 2 and 3 available later.
+
+Then, and only then: label the 35 sealed rows under the settled standard, and measure. **That number
+is the one that decides whether 6c happens at all**, and it is the first non-training figure this
+filter will have.
+
+#### 6c — the ingest, unchanged in shape
+
+Only reachable if 6b's held-out number holds up. Then: the bounded population from the original plan
+below, run through prose check **and** filter, `verification` recording which tier each edge cleared,
+`Node.kind` separating the axes, and the gate refusing cross-axis claims. Publish the counts at every
+stage — discovered, on-axis, prose-accepted, filter-accepted — because the drop from 4,549 to whatever
+survives *is* the finding.
 
 ---
 

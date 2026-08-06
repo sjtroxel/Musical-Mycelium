@@ -33,6 +33,7 @@ from musical_mycelium.ingest.prosecheck import (
     has_taxonomic_lead,
     name_variants,
     sitelink_matches_subject,
+    split_sentences,
     strip_markup,
     stylistic_origins,
 )
@@ -492,3 +493,53 @@ def test_non_evidence_tiers_short_circuit_with_a_reason(tier: Tier, expected: st
     assert result.tier is tier
     assert not result.usable
     assert expected in result.exclusion_reason
+
+
+# --- defects 6 and 7: the evidence sentence itself was malformed --------------------------------------
+#
+# Both found on 2026-08-05 by hand-labelling artist edges. Neither inflates or deflates the tier — they
+# corrupt the *sentence handed to a human or a filter as evidence*, which is worse, because it looks
+# like a judgement call rather than a bug.
+
+
+def test_an_initial_does_not_end_a_sentence() -> None:
+    """`C.L. Franklin` was cut at "C.", producing "...all became friends of C." — unlabellable."""
+    line = (
+        "Martin Luther King Jr, Jackie Wilson and Sam Cooke all became friends of C.L. Franklin. "
+        "He later toured widely."
+    )
+    parts = split_sentences(line)
+
+    assert len(parts) == 2, f"split at the initial: {parts}"
+    assert parts[0].endswith("C.L. Franklin.")
+
+
+def test_common_abbreviations_do_not_end_a_sentence() -> None:
+    for line, expected in (
+        ("She studied under Dr. Smith. Then she left.", 2),
+        ("It reached No. 3 in 1964. The band toured.", 2),
+        ("He worked with J. S. Bach's scores for years.", 1),
+    ):
+        assert len(split_sentences(line)) == expected, line
+
+
+def test_a_real_full_stop_still_splits() -> None:
+    """The guard must not swallow genuine sentence boundaries — that would merge unrelated evidence."""
+    assert len(split_sentences("He was influenced by Cream. He said so often.")) == 2
+    assert len(split_sentences("Was he influenced? He said so.")) == 2
+
+
+def test_section_headings_never_become_evidence() -> None:
+    """`==== 1964 world tour, meeting Bob Dylan ... ====` was returned as a supporting sentence.
+
+    Headings name entities constantly and assert nothing, which is precisely the shape that fools a
+    mention-based check.
+    """
+    body = strip_markup(
+        "'''The Beatles''' were an English rock band.\n\n"
+        "==== 1964 world tour, meeting Bob Dylan and stand on civil rights ====\n\n"
+        "They toured widely that year.\n"
+    )
+
+    assert "Bob Dylan" not in body, "a heading leaked into the body prose"
+    assert "toured widely" in body, "genuine prose either side of the heading must survive"

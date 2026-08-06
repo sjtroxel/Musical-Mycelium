@@ -190,6 +190,107 @@ _STYLISTIC_ORIGINS_RE = re.compile(
 )
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 
+#: Tokens whose trailing period does **not** end a sentence. Found 2026-08-05 during hand-labelling:
+#: *"Martin Luther King Jr, Jackie Wilson and Sam Cooke all became friends of C."* is not a sentence —
+#: the real text names **C.L. Franklin**, and the splitter cut at the initial. A truncated sentence is
+#: worse than a missing one here, because it is handed to a human or a filter as if it were evidence.
+_NON_TERMINAL_ABBREVIATIONS = frozenset(
+    {
+        "mr",
+        "mrs",
+        "ms",
+        "dr",
+        "prof",
+        "rev",
+        "fr",
+        "st",
+        "sr",
+        "jr",
+        "no",
+        "vs",
+        "etc",
+        "inc",
+        "ltd",
+        "co",
+        "op",
+        "feat",
+        "ft",
+        "vol",
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "sept",
+        "oct",
+        "nov",
+        "dec",
+        "sgt",
+        "capt",
+        "cpl",
+        "lt",
+        "col",
+        "gen",
+        "maj",
+        "pvt",
+        "ave",
+        "blvd",
+        "mt",
+        "approx",
+        "ca",
+        "cf",
+        "ed",
+        "eds",
+        "trans",
+        "orig",
+    }
+)
+
+#: **An abbreviation list is never complete, and that is the honest limit of this approach.** Any
+#: abbreviation absent from the set above still truncates its sentence. It fails safe in one sense —
+#: a truncated sentence loses evidence rather than inventing it — but it can silently drop the
+#: strongest support an edge has, which is what happened to *Sgt. Pepper* on 2026-08-05: the clause
+#: after the cut was the only real evidence that edge had.
+
+#: A single capital letter before the period — an initial, as in ``C.L.`` or ``J. S. Bach``. The
+#: preceding character may itself be a period: **chained** initials (``C.L.``, ``J.R.R.``) are the
+#: common case and were what the first version of this guard missed.
+_INITIAL_RE = re.compile(r"(?:^|[\s(\"'.])([A-Z])\.$")
+
+
+def _ends_sentence(piece: str) -> bool:
+    """Is this fragment's trailing period a real full stop, or an abbreviation?"""
+    # Curly quotes by codepoint: ruff flags the literals themselves as visually ambiguous, fairly.
+    stripped = piece.rstrip().rstrip('")' + "\u201d\u2019")
+    if not stripped.endswith("."):
+        return True  # ! or ? — never ambiguous
+    if _INITIAL_RE.search(stripped):
+        return False
+    last = re.split(r"[\s(\[]", stripped)[-1].rstrip(".").lower()
+    return last not in _NON_TERMINAL_ABBREVIATIONS
+
+
+def split_sentences(line: str) -> list[str]:
+    """Split into sentences, rejoining splits that landed inside an abbreviation or an initial."""
+    pieces = _SENTENCE_SPLIT_RE.split(line)
+    out: list[str] = []
+    for piece in pieces:
+        if out and not _ends_sentence(out[-1]):
+            out[-1] = f"{out[-1]} {piece}"
+        else:
+            out.append(piece)
+    return out
+
+
+#: A section heading line — ``==== 1964 world tour ====``. Not prose, and never evidence. It leaked
+#: into a supporting sentence on 2026-08-05 (`The Beatles <- Bob Dylan`, off the heading *"1964 world
+#: tour, meeting Bob Dylan and stand on civil rights"*). Headings are topic labels: they name entities
+#: constantly and assert nothing, which is exactly the shape that fools a mention-based check.
+_HEADING_LINE_RE = re.compile(r"^\s*={2,}[^=\n]*={2,}\s*$", re.MULTILINE)
+
 
 # --- pure analysis ---------------------------------------------------------------------------------
 # Everything below this line is a pure function of its arguments. That is deliberate: it is what lets
@@ -293,6 +394,8 @@ def strip_markup(wikitext: str) -> str:
     text = _strip_nested(text, "{|", "|}")
     text = _process_wikilinks(text)
     text = _truncate_at_appendix(text)
+    # Headings go AFTER the appendix truncation, which needs them to find where the prose ends.
+    text = _HEADING_LINE_RE.sub(" ", text)
     text = _HTML_TAG_RE.sub(" ", text)
     text = _EMPHASIS_RE.sub("", text)
     return re.sub(r"[ \t]+", " ", text)
@@ -388,7 +491,7 @@ def _sentence_at(text: str, index: int) -> str:
     line = text[start : end if end != -1 else len(text)]
     offset = index - start
     cursor = 0
-    for piece in _SENTENCE_SPLIT_RE.split(line):
+    for piece in split_sentences(line):
         cursor = line.find(piece, cursor)
         if cursor <= offset < cursor + len(piece):
             return " ".join(piece.split())

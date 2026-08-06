@@ -118,6 +118,63 @@ structure and states the constraint honestly; it does not fix it.
    > corpus whose entire genre graph is 133 edges. That is the "grounded slides into correct" failure
    > `CLAUDE.md` forbids, at 9x the size of the honest data.
    >
+   > > **A6.2, CORRECTION, same evening. The paragraph above overstates the finding and the ~1,200
+   > > figure is wrong.** It rested on judging each edge by **one** supporting sentence, and **38% of
+   > > prose-accepted artist edges carry more than one** — one carries sixteen. Found when sjtroxel
+   > > asked whether Sam Ryder's article mentioned Elton John anywhere other than the sentence shown:
+   > > the first sentence read *"He caught the attention of musicians such as Elton John"* (wrong
+   > > direction entirely) while a later one read *"He **cites** David Bowie, Elton John, Freddie
+   > > Mercury and Queen among his music **influences**."*
+   > >
+   > > Re-labelled on full evidence, the 60-row sample is **43 ASSERTS / 12 EXPOSURE / 5 NO**. So the
+   > > prose check accepts edges that are supported at some level **92% of the time**, not 77%, and the
+   > > genuine junk rate is **8%**. The quoted junk — the recording truck, the pronoun, the monarch —
+   > > was real *at the sentence level*, but most of those **edges** had proper evidence elsewhere in
+   > > the article that the sampling never surfaced.
+   > >
+   > > The filter is still justified: 20% of accepted edges are exposure-only, so a tier is still owed.
+   > > But the claim is now "the prose check cannot tell an assertion from proximity", not "the prose
+   > > check produces garbage". The corrected labels and the reasoning are in
+   > > `eval/datasets/artist_assertion_labels_v1.json`.
+
+   > **A6.3, 2026-08-05, his framing — the three tiers are not three points on one scale.** Two of them
+   > are **objective** and the middle one is **subjective**, and that is what the measurement was
+   > really telling us:
+   >
+   > | tier | kind | defined by |
+   > |---|---|---|
+   > | `ASSERTS` | **objective** | the text explicitly states influence |
+   > | `EXPOSURE` | **subjective** | a reader judges a recorded connection to be real |
+   > | `NO` | **objective** | no connection is recorded anywhere |
+   >
+   > This *predicts* the filter's error shape rather than merely describing it. `ASSERTS` has a bounded
+   > vocabulary — *influenced, inspired, cited, credits, idol* — because it is defined by explicit
+   > textual markers, which is why precision reaches 98%. `NO` is checkable by absence. **All eleven of
+   > the filter's misses landed in `EXPOSURE`, because you cannot pattern-match a judgement call.** The
+   > recall gap is not a gap in the patterns; it is co-extensive with the subjective tier.
+   >
+   > **Consequence worth stating before anyone reaches for a model: an LLM would not make `EXPOSURE`
+   > objective.** It would substitute a model's judgement for his. That may be an acceptable trade, but
+   > it must be described as delegating a subjective call, never as "getting it right".
+   >
+   > **So the product claim becomes one layer deeper than "grounded":** the top tier is what the source
+   > *states*, the middle tier is what a reader would reasonably *infer*, and the output says which one
+   > you are looking at. Presenting all three as the same kind of fact would be the overclaim.
+   >
+   > **The floor, so the subjective tier does not become a dumping ground.** "Any tenuous plausible
+   > connection" would admit anything with a name match and the tier would stop carrying information.
+   > Derived from his own rulings and agreed 2026-08-05:
+   >
+   > > **`EXPOSURE` = the text records real-world contact or engagement between the two, short of a
+   > > stated influence claim.**
+   >
+   > That is why the duet, the tour, the cover, the household and twelve sentences of rivalry all
+   > qualified — every one is documented contact. And why two critics comparing The Jezabels to Kate
+   > Bush did **not**: a comparison is evidence about the *music*, not a record of the *people* meeting
+   > it. Same reason `Queen`-the-monarch failed — no contact of any kind. The floor is more testable
+   > than the catch-all, and it means the tier is **partly** reachable after all: contact verbs are a
+   > wide set but not an infinite one.
+   >
    > **The filter is therefore in scope for this phase, not deferred to phase 6.** His call, and the
    > reasoning is de-risking: if artist-level influence cannot be filtered deterministically, that
    > bounds the product, and it is far cheaper to learn now than after two more weeks of building on
@@ -126,6 +183,26 @@ structure and states the constraint honestly; it does not fix it.
    >
    > What it does **not** mean: the genre axis is unaffected and keeps working. The deployed URL
    > answers the signature query today. A failed artist filter bounds the product; it does not void it.
+   >
+   > **A6.1, same day — the label set is three-valued, not binary, decided by sjtroxel.** Hand-reading
+   > the sample showed a third class sitting between assertion and noise, at roughly a quarter of it:
+   > *"as a teenager he listened to Alice Cooper"*, *"growing up, Red listened to Gucci Mane"*,
+   > *"he is a fan of Xavier Naidoo"*, *"his sister took him to the Apollo to see James Brown"*.
+   >
+   > These record **formative exposure** — listening, fandom, attendance — and never assert influence.
+   > Music journalism uses them precisely to convey it, and Wikidata editors visibly cite them as the
+   > basis for P737 edges, so discarding them throws away a quarter of the genuine signal. Counting
+   > them silently would mean "grounded" sometimes rests on a listening habit.
+   >
+   > So they become a **third verification tier, ingested and flagged** — the same move
+   > `verification: HAND | PROSE_AUTO` already makes for the genre axis, extended rather than invented.
+   > The product can then show which edges rest on *"he cited them as an influence"* and which rest on
+   > *"he grew up listening to them"*, and the split is a published number.
+
+   > **Two further name collisions found while labelling, both the `Them` shape:** `Queen` matched
+   > *"performed at the **Queen's** Platinum Jubilee concert"*, and one candidate carried an **empty
+   > object label**, meaning an entity with no English label cleared the type filter. Band names that
+   > are common English words are a systematic hazard on this axis, not a curiosity.
 4. **The type filter is a bounded membership test against `Q188451` on both ends of every edge**, with
    rejected entities recorded by reason. *(A3 — was: "P279 chains terminate at the genre-domain
    boundary." P279 is not ingested, so the original item had nothing to apply to.)*

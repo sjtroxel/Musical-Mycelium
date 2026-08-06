@@ -1,0 +1,751 @@
+{
+  "generated_at": "2026-08-05",
+  "status": "rows 1-15 labelled on FULL evidence; rows 16-50 unseen and still held out",
+  "protocol": "Claude has not read these sentences. Label `verdict` as ASSERTS / EXPOSURE / NO without consulting the filter's patterns.",
+  "sampling": "900-slice, prose-accepted, excluding every pair from the derivation set AND from the 300-slice. Subjects with 3+ edges are deliberately over-sampled to expose peer co-mention.",
+  "labels": {
+    "ASSERTS": "the sentence asserts that the subject was influenced by the object",
+    "EXPOSURE": "formative exposure only - listened to, fan of, saw perform - no influence claim (scope doc A6.1)",
+    "NO": "the sentence does not support the edge at all"
+  },
+  "rows": [
+    {
+      "n": 1,
+      "subject": "Peter and Gordon",
+      "object": "The Beatles",
+      "subject_id": "Q1256943",
+      "object_id": "Q1299",
+      "sentence": "Peter and Gordon also recorded the John Lennon–penned Lennon–McCartney song \"If I Fell\", which was previously recorded by the Beatles and released on their 1964 album A Hard Day's Night.",
+      "verdict": "EXPOSURE",
+      "note": "sjtroxel: they knew the song was Lennon/McCartney-penned, so exposure - not an influence claim",
+      "still_prose": true,
+      "sentences": [
+        "Peter and Gordon also recorded the John Lennon–penned Lennon–McCartney song \"If I Fell\", which was previously recorded by the Beatles and released on their 1964 album A Hard Day's Night."
+      ]
+    },
+    {
+      "n": 2,
+      "subject": "Aretha Franklin",
+      "object": "Sam Cooke",
+      "subject_id": "Q125121",
+      "object_id": "Q295919",
+      "sentence": "Martin Luther King Jr, Jackie Wilson and Sam Cooke all became friends of C. L. Franklin.",
+      "verdict": "ASSERTS",
+      "note": "re-checked on full evidence: 'two of Franklin's greatest influences'; she aspired to follow him",
+      "still_prose": true,
+      "old_sentence": "Martin Luther King Jr, Jackie Wilson and Sam Cooke all became friends of C.",
+      "sentences": [
+        "Martin Luther King Jr, Jackie Wilson and Sam Cooke all became friends of C.",
+        "Franklin and her father traveled to California, where she met singer Sam Cooke.",
+        "Other influences in her youth included Marvin Gaye, as well as Ray Charles and Sam Cooke, \"two of Franklin's greatest influences\".",
+        "After turning 18, Franklin confided to her father that she aspired to follow Sam Cooke in recording pop music, and moved to New York.",
+        "Before signing with Columbia, Sam Cooke tried to persuade Franklin's father to sign her with his label, RCA Victor, but she had already decided to go with Columbia."
+      ]
+    },
+    {
+      "n": 3,
+      "subject": "Aretha Franklin",
+      "object": "Dinah Washington",
+      "subject_id": "Q125121",
+      "object_id": "Q229322",
+      "sentence": "According to music producer Quincy Jones, while Franklin was still young, Dinah Washington let him know that \"Aretha was the 'next one.",
+      "verdict": "EXPOSURE",
+      "note": "sjtroxel: mutual exposure; Franklin too young to have been influenced per this sentence",
+      "still_prose": true,
+      "sentences": [
+        "According to music producer Quincy Jones, while Franklin was still young, Dinah Washington let him know that \"Aretha was the 'next one."
+      ]
+    },
+    {
+      "n": 4,
+      "subject": "Sam Ryder",
+      "object": "Lordi",
+      "subject_id": "Q111179156",
+      "object_id": "Q23471",
+      "sentence": "Ryder is a \"big fan\" of Eurovision and cites Finnish rock band Lordi as being the inspiration for him learning how to play guitar, after the rock band won the Eurovision Song Contest 2006.",
+      "verdict": "ASSERTS",
+      "still_prose": true,
+      "sentences": [
+        "Ryder is a \"big fan\" of Eurovision and cites Finnish rock band Lordi as being the inspiration for him learning how to play guitar, after the rock band won the Eurovision Song Contest 2006."
+      ]
+    },
+    {
+      "n": 5,
+      "subject": "Molly Grace",
+      "object": "Chappell Roan",
+      "subject_id": "Q127310755",
+      "object_id": "Q110281146",
+      "sentence": "Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Reneé Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences in her music that blends pop, funk and disco.",
+      "verdict": "ASSERTS",
+      "still_prose": true,
+      "sentences": [
+        "Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Reneé Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences in her music that blends pop, funk and disco."
+      ]
+    },
+    {
+      "n": 6,
+      "subject": "The Busker",
+      "object": "The Beatles",
+      "subject_id": "Q116762464",
+      "object_id": "Q1299",
+      "sentence": "The group draws inspiration from 1960s pop bands such as The Beatles and The Beach Boys.",
+      "verdict": "ASSERTS",
+      "still_prose": true,
+      "sentences": [
+        "The group draws inspiration from 1960s pop bands such as The Beatles and The Beach Boys."
+      ]
+    },
+    {
+      "n": 7,
+      "subject": "The Beatles",
+      "object": "Bob Dylan",
+      "subject_id": "Q1299",
+      "object_id": "Q392",
+      "sentence": "In August, journalist Al Aronowitz arranged for the Beatles to meet Bob Dylan.",
+      "verdict": "ASSERTS",
+      "note": "re-checked on full evidence: Lennon 'openly imitated Dylan's nasal drone'; the band 'continued to absorb influences ... including Bob Dylan'",
+      "still_prose": true,
+      "old_sentence": "==== 1964 world tour, meeting Bob Dylan and stand on civil rights ====",
+      "sentences": [
+        "==== 1964 world tour, meeting Bob Dylan and stand on civil rights ====",
+        "In August, journalist Al Aronowitz arranged for the Beatles to meet Bob Dylan.",
+        "Visiting the band in their New York hotel suite, Dylan introduced them to cannabis.",
+        "Gould points out the musical and cultural significance of this meeting, before which the musicians' respective fan bases were \"perceived as inhabiting two separate subcultural worlds\": Dylan's audience of \"college kids with artistic or intellectual leanings, a dawning political and social idealism, and a mildly bohemian style\" contrasted with their fans, \"veritable 'teenyboppers' – kids in high school or grade school whose lives were totally wrapped up in the commercialised popular culture of television, radio, pop records, fan magazines and teen fashion.",
+        "To many of Dylan's followers in the folk music scene, the Beatles were seen as idolaters, not idealists.\"",
+        "Within six months of the meeting, according to Gould, \"Lennon would be making records on which he openly imitated Dylan's nasal drone, brittle strum, and introspective vocal persona\"; and six months after that, Dylan began performing with a backing band and electric instrumentation, and \"dressed in the height of Mod fashion\".",
+        "As a result, Gould continues, the traditional division between folk and rock enthusiasts \"nearly evaporated\", as the Beatles' fans began to mature in their outlook and Dylan's audience embraced the new, youth-driven pop culture.",
+        "The Beatles continued to absorb influences long after their initial success, often finding new musical and lyrical avenues by listening to their contemporaries, including Bob Dylan, Smokey Robinson and the Miracles, the Who, Frank Zappa, the Lovin' Spoonful, the Byrds and the Beach Boys, whose 1966 album Pet Sounds amazed and inspired McCartney."
+      ]
+    },
+    {
+      "n": 8,
+      "subject": "Shpongle",
+      "object": "1200 Micrograms",
+      "subject_id": "Q1134411",
+      "object_id": "Q2328030",
+      "sentence": "They returned to Japan on New Year's Eve 2003 to play the New Maps of Hyperspace event at Tokyo Bay NK Hall together with 1200 Micrograms (featuring Raja Ram) and Hallucinogen.",
+      "verdict": "EXPOSURE",
+      "note": "sjtroxel: played a concert together - exposure, not influence",
+      "still_prose": true,
+      "sentences": [
+        "They returned to Japan on New Year's Eve 2003 to play the New Maps of Hyperspace event at Tokyo Bay NK Hall together with 1200 Micrograms (featuring Raja Ram) and Hallucinogen."
+      ]
+    },
+    {
+      "n": 9,
+      "subject": "Nine Inch Nails",
+      "object": "The Clash",
+      "subject_id": "Q11647",
+      "object_id": "Q125603",
+      "sentence": "The excitement of the night struck a chord with me and I remember thinking, 'Someday I'd love to be up on that stage.'\" Upon forming Nine Inch Nails, Reznor stated that he was initially influenced most by the Clash, even outright trying to imitate them.",
+      "verdict": "ASSERTS",
+      "still_prose": true,
+      "sentences": [
+        "The excitement of the night struck a chord with me and I remember thinking, 'Someday I'd love to be up on that stage.'\" Upon forming Nine Inch Nails, Reznor stated that he was initially influenced most by the Clash, even outright trying to imitate them."
+      ]
+    },
+    {
+      "n": 10,
+      "subject": "Nine Inch Nails",
+      "object": "Pink Floyd",
+      "subject_id": "Q11647",
+      "object_id": "Q2306",
+      "sentence": "Influenced by Pink Floyd and by David Bowie's music from the 1970s, The Downward Spiral 's diverse textures and moods depict a protagonist's mental progress.",
+      "verdict": "ASSERTS",
+      "still_prose": true,
+      "sentences": [
+        "Influenced by Pink Floyd and by David Bowie's music from the 1970s, The Downward Spiral 's diverse textures and moods depict a protagonist's mental progress.",
+        "In 1995, Nine Inch Nails went on tour with David Bowie, who, along with Pink Floyd, had been a significant influence on The Downward Spiral.",
+        "Bob Ezrin, producer for Pink Floyd, Kiss, Alice Cooper, and Peter Gabriel, described Reznor in 2007 as a \"true visionary\" and advised aspiring artists to take note of his no-compromise attitude."
+      ]
+    },
+    {
+      "n": 11,
+      "subject": "David Murray",
+      "object": "Albert Ayler",
+      "subject_id": "Q1175803",
+      "object_id": "Q457125",
+      "sentence": "He was initially influenced by free jazz musicians such as Albert Ayler, Ornette Coleman and Archie Shepp.",
+      "verdict": "ASSERTS",
+      "still_prose": true,
+      "sentences": [
+        "He was initially influenced by free jazz musicians such as Albert Ayler, Ornette Coleman and Archie Shepp."
+      ]
+    },
+    {
+      "n": 12,
+      "subject": "Alexander Hawkins",
+      "object": "Elmo Hope",
+      "subject_id": "Q1237463",
+      "object_id": "Q1333051",
+      "sentence": "Later influences included Thelonious Monk, Bud Powell and Elmo Hope; the last because \"[he] seems to be just a guy who did something completely distinctive but without that kind of awesome baggage that Monk has\".",
+      "verdict": "ASSERTS",
+      "still_prose": true,
+      "sentences": [
+        "Later influences included Thelonious Monk, Bud Powell and Elmo Hope; the last because \"[he] seems to be just a guy who did something completely distinctive but without that kind of awesome baggage that Monk has\"."
+      ]
+    },
+    {
+      "n": 13,
+      "subject": "Aretha Franklin",
+      "object": "George Michael",
+      "subject_id": "Q125121",
+      "object_id": "Q130311",
+      "sentence": "Although her rendition of Respect has been referred to as her signature song, Franklin is known for other hit singles such as (You Make Me Feel Like) A Natural Woman, Chain of Fools, Think, I Say a Little Prayer, Rock Steady, Day Dreaming, Freeway of Love and I Knew You Were Waiting (For Me) (a duet",
+      "verdict": "EXPOSURE",
+      "still_prose": true,
+      "note": "re-checked on full evidence: sjtroxel: same duet, no influence shown in either sentence",
+      "sentences": [
+        "Although her rendition of Respect has been referred to as her signature song, Franklin is known for other hit singles such as (You Make Me Feel Like) A Natural Woman, Chain of Fools, Think, I Say a Little Prayer, Rock Steady, Day Dreaming, Freeway of Love and I Knew You Were Waiting (For Me) (a duet with George Michael).",
+        "The Walden-produced album went gold on the strength of her globally successful duet with George Michael, \"I Knew You Were Waiting (For Me)\", which became her first single in nearly twenty years to top the Billboard Hot 100 and also topped the charts in the United Kingdom and Australia and resulted in Grammy wins for Franklin."
+      ]
+    },
+    {
+      "n": 14,
+      "subject": "The Beatles",
+      "object": "Elvis Presley",
+      "subject_id": "Q1299",
+      "object_id": "Q303",
+      "sentence": "Towards the end of the tour, they met with Elvis Presley, a foundational musical influence on the band, who invited them to his home in Beverly Hills.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Towards the end of the tour, they met with Elvis Presley, a foundational musical influence on the band, who invited them to his home in Beverly Hills.",
+        "The Beatles' earliest influences include Elvis Presley, Carl Perkins, Little Richard, Chuck Berry and Gene Vincent.",
+        "Of Presley, Lennon said, \"Nothing really affected me until I heard Elvis.",
+        "If there hadn't been Elvis, there would not have been the Beatles.\" Chuck Berry was particularly influential in terms of songwriting and lyrics."
+      ]
+    },
+    {
+      "n": 15,
+      "subject": "Sam Ryder",
+      "object": "Elton John",
+      "subject_id": "Q111179156",
+      "object_id": "Q2808",
+      "sentence": "He caught the attention of musicians such as Elton John, Sia, Justin Bieber, and Alicia Keys.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "He caught the attention of musicians such as Elton John, Sia, Justin Bieber, and Alicia Keys.",
+        "He cites David Bowie, Elton John, Freddie Mercury, and Queen among his music influences."
+      ]
+    },
+    {
+      "n": 16,
+      "subject": "Britney Spears",
+      "object": "Michael Jackson",
+      "subject_id": "Q11975",
+      "object_id": "Q2831",
+      "sentence": "Her accolades include one Grammy Award, six MTV Video Music Awards (including the Michael Jackson Video Vanguard Award), seven Billboard Music Awards and a star on the Hollywood Walk of Fame.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Her accolades include one Grammy Award, six MTV Video Music Awards (including the Michael Jackson Video Vanguard Award), seven Billboard Music Awards and a star on the Hollywood Walk of Fame.",
+        "In August 2011, Spears received the Michael Jackson Video Vanguard Award at the 2011 MTV Video Music Awards.",
+        "There are aspects about her that I recognize in myself when I first started out in my career.\" Spears has also named Michael Jackson, Mariah Carey, Sheryl Crow, Otis Redding, Shania Twain, Brandy, Beyoncé, Natalie Imbruglia, Cher, and Prince as inspirations, and younger artists such as Selena Gomez and Ariana Grande.",
+        "Luke's wall of sound, her vocals melt into a mix of babytalk coo and coital panting that is, in its own overprocessed way, just as iconic and propulsive as Michael Jackson's yips or Eminem's snarls.\"",
+        "In 2011, Rolling Stone readers voted Spears their second-favorite dancing musician, after Michael Jackson.",
+        "Spears's awards and accolades include a Grammy Award; 15 Guinness World Records; six MTV Video Music Awards, including the Michael Jackson Video Vanguard Award; seven Billboard Music Awards, including the Millennium Award; the inaugural Radio Disney Icon Award; the GLAAD Media Award's Vanguard Award; and a star on the Hollywood Walk of Fame."
+      ]
+    },
+    {
+      "n": 17,
+      "subject": "The Rolling Stones",
+      "object": "Chuck Berry",
+      "subject_id": "Q11036",
+      "object_id": "Q5921",
+      "sentence": "The group mainly played material by Muddy Waters, Chuck Berry, Little Richard, Howlin' Wolf, and Bo Diddley.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "The group mainly played material by Muddy Waters, Chuck Berry, Little Richard, Howlin' Wolf, and Bo Diddley.",
+        "Jagger was carrying records by Chuck Berry and Muddy Waters; these revealed to Richards a shared interest.",
+        "They objected to playing the Chuck Berry and Bo Diddley songs preferred by Jagger and Richards.",
+        "Shortly afterwards, the band began their first tour of the UK, performing Chicago blues, including songs by Chuck Berry and Bo Diddley.",
+        "A cover version of Chuck Berry's \"Come On\" was the Rolling Stones' first single, released on 7 June 1963.",
+        "We'd turn him onto Chuck Berry and say, 'Look, it's all the same shit, man, and you can do it.",
+        "I learned that Earl Phillips was playing on those records like a jazz drummer, playing swing, with a straight four.\" Jagger, recalling when he first heard the likes of Chuck Berry, Bo Diddley, Muddy Waters, Fats Domino, and other major American R&B artists, said it \"seemed the most real thing\" he had heard up to that point."
+      ]
+    },
+    {
+      "n": 18,
+      "subject": "Nine Inch Nails",
+      "object": "Skinny Puppy",
+      "subject_id": "Q11647",
+      "object_id": "Q371535",
+      "sentence": "Soon after, following their live support of Skinny Puppy, Reznor aimed to release one 12-inch single on a small European label.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Soon after, following their live support of Skinny Puppy, Reznor aimed to release one 12-inch single on a small European label.",
+        "Reznor acknowledged in Spin magazine that \"Down in It\" was influenced by early Skinny Puppy, particularly the band's song \"Dig It\"; other songs from Pretty Hate Machine and With Teeth have been described as synth-pop.",
+        "Other influences include Ministry and Skinny Puppy, which helped shape 1989's Pretty Hate Machine.",
+        "Reznor has toured with some of his influences, including a brief tour opening for Skinny Puppy in 1988."
+      ]
+    },
+    {
+      "n": 19,
+      "subject": "Spacemen 3",
+      "object": "The Stooges",
+      "subject_id": "Q1191761",
+      "object_id": "Q208767",
+      "sentence": "The band drew inspiration from acts like the Stooges, the Velvet Underground, and Suicide.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "The band drew inspiration from acts like the Stooges, the Velvet Underground, and Suicide.",
+        "Their earlier record releases were guitar 'heavy', sounding Stooges-esque and \"a bit like a punked-up garage rock band\"; whilst their later work was mostly sparser and softer with more textural techniques and augmented by organs, resulting in \"their signature trance-like neo-psychedelia\".",
+        "The group took influence from The Stooges, The Velvet Underground, and The Rolling Stones."
+      ]
+    },
+    {
+      "n": 20,
+      "subject": "The Rolling Stones",
+      "object": "Muddy Waters",
+      "subject_id": "Q11036",
+      "object_id": "Q220707",
+      "sentence": "The group mainly played material by Muddy Waters, Chuck Berry, Little Richard, Howlin' Wolf, and Bo Diddley.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "The group mainly played material by Muddy Waters, Chuck Berry, Little Richard, Howlin' Wolf, and Bo Diddley.",
+        "Jagger was carrying records by Chuck Berry and Muddy Waters; these revealed to Richards a shared interest.",
+        "When asked by a journalist for the band's name, Jones saw a Muddy Waters LP lying on the floor; one of the tracks was \"Rollin' Stone\".",
+        "During the tour they recorded for two days at Chess Studios in Chicago, meeting many of their most important influences, including Muddy Waters.",
+        "It included a concert at Chicago's Checkerboard Lounge with Muddy Waters, in one of his last performances before his death in 1983.",
+        "Jagger and Richards had a shared admiration of Jimmy Reed, Muddy Waters, and Howlin' Wolf.",
+        "I learned that Earl Phillips was playing on those records like a jazz drummer, playing swing, with a straight four.\" Jagger, recalling when he first heard the likes of Chuck Berry, Bo Diddley, Muddy Waters, Fats Domino, and other major American R&B artists, said it \"seemed the most real thing\" he had heard up to that point.",
+        "Similarly, Keith Richards, describing the first time he listened to Muddy Waters, said it was the \"most powerful music [he had] ever heard&nbsp;...",
+        "He also recalled, \"when you think of some dopey, spotty seventeen year old from Dartford, who wants to be Muddy Waters—and there were a lot of us—in a way, very pathetic, but in another way, [it was] very&nbsp;...",
+        "We didn't sit around listening to Muddy Waters; we listened to everything.",
+        "Muddy Waters was quoted as saying that the Rolling Stones and other English bands piqued the interest of American youth in blues musicians."
+      ]
+    },
+    {
+      "n": 21,
+      "subject": "Em Beihold",
+      "object": "Queen",
+      "subject_id": "Q111333139",
+      "object_id": "Q15862",
+      "sentence": "Beihold grew up listening to Feist, Fiona Apple, Kate Nash, Sara Bareilles, and Lily Allen, and cites Queen and Regina Spektor as among her influences.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Beihold grew up listening to Feist, Fiona Apple, Kate Nash, Sara Bareilles, and Lily Allen, and cites Queen and Regina Spektor as among her influences."
+      ]
+    },
+    {
+      "n": 22,
+      "subject": "Donald Glover",
+      "object": "Justice",
+      "subject_id": "Q1239933",
+      "object_id": "Q329178",
+      "sentence": "A lot of the rap shows I saw as a kid were boring, but if you went to a Rage Against the Machine show or a Justice show, the kids were losing their minds.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "A lot of the rap shows I saw as a kid were boring, but if you went to a Rage Against the Machine show or a Justice show, the kids were losing their minds."
+      ]
+    },
+    {
+      "n": 23,
+      "subject": "Kenshi Yonezu",
+      "object": "Susumu Hirasawa",
+      "subject_id": "Q11604296",
+      "object_id": "Q930143",
+      "sentence": "He discovered Japanese musician Susumu Hirasawa on Nico Nico Douga and was strongly influenced by his work.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "He discovered Japanese musician Susumu Hirasawa on Nico Nico Douga and was strongly influenced by his work.",
+        "He answered on a radio program that Susumu Hirasawa's \"MOTHER\", which he listened to before he was 18 years old when he started his music career, was \"one of the songs that changed my life\", and said, \"All of Susumu Hirasawa's songs have a musicality that I had never heard before, and I was very influenced by them.\""
+      ]
+    },
+    {
+      "n": 24,
+      "subject": "Donald Glover",
+      "object": "OutKast",
+      "subject_id": "Q1239933",
+      "object_id": "Q472595",
+      "sentence": "People want to experience something physical.\" He also cites hip-hop duo Outkast and trio Migos, and funk band Funkadelic as being influences.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "People want to experience something physical.\" He also cites hip-hop duo Outkast and trio Migos, and funk band Funkadelic as being influences."
+      ]
+    },
+    {
+      "n": 25,
+      "subject": "Marius Neset",
+      "object": "Django Bates",
+      "subject_id": "Q11988389",
+      "object_id": "Q357072",
+      "sentence": "He is known from collaborations within the jazz bands \"People Are Machines\", \"Kaktusch\", \"JazzKamikaze\" and Django Bates projects \"StoRMChaser\" big band and \"Human Chain\".",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "He is known from collaborations within the jazz bands \"People Are Machines\", \"Kaktusch\", \"JazzKamikaze\" and Django Bates projects \"StoRMChaser\" big band and \"Human Chain\".",
+        "Neset holds a master's degree at the Copenhagen Rhythmic Music Conservatory 2008, and finished Soloist studies under the guidance of Django Bates among others, at the same place in 2010.",
+        "The critique Ian Patterson of The Guardian comments in his review of Golden Xplosion: \"Marius Neset, the 25-year-old Norwegian saxophonist who surfaced in the UK last year with Django Bates (his teacher and mentor at Copenhagen's Rhythmic Music Conservatory), not only combines Brecker's power and Jan Garbarek's tonal delicacy, but has a vision that makes all 11 originals on this sensational album feel indispensable, and indispensably connected to each other.",
+        "With Django Bates"
+      ]
+    },
+    {
+      "n": 26,
+      "subject": "Famous Oberogo",
+      "object": "Alicia Keys",
+      "subject_id": "Q110929442",
+      "object_id": "Q121507",
+      "sentence": "As he explained to La Vanguardia, this crushed him and he took refuge in music listening to Alicia Keys and Adele, among others.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "As he explained to La Vanguardia, this crushed him and he took refuge in music listening to Alicia Keys and Adele, among others."
+      ]
+    },
+    {
+      "n": 27,
+      "subject": "Frank Zappa",
+      "object": "Edgard Varèse",
+      "subject_id": "Q127330",
+      "object_id": "Q57247",
+      "sentence": "According to The Rough Guide to Rock (2003), \"as a teenager Zappa was simultaneously enthralled by black R&B (Johnny 'Guitar' Watson, Guitar Slim), doo-wop (The Channels, The Velvets), and modern composers, such as Igor Stravinsky, Anton Webern and Edgard Varèse.\"",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "According to The Rough Guide to Rock (2003), \"as a teenager Zappa was simultaneously enthralled by black R&B (Johnny 'Guitar' Watson, Guitar Slim), doo-wop (The Channels, The Velvets), and modern composers, such as Igor Stravinsky, Anton Webern and Edgard Varèse.\"",
+        "Zappa's deep interest in modern classical music began when he read a LOOK magazine article about the Sam Goody record store chain that lauded its ability to sell an LP as obscure as The Complete Works of Edgard Varèse, Volume One.",
+        "The article described Varèse's percussion composition Ionisation, produced by EMS Recordings, as \"a weird jumble of drums and other unpleasant sounds\".",
+        "Zappa decided to seek out Varèse's music.",
+        "After searching for over a year, Zappa found a copy (he noticed the LP because of the \"mad scientist\" looking photo of Varèse on the cover).",
+        "Thus began his lifelong passion for Varèse's music and that of other modern classical composers.",
+        "Although she disliked Varèse's music, she was indulgent enough to give her son a long-distance call to the New York composer as a fifteenth birthday present.",
+        "Unfortunately, Varèse was in Europe at the time, so Zappa spoke to the composer's wife and she suggested he call back later.",
+        "In a letter, Varèse thanked him for his interest, and told him about a composition he was working on called \"Déserts\".",
+        "Varèse invited him to visit if he ever came to New York.",
+        "The meeting never took place (Varèse died in 1965), but Zappa framed the letter and kept it on display for the rest of his life.",
+        "Zappa grew up influenced by avant-garde composers such as Edgard Varèse, Igor Stravinsky, and Anton Webern; 1950s blues artists Clarence \"Gatemouth\" Brown, Guitar Slim, Howlin' Wolf, Johnny \"Guitar\" Watson, and B.B.",
+        "Among those contributing to the issue was composer and musicologist Nicolas Slonimsky, who conducted premiere performances of works of Ives and Varèse in the 1930s."
+      ]
+    },
+    {
+      "n": 28,
+      "subject": "Britney Spears",
+      "object": "Madonna",
+      "subject_id": "Q11975",
+      "object_id": "Q1744",
+      "sentence": "Three of the labels rejected her, saying that audiences wanted pop bands such as the Backstreet Boys and the Spice Girls, and \"there wasn't going to be another Madonna, another Debbie Gibson, or another Tiffany\".",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Three of the labels rejected her, saying that audiences wanted pop bands such as the Backstreet Boys and the Spice Girls, and \"there wasn't going to be another Madonna, another Debbie Gibson, or another Tiffany\".",
+        "Halfway through, they were joined by Madonna, whom they both kissed.",
+        "The album produced four singles: \"Me Against the Music\", a collaboration with Madonna; \"Toxic\"—which won Spears her first Grammy for Best Dance Recording; \"Everytime\", and \"Outrageous\".",
+        "That year, Spears became involved in the Kabbalah Centre through her friendship with Madonna.",
+        "Spears has cited Madonna, Janet Jackson, and Whitney Houston as major influences, her \"three favorite artists\" as a child, whom she would \"sing along to&nbsp;...",
+        "Throughout her career, Spears has drawn frequent comparisons to Madonna and Jackson in particular, in terms of vocals, choreography, and stage presence.",
+        "like, you know, Janet Jackson and Madonna.",
+        "In the 2002 book Madonnastyle by Carol Clerk, Spears is quoted saying: \"I have been a huge fan of Madonna since I was a little girl.",
+        "I would really, really like to be a legend like Madonna.\" Spears cited \"That's the Way Love Goes\" as the inspiration for her song \"Touch of My Hand\" from her album In the Zone, saying \"I like to compare it to 'That's the Way Love Goes,' kind of a Janet Jackson thing.\" She also said her song \"Just Luv Me\" from her Glory album also reminded her of \"That's the Way Love Goes\".",
+        "A lot of people put it down, but what she does is a positive thing.\" Madonna said of Spears in the documentary Britney: For the Record: \"I admire her talent as an artist&nbsp;...",
+        "Not since Madonna had a female artist affected the genre so profoundly.\" Billboards Robert Kelly observed that Spears's \"sexy and coy\" vocals on her debut single \"...Baby One More Time\" \"kicked off a new era of pop vocal stylings that would influence countless artists to come\".",
+        "Spears has also helped several charities during her career, including Madonna's Kabbalah-based Spirituality for Kids, cancer charity Gilda's Club Worldwide, the Promises Foundation, and the United Way, with the latter two focused on giving families from various disadvantaged situations new hope and stable foundations for the future."
+      ]
+    },
+    {
+      "n": 29,
+      "subject": "Sexyy Red",
+      "object": "Project Pat",
+      "subject_id": "Q119842023",
+      "object_id": "Q593741",
+      "sentence": "Growing up, Red listened to artists such as Gucci Mane, Lil Wayne, Nicki Minaj, Project Pat, Juicy J, Three 6 Mafia, Chief Keef, Webbie, Boosie Badazz, and Trina.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Growing up, Red listened to artists such as Gucci Mane, Lil Wayne, Nicki Minaj, Project Pat, Juicy J, Three 6 Mafia, Chief Keef, Webbie, Boosie Badazz, and Trina."
+      ]
+    },
+    {
+      "n": 30,
+      "subject": "Aerosmith",
+      "object": "The Rolling Stones",
+      "subject_id": "Q126826",
+      "object_id": "Q11036",
+      "sentence": "In 1975, Aerosmith released their third album, Toys in the Attic, which established Aerosmith as international stars, competing with the likes of Led Zeppelin and the Rolling Stones.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "In 1975, Aerosmith released their third album, Toys in the Attic, which established Aerosmith as international stars, competing with the likes of Led Zeppelin and the Rolling Stones.",
+        "Influenced by bands such as the Beatles, the Rolling Stones, the Yardbirds, Led Zeppelin, and the New York Dolls, Aerosmith proved to be a major influence themselves on subsequently massively successful bands and musicians; according to Perry, Eddie Van Halen once told him that his band Van Halen \"started out on the suburban L.A."
+      ]
+    },
+    {
+      "n": 31,
+      "subject": "Famous Oberogo",
+      "object": "Loïc Nottet",
+      "subject_id": "Q110929442",
+      "object_id": "Q18439233",
+      "sentence": "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loïc Nottet.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loïc Nottet."
+      ]
+    },
+    {
+      "n": 32,
+      "subject": "Karl Wallinger",
+      "object": "Bob Dylan",
+      "subject_id": "Q1302516",
+      "object_id": "Q392",
+      "sentence": "Peppers Lonely Hearts Club Band and attempting not only to sing the words but to vocally recreate all of the sounds on the record), the Beach Boys, Bob Dylan, the Kinks, Buddy Holly and the Motown label.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Peppers Lonely Hearts Club Band and attempting not only to sing the words but to vocally recreate all of the sounds on the record), the Beach Boys, Bob Dylan, the Kinks, Buddy Holly and the Motown label.",
+        "In 2024, The Guardians Graeme Thomson would summarise the band's best work as \"sound(ing) like a man trying to cram all the love and joy of his own fandom into four minutes, to distil the essence of Bob Dylan, Prince, The Rolling Stones, Sly Stone, Van Morrison, The Beach Boys, perhaps above all The Beatles, into one bubbling, funky, heartfelt and slightly ramshackle homebrew.\" Thompson also noted that \"the big hitters in the World Party canon..."
+      ]
+    },
+    {
+      "n": 33,
+      "subject": "Wisp",
+      "object": "Title Fight",
+      "subject_id": "Q125546993",
+      "object_id": "Q1664881",
+      "sentence": "Her musical influences include Whirr, Ovlov, Title Fight, the Cocteau Twins, Nothing, My Chemical Romance and Deftones.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Her musical influences include Whirr, Ovlov, Title Fight, the Cocteau Twins, Nothing, My Chemical Romance and Deftones."
+      ]
+    },
+    {
+      "n": 34,
+      "subject": "Rachel Grae",
+      "object": "Tate McRae",
+      "subject_id": "Q123681028",
+      "object_id": "Q95129121",
+      "sentence": "When writing music, she embraces the imperfections in life and vulnerability in all its forms, naming other young pop artists like Billie Eilish, Olivia Rodrigo, and Tate McRae as inspiration in her songwriting, and drawing vocal comparisons to artists like Adele, Kelly Clarkson, and Demi Lovato.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "When writing music, she embraces the imperfections in life and vulnerability in all its forms, naming other young pop artists like Billie Eilish, Olivia Rodrigo, and Tate McRae as inspiration in her songwriting, and drawing vocal comparisons to artists like Adele, Kelly Clarkson, and Demi Lovato."
+      ]
+    },
+    {
+      "n": 35,
+      "subject": "Clarence \"Frogman\" Henry",
+      "object": "Fats Domino",
+      "subject_id": "Q1095442",
+      "object_id": "Q209586",
+      "sentence": "He started learning piano as a child, with Fats Domino and Professor Longhair his main influences.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "He started learning piano as a child, with Fats Domino and Professor Longhair his main influences."
+      ]
+    },
+    {
+      "n": 36,
+      "subject": "Mushkaa",
+      "object": "Albany",
+      "subject_id": "Q113500634",
+      "object_id": "Q62010090",
+      "sentence": "Yung Beef, Albany, Soto Asa, Kaydy Cain, and even Joan Manuel Serrat, Estopa, and indie music are some of her inspirations.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Yung Beef, Albany, Soto Asa, Kaydy Cain, and even Joan Manuel Serrat, Estopa, and indie music are some of her inspirations."
+      ]
+    },
+    {
+      "n": 37,
+      "subject": "The Clash",
+      "object": "Jimmy Cliff",
+      "subject_id": "Q125603",
+      "object_id": "Q109063",
+      "sentence": "A version by reggae singer Jimmy Cliff with Tim Armstrong from Rancid was scheduled for release in November 2011.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "A version by reggae singer Jimmy Cliff with Tim Armstrong from Rancid was scheduled for release in November 2011."
+      ]
+    },
+    {
+      "n": 38,
+      "subject": "Mushkaa",
+      "object": "Yung Beef",
+      "subject_id": "Q113500634",
+      "object_id": "Q22905726",
+      "sentence": "Yung Beef, Albany, Soto Asa, Kaydy Cain, and even Joan Manuel Serrat, Estopa, and indie music are some of her inspirations.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Yung Beef, Albany, Soto Asa, Kaydy Cain, and even Joan Manuel Serrat, Estopa, and indie music are some of her inspirations."
+      ]
+    },
+    {
+      "n": 39,
+      "subject": "Donald Glover",
+      "object": "LCD Soundsystem",
+      "subject_id": "Q1239933",
+      "object_id": "Q45752",
+      "sentence": "In an interview with The Guardian, Glover stated, \"I'm influenced by LCD Soundsystem as much as Ghostface Killah.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "In an interview with The Guardian, Glover stated, \"I'm influenced by LCD Soundsystem as much as Ghostface Killah."
+      ]
+    },
+    {
+      "n": 40,
+      "subject": "The Beatles",
+      "object": "Ravi Shankar",
+      "subject_id": "Q1299",
+      "object_id": "Q103774",
+      "sentence": "In England, meanwhile, Harrison met sitar maestro Ravi Shankar, who agreed to train him on the instrument.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "In England, meanwhile, Harrison met sitar maestro Ravi Shankar, who agreed to train him on the instrument.",
+        "Referring to the Beach Boys' creative leader, Martin later stated: \"No one made a greater impact on the Beatles than Brian [Wilson].\" Ravi Shankar, with whom Harrison studied for six weeks in India in late 1966, had a significant effect on his musical development during the band's later years."
+      ]
+    },
+    {
+      "n": 41,
+      "subject": "Famous Oberogo",
+      "object": "",
+      "subject_id": "Q110929442",
+      "object_id": "Q1450",
+      "sentence": "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loïc Nottet.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loïc Nottet."
+      ]
+    },
+    {
+      "n": 42,
+      "subject": "Alexander Hawkins",
+      "object": "Cecil Taylor",
+      "subject_id": "Q1237463",
+      "object_id": "Q363908",
+      "sentence": "In Hawkins' largely chronological listening, Cecil Taylor followed – \"I think that was the first jump in the language where I really had to figure out how that related to all the stuff I loved.\" A further influence was Marilyn Crispell, who created her own form of musical expression after being infl",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "In Hawkins' largely chronological listening, Cecil Taylor followed – \"I think that was the first jump in the language where I really had to figure out how that related to all the stuff I loved.\" A further influence was Marilyn Crispell, who created her own form of musical expression after being influenced by those who also influenced Hawkins."
+      ]
+    },
+    {
+      "n": 43,
+      "subject": "Alexander Hawkins",
+      "object": "Marilyn Crispell",
+      "subject_id": "Q1237463",
+      "object_id": "Q447030",
+      "sentence": "In Hawkins' largely chronological listening, Cecil Taylor followed – \"I think that was the first jump in the language where I really had to figure out how that related to all the stuff I loved.\" A further influence was Marilyn Crispell, who created her own form of musical expression after being infl",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "In Hawkins' largely chronological listening, Cecil Taylor followed – \"I think that was the first jump in the language where I really had to figure out how that related to all the stuff I loved.\" A further influence was Marilyn Crispell, who created her own form of musical expression after being influenced by those who also influenced Hawkins."
+      ]
+    },
+    {
+      "n": 44,
+      "subject": "Frank Zappa",
+      "object": "Johnny \"Guitar\" Watson",
+      "subject_id": "Q127330",
+      "object_id": "Q708884",
+      "sentence": "Among his early influences were Johnny \"Guitar\" Watson, Howlin' Wolf and Clarence \"Gatemouth\" Brown.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Among his early influences were Johnny \"Guitar\" Watson, Howlin' Wolf and Clarence \"Gatemouth\" Brown.",
+        "Zappa grew up influenced by avant-garde composers such as Edgard Varèse, Igor Stravinsky, and Anton Webern; 1950s blues artists Clarence \"Gatemouth\" Brown, Guitar Slim, Howlin' Wolf, Johnny \"Guitar\" Watson, and B.B."
+      ]
+    },
+    {
+      "n": 45,
+      "subject": "Vibe Chemistry",
+      "object": "Netsky",
+      "subject_id": "Q118874538",
+      "object_id": "Q44399",
+      "sentence": "Morisco-Tarr takes inspiration from by Chase & Status, Netsky, Alcemist, goddard., and Disrupta.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Morisco-Tarr takes inspiration from by Chase & Status, Netsky, Alcemist, goddard., and Disrupta."
+      ]
+    },
+    {
+      "n": 46,
+      "subject": "The Clash",
+      "object": "Lee \"Scratch\" Perry",
+      "subject_id": "Q125603",
+      "object_id": "Q315417",
+      "sentence": "It was co-produced by reggae artist Lee \"Scratch\" Perry, though Foote was summoned to \"ground things\".",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "It was co-produced by reggae artist Lee \"Scratch\" Perry, though Foote was summoned to \"ground things\"."
+      ]
+    },
+    {
+      "n": 47,
+      "subject": "Britney Spears",
+      "object": "Whitney Houston",
+      "subject_id": "Q11975",
+      "object_id": "Q34389",
+      "sentence": "Lynne asked family friend and entertainment lawyer Larry Rudolph for his opinion and submitted a tape of Spears singing over a Whitney Houston karaoke song along with some pictures.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Lynne asked family friend and entertainment lawyer Larry Rudolph for his opinion and submitted a tape of Spears singing over a Whitney Houston karaoke song along with some pictures.",
+        "Spears has cited Madonna, Janet Jackson, and Whitney Houston as major influences, her \"three favorite artists\" as a child, whom she would \"sing along to&nbsp;..."
+      ]
+    },
+    {
+      "n": 48,
+      "subject": "The Clash",
+      "object": "Elvis Presley",
+      "subject_id": "Q125603",
+      "object_id": "Q303",
+      "sentence": "Bruce Springsteen, Little Steven, Dave Grohl and Elvis Costello performed the same song at the 2003 Grammys as a tribute to Joe Strummer, who died the year before.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Bruce Springsteen, Little Steven, Dave Grohl and Elvis Costello performed the same song at the 2003 Grammys as a tribute to Joe Strummer, who died the year before."
+      ]
+    },
+    {
+      "n": 49,
+      "subject": "Spacemen 3",
+      "object": "The Velvet Underground",
+      "subject_id": "Q1191761",
+      "object_id": "Q103550",
+      "sentence": "The band drew inspiration from acts like the Stooges, the Velvet Underground, and Suicide.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "The band drew inspiration from acts like the Stooges, the Velvet Underground, and Suicide.",
+        "The group took influence from The Stooges, The Velvet Underground, and The Rolling Stones."
+      ]
+    },
+    {
+      "n": 50,
+      "subject": "Mushkaa",
+      "object": "Soto Asa",
+      "subject_id": "Q113500634",
+      "object_id": "Q115732284",
+      "sentence": "Yung Beef, Albany, Soto Asa, Kaydy Cain, and even Joan Manuel Serrat, Estopa, and indie music are some of her inspirations.",
+      "verdict": "",
+      "still_prose": true,
+      "sentences": [
+        "Yung Beef, Albany, Soto Asa, Kaydy Cain, and even Joan Manuel Serrat, Estopa, and indie music are some of her inspirations."
+      ]
+    }
+  ],
+  "labelling_halted": "Halted at row 10: rows 2 and 7 exposed sentence-extraction defects (abbreviation truncation, heading leak). Labelling malformed evidence would bake the defect into the yardstick. Fix extraction, regenerate sentences, then resume.",
+  "extractor": "regenerated 2026-08-05 after fixing abbreviation truncation and heading leak",
+  "evidence_note": "`sentences` carries EVERY matching sentence. Earlier revisions showed only the first, which is wrong for the 38% of edges with more than one - found 2026-08-05."
+}
