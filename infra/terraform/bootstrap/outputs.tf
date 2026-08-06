@@ -22,3 +22,8 @@ output "account_id" {
   description = "Handy for constructing ARNs by hand; not a secret, but not worth pasting publicly either."
   value       = local.account_id
 }
+
+output "artifacts_bucket" {
+  description = "Versioned, immutable record of every published corpus artifact."
+  value       = aws_s3_bucket.artifacts.id
+}

@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+  # Manual trigger, added 2026-08-06 during a GitHub Actions incident that throttled webhook delivery:
+  # push events registered on the repository but started no runs, for hours, with nothing wrong on this
+  # side. Without this, the only way to re-run CI is an empty commit — which also depends on the
+  # webhook that is broken. `workflow_dispatch` is not a webhook trigger and kept working throughout;
+  # two manual deploys went out while every push-triggered run was silently dropped.
+  workflow_dispatch:
+
 permissions:
   contents: read
 

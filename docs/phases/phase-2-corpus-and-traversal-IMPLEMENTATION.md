@@ -700,6 +700,31 @@ it scored.
 Cost: pennies. A few MB with versioning enabled is inside the S3 free tier and nowhere near a rounding
 error against the $20 ceiling. **No new always-on resource.**
 
+> **Step 7 BUILT 2026-08-06. One manual `bootstrap/` apply is required before the next deploy.**
+>
+> **The bucket lives in `bootstrap/`, not `main/`.** `terraform destroy` on `main/` is meant to be a
+> real and complete off-switch for the running service; it should not also erase the record of what the
+> service was serving. Same hardening as the state bucket — versioned, SSE-S3, public access fully
+> blocked, `force_destroy = true` for the invariant-5 reason — with **one deliberate difference: no
+> noncurrent-version expiration.** State history is disposable after 30 days; a corpus artifact is what
+> an eval result is pinned to, and quietly deleting it months later makes an old benchmark unverifiable.
+>
+> **`main/` uploads every artifact version in the repo via `fileset`, not a pinned one.** The pinned
+> version already lives in three places that must move together; a Terraform variable naming it would
+> be a fourth, and the fourth is the one that silently drifts. `etag = filemd5(...)` makes a changed
+> published artifact appear in the plan rather than pass silently — a diff there is a finding, because a
+> released version should never change.
+>
+> **The IAM half was the real constraint, and it is why this needs a manual step.** The deploy role's S3
+> permissions were scoped to the Terraform state bucket alone, so CI could not create or write an
+> artifact bucket. `bootstrap/oidc.tf` gains `ListBucket`/`GetBucketLocation` on the bucket and
+> `GetObject`/`PutObject` on its objects — **no `DeleteObject`, deliberately**: published artifacts are
+> immutable and a deploy has no business removing one. The state bucket needs delete only because its
+> lock *is* an object.
+>
+> **Ordering is not optional:** `bootstrap/` apply (locally, his credentials) → commit → deploy. The
+> `aws_s3_object` resources in `main/` reference the bucket by name, so the bucket must exist first.
+
 ### 4.8 Step 8 — coverage as a number
 
 DoD #7 requires era and region to be recorded quantities rather than a disclaimer. Genre nodes gain

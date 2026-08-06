@@ -17,3 +17,8 @@ output "log_group" {
   description = "Where token cost and latency land."
   value       = aws_cloudwatch_log_group.app.name
 }
+
+output "published_artifacts" {
+  description = "Corpus artifact objects this apply published to the record bucket."
+  value       = sort([for o in aws_s3_object.artifact : "s3://${o.bucket}/${o.key}"])
+}

@@ -21,4 +21,10 @@ locals {
   # Bucket names are globally unique across all of AWS, so the account id is the disambiguator that
   # does not require inventing one.
   state_bucket = "${var.project}-tfstate-${local.account_id}"
+
+  # Same disambiguator, different purpose. Kept distinct from the state bucket rather than sharing one
+  # with prefixes: they have opposite retention rules — state history expires at 30 days, corpus
+  # artifacts are kept indefinitely — and a single lifecycle configuration cannot express both without
+  # a prefix filter that one careless edit would apply to the wrong half.
+  artifacts_bucket = "${var.project}-artifacts-${local.account_id}"
 }

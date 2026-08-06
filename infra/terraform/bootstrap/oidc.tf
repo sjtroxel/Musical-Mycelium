@@ -96,6 +96,28 @@ data "aws_iam_policy_document" "github_deploy" {
     resources = ["${aws_s3_bucket.state.arn}/*"]
   }
 
+  # --- Published corpus artifacts ---
+  #
+  # ListBucket is separated from the object statement for the same reason it is on the state bucket: it
+  # is a *bucket* action and naming `bucket/*` as its resource silently grants nothing, which then fails
+  # at plan time rather than at apply time and reads as a Terraform bug.
+  statement {
+    sid       = "ArtifactBucket"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket", "s3:GetBucketLocation"]
+    resources = [aws_s3_bucket.artifacts.arn]
+  }
+
+  statement {
+    sid    = "ArtifactObjects"
+    effect = "Allow"
+    # **No DeleteObject, deliberately.** Published artifacts are immutable and a deploy has no business
+    # removing one; the state bucket needs delete only because its lock IS an object. GetObject is here
+    # so `terraform plan` can read existing object metadata without a permissions failure.
+    actions   = ["s3:GetObject", "s3:PutObject"]
+    resources = ["${aws_s3_bucket.artifacts.arn}/*"]
+  }
+
   # --- Container image ---
   statement {
     sid       = "EcrLogin"
