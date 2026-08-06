@@ -44,7 +44,7 @@ from musical_mycelium.agent.loop import (
 )
 from musical_mycelium.agent.tools import (
     GetInfluences,
-    ResolveGenre,
+    ResolveNode,
     Tool,
     ToolRegistry,
     ToolResult,
@@ -52,11 +52,16 @@ from musical_mycelium.agent.tools import (
     default_registry,
 )
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.schema import NODE_KIND_ARTIST, NODE_KIND_GENRE
 
 BLUES_ROCK, BLUES = "Q193355", "Q9759"
 ACID_JAZZ, JAZZ = "Q221772", "Q8341"
 HEAVY_METAL = "Q38848"
 INFLUENCED_BY = "influenced_by"
+
+#: An artist in the v0.4.0 corpus, resolved from the artifact rather than recalled — see
+#: ``reference-never-recall-wikidata-qids``. U2 has six sourced influences and is a stable fixture.
+ARTIST, ARTIST_LABEL = "Q396", "U2"
 
 
 @pytest.fixture(scope="module")
@@ -73,7 +78,7 @@ def resolve_then_influences(name: str, node_id: str) -> list[LLMResponse]:
     """The two tool turns v0.1 expects, then a final text turn."""
     return [
         LLMResponse(
-            tool_uses=(ToolUse(id="t1", name="resolve_genre", arguments={"name": name}),),
+            tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": name}),),
             stop_reason="tool_use",
             usage=Usage(100, 20),
         ),
@@ -91,7 +96,7 @@ def resolve_then_influences(name: str, node_id: str) -> list[LLMResponse]:
 
 
 def test_the_tools_satisfy_the_protocol(store: InMemoryGraphStore) -> None:
-    assert isinstance(ResolveGenre(store), Tool)
+    assert isinstance(ResolveNode(store), Tool)
     assert isinstance(GetInfluences(store), Tool)
     assert isinstance(TraceLineage(store), Tool)
 
@@ -99,7 +104,7 @@ def test_the_tools_satisfy_the_protocol(store: InMemoryGraphStore) -> None:
 def test_tool_config_is_the_bedrock_shape(registry: ToolRegistry) -> None:
     specs = registry.tool_config()["tools"]
     assert {s["toolSpec"]["name"] for s in specs} == {
-        "resolve_genre",
+        "resolve_node",
         "get_influences",
         "trace_lineage",
     }
@@ -111,7 +116,7 @@ def test_tool_config_is_the_bedrock_shape(registry: ToolRegistry) -> None:
 def test_the_system_prompt_names_no_tool(store: InMemoryGraphStore) -> None:
     """Invariant 4 has a prose door as well as a code one.
 
-    v0.1's system prompt hard-coded "use resolve_genre, then get_influences", so a third tool could be
+    v0.1's system prompt hard-coded "use resolve_node, then get_influences", so a third tool could be
     registered without a loop edit and still never be called. A tool describes itself in its own spec;
     the system prompt states the rules.
     """
@@ -164,7 +169,7 @@ def test_a_new_tool_does_not_touch_the_loop(store: InMemoryGraphStore) -> None:
 def test_registry_refuses_a_duplicate_name(store: InMemoryGraphStore) -> None:
     registry = default_registry(store)
     with pytest.raises(ValueError, match="already registered"):
-        registry.register(ResolveGenre(store))
+        registry.register(ResolveNode(store))
 
 
 def test_an_unknown_tool_is_an_error_result_not_an_exception(registry: ToolRegistry) -> None:
@@ -175,46 +180,84 @@ def test_an_unknown_tool_is_an_error_result_not_an_exception(registry: ToolRegis
 
 
 def test_bad_arguments_are_an_error_result(registry: ToolRegistry) -> None:
-    assert registry.invoke("resolve_genre", {"wrong": "arg"}).is_error
+    assert registry.invoke("resolve_node", {"wrong": "arg"}).is_error
 
 
 # --- tools: honest absence ----------------------------------------------------------------------
 
 
-def test_resolve_genre_returns_null_for_an_unknown_genre(registry: ToolRegistry) -> None:
-    assert registry.invoke("resolve_genre", {"name": "bebop"}).content["node_id"] is None
+def test_resolve_node_returns_null_for_an_unknown_genre(registry: ToolRegistry) -> None:
+    assert registry.invoke("resolve_node", {"name": "bebop"}).content["node_id"] is None
 
 
-def test_resolve_genre_refuses_a_near_miss_rather_than_guessing(registry: ToolRegistry) -> None:
+def test_resolve_node_refuses_a_near_miss_rather_than_guessing(registry: ToolRegistry) -> None:
     """``blues r`` must not silently resolve to ``blues rock``. It offers alternatives instead — a
     confident wrong resolution answers a question nobody asked, with citations attached."""
-    result = registry.invoke("resolve_genre", {"name": "metal"})
+    result = registry.invoke("resolve_node", {"name": "metal"})
     assert result.content["node_id"] is None
     assert "did_you_mean" in result.content
 
 
-def test_resolve_genre_resolves_an_exact_match(registry: ToolRegistry) -> None:
-    result = registry.invoke("resolve_genre", {"name": "the blues"})
+def test_resolve_node_resolves_an_exact_match(registry: ToolRegistry) -> None:
+    result = registry.invoke("resolve_node", {"name": "the blues"})
     assert result.content["node_id"] == BLUES
     assert result.visited == (BLUES,)
 
 
-def test_resolve_genre_tolerates_wikidatas_trailing_music(registry: ToolRegistry) -> None:
+# --- tools: the axis is visible to the model ----------------------------------------------------
+
+
+def test_resolve_node_reports_which_axis_it_landed_on(registry: ToolRegistry) -> None:
+    """The payload carries ``kind``, and it is not decoration.
+
+    Without it the model resolves a name, gets an id and a label, and has no way to know whether it
+    is holding a genre or an artist — so it can propose a genre-to-artist claim, have ``gate()``
+    refuse it ``CROSS_AXIS``, and burn a turn on a rejection it had no information to avoid. The gate
+    is the enforcement; this is what lets the model cooperate with it instead of discovering it by
+    failing.
+    """
+    genre = registry.invoke("resolve_node", {"name": "the blues"})
+    assert genre.content["kind"] == NODE_KIND_GENRE
+
+
+def test_resolve_node_resolves_artists_not_only_genres(registry: ToolRegistry) -> None:
+    """The whole reason the tool stopped being called ``resolve_genre`` at v0.4.0."""
+    artist = registry.invoke("resolve_node", {"name": ARTIST_LABEL})
+    assert artist.content["node_id"] == ARTIST
+    assert artist.content["kind"] == NODE_KIND_ARTIST
+
+
+def test_the_tool_contract_tells_the_model_both_axes_exist_and_must_not_be_mixed(
+    store: InMemoryGraphStore,
+) -> None:
+    """A contract test, because this text is the only thing a real model ever reads about the tool.
+
+    It said "Resolve a genre name" through v0.3.0. A model told the tool resolves *genres* will not
+    offer it an artist name, so the artist axis would have been invisible in production while being
+    fully present in the corpus — a failure that no unit test of the graph could surface.
+    """
+    description = ResolveNode(store).description
+    assert "artist" in description and "genre" in description
+    assert "kind" in description
+    assert "same" in description.lower(), "the cross-axis rule must be stated, not implied"
+
+
+def test_resolve_node_tolerates_wikidatas_trailing_music(registry: ToolRegistry) -> None:
     """32 of the 169 nodes are labelled "<name> music" and nobody types the suffix. Both spellings must
     reach the same node, and neither is a guess — the fold is documented and applied to both sides."""
     assert (
-        registry.invoke("resolve_genre", {"name": "heavy metal"}).content["node_id"] == HEAVY_METAL
+        registry.invoke("resolve_node", {"name": "heavy metal"}).content["node_id"] == HEAVY_METAL
     )
     assert (
-        registry.invoke("resolve_genre", {"name": "heavy metal music"}).content["node_id"]
+        registry.invoke("resolve_node", {"name": "heavy metal music"}).content["node_id"]
         == HEAVY_METAL
     )
 
 
 def test_the_music_fold_still_refuses_a_genuine_near_miss(registry: ToolRegistry) -> None:
     """The fold must not become fuzzy matching by increments. "metal" is still not a genre in here."""
-    assert registry.invoke("resolve_genre", {"name": "metal"}).content["node_id"] is None
-    assert registry.invoke("resolve_genre", {"name": "blues r"}).content["node_id"] is None
+    assert registry.invoke("resolve_node", {"name": "metal"}).content["node_id"] is None
+    assert registry.invoke("resolve_node", {"name": "blues r"}).content["node_id"] is None
 
 
 def test_get_influences_returns_edges_and_proposals(registry: ToolRegistry) -> None:
@@ -348,7 +391,7 @@ def test_converse_response_parsing_against_a_recorded_payload() -> None:
                         {
                             "toolUse": {
                                 "toolUseId": "tooluse_abc",
-                                "name": "resolve_genre",
+                                "name": "resolve_node",
                                 "input": {"name": "acid jazz"},
                             }
                         },
@@ -361,7 +404,7 @@ def test_converse_response_parsing_against_a_recorded_payload() -> None:
     )
     assert parsed.text == "Looking that up."
     assert parsed.wants_tools
-    assert parsed.tool_uses[0].name == "resolve_genre"
+    assert parsed.tool_uses[0].name == "resolve_node"
     assert parsed.tool_uses[0].arguments == {"name": "acid jazz"}
     assert parsed.usage.input_tokens == 412
     assert parsed.usage.total_tokens == 470
@@ -533,7 +576,7 @@ def test_a_lineage_run_narrates_the_chain(store: InMemoryGraphStore) -> None:
     )
 
     called = [e.name for e in events if isinstance(e, ToolCalled)]
-    assert called == ["resolve_genre", "resolve_genre", "trace_lineage"]
+    assert called == ["resolve_node", "resolve_node", "trace_lineage"]
 
     approved = [e.claim for e in events if isinstance(e, ClaimApproved)]
     assert [(c.subject_id, c.object_id) for c in approved] == [
@@ -661,9 +704,7 @@ def test_a_refusal_run_never_calls_the_model_for_prose(store: InMemoryGraphStore
     llm = ScriptedLLM(
         [
             LLMResponse(
-                tool_uses=(
-                    ToolUse(id="t1", name="resolve_genre", arguments={"name": "the blues"}),
-                ),
+                tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": "the blues"}),),
                 stop_reason="tool_use",
             ),
             LLMResponse(
@@ -690,7 +731,7 @@ def test_an_unresolvable_genre_refuses_with_a_different_reason(store: InMemoryGr
     llm = ScriptedLLM(
         [
             LLMResponse(
-                tool_uses=(ToolUse(id="t1", name="resolve_genre", arguments={"name": "bebop"}),),
+                tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": "bebop"}),),
                 stop_reason="tool_use",
             ),
             LLMResponse(text="Not in the graph."),
@@ -718,7 +759,7 @@ def test_the_loop_is_bounded(store: InMemoryGraphStore) -> None:
     def endless() -> Iterator[LLMResponse]:
         while True:
             yield LLMResponse(
-                tool_uses=(ToolUse(id="t", name="resolve_genre", arguments={"name": "jazz"}),),
+                tool_uses=(ToolUse(id="t", name="resolve_node", arguments={"name": "jazz"}),),
                 stop_reason="tool_use",
             )
 

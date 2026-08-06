@@ -43,7 +43,7 @@ from musical_mycelium.graph.store import GraphStore
 #: recover from one bad argument. One turn of slack, not a blank cheque.
 MAX_TURNS = 5
 
-#: Deliberately free of tool names. v0.1's prompt hard-coded the two-step procedure — "use resolve_genre,
+#: Deliberately free of tool names. v0.1's prompt hard-coded the two-step procedure — "use resolve_node,
 #: then get_influences" — which meant a third tool needed a prompt edit inside the loop module to ever be
 #: called. That is invariant 4 leaking through the prose door rather than the code door. Each tool
 #: describes itself in its own ``toolSpec``; this states the rules that hold no matter which one runs.
@@ -309,10 +309,13 @@ def run(
     )
 
     if not decision.approved:
+        # Axis-neutral wording. These strings said "genre" until the artist axis landed at v0.4.0, at
+        # which point a refusal on "U2" told the user the graph has no such *genre* — true of a word
+        # nobody used, and misleading about what was actually asked.
         reason = (
-            "the genre resolved but carries no sourced influences"
+            "it resolved but carries no sourced influences"
             if visited
-            else "the genre is not in this graph"
+            else "it is not in this graph"
         )
         text = refusal_text(query, reason)
         yield Refused(reason=reason, query=query)

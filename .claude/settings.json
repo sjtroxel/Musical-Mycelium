@@ -22,7 +22,22 @@
       "Bash(git show*)",
       "Bash(terraform fmt*)",
       "Bash(terraform validate*)",
-      "Bash(terraform plan*)"
+      "Bash(terraform plan*)",
+      "Bash(.venv/bin/python*)",
+      "Bash(ls*)",
+      "Bash(wc*)",
+      "Bash(grep*)",
+      "Bash(rg*)",
+      "Bash(find*)",
+      "Bash(head*)",
+      "Bash(tail*)",
+      "Bash(sed -n*)",
+      "Bash(awk*)",
+      "Bash(sort*)",
+      "Bash(cut*)",
+      "Bash(pgrep*)",
+      "Bash(echo*)",
+      "Bash(rm -f /tmp/claude-*)"
     ]
   }
 }

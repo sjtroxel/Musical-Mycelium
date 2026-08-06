@@ -10,8 +10,8 @@ Two other properties matter as much as the seam:
 **Tools return provenance, not just answers.** ``ToolResult`` carries ``sources``, because an answer
 whose citations were dropped one layer down cannot be grounded one layer up.
 
-**Tools are honest about absence.** ``resolve_genre`` returns ``None`` rather than the closest match. An
-unresolvable genre is a **refusal**, not an error and certainly not a guess — refusal accuracy is a
+**Tools are honest about absence.** ``resolve_node`` returns ``None`` rather than the closest match. An
+unresolvable name is a **refusal**, not an error and certainly not a guess — refusal accuracy is a
 headline metric, and it is only meaningful if the layer underneath declines to invent.
 """
 
@@ -136,7 +136,7 @@ class ToolRegistry:
 
 
 @dataclass(frozen=True, slots=True)
-class ResolveGenre:
+class ResolveNode:
     """Name to node id, or ``None``.
 
     Returning ``None`` rather than the nearest label is the load-bearing behaviour. ``search`` may
@@ -145,12 +145,14 @@ class ResolveGenre:
     """
 
     store: GraphStore
-    name: str = field(default="resolve_genre", init=False)
+    name: str = field(default="resolve_node", init=False)
     description: str = field(
         default=(
-            "Resolve a genre name to its node id in the graph. Returns null when the name is not in "
-            "this graph. A null result means the graph does not cover that genre — say so; do not "
-            "substitute a similar genre."
+            "Resolve a genre name OR an artist name to its node id in the graph. Returns null when "
+            "the name is not in this graph. A null result means the graph does not cover it — say "
+            "so; do not substitute something similar. The result carries a 'kind' of 'genre' or "
+            "'artist': influence only ever runs between two nodes of the SAME kind, so never relate "
+            "a genre to an artist."
         ),
         init=False,
     )
@@ -158,7 +160,9 @@ class ResolveGenre:
     def input_schema(self) -> dict[str, Any]:
         return {
             "type": "object",
-            "properties": {"name": {"type": "string", "description": "The genre name to resolve."}},
+            "properties": {
+                "name": {"type": "string", "description": "The genre or artist name to resolve."}
+            },
             "required": ["name"],
         }
 
@@ -182,8 +186,13 @@ class ResolveGenre:
             )
 
         best = matches[0]
+        # ``kind`` is returned, not merely stored. Without it the model resolves "U2", gets an id and a
+        # label, and has no way to know which axis it landed on — so it can propose a genre-to-artist
+        # claim, have ``gate()`` refuse it CROSS_AXIS, and burn a turn on a rejection it had no
+        # information to avoid. The gate is the enforcement; this is what lets the model cooperate with
+        # it rather than discover it by failing.
         return ToolResult(
-            content={"node_id": best.id, "label": best.label},
+            content={"node_id": best.id, "label": best.label, "kind": best.kind},
             sources=(best.source_id,),
             visited=(best.id,),
         )
@@ -212,7 +221,7 @@ class GetInfluences:
         return {
             "type": "object",
             "properties": {
-                "node_id": {"type": "string", "description": "A node id from resolve_genre."}
+                "node_id": {"type": "string", "description": "A node id from resolve_node."}
             },
             "required": ["node_id"],
         }
@@ -221,7 +230,7 @@ class GetInfluences:
         node_id = kwargs["node_id"]
         if self.store.get_node(node_id) is None:
             return ToolResult(
-                content={"error": f"unknown node: {node_id}. Use resolve_genre first."},
+                content={"error": f"unknown node: {node_id}. Use resolve_node first."},
                 is_error=True,
             )
 
@@ -278,7 +287,7 @@ class TraceLineage:
     description: str = field(
         default=(
             "Trace the documented chain of influence between two genres, hop by hop. Give it two node "
-            "ids from resolve_genre, in either order. Returns an empty path when the graph holds no "
+            "ids from resolve_node, in either order. Returns an empty path when the graph holds no "
             "sourced chain between them: that means this graph cannot connect the two genres, not that "
             "they are unrelated. Do not bridge the gap yourself."
         ),
@@ -289,8 +298,8 @@ class TraceLineage:
         return {
             "type": "object",
             "properties": {
-                "from_id": {"type": "string", "description": "A node id from resolve_genre."},
-                "to_id": {"type": "string", "description": "The other node id from resolve_genre."},
+                "from_id": {"type": "string", "description": "A node id from resolve_node."},
+                "to_id": {"type": "string", "description": "The other node id from resolve_node."},
             },
             "required": ["from_id", "to_id"],
         }
@@ -300,7 +309,7 @@ class TraceLineage:
         for node_id in (from_id, to_id):
             if self.store.get_node(node_id) is None:
                 return ToolResult(
-                    content={"error": f"unknown node: {node_id}. Use resolve_genre first."},
+                    content={"error": f"unknown node: {node_id}. Use resolve_node first."},
                     is_error=True,
                 )
 
@@ -359,4 +368,4 @@ class TraceLineage:
 
 def default_registry(store: GraphStore) -> ToolRegistry:
     """The three tools as of v0.2. ``trace_lineage`` joined at phase 2 step 5 by registration alone."""
-    return ToolRegistry([ResolveGenre(store), GetInfluences(store), TraceLineage(store)])
+    return ToolRegistry([ResolveNode(store), GetInfluences(store), TraceLineage(store)])

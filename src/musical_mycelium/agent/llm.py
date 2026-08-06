@@ -310,7 +310,7 @@ class LocalLLM:
             return LLMResponse(
                 tool_uses=(
                     ToolUse(
-                        id="local-1", name="resolve_genre", arguments={"name": _query(messages)}
+                        id="local-1", name="resolve_node", arguments={"name": _query(messages)}
                     ),
                 ),
                 stop_reason="tool_use",
@@ -336,13 +336,13 @@ class LocalLLM:
         retry the failed name until ``MAX_TURNS`` and bill for it.
         """
         calls = _tool_call_names(messages)
-        resolves = calls.count("resolve_genre")
+        resolves = calls.count("resolve_node")
         if resolves < 2:
             return LLMResponse(
                 tool_uses=(
                     ToolUse(
                         id=f"local-r{resolves + 1}",
-                        name="resolve_genre",
+                        name="resolve_node",
                         arguments={"name": pair[resolves]},
                     ),
                 ),

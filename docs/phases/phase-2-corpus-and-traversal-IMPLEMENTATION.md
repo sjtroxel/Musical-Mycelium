@@ -575,7 +575,7 @@ survives *is* the finding.
 > | 2 | v0.3.0 by stamping, no refetch | **DONE** — 169 nodes / 133 edges, structure identical to v0.2.0 |
 > | 3 | the gate refuses cross-axis claims | **DONE** — `RejectionReason.CROSS_AXIS` in `agent/claims.py` |
 > | 4 | the artist ingest itself | **DONE** — crawled 2026-08-06, v0.4.0 written; counts below |
-> | 5 | `workflow_dispatch` redeploy | **OPEN**, and owed now that 4 has landed |
+> | 5 | `workflow_dispatch` redeploy | **DONE** — run 31128726969, 2026-08-06; `/health` serves 0.4.0 |
 >
 > `make check` green at **290 tests**, up from 269. Pins moved together and must stay together:
 > `ingest/wikidata.py` `ARTIFACT_VERSION`, `graph/memory.py` `PINNED_ARTIFACT_VERSION`, and
@@ -586,9 +586,34 @@ survives *is* the finding.
 > unnarratable; putting it in before any artist data exists means the artist ingest cannot quietly
 > introduce one during development.
 >
-> **Deploy note:** the live Lambda reads an artifact baked into its image, so it keeps serving v0.2.0
-> until a redeploy. Deploy is `workflow_dispatch` only, so nothing breaks on its own — but the repo and
-> the live site now disagree about the corpus until step 5 runs.
+> **Deploy note — RESOLVED 2026-08-06.** The live Lambda reads an artifact baked into its image, so it
+> served v0.2.0 until redeployed. Run **31128726969** (`llm_provider=local`, `reserved_concurrency=-1`,
+> both passed explicitly so CI could not take `main/variables.tf`'s defaults) went green, and `/health`
+> now reports `artifact_version 0.4.0`, 973 nodes, 950 edges, all four verification tiers.
+>
+> Verified live rather than assumed: `?q=U2` resolves `Q396` and returns six gated claims, each citing a
+> real Wikidata statement URI. **The artist axis is in production.**
+>
+> **Two copy defects the axis exposed — both FIXED same day, 2026-08-06, before the first Bedrock call.**
+>
+> **`resolve_genre` → `resolve_node`, and the payload now carries `kind`.** The rename was the smaller
+> half. The real defect was that the tool returned `{node_id, label}` and nothing else, so a model could
+> resolve "U2", hold an artist, and have no way to know it — then propose a genre-to-artist claim, get
+> `CROSS_AXIS` back from the gate, and burn a turn on a rejection it had no information to avoid.
+> **The gate is the enforcement; `kind` in the payload is what lets the model cooperate with it instead
+> of discovering it by failing.** The description now names both axes and states the same-kind rule
+> outright, and `test_the_tool_contract_tells_the_model_both_axes_exist_and_must_not_be_mixed` pins that
+> text — it is the only thing about this tool a real model ever reads.
+>
+> **Timing was the argument for doing it immediately rather than filing it.** Changing a tool's name,
+> description, or return shape after Bedrock works invalidates any eval baseline that measured tool-use
+> behaviour. No such baseline exists yet, because no real model has ever run. The change cost 33
+> mechanical references and one `make check`; in three weeks it would have cost a re-baseline.
+>
+> **The refusal strings are axis-neutral now** — they said "the genre is not in this graph", which on a
+> query for `U2` denied the existence of a genre nobody had asked about.
+>
+> 316 tests.
 >
 > ---
 >
