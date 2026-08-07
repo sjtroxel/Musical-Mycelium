@@ -25,16 +25,28 @@ From `planning/05-EVOLUTION-PLAN.md` §5. Read the right-hand column: no row req
 row. That is what planning for expansion actually means — not predicting the feature set, but making sure
 every future addition lands in a slot that already exists.
 
-| Phase | Version | What thickens | Which seam absorbs it |
-|---|---|---|---|
-| **0** `scaffold-and-spine` | — | The repo itself | Complete 2026-07-29 |
-| **1** `walking-skeleton` | **v0.1** | Everything present, connected, deployed, and tiny | — |
-| **2** `corpus-and-traversal` **DONE 2026-08-06** | **v0.5.0** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
-| **3** `agent-loop` | **v0.3** | Real agent loop: planning, 5–8 tools, cross-referencing | Tool registry; loop untouched |
-| **4** `eval-suite` | **v0.4** | The eval suite proper | Independent scorers over a pinned artifact |
-| **5** `spa-and-visualization` | **v0.5** | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
-| **6** `density-and-coverage` | **v0.6** | Density: artists, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
-| **7** `polish-and-portfolio` | **v1.0** | Polish, writeup, portfolio surface | No architecture change |
+**Two version lines, and they are independent.** The **product** version tracks phases; the **artifact**
+version tracks the corpus. They have now crossed — phase 3 ships product v0.3.0 against artifact v0.5.0 —
+so both columns are labelled. Reading one as the other is the confusion this header exists to prevent.
+*(Clarified 2026-08-07, phase 3 scope-doc amendment A3. Doc fix only.)*
+
+| Phase | Product version | Artifact pin | What thickens | Which seam absorbs it |
+|---|---|---|---|---|
+| **0** `scaffold-and-spine` | — | — | The repo itself | Complete 2026-07-29 |
+| **1** `walking-skeleton` | **v0.1** | v0.1.0 | Everything present, connected, deployed, and tiny | — |
+| **2** `corpus-and-traversal` **DONE 2026-08-06** | **v0.2** | **v0.5.0** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
+| **3** `agent-loop` | **v0.3** | **v0.5.0** (unchanged) | Real agent loop: planning, **7** tools, corroboration | Tool registry; loop untouched |
+| **4** `eval-suite` | **v0.4** | pinned, TBD | The eval suite proper | Independent scorers over a pinned artifact |
+| **5** `spa-and-visualization` | **v0.5** | pinned, TBD | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
+| **6** `density-and-coverage` | **v0.6** | new cut | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
+| **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |
+
+**Phase 3 does not cut a new artifact.** The corpus does not change, and re-cutting it would silently
+invalidate every prior benchmark for nothing.
+
+**Phase 6 gained a named dependency on 2026-08-07:** a **second source per edge**. Every edge in v0.5.0
+has exactly one, always Wikidata, which is why contested-claim detection is unbuildable before then. See
+`phase-3-agent-loop.md` A1 and `phase-2-corpus-and-traversal.md` A7.
 
 **AWS signup is phase 1's step zero**, not a phase: account on the paid plan, Bedrock model access, and budget
 alarms armed. It is a gate, and one successful `converse` call is task one of the build.
@@ -48,8 +60,8 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 |---|---|---|
 | 0 | written (retroactively) | written (as-built) |
 | 1 | written | written (as-built) |
-| 2 | written; **amended 2026-08-04 (A1–A4)** | **written 2026-08-04; steps 1–3 built** |
-| 3 | written | at phase start |
+| 2 | written; **amended 2026-08-04 (A1–A4)**, **A5–A6.8 during the build**, **A7 retroactively 2026-08-07** | written 2026-08-04; **all 8 steps built, phase complete** |
+| 3 | written; **amended 2026-08-07 (A1–A5)** | **written 2026-08-07, approved; no code yet** |
 | 4 | written | at phase start |
 | 5 | written | at phase start |
 | 6 | written 2026-07-31, after the validation | at phase start |
@@ -90,6 +102,40 @@ reproducible two-region defect report was submitted 2026-08-06 and nothing furth
 other part of the stack — Lambda, ECR, S3, CloudFront, Terraform, IAM, OIDC, CloudWatch, Budgets — is
 applied and working.
 
+**AWS update, 2026-08-06 23:48 CDT.** Support confirmed the diagnosis in their own words — the block is
+"at the account level at the Bedrock runtime layer, not a per-model or per-region quota setting, which is
+why the values visible in Service Quotas do not reflect what is being enforced." They report the root
+cause identified and an active internal review to **restore the standard new-account inference
+allocation**, and state that no action is required from us. No ETA. Do not re-file, do not open a second
+case, do not chase it.
+
+### Phase 3 — planned 2026-08-07, not yet started
+
+Scope doc amended (A1–A5) and IMPLEMENTATION doc written and approved the same night. **No code has been
+written.**
+
+The phase is sequenced around the Bedrock block rather than waiting on it: **steps 1–7 need no model at
+all** and ship as **`v0.3.0-local`**; **step 8 is a single skippable Bedrock gate** carrying DoD items
+10–12, with **phase 4 as its named home** if quota is still absent when the local work finishes.
+
+| step | what | needs |
+|---|---|---|
+| 1 | the adversarial set — 18 cases, hand-authored **before** any loop code | LOCAL |
+| 2 | four new tools (7 total); `corpus_coverage` registered last as the invariant-4 seam test | LOCAL |
+| 3 | the plan object and the `Planned` event | LOCAL |
+| 4 | `Corroboration`, `MAX_TURNS` 5 → 8, and a token budget | LOCAL |
+| 5 | untrusted-text delimiting; the three injection tests | LOCAL |
+| 6 | the cheap/strong routing seam, proven with two `ScriptedLLM`s | LOCAL |
+| 7 | the deterministic scorers and the era/region/density/query-type slicing | LOCAL |
+| 8 | **the Bedrock gate — smoke call, model IDs, live adversarial run, cost to CloudWatch** | BEDROCK |
+
+**`get_descendants` closes a real gap:** `Direction.INFLUENCED` has been supported by `GraphStore` since
+phase 2 and no registered tool exposes it, so "what came out of the blues?" is currently unanswerable
+except as a side effect of `trace_lineage`.
+
+**The resume line — "deployed on AWS Lambda and Bedrock with a deterministic groundedness gate at 100%" —
+is NOT claimable at `v0.3.0-local`.** It travels with step 8. Recorded here rather than glossed.
+
 #### Phase 2's definition of done, item by item
 
 | # | item | state |
@@ -129,9 +175,14 @@ as a decision about what to promise, but the constraint it reasoned around is go
 **Coverage, also measured rather than assumed** (DoD #7, step 8): over 169 genres, **28 carry no
 inception date and 48 no country of origin**. The corpus spans **500 CE to the present across 29
 places** — medieval and classical music at 500, opera and Baroque at 1600, samba, kuduro, bachata,
-Anatolian rock, kayōkyoku — and **44 genres name no US or UK connection at all**, while 77 of the 121
-with any country do. **It is dense in post-war anglophone material and thin elsewhere; concentration is
+Anatolian rock, kayōkyoku — and **43 genres name no US or UK connection at all**, while 78 of the 121
+with any place do. **It is dense in post-war anglophone material and thin elsewhere; concentration is
 not absence, and both halves ship together on `/health`** so neither can be quoted without the other.
+
+*(43/78, not 44/77, since 2026-08-07: `UK drill`'s P495 is `Brixton`, a London district, which an
+exact-string test read as "names no UK". P495 records places, not countries. The counterweight figure is
+audited as hard as the bias figure, and note the correction made the corpus look **more** anglophone, not
+less — it was applied because it was right, not because of which way it moved.)*
 
 ## 3. Scaffolding ledger
 

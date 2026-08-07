@@ -12,24 +12,37 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-08-04.
+**Deployed, and honestly incomplete.** Last updated 2026-08-07. Phase 2 complete; phase 3 planned, not
+started.
 
-The walking skeleton is live on AWS: a public Lambda Function URL streams a grounded, cited lineage as
-typed server-sent events, provisioned entirely by Terraform, with budget alarms and log retention armed
-before the first apply. Every claim it emits is checked against a pinned artifact by a deterministic gate
-before any prose is generated.
+Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
+provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
+Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
+generated. 333 tests.
+
+**The corpus is artifact v0.5.0: 973 nodes, 950 edges** across two axes — genre-to-genre and
+artist-to-artist, both from Wikidata P737 only. Every edge carries how strongly it was checked: 22 read
+by hand, 111 passed an automated Wikipedia prose check, 760 passed an influence-assertion filter, and 57
+rest on documented exposure rather than a stated influence claim. That last tier is measured at **20%
+recall**, so it is a floor on what exists in the sources and is never quoted as a count of it.
 
 Two things are deliberately not done, and saying so is the point of this section:
 
 - **The agent is running its local provider, not Bedrock.** Every Bedrock token quota on this account
   reads zero — a new-account provisioning condition, not a model-access one — so the deployed loop walks
-  the graph, gates the claims and cites real Wikidata statement URIs, but the prose comes from a template
-  rather than a model. The provider is a deploy-time variable precisely so this was survivable.
-- **The corpus is small.** v0.1 ships 21 hand-verified influence edges over 28 genres. Phase 2 is
-  replacing that with the full Wikidata P737 corpus, filtered by an automated Wikipedia disconfirmation
-  check. The honest expected size is 120–160 edges, not thousands — see
-  [`docs/graph-semantics.md`](docs/graph-semantics.md) for why, which is the most interesting document
-  in this repo.
+  the graph, gates the claims and cites real Wikidata statement URIs, but **the prose comes from a
+  template rather than a model, and the token counts are synthetic.** AWS confirmed on 2026-08-06 that
+  the block is an account-level fault at the runtime layer and has an open review to restore the standard
+  allocation. The provider is a deploy-time variable precisely so this was survivable.
+- **The loop does not plan yet.** It resolves, walks and gates across three registered tools. Planning,
+  seven tools, corroboration states and the adversarial eval set are phase 3, which is sequenced so that
+  everything not needing a model ships first.
+
+**Coverage is a computed number, not a disclaimer.** The corpus skews Western, anglophone and recent, and
+the output says so with figures rather than a footnote. But concentration is not absence: it spans 500 CE
+to the present across 29 places, and **43 of its genres name no US or UK origin at all**. See
+[`docs/graph-semantics.md`](docs/graph-semantics.md) for how the corpus was bounded and why it is this
+size, which is the most interesting document in this repo.
 
 The version spine and what lands when are in [`docs/ROADMAP.md`](docs/ROADMAP.md). The contracts are in
 [`docs/SPEC.md`](docs/SPEC.md). Planning is closed and lives in [`docs/planning/`](docs/planning/) —
@@ -38,19 +51,26 @@ plus an independent review.
 
 ## What it is
 
-A hand-built tool-use loop on Amazon Bedrock's Converse API. Given a genre or an artist, it plans a
-traversal across a pre-built provenance graph of musical influence, cross-references, and synthesizes a
-grounded, cited lineage.
+A hand-built tool-use loop on Amazon Bedrock's Converse API. Given a genre or an artist, it walks a
+pre-built provenance graph of musical influence and synthesizes a grounded, cited lineage. Planning and
+cross-referencing arrive in phase 3.
 
-You ask it where something came from — "Where did Detroit techno come from?", "Who influenced Kate
-Bush?" — and it streams back a lineage with a source on every link. Later, it will take two points and
-walk the path between them: delta blues to Detroit techno, narrated hop by hop.
+You ask it where something came from — "Where did Detroit techno come from?" — and it streams back a
+lineage with a source on every link. It will also take two points and walk the chain between them, hop by
+hop, in whichever order you name them.
 
 - **Claims first, prose second.** The agent emits structured claims that a deterministic gate approves;
   the narrative is generated *from* the approved claims. The model cannot narrate an edge the gate
-  did not pass.
-- **Grounded means provenance, not truth.** Every edge traces to a checkable source. Contested claims
-  are flagged as contested rather than resolved.
+  did not pass, and it cannot supply a citation — sources are read off the artifact by the gate, never
+  accepted from the model.
+- **Grounded means provenance, not truth.** Every edge traces to a checkable source. Wikidata can still
+  be wrong, and musical influence is genuinely contested. **Detecting genuine disagreement needs a second
+  source, and this corpus has exactly one per edge** — so what the output distinguishes today is how
+  strongly a single source was checked, and where two independent checks reached opposite verdicts. It
+  does not claim to have adjudicated a dispute, because it has not.
+- **Refusal is correct behavior.** An unsourced edge is refused rather than narrated, and the refusal is
+  reported as one. "Who influenced Kate Bush?" refuses on this corpus: she has seven incoming influence
+  edges and zero outgoing ones, so the graph genuinely cannot answer it.
 - **Evaluation is a first-class deliverable.** Because the ground truth is a graph we own, the headline
   correctness metrics are deterministic dictionary lookups rather than judged text comparisons. They
   cost nothing and run on every commit.
@@ -64,9 +84,12 @@ infrastructure is designed to cost approximately nothing; Bedrock tokens are the
 
 Wikidata (CC0) for the genre and influence graph, and Wikipedia (CC BY-SA, attribution displayed) — used
 as a **disconfirmation** check rather than a source, because it shares an editorial ecosystem with
-Wikidata and so can refute an edge far more credibly than it can confirm one. MusicBrainz core tables
-(CC0) for artists and releases arrive at v0.6; contributor-generated MusicBrainz data is CC BY-NC-SA 3.0
-and is out of scope. Licensing rules and the per-source gotchas are in
+Wikidata and so can refute an edge far more credibly than it can confirm one.
+
+**Artists are already in, from Wikidata P737, not MusicBrainz.** MusicBrainz has no influence
+relationship at all, so it cannot supply lineage edges and must not be planned for as though it fixes
+coverage — its CC0 core tables would add releases and identifiers, and that is a phase 6 question.
+Contributor-generated MusicBrainz data is CC BY-NC-SA 3.0 and is out of scope entirely. Licensing rules and the per-source gotchas are in
 [`docs/planning/01-DATA-SOURCES.md`](docs/planning/01-DATA-SOURCES.md) and
 [`docs/planning/04-RISK-REGISTER.md`](docs/planning/04-RISK-REGISTER.md).
 

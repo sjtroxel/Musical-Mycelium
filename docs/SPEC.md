@@ -75,6 +75,11 @@ Notes on the composition, since it is doing work:
   *(2026-08-05: `trace_lineage` walks it. It searches ancestry first and descent second and reports the
   chain descendant-first either way, so a descendant-shaped question is answered without ever inverting an
   influence claim. The five gold cases above are unchanged and stay origins-shaped.)*
+
+  *(2026-08-07: only **between two named nodes**. There is still no fan-out descendant tool, so an
+  open-ended "what came out of the blues?" — one node in, many out — remains unanswerable.
+  `Direction.INFLUENCED` has been supported by `GraphStore` since phase 2 and no registered tool exposes
+  it. Phase 3 adds `get_descendants`; see `phase-3-agent-loop.md` A2.)*
 - 1 is the trivial case and 2 is the showpiece, at four parents — the richest node in the artifact, and the
   case most likely to expose a traversal that stops early. It also carries a story: acid jazz is the genre
   whose article started the prose check on 2026-07-31.
@@ -106,10 +111,27 @@ is waiting on, so nothing here is a surprise later.
 |---|---|---|
 | "Where did Detroit techno come from?" | A, origins | Absent from all 351 P737 edges. Needs a second source — `dbo:stylisticOrigin` is the phase-6 candidate |
 | "What did bebop grow out of?" | A, origins | `bebop <- swing` is not in the corpus. Same second-source dependency |
-| "Who influenced Kate Bush?" | A, **artist axis** | The ~31k artist-level P737 edges. Phase 2. Genre and artist are different axes of the same predicate and conflating them is invariant 3 |
+| "Who influenced Kate Bush?" | A, **artist axis** | **Nothing — the axis shipped 2026-08-06, phase 2 step 6c.** But the query now **correctly refuses**, and that is the answer rather than a defect: Kate Bush has **zero outgoing P737 and seven incoming**, so the corpus records who *she* influenced and not who influenced *her*. See the note below. |
 | "What came out of Jamaican ska?" | A, descendants | Ska is absent entirely, and the descendant direction is not walked at v0.1 |
 | "Trace the roots of Brazilian tropicália." | A, origins | 1 edge, fails the prose check. Needs corpus expansion |
 | "How is the blues connected to heavy metal?" | **C, path** | **Nothing — delivered 2026-08-05, phase 2 step 5.** It answers end to end through `trace_lineage`, with both hops gated and cited. *(Corrected 2026-08-04: this said phase 5, written while `path()` was a phase-1 deferral. The ROADMAP assigns multi-hop traversal to phase 2; phase 5 consumes it for the guided tour.)* *(Amended 2026-08-02: the chain originally read through to `extreme metal`; that edge was rejected on hand-reading as taxonomic, so the path is two hops, not three.)* *(2026-08-05: typed verbatim, this query first **refused** — the node is labelled `heavy metal music` and 32 of 169 labels carry that suffix. `label_key` now makes a trailing "music" optional on both sides.)* |
+
+**On the Kate Bush row, resolved 2026-08-07.** It had read "Blocked on: the ~31k artist-level P737 edges.
+Phase 2" since 2026-08-02, which was stale from the moment the axis landed — a canonical doc asserting a
+blocker that no longer exists. Two options were on the table and **the row is annotated rather than
+swapped**, for a reason worth stating: this is the single best coverage-honesty chip the corpus has.
+Every other refusal in the set is "the graph does not contain this." Kate Bush is *in* the graph, is
+richly connected, is cited elsewhere in answers — **and the system still declines**, because the edges
+run the other way. A visitor who clicks it learns more about what "grounded" means here than any
+successful answer teaches them.
+
+The alternative remains open and is a **v0.5 chip-selection call, not a contract change**: swap in an
+artist with outgoing edges (U2 answers with six gated claims) if the chip row needs a working artist
+demo alongside. Both can ship — seven slots, and one of them being an honest refusal is a feature.
+
+A second thing the row should carry when the chips are built: the natural follow-up **"who did Kate Bush
+influence?"** *is* answerable, and answering it immediately after the refusal is a stronger demo than
+either alone. That needs `get_descendants`, which phase 3 adds (A2).
 
 The last row replaces the original "How is delta blues connected to hip hop?", which was the intended
 signature demo. Delta blues is absent from the corpus and no path exists between blues and hip-hop, but the
@@ -143,18 +165,37 @@ lands:
 - P279 (`subclass of`, taxonomic) and P737 (`influenced by`) are distinct and separately validated, with an
   explicit boundary predicate so P279 chains do not climb out of the genre domain.
 
-**Added 2026-08-04 (phase 2 step 3).** Every edge also carries `verification`, one of:
+**Added 2026-08-04 (phase 2 step 3), extended 2026-08-06 (step 6c), table corrected 2026-08-07.** Every
+edge carries `verification`, one of **four** values. *(This table listed only the first two until
+2026-08-07; the artist axis added the other two at v0.4.0 and SPEC was not updated with it. Anyone
+implementing against the stale table would have built a two-value enum.)*
 
-| value | meaning |
-|---|---|
-| `HAND` | a human read the subject's article and judged that its prose asserts influence |
-| `PROSE_AUTO` | the automated prose check passed, and nothing more |
+| value | count at v0.5.0 | meaning |
+|---|---|---|
+| `HAND` | 22 | a human read the subject's article and judged that its prose asserts influence |
+| `PROSE_AUTO` | 111 | the automated prose check passed, and nothing more |
+| `ASSERTS_AUTO` | 760 | the influence-assertion filter found an explicit statement of influence |
+| `EXPOSURE_AUTO` | 57 | the text records real-world contact or engagement, short of a stated influence claim |
 
-It is **required, with no default**. `PROSE_AUTO` is strictly weaker: the check confirms the article
-names the object in body prose but cannot judge whether the sentence *asserts* influence, and it
-over-accepts at roughly 1 in 5. The manifest carries the per-level counts, derived from the edges rather
-than passed in. An unmarked mixture of the two tiers would be worse than either alone, which is why the
-field cannot be omitted.
+It is **required, with no default**, and the tiers are ordered by strength but are **not points on one
+scale**. `HAND` and `ASSERTS_AUTO` rest on what a source *states*; `EXPOSURE_AUTO` rests on what a
+reader would reasonably *infer*, which is a different kind of claim and is why it is labelled rather
+than merged. `PROSE_AUTO` is strictly weaker than `HAND`: the check confirms the article names the
+object in body prose but cannot judge whether the sentence *asserts* influence.
+
+**Measured, and published rather than smoothed:** the assertion filter runs at **97% precision / 95%
+recall** on held-out data for `ASSERTS_AUTO`, and **20% recall** for `EXPOSURE_AUTO`. The exposure tier
+is therefore a **floor on what exists in the sources, never a count of it.**
+
+The manifest carries the per-level counts, derived from the edges rather than passed in. An unmarked
+mixture of these tiers would be worse than any one alone, which is why the field cannot be omitted.
+
+**Added 2026-08-07 (phase 3).** `verification` also rides on every approved **`Claim`**, copied off the
+edge by the gate exactly as `source_ids` is, so a reader can tell per claim — not only in aggregate —
+which evidence tier they are looking at. Two further states are **defined and deliberately unreachable**,
+each with its precondition recorded: `contested` needs a second source (every edge here has exactly one,
+always Wikidata), and `checks_disagree` needs a corpus policy that flags conflicting checks rather than
+excluding them. A test locks both. See `phases/phase-3-agent-loop.md` A1.1.
 
 ## 6. API contract — OPEN
 
@@ -191,6 +232,29 @@ refusal is correct behaviour here and has to be distinguishable from breakage.
 
 Derived, never stored: the store recomputes it on load rather than trusting the manifest, so it cannot
 drift from the corpus in hand.
+
+**Added 2026-08-06 (phase 2 step 8), recorded here 2026-08-07.** The corpus object also carries
+`coverage`, the genre-axis measurement of what the graph can and cannot speak about. *(Shipped in
+`/health` and `done` since step 8; SPEC missed it, so the deployed contract was a superset of the
+canonical one for a day.)*
+
+```json
+{ "genres": 169, "without_inception": 28, "without_country": 48,
+  "eras": { "pre-1900": 6, "1900-1949": 7, "1950-1969": 29, "1970-1989": 47,
+            "1990-2009": 39, "2010-": 13, "unknown": 28 },
+  "coarser_than_year": 19, "distinct_countries": 29,
+  "genres_without_us_or_uk": 43, "top_country": "United States", "top_country_share": 0.421,
+  "countries": { "United States": 51, "United Kingdom": 42, "Japan": 14, "…": 0 } }
+```
+
+**Both halves ship or neither does.** `top_country_share` alone invites "so it is only Western music",
+which is false; `distinct_countries` and `genres_without_us_or_uk` are the counterweight, and they are
+held to the same standard — `genres_without_us_or_uk` read 44 until 2026-08-07, when `UK drill`'s P495
+of `Brixton` was found counting as "names no UK". Genre axis only, stated rather than implied: P571 and
+P495 are genre properties, and averaging 804 unmeasured artist nodes into a genre figure would read as a
+far thinner corpus than it is.
+
+Also derived on load, for the same reason as `structure`.
 
 **Added 2026-08-05 (phase 2 step 5).** The `path` frame carries two orderings, not one:
 

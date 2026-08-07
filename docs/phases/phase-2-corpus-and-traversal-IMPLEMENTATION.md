@@ -782,6 +782,14 @@ goes on the screen, not in a footnote.
 > Krautrock, kayōkyoku, dancehall, corrido, banda. **A 1,500-year span across five continents is not a
 > post-war anglophone corpus.**
 >
+> > **Corrected 2026-08-07: the figure is 43, not 44.** `UK drill`'s P495 is `Brixton` — a London
+> > district — and the exact-string test against `ANGLOPHONE_CORE` read it as "names no UK". P495
+> > records *places*, not countries. Found in Fable's threshold review; fixed in
+> > `graph/coverage.py:PLACE_TO_COUNTRY` with the recorded label left verbatim, so `countries` still
+> > says what Wikidata says. The 1,500-year, five-continent point stands unchanged. Worth noting the
+> > direction: **this correction makes the corpus look more anglophone, not less** — which is exactly
+> > why it had to be made. A counterweight figure gets audited as hard as the bias figure it balances.
+>
 > **Concentration is not absence.** The corpus is *dense* in post-war anglophone material and *thin*
 > elsewhere, and collapsing those into "it is only Western recent music" is the same overclaiming
 > failure as the opposite direction — it just errs toward false modesty instead of false reach. The

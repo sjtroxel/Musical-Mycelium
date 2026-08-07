@@ -8,6 +8,11 @@
 > (MusicBrainz to phase 6), A3 (P279 to phase 6) and A4 (DoD #6 restated) are applied below and marked
 > inline. The reasoning is in `phase-2-corpus-and-traversal-IMPLEMENTATION.md` §1 — that is the record,
 > this is the map.
+>
+> **A7 added 2026-08-07, after the phase closed.** A retroactive correction, found while planning phase 3:
+> this doc claimed phase 2 represented contested-claim handling in the data, and it did not. See A7 under
+> *Explicitly not in this phase*. Amendments after a phase closes are legitimate and expected — the record
+> is supposed to say what happened, not what was planned.
 
 ## What this phase is for
 
@@ -54,6 +59,38 @@ editing the agent, a seam broke and that is the finding.
 Agent planning and tool expansion (phase 3), the eval suite proper (phase 4), the SPA and any visualization
 (phase 5), density beyond the base graph (phase 6). Contested-claim handling is *represented* in the data
 here but not surfaced in a UI.
+
+> **A7, 2026-08-07, retroactive correction — the sentence above is wrong about what phase 2 actually
+> shipped, and it was wrong in the direction that matters.** Found while planning phase 3, whose DoD #3
+> depended on it being true.
+>
+> **Phase 2 did not represent contested-claim handling in the data.** What it built is a
+> `verification` tier per edge — `HAND` 22, `PROSE_AUTO` 111, `ASSERTS_AUTO` 760, `EXPOSURE_AUTO` 57 —
+> which records **how strongly one source was checked**, not whether two sources disagree. Every edge in
+> v0.5.0 has exactly one source and it is always Wikidata; `resolve_sources()` returns a 1-tuple or an
+> empty tuple, and no code path produces two.
+>
+> The distinction is load-bearing rather than pedantic. Reading the tiers as contested-handling would let
+> "this edge rests on a listening habit" be presented as "sources disagree about this edge," which is the
+> slide from *traceable* to *correct* that `CLAUDE.md` forbids. `agent/claims.py:19` had it right in
+> phase 1: contested *"arrives with the data that justifies it, in phase 2 or 6."* **It did not arrive in
+> phase 2. It is phase 6's, and it needs a second source.**
+>
+> **What phase 2 left for phase 3 is per-edge `verification`, and nothing else.** An earlier draft of this
+> amendment said phase 2 also left a "method disagreement" signal, on the basis that `select_edges()`
+> re-admitted 6 of 7 hand-REJECTED edges. **That is backwards and is corrected here the same day it was
+> written.** Rule 2 of `select_edges()` puts hand-rejected edges **out** — the human verdict wins, the
+> pairs go to a separate `overruled` list, and all three spot-checked pairs are verifiably **absent from
+> v0.5.0**. All 950 edges carry `prose_tier: PROSE`. **Phase 2 resolved every check disagreement by
+> exclusion, so the corpus records none.**
+>
+> The 6-of-7 figure is real but it is an **ingest statistic about edges that were kept out**, not a
+> property of any edge that was kept in. Its home is the manifest at the next artifact cut — a phase 6
+> item, since phase 3 cuts no artifact.
+>
+> Phase 3 therefore surfaces `verification` **per claim** rather than only in aggregate, and declares both
+> `contested` and `checks_disagree` unreachable with a test locking them. See `phase-3-agent-loop.md`
+> A1.1.
 
 **Added 2026-08-04 by A2 and A3:** MusicBrainz in any form, and P279 ingestion. Both move to phase 6.
 Resolving the 46-component connectivity question moves with them — this phase *measures* the component
@@ -456,6 +493,12 @@ structure and states the constraint honestly; it does not fix it.
 - **The hardened check will shrink the corpus, not grow it.** Every defect fixed in step 1 removes *false*
   PROSE, so the corpus likely lands below 158. If it lands near v0.1's 21, that is a finding about the
   data rather than a failure of the phase — and it makes phase 6's second-source work urgent.
+
+  > **Resolved 2026-08-06.** It did shrink, as predicted: **133 genre edges**, below the 158 upper bound
+  > and well above v0.1's 21. The artist axis then added 817, landing v0.5.0 at **973 nodes / 950 edges**.
+  > The final clause held up and should not be forgotten now that the totals look healthy: **phase 6's
+  > second-source work is urgent**, and A7 above is why — one source per edge is what makes contested
+  > unbuildable today.
 - **Artifact size versus Lambda memory.** Tens of MB is fine; verify rather than assume, and remember the
   `GraphStore` seam exists precisely so this is recoverable.
 - **The sparse ancient end.** His design rule is scope the density, never the structure — so thin coverage

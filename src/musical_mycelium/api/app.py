@@ -113,9 +113,16 @@ def corpus_summary() -> dict[str, Any]:
     rather than correct.
 
     ``coverage`` is the third honest half and the bluntest one: 28 of 169 genres carry no inception date
-    at all, only 13 originate before 1950, and the United States and United Kingdom account for 77% of
-    the genres that name any country of origin. The corpus skews Western, anglophone and recent **by
-    construction**, and ``CLAUDE.md`` requires that to be visible in output rather than footnoted.
+    at all, only 13 originate before 1950, and **78 of the 121 genres that name any place name the US or
+    the UK**. The corpus skews Western, anglophone and recent **by construction**, and ``CLAUDE.md``
+    requires that to be visible in output rather than footnoted.
+
+    That figure is stated as a **count, not a percentage, deliberately.** It read "77%" here until
+    2026-08-07 — the retracted 2026-08-06 number, which came from adding the US and UK country totals
+    and double-counting every genre credited to both. The count is the form that made the error visible,
+    so the count is the form that ships. **43 genres name neither**, across 29 distinct places, and that
+    counterweight is not optional garnish: a concentration figure published without it misdescribes the
+    corpus in the other direction.
 
     ``structure`` is the other honest half, and it is the one a visitor cannot infer from an edge count.
     The graph is not one organism yet — it is many disconnected islands — so relating two genres is a

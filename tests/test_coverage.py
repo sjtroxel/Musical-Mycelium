@@ -201,13 +201,18 @@ def test_the_corpus_is_anglophone_dense_and_says_so(store: InMemoryGraphStore) -
     and called that 77% of the 121 country-bearing genres. **That was wrong**: it adds two country
     totals, so every genre credited to both is counted twice, inflating the apparent concentration.
     The honest figure is a count of *genres*.
+
+    **Moved 77 -> 78 on 2026-08-07** when ``UK drill -> Brixton`` was found counting as "names no UK"
+    (see ``coverage.PLACE_TO_COUNTRY``). Note the direction: correcting the place normalisation makes
+    the corpus look *more* anglophone, not less. That is the point — the fix was applied because it was
+    right, not because of which way it moved the number.
     """
     c = store.coverage
     with_country = c.genres - c.without_country
     naming_us_or_uk = with_country - c.genres_without_us_or_uk
 
     assert with_country == 121
-    assert naming_us_or_uk == 77
+    assert naming_us_or_uk == 78
     assert 0.6 < naming_us_or_uk / with_country < 0.7
 
 
@@ -216,16 +221,51 @@ def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
 ) -> None:
     """The counterweight, asserted so a bias figure can never ship without it.
 
-    44 genres name no US or UK connection at all, across 29 distinct places — kuduro, bachata,
+    43 genres name no US or UK connection at all, across 29 distinct places — kuduro, bachata,
     cadence-lypso, bossa nova, Mizrahi music, Anatolian rock, Manila sound. **Concentration and absence
     are different claims**, and reporting only the first invites the second to be inferred. That
     inference was made on 2026-08-06 and corrected by sjtroxel, who was reading the corpus rather than
     the aggregate.
+
+    **43, not 44, since 2026-08-07.** ``UK drill``'s P495 is ``Brixton`` — a London district — which an
+    exact-string test against ``ANGLOPHONE_CORE`` read as "names no UK". The counterweight figure gets
+    audited as hard as the bias figure; see ``coverage.PLACE_TO_COUNTRY``.
     """
     c = store.coverage
 
-    assert c.genres_without_us_or_uk == 44
+    assert c.genres_without_us_or_uk == 43
     assert c.distinct_countries == 29
+
+
+def test_a_sub_national_place_still_counts_toward_its_country() -> None:
+    """The regression lock for the Brixton fix, on a synthetic corpus so it cannot drift with Wikidata.
+
+    Both halves are asserted, because they pull in opposite directions: the recorded label stays
+    **verbatim** (``countries`` is a faithful record of the source, and collapsing it would silently
+    rewrite what Wikidata said), while the US/UK membership test **resolves** it.
+    """
+    artifact = Artifact(
+        nodes=(
+            node("Q1", countries=("Brixton",)),
+            node("Q2", countries=("Angola",)),
+        ),
+        edges=(),
+    )
+    c = analyse(artifact)
+
+    assert c.countries["Brixton"] == 1, "the recorded place label must not be rewritten"
+    assert c.genres_without_us_or_uk == 1, "Angola only — Brixton resolves to the UK"
+
+
+def test_a_supranational_place_is_folded_into_neither_country() -> None:
+    """``Europe`` and ``Scandinavia`` must NOT resolve to the UK.
+
+    Folding a multi-country label into a core country would assert an origin the source never claimed —
+    the opposite error to the Brixton one, and the worse of the two. They count as neither.
+    """
+    artifact = Artifact(nodes=(node("Q1", countries=("Europe",)),), edges=())
+
+    assert analyse(artifact).genres_without_us_or_uk == 1
 
 
 def test_the_corpus_spans_far_more_than_the_post_war_era(store: InMemoryGraphStore) -> None:

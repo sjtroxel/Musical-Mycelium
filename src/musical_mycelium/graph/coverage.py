@@ -10,11 +10,17 @@ carry no country of origin. Those two counts are the honest answer to "how thin 
 
 **Concentration is not absence, and this module reports both halves for that reason.** The corpus is
 dense in post-war anglophone material — and it also spans 1,500 years (medieval and classical music at
-500, opera and Baroque at 1600) across 29 distinct places, with 44 genres naming no US or UK connection
+500, opera and Baroque at 1600) across 29 distinct places, with 43 genres naming no US or UK connection
 at all: kuduro, bachata, cadence-lypso, bossa nova, Mizrahi music, Anatolian rock, Manila sound,
 Krautrock, kayōkyoku. Quoting ``top_country_share`` alone invites "so it is only Western music", which
 is false. ``distinct_countries`` and ``genres_without_us_or_uk`` are the counterweight, and they are not
 optional garnish — a bias figure presented without them misdescribes the corpus in the other direction.
+
+**The counterweight is held to the same standard as the bias figure, which is why it moved.** It read 44
+until 2026-08-07, when a review found ``UK drill -> Brixton`` counting as "names no UK" — P495 records
+places, not countries, and an exact-string test cannot tell a London district from a foreign one. See
+:data:`PLACE_TO_COUNTRY`. Overstating the counterweight flatters the corpus exactly as much as
+understating the bias would, and this module exists to do neither.
 
 **Genre axis only, and stated rather than implied.** P571 and P495 are genre properties; an artist's
 equivalents are different properties entirely (date of birth, country of citizenship) and are not
@@ -53,6 +59,28 @@ PRECISION_YEAR = 9
 #: something checkable rather than resting on an undefined notion of "Western". Deliberately just these
 #: two: they are the measured concentration, not a judgement about which music is central.
 ANGLOPHONE_CORE = frozenset({"United States", "United Kingdom"})
+
+#: P495 does not promise a *country*. It promises whatever a Wikidata editor put there, and this corpus
+#: contains sub-national places (``Brixton``), supranational ones (``Europe``, ``Scandinavia``) and
+#: dependencies (``Hawaii``, ``French West Indies``). An exact-string test against
+#: :data:`ANGLOPHONE_CORE` therefore reads a London district as "names no UK" — which inflated
+#: ``genres_without_us_or_uk`` to 44 when the honest figure is 43. Caught 2026-08-07 in review.
+#:
+#: **Only entries that change the US/UK test belong here.** ``Europe`` and ``Scandinavia`` are genuinely
+#: multi-country and must NOT be folded into either core country: doing so would assert a UK origin the
+#: source never claimed, which is the opposite error and the worse one. They stay as they are and simply
+#: count as neither.
+#:
+#: Applied to the US/UK test only, never to :attr:`Coverage.countries`, which stays a faithful record of
+#: the labels the source actually carries.
+PLACE_TO_COUNTRY: dict[str, str] = {
+    "Brixton": "United Kingdom",
+}
+
+
+def _country_set(labels: tuple[str, ...]) -> set[str]:
+    """Place labels normalised far enough to answer the US/UK question, and no further."""
+    return {PLACE_TO_COUNTRY.get(label, label) for label in labels}
 
 
 def era_of(year: int) -> str:
@@ -97,12 +125,17 @@ class Coverage:
     #: latter to be inferred.
     distinct_countries: int
 
-    #: Genres that name a country and name **neither** the US nor the UK. The honest counterweight to
+    #: Genres that name a place and name **neither** the US nor the UK. The honest counterweight to
     #: ``top_country_share``: the corpus is dense in anglophone material, not devoid of anything else.
     #:
     #: A count of genres, deliberately, **not** a sum of country mentions. Adding the US total to the
     #: UK total double-counts every genre credited to both and inflates the apparent concentration —
     #: that error briefly stood at "93, or 77%" on 2026-08-06 before the arithmetic was checked.
+    #:
+    #: The membership test runs over :func:`_country_set`, not the raw labels, because P495 carries
+    #: places rather than countries: ``UK drill -> Brixton`` counted as "names no UK" and put this at
+    #: **44 until 2026-08-07, when the honest figure is 43**. A counterweight figure that overstates
+    #: the counterweight is the same failure as one that understates the bias.
     genres_without_us_or_uk: int
 
     #: The single most-credited country and its share of genres that have any country at all. The
@@ -150,7 +183,8 @@ def analyse(artifact: Artifact) -> Coverage:
             without_country += 1
         else:
             countries.update(node.countries)
-            if not ANGLOPHONE_CORE & set(node.countries):
+            # Normalised for this test only — see PLACE_TO_COUNTRY. The recorded label stays verbatim.
+            if not ANGLOPHONE_CORE & _country_set(node.countries):
                 without_us_or_uk += 1
 
     # Every bucket present, including the empty ones. A missing key reads as "not measured" and this
