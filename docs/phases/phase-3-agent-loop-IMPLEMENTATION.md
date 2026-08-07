@@ -744,4 +744,34 @@ absent genres still absent, unsourced subjects still unsourced, `ambiguous` stil
 failures are the feature.** A case whose premise the corpus has outgrown must be re-authored, never
 re-pinned.
 
+### Step 2 — DONE, 2026-08-07
+
+Seven tools registered. `tests/test_tools.py` (24 tests); `make check` green at **462 tests**.
+
+**Invariant 4 held, and was verified rather than asserted:** `git diff --name-only` after adding all
+four tools listed `agent/tools.py` and `graph/store.py` only. **`agent/loop.py` was not touched.**
+
+Two decisions worth carrying forward:
+
+1. **`coverage` was added to the `GraphStore` protocol** rather than threaded into `default_registry`
+   as a second argument. `corpus_coverage` needs a `Coverage`; passing one in would have made the
+   seventh tool a signature change at every call site, undercutting the very demonstration it exists to
+   make. `InMemoryGraphStore` has implemented it since phase 2 step 8, so the addition cost nothing —
+   and `store.py`'s own docstring already argued for declaring protocol members ahead of need.
+2. **The "pin `loop.py`'s hash" test from §4.2 was not built as specified.** It is a good commit-time
+   check and a bad permanent test: step 3 adds the plan object and will legitimately change that file,
+   at which point a pinned hash fails for a reason unrelated to the seam. The durable property is
+   asserted instead — **no tool name appears anywhere the loop executes** (AST-parsed, comments
+   stripped, since `loop.py` documents the *rejected* v0.1 prompt that hard-coded two tool names). The
+   hash check was performed once, by hand, at the commit.
+
+**A separate commit follows, deliberately not folded into the tool commit.** `SYSTEM_PROMPT` said the
+agent answers about "music **genres**" and enumerated exactly two query shapes — "one genre's origins,
+or the chain between two of them." With seven tools and a live artist axis that prompt actively
+suppresses `get_descendants` and `corpus_coverage`, so the tools would work in code and fail in
+practice. It is now axis-neutral, names no closed list of query shapes, and gained the cross-axis rule
+and a coverage-honesty rule. It still names no tool, and `test_no_prompt_names_a_tool` now enforces that
+across **all three** prompts rather than the system prompt alone. This closes the axis-neutrality item
+from Fable's threshold review.
+
 **Still open before step 8, unchanged:** the full gold set (20–30) and the sealed held-out 10.

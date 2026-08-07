@@ -16,6 +16,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
+from musical_mycelium.graph.coverage import Coverage
 from musical_mycelium.graph.schema import Edge, Node
 
 
@@ -105,5 +106,27 @@ class GraphStore(Protocol):
         *(Corrected 2026-08-04: this said "phase 5". It was written while ``path()`` was a phase-1
         deferral, but the ROADMAP assigns "real multi-hop traversal" to phase 2. Phase 5 **consumes**
         this for the guided tour; it does not introduce it. Implemented 2026-08-05, phase 2 step 4.)*
+        """
+        ...
+
+    @property
+    def coverage(self) -> Coverage:
+        """What this corpus can and cannot speak about. A measurement, never a target.
+
+        *(Added 2026-08-07, phase 3 step 2, for the ``corpus_coverage`` tool.)*
+
+        Declared on the protocol rather than threaded into the tool as a value, for the reason the
+        module docstring already gives: adding a method to a protocol later means touching every
+        implementation, and this shape is already known. ``InMemoryGraphStore`` has implemented it since
+        phase 2 step 8, so the addition costs nothing today.
+
+        The alternative — passing a ``Coverage`` into ``default_registry`` — was rejected because it
+        would make registering the seventh tool a signature change at every call site. The whole purpose
+        of ``corpus_coverage`` being last is to demonstrate that adding a tool is a **pure
+        registration** (``CLAUDE.md`` invariant 4); threading an argument through to do it would
+        undercut the demonstration it exists to make.
+
+        Implementations may cache. Coverage is a property of a pinned, immutable artifact, so recomputing
+        it per call is waste rather than freshness.
         """
         ...

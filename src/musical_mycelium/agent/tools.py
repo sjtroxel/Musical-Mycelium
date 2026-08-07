@@ -21,9 +21,28 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from musical_mycelium.agent.claims import ClaimProposal
+from musical_mycelium.graph.coverage import (
+    PRECISION_CENTURY,
+    PRECISION_DECADE,
+    PRECISION_YEAR,
+    era_of,
+)
 from musical_mycelium.graph.memory import label_key
 from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY
 from musical_mycelium.graph.store import Direction, GraphStore
+
+#: Wikidata statement URIs encode the QID of the entity the statement belongs to. Same prefix
+#: ``claims.resolve_sources`` parses; kept as its own constant here rather than imported so the tool
+#: layer does not reach into the gate's internals for a string.
+_WIKIDATA_STATEMENT_PREFIX = "http://www.wikidata.org/entity/statement/"
+
+#: Wikidata's time-precision codes rendered as words. A decade-precision 1970 shown as "1970" asserts a
+#: year the source never claimed, so the word travels beside the number rather than the number alone.
+_PRECISION_LABELS: dict[int | None, str] = {
+    PRECISION_CENTURY: "century",
+    PRECISION_DECADE: "decade",
+    PRECISION_YEAR: "year",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -366,6 +385,277 @@ class TraceLineage:
         return node.label if node else node_id
 
 
+@dataclass(frozen=True, slots=True)
+class GetDescendants:
+    """One hop along ``influenced_by`` in the **other** direction — what came out of this node.
+
+    This closes a real gap rather than adding a convenience. ``Direction.INFLUENCED`` has been supported
+    by the store since phase 2 and no registered tool exposed it, so "what came out of the blues?" was
+    unanswerable except as a side effect of tracing between two *named* nodes — which requires already
+    knowing the answer.
+
+    **Orientation is read off the edge, never off the argument**, exactly as ``TraceLineage`` does. A
+    descendant walk finds edges where this node is the *object*, so the proposal's subject is the
+    descendant and its object is the node asked about. Building the proposal from ``edge`` rather than
+    from ``node_id`` is what makes a descendant query incapable of emitting a backwards influence claim.
+    """
+
+    store: GraphStore
+    name: str = field(default="get_descendants", init=False)
+    description: str = field(
+        default=(
+            "List what came out of a genre or artist — the things this graph records as having been "
+            "influenced BY it. This is the opposite direction from get_influences. Returns an empty "
+            "list when the graph records nothing descending from that node. An empty list means this "
+            "graph cannot answer the question; it does not mean nothing came out of it."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "node_id": {"type": "string", "description": "A node id from resolve_node."}
+            },
+            "required": ["node_id"],
+        }
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        node_id = kwargs["node_id"]
+        if self.store.get_node(node_id) is None:
+            return ToolResult(
+                content={"error": f"unknown node: {node_id}. Use resolve_node first."},
+                is_error=True,
+            )
+
+        edges = self.store.neighbors(node_id, Direction.INFLUENCED)
+        descendants = []
+        for edge in edges:
+            node = self.store.get_node(edge.subject_id)
+            descendants.append(
+                {
+                    "node_id": edge.subject_id,
+                    "label": node.label if node else edge.subject_id,
+                    "predicate": edge.predicate,
+                }
+            )
+
+        return ToolResult(
+            content={"descendants": descendants, "count": len(descendants)},
+            sources=tuple(edge.source_id for edge in edges),
+            visited=(node_id, *(edge.subject_id for edge in edges)),
+            # A fan-out, not a sequence. ``chain`` stays empty for the same reason it does in
+            # ``GetInfluences``: several descendants of one node are not an ordered descent.
+            proposals=tuple(
+                ClaimProposal(
+                    subject_id=edge.subject_id,
+                    predicate=PREDICATE_INFLUENCED_BY,
+                    object_id=edge.object_id,
+                )
+                for edge in edges
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class DescribeNode:
+    """When and where, rather than out of what. **Emits no proposals.**
+
+    No proposal, because no edge is involved. A proposal from here would carry no valid predicate, fail
+    ``UNSUPPORTED_PREDICATE`` at the gate, and pollute the rejection stream that refusal accuracy is
+    measured on.
+
+    **What this tool returns can never reach prose**, and that is invariant 1 rather than an oversight.
+    ``synthesize()`` sees only the approved claim set, and both synthesis prompts forbid dates, places
+    and artists outright. These values inform the agent's *traversal reasoning* and feed the era/region
+    slicing; putting dates into answers is a claim-model extension — new predicates, gated the same way
+    — and is phase 6 at the earliest.
+
+    ``inception_precision`` is rendered as a word beside the raw code because a decade-precision 1970
+    printed as "1970" asserts a year Wikidata never claimed. That is the traceable-slides-into-correct
+    failure in miniature, and ``graph/schema.py`` already warns about it on the field itself.
+    """
+
+    store: GraphStore
+    name: str = field(default="describe_node", init=False)
+    description: str = field(
+        default=(
+            "Get what the graph records ABOUT a node: whether it is a genre or an artist, when it "
+            "began, how precise that date is, and which countries it is credited to. Use it to orient "
+            "yourself before or during a traversal. It returns no influence relationships and supports "
+            "no claims about influence — use get_influences or get_descendants for those. Any field "
+            "may be null, and null means the graph does not record it."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "node_id": {"type": "string", "description": "A node id from resolve_node."}
+            },
+            "required": ["node_id"],
+        }
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        node_id = kwargs["node_id"]
+        node = self.store.get_node(node_id)
+        if node is None:
+            return ToolResult(
+                content={"error": f"unknown node: {node_id}. Use resolve_node first."},
+                is_error=True,
+            )
+
+        return ToolResult(
+            content={
+                "node_id": node.id,
+                "label": node.label,
+                "kind": node.kind,
+                "inception_year": node.inception_year,
+                "inception_precision": node.inception_precision,
+                "inception_precision_label": _PRECISION_LABELS.get(node.inception_precision),
+                "era": era_of(node.inception_year)
+                if node.inception_year is not None
+                else "unknown",
+                "countries": list(node.countries),
+            },
+            sources=(node.source_id,),
+            visited=(node.id,),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ResolveSource:
+    """A source id turned into something a reader can actually go and check. **Emits no proposals.**
+
+    This is what makes "grounded means provenance" visible in the product rather than only true in the
+    code. A claim carries ``source_ids``; without this the reader sees an opaque statement URI.
+
+    ``resolvable`` uses the same rule as ``claims.resolve_sources``: a Wikidata statement URI encodes
+    the QID of the entity the statement belongs to, so the citation must name an entity this graph
+    holds. A syntactically perfect URI pointing at an entity that is not here is **not** a citation for
+    anything, and reporting it as one is exactly the plausible-looking fabrication the gate exists to
+    catch.
+    """
+
+    store: GraphStore
+    name: str = field(default="resolve_source", init=False)
+    description: str = field(
+        default=(
+            "Turn a source id from a claim into a checkable citation: which entity the statement "
+            "belongs to and the URL a reader can open to verify it. Use it when asked where something "
+            "comes from or how a statement can be checked. Returns resolvable=false when the id does "
+            "not name an entity in this graph, and an unresolvable source supports nothing."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "source_id": {
+                    "type": "string",
+                    "description": "A source id taken from a claim or a tool result.",
+                }
+            },
+            "required": ["source_id"],
+        }
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        source_id = kwargs["source_id"]
+
+        if not source_id.startswith(_WIKIDATA_STATEMENT_PREFIX):
+            return ToolResult(
+                content={
+                    "source_id": source_id,
+                    "resolvable": False,
+                    "reason": "not a Wikidata statement URI",
+                }
+            )
+
+        entity_id = source_id.removeprefix(_WIKIDATA_STATEMENT_PREFIX).split("-", 1)[0]
+        node = self.store.get_node(entity_id)
+        if node is None:
+            return ToolResult(
+                content={
+                    "source_id": source_id,
+                    "entity_id": entity_id,
+                    "resolvable": False,
+                    "reason": "the statement names an entity this graph does not hold",
+                }
+            )
+
+        return ToolResult(
+            content={
+                "source_id": source_id,
+                "entity_id": entity_id,
+                "label": node.label,
+                "resolvable": True,
+                "url": f"https://www.wikidata.org/wiki/{entity_id}",
+                "retrieved_at": node.retrieved_at,
+            },
+            sources=(source_id,),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CorpusCoverage:
+    """What this graph can speak about at all, in measured numbers. **Emits no proposals.**
+
+    Directly serves the never-claim-coverage-you-do-not-have rule: the corpus skew is documented, and it
+    has to be visible in the output rather than disclaimed in a footnote. An agent that can be *asked*
+    what the corpus holds can say so in the answer.
+
+    **This tool is the invariant-4 seam test, and it is registered last on purpose.** It takes no node
+    id, returns no edges, emits no proposals, records nothing visited, and asserts no chain — a shape
+    unlike every tool before it. Adding it changed zero lines of ``agent/loop.py``: the loop harvests
+    ``proposals``, ``chain`` and ``visited`` generically and simply gets empty ones here. A loop that had
+    assumed every result contributes to the claim set would have needed an edit, and that edit is the
+    thing invariant 4 forbids.
+    """
+
+    store: GraphStore
+    name: str = field(default="corpus_coverage", init=False)
+    description: str = field(
+        default=(
+            "Report what this graph covers and what it does not: how many genres it holds, how many "
+            "lack a date or a country, the spread across eras and countries, and how concentrated it "
+            "is. Takes no arguments. Use it when asked what the graph knows, or when answering about a "
+            "region or period the graph may cover thinly, so the gap can be stated rather than hidden."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {"type": "object", "properties": {}}
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        return ToolResult(
+            content={
+                "artifact_version": self.store.artifact_version,
+                **self.store.coverage.as_dict(),
+            }
+        )
+
+
 def default_registry(store: GraphStore) -> ToolRegistry:
-    """The three tools as of v0.2. ``trace_lineage`` joined at phase 2 step 5 by registration alone."""
-    return ToolRegistry([ResolveNode(store), GetInfluences(store), TraceLineage(store)])
+    """The seven tools as of v0.3.
+
+    ``trace_lineage`` joined at phase 2 step 5 and the last four at phase 3 step 2, all by registration
+    alone. The signature has not changed since the three-tool version, which is invariant 4 stated as a
+    fact about this line rather than as an aspiration.
+    """
+    return ToolRegistry(
+        [
+            ResolveNode(store),
+            GetInfluences(store),
+            TraceLineage(store),
+            GetDescendants(store),
+            DescribeNode(store),
+            ResolveSource(store),
+            CorpusCoverage(store),
+        ]
+    )

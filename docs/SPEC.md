@@ -80,6 +80,12 @@ Notes on the composition, since it is doing work:
   open-ended "what came out of the blues?" — one node in, many out — remains unanswerable.
   `Direction.INFLUENCED` has been supported by `GraphStore` since phase 2 and no registered tool exposes
   it. Phase 3 adds `get_descendants`; see `phase-3-agent-loop.md` A2.)*
+
+  *(2026-08-07, later: **DONE.** `get_descendants` is registered and "what came out of the blues?" is
+  answerable — one node in, many out, each hop proposed from the **edge** so a descendant query cannot
+  emit a reversed influence claim. The registry went from three tools to seven at phase 3 step 2:
+  `get_descendants`, `describe_node`, `resolve_source`, `corpus_coverage`. The five gold cases above are
+  unchanged and stay origins-shaped.)*
 - 1 is the trivial case and 2 is the showpiece, at four parents — the richest node in the artifact, and the
   case most likely to expose a traversal that stops early. It also carries a story: acid jazz is the genre
   whose article started the prose check on 2026-07-31.

@@ -107,21 +107,36 @@ def test_tool_config_is_the_bedrock_shape(registry: ToolRegistry) -> None:
         "resolve_node",
         "get_influences",
         "trace_lineage",
+        "get_descendants",
+        "describe_node",
+        "resolve_source",
+        "corpus_coverage",
     }
     for spec in specs:
         assert spec["toolSpec"]["description"]
         assert spec["toolSpec"]["inputSchema"]["json"]["type"] == "object"
 
 
-def test_the_system_prompt_names_no_tool(store: InMemoryGraphStore) -> None:
+def test_no_prompt_names_a_tool(store: InMemoryGraphStore) -> None:
     """Invariant 4 has a prose door as well as a code one.
 
     v0.1's system prompt hard-coded "use resolve_node, then get_influences", so a third tool could be
     registered without a loop edit and still never be called. A tool describes itself in its own spec;
     the system prompt states the rules.
+
+    Checked against ``registry.names`` rather than a literal list, so a tool added later is covered by
+    this test the day it is registered. Widened 2026-08-07 from the system prompt alone to **all three
+    prompts**: the synthesis prompts must not name tools either, and going from three tools to seven is
+    exactly when that property is most likely to be quietly broken.
     """
+    prompts = {
+        "SYSTEM_PROMPT": agent_loop.SYSTEM_PROMPT,
+        "SYNTHESIS_PROMPT": agent_loop.SYNTHESIS_PROMPT,
+        "CHAIN_SYNTHESIS_PROMPT": agent_loop.CHAIN_SYNTHESIS_PROMPT,
+    }
     for name in default_registry(store).names:
-        assert name not in agent_loop.SYSTEM_PROMPT, f"the system prompt hard-codes {name}"
+        for prompt_name, prompt in prompts.items():
+            assert name not in prompt, f"{prompt_name} hard-codes {name}"
 
 
 def test_a_new_tool_does_not_touch_the_loop(store: InMemoryGraphStore) -> None:
@@ -146,8 +161,12 @@ def test_a_new_tool_does_not_touch_the_loop(store: InMemoryGraphStore) -> None:
             )
 
     registry = default_registry(store)
+    before = len(registry)
     registry.register(CountGenres())
-    assert len(registry) == 4
+    # Relative, not a magic number: what this test is about is that registration adds exactly one tool
+    # and the loop is unchanged. Pinning an absolute count made it fail every time a tool was added,
+    # for a reason unrelated to the property under test — which happened at phase 3 step 2.
+    assert len(registry) == before + 1
 
     llm = ScriptedLLM(
         [
