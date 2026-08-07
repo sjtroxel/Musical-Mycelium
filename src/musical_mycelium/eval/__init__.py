@@ -24,6 +24,20 @@ Tier 1 metric in v0.1 scope, and ``datasets/gold_v0_1.json`` holds the five gold
 ``edge_groundedness`` deliberately does **not** call the gate. It re-derives its verdict from the
 artifact, because a measurement that asks the gate whether the gate was right measures nothing.
 
-Still to come: the full gold set (20-30), the adversarial set with a planted injection, the sealed
-held-out ten, the judge and its human-agreement measurement, and the slicing. Phase 4 owns those.
+**Extended 2026-08-07 (phase 3, step 1).** ``datasets/adversarial_v1.json`` holds the 18 adversarial
+cases, hand-authored before any loop code exists and while Bedrock has still never completed a call, so
+nothing in it can have been shaped by model output. ``tests/test_adversarial_set.py`` re-checks every
+case against the pinned corpus on every commit -- absent genres still absent, forbidden edges still
+forbidden, resolver strings unchanged.
+
+Two of its cases departed from the phase plan for cause: the planned "ambiguous name" group tests a
+``resolve_node`` branch with **population zero** (no two labels in v0.5.0 share a ``label_key``), so it
+was redirected to the reachable ``no exact match`` branch and the dead one is locked by test, exactly as
+``contested`` and ``checks_disagree`` are.
+
+Still to come: the full gold set (20-30) extending the five in ``gold_v0_1.json``, and the sealed
+held-out ten. Per the 2026-08-07 threshold review both are a **hard precondition on phase 3 step 8**
+rather than phase 4 work -- step 8 is the first billable Bedrock call this project will ever make, and a
+dataset authored after it is authored by someone who has seen the real agent behave. The judge, its
+human-agreement measurement, and the slicing remain phase 4.
 """
