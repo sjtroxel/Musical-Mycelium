@@ -30,6 +30,7 @@ from musical_mycelium.agent.plan import (
     UNKNOWN_QUERY_KIND,
     Plan,
     PlanStep,
+    PremiseAssertion,
     parse_plan,
     planning_prompt,
 )
@@ -119,6 +120,10 @@ def test_the_shape_the_prompt_asks_for_is_a_shape_the_parser_accepts(
     assert plan.query_kind != UNKNOWN_QUERY_KIND, "the example demonstrates the degraded value"
     assert len(plan.steps) == 1
     assert plan.steps[0].arguments == {}
+    # Step 3b's field is in the example, so the same lock covers it: a premise example that stopped
+    # parsing would make every real model copy a shape the loop silently drops.
+    assert plan.asserted_premise is not None
+    assert plan.asserted_premise.subject and plan.asserted_premise.object
 
 
 # --- parsing: the good case -----------------------------------------------------------------------
@@ -224,21 +229,74 @@ def test_a_runaway_reason_is_collapsed_to_one_line_and_capped() -> None:
 
 
 def test_unknown_keys_are_ignored() -> None:
-    """Forward compatibility, deliberately. Step 3's premise correction adds a field to this object;
-    a parser that rejected unrecognised keys would make that a breaking change to every scripted plan
-    in the suite rather than a paragraph."""
+    """Forward compatibility, deliberately, and it paid at step 3b.
+
+    This test used ``asserted_premise`` as its unknown key until that field landed for real, which is
+    the property working rather than the test going stale: adding it cost a paragraph and broke no
+    scripted plan. The placeholders are now fields nothing emits, so the check keeps meaning something.
+    """
     plan = parse_plan(
         json.dumps(
             {
                 "query_kind": "origins",
                 "steps": [{"tool": "resolve_node", "confidence": 0.9}],
-                "asserted_premise": {"subject_id": "Q1"},
+                "estimated_cost": {"tokens": 400},
                 "notes": "something a later version emits",
             }
         )
     )
     assert plan.query_kind == "origins"
     assert plan.steps == (PlanStep(tool="resolve_node"),)
+    assert plan.asserted_premise is None
+
+
+# --- parsing: the asserted premise ------------------------------------------------------------------
+
+
+def test_an_asserted_premise_parses() -> None:
+    plan = parse_plan(
+        json.dumps(
+            {
+                "query_kind": "lineage",
+                "asserted_premise": {"subject": "the blues", "object": "heavy metal"},
+                "steps": [],
+            }
+        )
+    )
+    assert plan.asserted_premise == PremiseAssertion(subject="the blues", object="heavy metal")
+
+
+def test_a_question_asserting_nothing_carries_no_premise() -> None:
+    """The common case by a wide margin — "what did X come out of" assumes nothing to correct."""
+    assert parse_plan(WELL_FORMED).asserted_premise is None
+
+
+@pytest.mark.parametrize(
+    ("payload", "why"),
+    [
+        ({"subject": "the blues"}, "object missing"),
+        ({"object": "heavy metal"}, "subject missing"),
+        ({"subject": "the blues", "object": ""}, "object blank"),
+        ({"subject": "  ", "object": "heavy metal"}, "subject blank"),
+        ({"subject": "the blues", "object": ["heavy metal"]}, "object not a string"),
+        ("the blues came out of heavy metal", "not an object at all"),
+        (None, "explicit null"),
+    ],
+)
+def test_a_half_stated_premise_is_no_premise(payload: object, why: str) -> None:
+    """Both names or neither. A premise missing one side is not a weaker premise, it is an unusable
+    one, and filling the gap from the query would be exactly the inference this field exists to avoid:
+    the whole point is that the model asserts the premise rather than anything guessing it."""
+    plan = parse_plan(json.dumps({"query_kind": "lineage", "asserted_premise": payload}))
+    assert plan.asserted_premise is None, why
+    assert plan.query_kind == "lineage", "a bad premise must not discard the rest of the plan"
+
+
+def test_premise_names_are_stripped() -> None:
+    plan = parse_plan(
+        json.dumps({"asserted_premise": {"subject": " the blues\n", "object": "\theavy metal "}})
+    )
+    assert plan.asserted_premise == PremiseAssertion(subject="the blues", object="heavy metal")
 
 
 # --- unregistered tools ---------------------------------------------------------------------------

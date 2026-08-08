@@ -203,7 +203,7 @@ Each item is tagged with what it needs. **LOCAL** items need no AWS at all and a
 | 10 | The model ignores an injected instruction in a real tool result | BEDROCK | split out of #5 |
 | 11 | Refusal accuracy and traversal recall measured on real model output | BEDROCK | split out of #6 |
 | 12 | Token cost per query measured and emitted to CloudWatch; the working model ID recorded here | BEDROCK | split out of #8 |
-| 13 | **A backwards premise is answered with the documented orientation stated positively**, carried inside `ApprovedClaimSet` and validated against the approved claims; prose never asserts the negative, and a test locks that | LOCAL | **added 2026-08-07 (§4.3)** |
+| 13 | **A backwards premise is answered with the documented orientation stated positively**, carried inside `ApprovedClaimSet` and validated against the approved claims; prose never asserts the negative, and a test locks that | LOCAL | **GREEN — step 3b, 2026-08-08** |
 
 **`v0.3.0-local` ships when 1–9 and 13 are green.** 10–12 close whenever Bedrock does — see §7.
 
@@ -395,6 +395,17 @@ assert the negative.**)*
 ```
 asserted_premise: ClaimProposal | None    # the influence the QUESTION claims, not one the agent found
 ```
+
+> **Amended while building, 2026-08-08.** This field cannot be a `ClaimProposal`, and the reason is a
+> timing fact this section did not account for: a `ClaimProposal` carries node **ids**, and the planning
+> turn runs on the raw query before a single tool call, so the planner has no way to know that the blues
+> is `Q9759`. The plan prompt says so in as many words — *"leave out an argument you cannot know yet,
+> such as an id you have not resolved."* As specified, the field was one no model could fill.
+>
+> It carries **names** instead, as a small `PremiseAssertion(subject, object)`, and the loop resolves
+> them into a `ClaimProposal` before gating. Nothing else in this section changes: the premise is still
+> model-asserted rather than inferred, still gated with no special path, and the correction still rides
+> inside `ApprovedClaimSet`.
 
 Reading a premise out of a question is a language task, so the model is the right author; ruling on it is
 a data task, so `gate()` is the right judge. That division is the whole design. **The premise is gated
@@ -801,5 +812,84 @@ practice. It is now axis-neutral, names no closed list of query shapes, and gain
 and a coverage-honesty rule. It still names no tool, and `test_no_prompt_names_a_tool` now enforces that
 across **all three** prompts rather than the system prompt alone. This closes the axis-neutrality item
 from Fable's threshold review.
+
+### Step 3a — DONE, 2026-08-08 — the plan object
+
+`src/musical_mycelium/agent/plan.py` and `tests/test_plan.py` (25 tests); `make check` green at **496
+tests**, root 15/18. Commit `3fe90dd`.
+
+**Step 3 was split, and DoD #13 is not in it.** The plan object shipped; the asserted premise and the
+inverted-premise correction did not. The split was checked before it was taken: the delta is additive —
+a field on `Plan`, a paragraph in the prompt, a field on `ApprovedClaimSet` — so building the plan object
+alone forced no rework. The one thing done *because* 3b is coming: `parse_plan` ignores unrecognised JSON
+keys, which is what keeps adding `asserted_premise` a paragraph rather than a breaking change to every
+scripted plan in the suite.
+
+The four decisions §4.3 left open are recorded in full in the as-built block there. In short: JSON on a
+text turn rather than a forced tool call; the prompt's tool list rendered from the registry; `MAX_TURNS`
+5 → 6 with the ceiling **counting** the plan turn; and a test that feeds the rendered prompt back through
+`parse_plan` so the prompt and the parser cannot drift apart.
+
+**Invariant 1 untouched, invariant 4 held.** `synthesize()` still takes one argument. The `plan` SSE
+frame cost exactly one `EVENT_NAMES` entry, because `render` is generic over `asdict`. Nothing in
+`loop.py` reads the plan back, and `test_the_loop_executes_what_the_model_calls_not_what_the_plan_said`
+is that property as an assertion rather than a comment.
+
+One finding worth carrying forward: **a scripted test that omits the plan turn does not fail.** Its first
+tool turn is silently consumed by the planner, the run shifts by one, and the test goes green having
+exercised the wrong sequence — two were passing that way before the `plan_turn()` helper landed. Any new
+`ScriptedLLM` script that drives `run()` must prepend it.
+
+### Step 3b — DONE, 2026-08-08 — the premise correction (DoD #13)
+
+`make check` green at **524 tests**, root 15/18, terraform valid. Touched `agent/plan.py`,
+`agent/loop.py`, `agent/llm.py`, `graph/memory.py`, `agent/tools.py`, `docs/SPEC.md` §6.
+
+**One spec correction, made before any code: `asserted_premise` cannot carry node ids.** The planning
+turn runs on the raw query, so the planner cannot know that the blues is `Q9759` — §4.3's
+`ClaimProposal` was a field no model could fill. It carries names now, and the loop resolves them. The
+amendment is recorded in §4.3 itself, above.
+
+That forced one small refactor and it is the good kind: the exact-match rule lived inside `ResolveNode`,
+and the loop needed the same rule. It moved to `graph.memory` as `exact_matches` / `resolve_exact`, with
+`ResolveNode` keeping only the *reporting* — `did_you_mean`, and the near-miss/ambiguous distinction —
+which is the part only a tool needs. **The loop resolves a premise no more loosely than the traversal
+resolved the question**, and it borrows the rule from `graph` rather than learning which tool owns it.
+
+**Everything §4.3 decided held.** The premise is model-asserted, never inferred from argument order. It
+is gated with no special path and comes back as an ordinary `ClaimRejected` with an ordinary reason. The
+correction rides inside `ApprovedClaimSet` as `inverted_premise`, admissible only when the approved
+claims establish the reverse — checked by reachability rather than adjacency, because `adv_012` is
+backwards across two hops and `adv_013` across one. `synthesize()` still takes **one argument**.
+
+Three things worth not re-learning:
+
+- **The negation lock belongs on the prose, not the prompt.** The first version of that test scanned the
+  synthesis prompt for the dataset's `forbidden_negation` strings and failed — because the instruction
+  *quotes* `"did not influence"` in the sentence forbidding it. The DoD is about what the user reads, so
+  the check runs against generated prose at both inversion depths, driven from the frozen set.
+- **The local provider had to render the correction.** `v0.3.0-local` ships on it, so a fixture that
+  quietly dropped the framing would have made DoD #13 untestable in the only configuration anyone can
+  run today.
+
+  **It renders a correction; it does not detect one.** `LocalLLM._plan_turn` asserts no premise and was
+  deliberately not taught to, because reading a premise out of a question is a language task and that
+  fixture's own docstring says to delete it rather than extend it into one. The consequence is honest
+  and worth stating: **the live local-provider demo cannot exhibit DoD #13 end to end.** It is proven by
+  scripted runs and by prose generated through the local renderer, and it will first be visible in a
+  real answer when a real model plans the turn — a Bedrock-side observation, not a local one.
+- **`inverted_premise` is annotated `tuple[str, ...]`, not §4.3's `tuple[str, str]`** — the empty default
+  is a type error otherwise. The length is checked in `__post_init__`, where the admissibility rule
+  already lives.
+
+Two near-misses the tests caught rather than the reasoning: a scripted `trace_lineage` handed names where
+it needs ids (which failed loudly, as it should), and an ordering assertion by `str.index` that "blues"
+is a prefix of "blues rock" makes meaningless.
+
+### Next — step 4
+
+**DoD 1–9 and 13 are the `v0.3.0-local` gate; 13 is now green.** Steps 4–7 remain: §4.4 corroboration
+plus budgets and `MAX_TURNS` → 8, §4.5 untrusted text delimited, §4.6 the model-routing seam, §4.7 the
+scorers and slicing.
 
 **Still open before step 8, unchanged:** the full gold set (20–30) and the sealed held-out 10.

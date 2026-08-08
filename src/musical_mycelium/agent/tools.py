@@ -27,7 +27,7 @@ from musical_mycelium.graph.coverage import (
     PRECISION_YEAR,
     era_of,
 )
-from musical_mycelium.graph.memory import label_key
+from musical_mycelium.graph.memory import exact_matches
 from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY
 from musical_mycelium.graph.store import Direction, GraphStore
 
@@ -194,7 +194,9 @@ class ResolveNode:
         # Exactly one match resolves. Zero is a near miss and **two is ambiguity**, which is also a
         # refusal: "heavy metal" may skip Wikidata's trailing "music" (``label_key``), but if that fold
         # ever makes two nodes equally good the honest answer is to ask, not to take the first.
-        matches = [node for node in candidates if label_key(node.label) == label_key(name)]
+        # The rule itself lives in ``graph.memory`` because the loop resolves an asserted premise with
+        # it too; what stays here is the reporting, which is the part only a tool needs.
+        matches = exact_matches(candidates, name)
         if len(matches) != 1:
             return ToolResult(
                 content={

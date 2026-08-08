@@ -413,9 +413,16 @@ class LocalLLM:
         self.requests.append({"messages": messages, "system": system, "tool_config": None})
         prompt = _text_of(messages)
 
+        # The reversal framing, rendered rather than skipped: ``v0.3.0-local`` ships on this provider,
+        # so a fixture that quietly dropped the correction would make DoD #13 untestable in the one
+        # configuration anybody can actually run today. It states the documented orientation and says
+        # nothing at all about the direction the question assumed — see ``INVERTED_PREMISE_PROMPT``.
+        reversed_premise = json.loads(_after(prompt, "Asked as: ") or "[]")
+        preface = "In this graph the influence runs the other way: " if reversed_premise else ""
+
         chain = json.loads(_after(prompt, "Chain: ") or "[]")
         if chain:
-            yield f"{str(chain[0]).capitalize()} came out of {chain[1]}"
+            yield f"{preface}{_lead(str(chain[0]), preface)} came out of {chain[1]}"
             for ancestor in chain[2:]:
                 yield f", which came out of {ancestor}"
             yield ". Every link above traces to a cited source."
@@ -433,7 +440,7 @@ class LocalLLM:
             else (", ".join(influences[:-1]) + f" and {influences[-1]}")
         )
         # Yielded in pieces so a local run exercises the streaming path rather than sending one blob.
-        yield f"{genre.capitalize()} came out of {listed}. "
+        yield f"{preface}{_lead(genre, preface)} came out of {listed}. "
         yield "Every link above traces to a cited source."
 
 
@@ -537,6 +544,11 @@ def _first_user_text(messages: list[dict[str, Any]]) -> str:
                 if isinstance(block, dict)
             )
     return ""
+
+
+def _lead(label: str, preface: str) -> str:
+    """A label at the head of a sentence, or mid-sentence after a preface. Capitalisation only."""
+    return label if preface else label.capitalize()
 
 
 def _after(text: str, marker: str) -> str:

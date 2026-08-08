@@ -19,14 +19,14 @@ from __future__ import annotations
 
 import unicodedata
 from collections import defaultdict, deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from functools import cached_property, lru_cache
 from pathlib import Path
 
 from musical_mycelium.graph.coverage import Coverage
 from musical_mycelium.graph.coverage import analyse as analyse_coverage
 from musical_mycelium.graph.schema import Artifact, Edge, Manifest, Node, verify
-from musical_mycelium.graph.store import Direction
+from musical_mycelium.graph.store import Direction, GraphStore
 from musical_mycelium.graph.structure import GraphStructure, analyse
 
 #: The pinned version. A **constant in code**, never "latest" — that is what stops a corpus change from
@@ -85,6 +85,33 @@ def label_key(text: str) -> str:
         if folded.endswith(suffix) and folded != suffix.strip():
             return folded[: -len(suffix)]
     return folded
+
+
+def exact_matches(candidates: Iterable[Node], name: str) -> list[Node]:
+    """Those candidates whose label equals ``name`` under ``label_key``.
+
+    The whole of this project's resolution rule, in one place. Callers decide what to do with the
+    count, and the counts mean different things: **zero is a near miss, one resolves, and two is
+    ambiguity** — which is a refusal too, because if the "music" fold ever makes two nodes equally good
+    the honest answer is to ask rather than take the first.
+
+    Extracted from ``ResolveNode`` at phase 3 step 3b, when the loop needed the same rule to turn a
+    model-asserted premise into a gateable proposal. A second copy of it is how a tool and the loop
+    start disagreeing about what "the blues" means, and a premise resolved by a laxer rule than the one
+    the model was answered with would correct a question the user did not ask.
+    """
+    key = label_key(name)
+    return [node for node in candidates if label_key(node.label) == key]
+
+
+def resolve_exact(store: GraphStore, name: str) -> Node | None:
+    """The one node ``name`` resolves to, or ``None`` for both no match and an ambiguous one.
+
+    The ``did_you_mean`` reporting stays in ``ResolveNode``, because only a tool answering a model
+    needs it; a caller that just needs an id needs the id or nothing.
+    """
+    matches = exact_matches(store.search(name), name)
+    return matches[0] if len(matches) == 1 else None
 
 
 class InMemoryGraphStore:

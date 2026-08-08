@@ -12,10 +12,16 @@ prose in, so the refusal is a deterministic template. That makes refusal reliabl
 probabilistic, and it is free.
 
 **The plan is inspectable, and it is not an authority.** Phase 3 step 3 puts a planning turn ahead of the
-traversal, so a run opens by saying what it intends to do. Nothing in ``run()`` reads it back: execution
-is still the model driving the registry turn by turn. That split is the point — a plan that decided
-control flow would be a second, ungated way for the model to steer the answer, and it would make
-divergence unmeasurable by making it impossible.
+traversal, so a run opens by saying what it intends to do. Execution never consults it: the model drives
+the registry turn by turn exactly as before. That split is the point — a plan that decided control flow
+would be a second, ungated way for the model to steer the answer, and it would make divergence
+unmeasurable by making it impossible.
+
+Step 3b reads exactly one field of it back, ``asserted_premise``, and reads it into the **proposal list**
+rather than into a branch. What the question assumed is language, so the model is the right author; what
+the graph holds is data, so ``gate()`` is the right judge. The premise arrives with no privileges — same
+gate, same rejection reasons, same event — and the correction it can produce asserts nothing beyond the
+claims that gate already approved.
 
 **The loop is a generator of events, not a function returning an answer.** The API layer in step 7 maps
 these one-to-one onto SSE frames and owns no logic, which is what ``CLAUDE.md`` requires of ``api``. It
@@ -39,6 +45,8 @@ from musical_mycelium.agent.llm import (
 )
 from musical_mycelium.agent.plan import Plan, parse_plan, planning_prompt
 from musical_mycelium.agent.tools import ToolRegistry
+from musical_mycelium.graph.memory import resolve_exact
+from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY
 from musical_mycelium.graph.store import GraphStore
 
 #: Hard ceiling on model turns, **planning turn included**. It is a **cost control** as much as a safety
@@ -93,6 +101,28 @@ CHAIN_SYNTHESIS_PROMPT = """Write two or three sentences tracing the chain of in
 order given. Each genre listed came out of the one after it. Name every genre in the chain and keep them \
 in that order. Add nothing else: no dates, no places, no artists, no context that is not in the chain. \
 Do not hedge and do not editorialise."""
+
+#: The one addition to a synthesis prompt, appended when the question had it backwards. It reads as an
+#: exception to the "add nothing else" rule above and is worded to say so, since it *is* one.
+#:
+#: **The forbidden sentence is a negative claim, and this corpus cannot support one.** "Heavy metal did
+#: not influence the blues" sounds like the obvious answer and is unsupportable: **542 of the 973 nodes
+#: have no outgoing edges at all**, so a missing edge is overwhelmingly not evidence of a missing
+#: influence. That is CONCENTRATION IS NOT ABSENCE and "grounded means traceable, not correct" landing on
+#: one sentence, and shipping the confident "no" would put the exact slide this project exists to prevent
+#: into the user-facing copy.
+#:
+#: Note what the permitted framing costs: nothing. It selects an opening for a chain the gate already
+#: approved, and asserts nothing beyond it. That is why this field does not touch invariant 1.
+INVERTED_PREMISE_PROMPT = """The question asked whether the first name below came out of the second. \
+This graph documents the influence running the other way.
+
+Open by saying that — that in this graph the influence runs the other way — and then state what the \
+graph does document, as instructed above. That opening is the one addition permitted.
+
+State only the direction this graph documents. Do not repeat the question's direction as though it were \
+so, and do not deny it either: this graph records the influences it holds sources for and says nothing \
+whatever about the rest, so "did not influence" would claim far more than it can support."""
 
 
 # --- events ---------------------------------------------------------------------------------------
@@ -204,6 +234,15 @@ class ApprovedClaimSet:
     #: below, because a chain is an ordering assertion about music history and an unchecked one could
     #: state a descent the gate never approved.
     chain: tuple[str, ...] = ()
+    #: ``(subject, object)`` as the **question** put it, when the question had the direction backwards.
+    #: Empty otherwise, which is the overwhelming majority of runs. Annotated ``tuple[str, ...]`` rather
+    #: than the ``tuple[str, str]`` §4.3 wrote, so that the empty default is not a type error; the
+    #: length is checked below instead, where the admissibility rule already lives.
+    #:
+    #: It rides here rather than arriving as a second argument to ``synthesize`` for the same reason
+    #: ``chain`` does, and it is admissible under the same rule: **only when the approved claims
+    #: establish the reverse**. A correction the gate did not produce cannot be constructed.
+    inverted_premise: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         endpoints = {c.subject_id for c in self.claims} | {c.object_id for c in self.claims}
@@ -218,6 +257,17 @@ class ApprovedClaimSet:
                 f"chain {list(self.chain)} contains a hop no approved claim supports. "
                 f"Synthesis may only see the approved claim set."
             )
+        if self.inverted_premise and not self._premise_is_approved():
+            raise ValueError(
+                f"inverted premise {list(self.inverted_premise)} is not established in reverse by the "
+                f"approved claims. Synthesis may only see the approved claim set."
+            )
+
+    def _premise_is_approved(self) -> bool:
+        if len(self.inverted_premise) != 2:
+            return False
+        subject, obj = self.inverted_premise
+        return descent_is_approved(obj, subject, self.claims)
 
     @property
     def subject_id(self) -> str | None:
@@ -249,6 +299,38 @@ def chain_is_approved(chain: tuple[str, ...], claims: tuple[Claim, ...]) -> bool
     return all(pair in approved for pair in pairwise(chain))
 
 
+def descent_is_approved(descendant: str, ancestor: str, claims: tuple[Claim, ...]) -> bool:
+    """Do the approved claims establish that ``descendant`` came out of ``ancestor``, at any depth?
+
+    Reachability rather than adjacency, because a premise can be backwards across two hops
+    (``adv_012``: heavy metal, blues rock, blues) as readily as one (``adv_013``). Orientation follows
+    the same rule ``chain_is_approved`` obeys — a claim ``(s, o)`` means *s came out of o*, so the walk
+    steps subject to object and never the other way.
+
+    This is deliberately **not** ``chain``. A chain is one ordering a tool asserted and the gate then
+    confirmed; this asks a question of the approved set itself, so a reverse established by a fan-out of
+    claims that never formed a chain still counts. Nothing is narrated from it either way: it only
+    decides whether a framing is admissible.
+    """
+    if descendant == ancestor:
+        return False
+    ancestors_of: dict[str, list[str]] = {}
+    for claim in claims:
+        ancestors_of.setdefault(claim.subject_id, []).append(claim.object_id)
+
+    seen = {descendant}
+    frontier = [descendant]
+    while frontier:
+        node = frontier.pop()
+        for next_node in ancestors_of.get(node, ()):
+            if next_node == ancestor:
+                return True
+            if next_node not in seen:
+                seen.add(next_node)
+                frontier.append(next_node)
+    return False
+
+
 def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Iterator[str]:
     """Prose from approved claims, and nothing but approved claims.
 
@@ -264,15 +346,31 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Iterator[str]:
 
     if claim_set.chain:
         labelled = [claim_set.label_of(node_id) for node_id in claim_set.chain]
-        prompt = f"{CHAIN_SYNTHESIS_PROMPT}\n\nChain: {dumps(labelled)}"
+        prompt = f"{CHAIN_SYNTHESIS_PROMPT}{_reversal(claim_set)}\n\nChain: {dumps(labelled)}"
     else:
         subject = claim_set.label_of(claim_set.subject_id or "")
         influences = [claim_set.label_of(c.object_id) for c in claim_set.claims]
         prompt = (
-            f"{SYNTHESIS_PROMPT}\n\nGenre: {subject}\nDocumented influences: {dumps(influences)}"
+            f"{SYNTHESIS_PROMPT}{_reversal(claim_set)}"
+            f"\n\nGenre: {subject}\nDocumented influences: {dumps(influences)}"
         )
 
     yield from llm.stream([user_message(prompt)], max_tokens=200)
+
+
+def _reversal(claim_set: ApprovedClaimSet) -> str:
+    """The reversal block, or nothing at all. Appended to either synthesis prompt rather than forking a
+    third: the instruction is the same whether the answer is a chain or a fan-out, and the two prompts
+    already differ for a reason that has nothing to do with the premise.
+
+    ``Asked as`` carries labels, never ids — synthesis has never seen a node id and does not start now.
+    Both labels come off the approved claim set, where ``__post_init__`` already established that every
+    node named here is an endpoint of an approved claim.
+    """
+    if not claim_set.inverted_premise:
+        return ""
+    asked = [claim_set.label_of(node_id) for node_id in claim_set.inverted_premise]
+    return f"\n\n{INVERTED_PREMISE_PROMPT}\n\nAsked as: {dumps(asked)}"
 
 
 def refusal_text(query: str, reason: str) -> str:
@@ -300,10 +398,11 @@ def run(
     Order is deliberate: plan, then tools, then gating, then the path, then prose. Prose is generated
     **after** the gate has run and only from what survived it.
 
-    The plan turn is the one addition phase 3 step 3 makes here, and note what it is *not*: nothing below
-    reads ``plan``. Execution is unchanged — the model still drives the registry turn by turn — so the
-    plan is inspectable without becoming a control-flow mechanism. If a later change makes the loop
-    branch on ``plan.steps``, the plan has stopped being a proposal and that change is wrong.
+    The plan turn is the one addition phase 3 step 3 makes here, and note what it is *not*: no branch
+    below reads ``plan``. Execution is unchanged — the model still drives the registry turn by turn — so
+    the plan is inspectable without becoming a control-flow mechanism. Step 3b's ``asserted_premise`` is
+    read into the proposals and nowhere else. If a later change makes the loop branch on ``plan.steps``,
+    the plan has stopped being a proposal and that change is wrong.
     """
     messages: list[dict[str, object]] = [user_message(query)]
     tool_config = registry.tool_config()
@@ -321,6 +420,11 @@ def run(
     usage = usage + plan_response.usage
     plan = parse_plan(plan_response.text)
     yield Planned(plan=plan, unregistered=plan.unregistered(registry))
+
+    # The one thing below that reads the plan back, and note what it reads: not a step, not a tool, not
+    # an argument. Nothing here touches control flow — ``premise`` is a proposal that goes through the
+    # same gate as every proposal a tool made, with no special path and no privileged outcome.
+    premise = premise_proposal(plan, store)
 
     # ``max_turns`` counts the plan turn, so what is left is the execution budget. Spending it here
     # rather than adding a turn is what keeps the ceiling an honest statement of what a run can cost.
@@ -350,7 +454,10 @@ def run(
 
             messages.append(tool_result_message(use.id, result.content, is_error=result.is_error))
 
-    decision: GateResult = gate(proposals, store)
+    # The premise goes first so its verdict is the substantive one. Gated last, a premise a tool
+    # happened to propose too would come back DUPLICATE, and "already claimed" is not an answer to
+    # "is this what the question assumed".
+    decision: GateResult = gate([*([premise] if premise else []), *proposals], store)
     for claim in decision.approved:
         yield ClaimApproved(claim)
     for rejection in decision.rejected:
@@ -359,6 +466,7 @@ def run(
     # A hop the gate rejected breaks the chain, and a broken chain must not be told as one — the honest
     # fallback is the claims that did survive, listed rather than sequenced.
     approved_chain = chain if chain_is_approved(chain, decision.approved) else ()
+    inverted_premise = _inverted_premise(premise, decision)
 
     labels = {node_id: _label(store, node_id) for node_id in (*visited, *approved_chain)}
     yield PathWalked(
@@ -389,6 +497,7 @@ def run(
                 for node_id in (claim.subject_id, claim.object_id)
             },
             chain=approved_chain,
+            inverted_premise=inverted_premise,
         )
         for chunk in synthesize(claim_set, llm):
             yield Token(chunk)
@@ -401,6 +510,43 @@ def run(
         planned_steps=len(plan.steps),
         executed_steps=executed,
     )
+
+
+def premise_proposal(plan: Plan, store: GraphStore) -> ClaimProposal | None:
+    """The question's asserted premise as a gateable proposal, or ``None``.
+
+    Two names become two node ids through ``resolve_exact``, which is the same rule the resolving tool
+    answers the model with — so the premise resolves no more loosely than the traversal did, and the
+    loop borrows the rule from ``graph`` rather than learning which tool owns it. Either name failing
+    to resolve yields ``None``, and ``None`` means no premise, no rejection to notice, and no
+    correction. **The degraded outcome is saying nothing**, which is the right one: the cost of missing
+    a backwards question is a slightly worse answer, and the cost of inventing one is telling a user
+    they asked something they did not.
+    """
+    if plan.asserted_premise is None:
+        return None
+    subject = resolve_exact(store, plan.asserted_premise.subject)
+    obj = resolve_exact(store, plan.asserted_premise.object)
+    if subject is None or obj is None:
+        return None
+    return ClaimProposal(subject_id=subject.id, predicate=PREDICATE_INFLUENCED_BY, object_id=obj.id)
+
+
+def _inverted_premise(premise: ClaimProposal | None, decision: GateResult) -> tuple[str, ...]:
+    """``(subject, object)`` as asked, when the question was backwards. Empty otherwise.
+
+    **Both conditions, deliberately.** The gate must have *rejected* the premise, and the approved
+    claims must establish the *reverse*. A premise the gate approved needs no correction; a premise
+    rejected with no reverse available — "did polka influence hip-hop?" — is an ordinary refusal with
+    nothing to correct, and dressing it up as a reversal would assert a direction nobody sourced.
+    """
+    if premise is None:
+        return ()
+    if not any(rejection.proposal == premise for rejection in decision.rejected):
+        return ()
+    if not descent_is_approved(premise.object_id, premise.subject_id, decision.approved):
+        return ()
+    return (premise.subject_id, premise.object_id)
 
 
 def _label(store: GraphStore, node_id: str) -> str:

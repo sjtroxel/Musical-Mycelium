@@ -15,16 +15,20 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from itertools import pairwise
+from pathlib import Path
 from typing import Any
 
 import pytest
 
+import musical_mycelium
 from musical_mycelium.agent import loop as agent_loop
-from musical_mycelium.agent.claims import Claim, ClaimProposal, RejectionReason
+from musical_mycelium.agent.claims import Claim, ClaimProposal, RejectionReason, gate
 from musical_mycelium.agent.llm import (
     LLM,
     PLANNING_SENTINEL,
     LLMResponse,
+    LocalLLM,
     ScriptedLLM,
     ToolUse,
     Usage,
@@ -45,7 +49,12 @@ from musical_mycelium.agent.loop import (
     run,
     synthesize,
 )
-from musical_mycelium.agent.plan import PLANNING_PROMPT_TEMPLATE, UNKNOWN_QUERY_KIND, Plan
+from musical_mycelium.agent.plan import (
+    PLANNING_PROMPT_TEMPLATE,
+    UNKNOWN_QUERY_KIND,
+    Plan,
+    PremiseAssertion,
+)
 from musical_mycelium.agent.tools import (
     GetInfluences,
     ResolveNode,
@@ -63,6 +72,11 @@ ACID_JAZZ, JAZZ = "Q221772", "Q8341"
 HEAVY_METAL = "Q38848"
 INFLUENCED_BY = "influenced_by"
 
+#: The ``adv_013`` pair, read off the frozen adversarial set and confirmed against the artifact rather
+#: than recalled — see ``reference-never-recall-wikidata-qids``. Thrash metal came out of punk rock, and
+#: the reverse is not in the graph, which is what makes the pair a one-hop inversion fixture.
+PUNK_ROCK, THRASH_METAL = "Q3071", "Q483352"
+
 #: An artist in the v0.4.0 corpus, resolved from the artifact rather than recalled — see
 #: ``reference-never-recall-wikidata-qids``. U2 has six sourced influences and is a stable fixture.
 ARTIST, ARTIST_LABEL = "Q396", "U2"
@@ -78,7 +92,7 @@ def registry(store: InMemoryGraphStore) -> ToolRegistry:
     return default_registry(store)
 
 
-def plan_turn(query_kind: str, *tools: str) -> LLMResponse:
+def plan_turn(query_kind: str, *tools: str, premise: tuple[str, str] | None = None) -> LLMResponse:
     """The planning turn every run now opens with.
 
     **Prepended to every script rather than made skippable**, and that is not pedantry. A script without
@@ -86,10 +100,13 @@ def plan_turn(query_kind: str, *tools: str) -> LLMResponse:
     the test goes green having exercised the wrong sequence. Two tests were passing that way in the hour
     this helper was written.
     """
-    return LLMResponse(
-        text=json.dumps({"query_kind": query_kind, "steps": [{"tool": t} for t in tools]}),
-        usage=Usage(80, 15),
-    )
+    payload: dict[str, Any] = {
+        "query_kind": query_kind,
+        "steps": [{"tool": t} for t in tools],
+    }
+    if premise is not None:
+        payload["asserted_premise"] = {"subject": premise[0], "object": premise[1]}
+    return LLMResponse(text=json.dumps(payload), usage=Usage(80, 15))
 
 
 def resolve_then_influences(name: str, node_id: str) -> list[LLMResponse]:
@@ -965,3 +982,328 @@ def test_max_turns_default_is_small(store: InMemoryGraphStore) -> None:
     Step 4 takes it to 8 and pairs it with a token budget; until then the turn count is the only cost
     control here, so the ceiling stays where the work actually needs it."""
     assert agent_loop.MAX_TURNS <= 6, "an agentic loop's turn ceiling is a cost control"
+
+
+# --- DoD #13: a backwards premise ------------------------------------------------------------------
+#
+# The property under test is stated positively and so is the prose. "Heavy metal did not influence the
+# blues" is a NEGATIVE claim, and 542 of the corpus's 973 nodes have no outgoing edges at all, so a
+# missing edge is overwhelmingly not evidence of a missing influence. The correction may only select a
+# framing for a chain the gate already approved; it may never assert the direction the graph lacks.
+
+
+def premise_names(dataset_case: dict[str, Any]) -> tuple[str, str]:
+    """A case's asserted premise as the two labels the question used."""
+    subject_id, _, object_id = dataset_case["expected"]["premise_correction"]["asserted"]
+    return subject_id, object_id
+
+
+@pytest.fixture(scope="module")
+def inversion_cases() -> dict[str, dict[str, Any]]:
+    """``adv_012`` and ``adv_013``, read from the frozen set rather than restated here.
+
+    Restating the forbidden phrasings in this file would let the dataset and the check drift apart,
+    and the dataset is the artefact the eval suite scores against — so it is the one that governs.
+    """
+    path = Path(musical_mycelium.__file__).parent / "eval" / "datasets" / "adversarial_v1.json"
+    cases = json.loads(path.read_text(encoding="utf-8"))["cases"]
+    return {
+        case["case_id"]: case for case in cases if "premise_correction" in case.get("expected", {})
+    }
+
+
+def synthesis_prompt(llm: ScriptedLLM) -> str:
+    """The synthesis prompt as text. ``str(messages)`` is fine for a short substring and useless for a
+    multi-line constant, because the repr escapes the newlines."""
+    messages = llm.requests[-1]["messages"]
+    return str(messages[0]["content"][0]["text"])
+
+
+def test_descent_is_approved_follows_claim_orientation() -> None:
+    """One hop, two hops, and never backwards. A claim ``(s, o)`` means *s came out of o*."""
+    claims = (
+        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",)),
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",)),
+    )
+    assert agent_loop.descent_is_approved(HEAVY_METAL, BLUES_ROCK, claims), "one hop"
+    assert agent_loop.descent_is_approved(HEAVY_METAL, BLUES, claims), "two hops"
+    assert not agent_loop.descent_is_approved(BLUES, HEAVY_METAL, claims), "backwards"
+    assert not agent_loop.descent_is_approved(BLUES, BLUES, claims), (
+        "a node is not its own ancestor"
+    )
+    assert not agent_loop.descent_is_approved(HEAVY_METAL, ACID_JAZZ, claims), "unrelated"
+
+
+def test_descent_is_approved_terminates_on_a_cycle() -> None:
+    """Musical influence is not acyclic and the corpus does not promise it is. A pair of claims
+    pointing at each other must return an answer rather than walk forever."""
+    claims = (
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",)),
+        Claim(BLUES, INFLUENCED_BY, BLUES_ROCK, ("stmt/2",)),
+    )
+    assert agent_loop.descent_is_approved(BLUES_ROCK, BLUES, claims)
+    assert not agent_loop.descent_is_approved(BLUES_ROCK, HEAVY_METAL, claims)
+
+
+def test_claim_set_rejects_an_inverted_premise_the_claims_do_not_reverse() -> None:
+    """The same leak-proofing ``chain`` gets, for the same reason. A correction the gate did not
+    produce cannot be constructed, so the framing can never outrun the claim set."""
+    claims = (Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",)),)
+    with pytest.raises(ValueError, match="not established in reverse"):
+        ApprovedClaimSet(claims=claims, inverted_premise=(BLUES, HEAVY_METAL))
+
+
+def test_claim_set_rejects_an_inverted_premise_the_claims_state_forwards() -> None:
+    """The nastier direction error. If the approved claims say the question was RIGHT, framing the
+    answer as a reversal tells a user they had it backwards when they did not."""
+    claims = (Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",)),)
+    with pytest.raises(ValueError, match="not established in reverse"):
+        ApprovedClaimSet(claims=claims, inverted_premise=(BLUES_ROCK, BLUES))
+
+
+def test_claim_set_accepts_an_inverted_premise_the_claims_reverse() -> None:
+    claims = (
+        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",)),
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",)),
+    )
+    claim_set = ApprovedClaimSet(claims=claims, inverted_premise=(BLUES, HEAVY_METAL))
+    assert claim_set.inverted_premise == (BLUES, HEAVY_METAL)
+
+
+def test_claim_set_rejects_a_malformed_inverted_premise() -> None:
+    claims = (Claim(HEAVY_METAL, INFLUENCED_BY, BLUES, ("stmt/1",)),)
+    with pytest.raises(ValueError, match="not established in reverse"):
+        ApprovedClaimSet(claims=claims, inverted_premise=(BLUES,))
+
+
+def test_premise_proposal_resolves_the_names_the_question_used(
+    store: InMemoryGraphStore,
+) -> None:
+    """ "the blues" and "heavy metal" are not labels in this corpus — the labels are "blues" and "heavy
+    metal music". The premise resolves through the same rule the traversal did, or not at all."""
+    plan = Plan(asserted_premise=PremiseAssertion(subject="the blues", object="heavy metal"))
+    proposal = agent_loop.premise_proposal(plan, store)
+    assert proposal == ClaimProposal(BLUES, INFLUENCED_BY, HEAVY_METAL)
+
+
+@pytest.mark.parametrize(
+    "premise",
+    [
+        PremiseAssertion(subject="the blues", object="skiffle-adjacent nonsense"),
+        PremiseAssertion(subject="not a genre at all", object="heavy metal"),
+    ],
+)
+def test_an_unresolvable_premise_is_no_premise(
+    store: InMemoryGraphStore, premise: PremiseAssertion
+) -> None:
+    """The degraded outcome is silence. Missing a backwards question costs a slightly worse answer;
+    inventing one tells a user they asked something they did not."""
+    assert agent_loop.premise_proposal(Plan(asserted_premise=premise), store) is None
+
+
+def test_no_premise_asserted_means_no_proposal(store: InMemoryGraphStore) -> None:
+    assert agent_loop.premise_proposal(Plan(), store) is None
+
+
+def inversion_script(
+    names: tuple[str, str], ids: tuple[str, str], premise: tuple[str, str] | None
+) -> list[LLMResponse]:
+    """Resolve both names, trace between them, having asserted the question's premise in the plan.
+
+    ``trace_lineage`` is handed the two ids **in the order the question put them**, which is the
+    inverted order — and it self-corrects, returning the chain descendant-first regardless. That is
+    precisely why the premise cannot be inferred here and has to be asserted in the plan.
+    """
+    return [
+        plan_turn("lineage", "resolve_node", "resolve_node", "trace_lineage", premise=premise),
+        LLMResponse(
+            tool_uses=(ToolUse(id="r1", name="resolve_node", arguments={"name": names[0]}),),
+            stop_reason="tool_use",
+        ),
+        LLMResponse(
+            tool_uses=(ToolUse(id="r2", name="resolve_node", arguments={"name": names[1]}),),
+            stop_reason="tool_use",
+        ),
+        LLMResponse(
+            tool_uses=(
+                ToolUse(
+                    id="t1",
+                    name="trace_lineage",
+                    arguments={"from_id": ids[0], "to_id": ids[1]},
+                ),
+            ),
+            stop_reason="tool_use",
+        ),
+        LLMResponse(text="done"),
+        LLMResponse(text="prose"),
+    ]
+
+
+def test_a_backwards_premise_is_gated_like_any_other_proposal(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """No special path. The premise comes back as an ordinary ``ClaimRejected`` with an ordinary
+    reason, which is what makes it measurable next to every other rejection the gate reports."""
+    llm = ScriptedLLM(
+        inversion_script(
+            ("the blues", "heavy metal"), (BLUES, HEAVY_METAL), ("the blues", "heavy metal")
+        )
+    )
+    events = list(
+        run("Did heavy metal influence the blues?", store=store, llm=llm, registry=registry)
+    )
+
+    rejected = [e.rejection for e in events if isinstance(e, ClaimRejected)]
+    assert ClaimProposal(BLUES, INFLUENCED_BY, HEAVY_METAL) in [r.proposal for r in rejected]
+    assert RejectionReason.NOT_IN_GRAPH in [r.reason for r in rejected]
+
+
+def test_a_backwards_premise_is_answered_with_the_documented_orientation(
+    store: InMemoryGraphStore, registry: ToolRegistry, inversion_cases: dict[str, Any]
+) -> None:
+    """DoD #13 end to end, on ``adv_012``.
+
+    The answer must state the direction this graph documents and must not deny the one it lacks. The
+    forbidden phrasings come from the frozen set, so the dataset governs the check.
+    """
+    llm = ScriptedLLM(
+        inversion_script(
+            ("the blues", "heavy metal"), (BLUES, HEAVY_METAL), ("the blues", "heavy metal")
+        )
+    )
+    events = list(
+        run("Did heavy metal influence the blues?", store=store, llm=llm, registry=registry)
+    )
+
+    prompt = synthesis_prompt(llm)
+    assert agent_loop.INVERTED_PREMISE_PROMPT in prompt, "the reversal framing was not requested"
+    assert "Asked as: " in prompt
+    # The instruction quotes the forbidden phrasing in order to forbid it, so scanning the PROMPT for
+    # the dataset's ``forbidden_negation`` strings would fail on the sentence doing the forbidding.
+    # The property is about what the user reads, so it is asserted on the prose below instead.
+    assert '"did not influence"' in prompt, "the prompt must rule the negation out explicitly"
+
+    documented = inversion_cases["adv_012"]["expected"]["premise_correction"][
+        "documented_orientation"
+    ]
+    walked = next(e for e in events if isinstance(e, PathWalked))
+    assert walked.chain == tuple(documented), "the answer must trace the direction the graph holds"
+
+
+@pytest.mark.parametrize("case_id", ["adv_012", "adv_013"])
+def test_the_prose_states_the_orientation_and_denies_nothing(
+    store: InMemoryGraphStore, inversion_cases: dict[str, Any], case_id: str
+) -> None:
+    """DoD #13's actual promise, on the prose the user reads, at both inversion depths.
+
+    ``v0.3.0-local`` ships on the local provider, so this is the one configuration anybody can run
+    today and the framing has to survive it. The forbidden phrasings come from the frozen set: every
+    one of them is a NEGATIVE claim, and a corpus where 542 of 973 nodes have no outgoing edges cannot
+    support one. The answer may state the direction the graph documents and must say nothing at all
+    about the direction it lacks.
+    """
+    correction = inversion_cases[case_id]["expected"]["premise_correction"]
+    documented = correction["documented_orientation"]
+    subject_id, _, object_id = correction["asserted"]
+
+    claims = tuple(
+        Claim(descendant, INFLUENCED_BY, ancestor, (f"stmt/{i}",))
+        for i, (descendant, ancestor) in enumerate(pairwise(documented))
+    )
+    labels = {node_id: _label_of(store, node_id) for node_id in documented}
+    claim_set = ApprovedClaimSet(
+        claims=claims,
+        labels=labels,
+        chain=tuple(documented),
+        inverted_premise=(subject_id, object_id),
+    )
+    prose = "".join(synthesize(claim_set, LocalLLM()))
+
+    assert "the influence runs the other way" in prose.lower()
+    # Walked with a moving cursor rather than compared by ``index``: "blues" is a prefix of "blues
+    # rock", so a plain lookup finds the wrong occurrence and the check passes or fails by accident.
+    cursor = 0
+    for node_id in documented:
+        found = prose.find(labels[node_id], cursor)
+        assert found != -1, (
+            f"{labels[node_id]!r} is missing or out of order; "
+            f"the documented orientation must be stated descendant-first: {prose!r}"
+        )
+        cursor = found + len(labels[node_id])
+    for phrase in correction["forbidden_negation"]:
+        assert phrase.lower() not in prose.lower(), f"the prose denies: {phrase!r}"
+
+
+def _label_of(store: InMemoryGraphStore, node_id: str) -> str:
+    node = store.get_node(node_id)
+    assert node is not None, f"{node_id} is not in the pinned artifact"
+    return node.label
+
+
+def test_a_one_hop_inversion_corrects_the_same_way(
+    store: InMemoryGraphStore, registry: ToolRegistry, inversion_cases: dict[str, Any]
+) -> None:
+    """``adv_013``, paired with ``adv_012`` at a different depth on purpose: a one-hop and a two-hop
+    inversion fail differently if the bug is in the reachability walk."""
+    case = inversion_cases["adv_013"]
+    subject_id, _, object_id = case["expected"]["premise_correction"]["asserted"]
+    llm = ScriptedLLM(
+        inversion_script(
+            ("punk rock", "thrash metal"), (PUNK_ROCK, THRASH_METAL), ("punk rock", "thrash metal")
+        )
+    )
+    events = list(
+        run("Did punk rock come out of thrash metal?", store=store, llm=llm, registry=registry)
+    )
+
+    rejected = [e.rejection.proposal for e in events if isinstance(e, ClaimRejected)]
+    assert ClaimProposal(subject_id, INFLUENCED_BY, object_id) in rejected
+
+    assert agent_loop.INVERTED_PREMISE_PROMPT in synthesis_prompt(llm)
+    walked = next(e for e in events if isinstance(e, PathWalked))
+    assert walked.chain == tuple(case["expected"]["premise_correction"]["documented_orientation"])
+
+
+def test_a_neutral_question_gets_no_reversal_framing(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """The failure mode the model-asserted design exists to prevent.
+
+    "How is the blues connected to heavy metal?" asserts nothing, and ``trace_lineage`` self-corrects
+    inverted arguments — so a system that inferred the premise from argument order would tell this user
+    they had it backwards when they never put it any way at all.
+    """
+    llm = ScriptedLLM(inversion_script(("the blues", "heavy metal"), (BLUES, HEAVY_METAL), None))
+    list(run("How is the blues connected to heavy metal?", store=store, llm=llm, registry=registry))
+
+    prompt = synthesis_prompt(llm)
+    assert agent_loop.INVERTED_PREMISE_PROMPT not in prompt
+    assert "Asked as: " not in prompt
+
+
+def test_a_premise_the_gate_approves_gets_no_reversal_framing(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """A user who had it right is told they had it right, by not being told anything."""
+    llm = ScriptedLLM(
+        inversion_script(
+            ("thrash metal", "punk rock"), (THRASH_METAL, PUNK_ROCK), ("thrash metal", "punk rock")
+        )
+    )
+    events = list(
+        run("Did thrash metal come out of punk rock?", store=store, llm=llm, registry=registry)
+    )
+
+    approved = [e.claim.triple for e in events if isinstance(e, ClaimApproved)]
+    assert ("Q483352", INFLUENCED_BY, "Q3071") in approved, "the premise itself was approved"
+    assert agent_loop.INVERTED_PREMISE_PROMPT not in synthesis_prompt(llm)
+
+
+def test_a_rejected_premise_with_no_reverse_is_an_ordinary_refusal(
+    store: InMemoryGraphStore,
+) -> None:
+    """Both conditions, not one. "Did polka influence hip hop?" has nothing to correct, and dressing
+    the refusal up as a reversal would assert a direction nobody sourced."""
+    premise = ClaimProposal(BLUES, INFLUENCED_BY, HEAVY_METAL)
+    decision = gate([premise], store)
+    assert agent_loop._inverted_premise(premise, decision) == ()

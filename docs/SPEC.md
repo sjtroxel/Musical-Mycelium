@@ -282,6 +282,7 @@ displayed as a chain, and the surviving claims are listed instead.
 
 ```json
 { "plan": { "query_kind": "lineage",
+            "asserted_premise": { "subject": "the blues", "object": "heavy metal" },
             "steps": [ { "tool": "resolve_node", "reason": "resolve the first name",
                          "arguments": {} } ] },
   "unregistered": [] }
@@ -293,6 +294,21 @@ missing field, because a run without it cannot be sliced by query type. `reason`
 for a client to narrate and is never read for control flow. `unregistered` lists step names no tool
 answers to: the plan is a *proposal*, execution still runs through the registry turn by turn, so naming a
 tool that does not exist is reported here rather than failing the run.
+
+`asserted_premise` is **the influence the question claims, not one the agent found**, and it is absent
+from most plans because most questions assert nothing. It carries *names*, not node ids: the planning turn
+runs on the raw query before a single tool call, so the planner cannot know that the blues is `Q9759`. The
+loop resolves the two names with the same exact-match rule the resolver tool uses, and a name that does
+not resolve simply yields no premise. `subject` is the one the question says came out of `object`, which
+is claim orientation and not word order — "did heavy metal influence the blues" asserts *blues came out of
+heavy metal*.
+
+The premise is then gated **like any other proposal, with no special path**, so it appears in the ordinary
+`claim` or `rejection` frames. When the gate rejects it *and* the approved claims establish the reverse,
+the answer is framed as a reversal: it states the orientation the graph documents and asserts nothing
+about the direction the graph lacks. "Heavy metal did not influence the blues" is a negative claim and
+this corpus cannot support one — 542 of its 973 nodes have no outgoing edges, so a missing edge is
+overwhelmingly not evidence of a missing influence.
 
 The `done` frame carries `planned_steps` and `executed_steps` alongside the claim counts. **Divergence is
 data, not an error** — an agent that plans three steps and takes five has said something worth measuring,

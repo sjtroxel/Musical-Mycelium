@@ -47,6 +47,16 @@ PLANNING_PROMPT_TEMPLATE = f"""\
 Before answering, produce a {PLANNING_SENTINEL} over a graph of documented musical influences: classify \
 the question, then list the calls you expect to make, in order.
 
+Some questions assert an influence instead of asking an open one: "did X come out of Y", "did X \
+influence Y", "X grew out of Y, didn't it". When the question asserts one, report it as \
+asserted_premise, naming the two exactly as the question named them — subject is the one the question \
+says came out of the other, object is the other. Leave asserted_premise out entirely when the question \
+asserts nothing, as "what did X come out of" and "how are X and Y connected" do.
+
+Report what was asked, not what you believe to be true. Whether the assertion holds is checked against \
+the graph afterwards; getting it wrong here by second-guessing the question is worse than reporting a \
+premise that turns out to be false.
+
 query_kind is exactly one of:
 - origins      what something came out of
 - lineage      how two named things connect
@@ -60,11 +70,13 @@ The calls available to you:
 Reply with JSON and nothing else, in this shape:
 
 {{{{"query_kind": "origins",
+  "asserted_premise": {{{{"subject": "<said to have come out of the other>", "object": "<the other>"}}}},
   "steps": [{{{{"tool": "<a name from the list above>", "reason": "<one short line>", \
 "arguments": {{{{}}}}}}}}]}}}}
 
 Rules:
 - Plan only with the names listed above. Do not invent one.
+- Omit asserted_premise unless the question actually asserts an influence.
 - Leave out an argument you cannot know yet, such as an id you have not resolved.
 - This is a proposal. You carry it out yourself afterwards and may depart from it; nothing here binds \
 you, and none of it is shown to the user as an answer.
@@ -83,11 +95,37 @@ class PlanStep:
 
 
 @dataclass(frozen=True, slots=True)
+class PremiseAssertion:
+    """The influence the **question** asserts, in the names the question used.
+
+    ``subject`` is the one the question says came out of ``object``, which is claim orientation and not
+    the order the words appeared in: "did heavy metal influence the blues" asserts *blues came out of
+    heavy metal*, so subject is the blues.
+
+    **Names, not node ids, and that is forced.** §4.3 specified a ``ClaimProposal`` here; the planning
+    turn runs on the raw query before a single tool call, so the planner cannot know that the blues is
+    ``Q9759`` — the plan prompt tells it in as many words to leave out ids it has not resolved. The loop
+    resolves these two names through the same exact-match rule ``resolve_node`` uses, and a name that
+    does not resolve simply produces no premise. The failure mode is silence, never a wrong correction.
+
+    **Model-asserted, never inferred.** ``trace_lineage`` self-corrects inverted arguments, so a
+    successful reverse walk means only "the arguments were the other way round" — which cannot tell a
+    backwards question from a neutral one. Reading a premise out of a question is a language task, and
+    ruling on it is a data task for ``gate()``. That division is the whole design.
+    """
+
+    subject: str
+    object: str
+
+
+@dataclass(frozen=True, slots=True)
 class Plan:
     """The traversal the agent proposes. Defaults are the degraded plan, and they are legal."""
 
     query_kind: str = UNKNOWN_QUERY_KIND
     steps: tuple[PlanStep, ...] = ()
+    #: ``None`` for a question that asserts nothing, which is most of them.
+    asserted_premise: PremiseAssertion | None = None
 
     def unregistered(self, registry: ToolRegistry) -> tuple[str, ...]:
         """Names the plan uses that no tool answers to, deduplicated in first-seen order.
@@ -137,7 +175,27 @@ def parse_plan(text: str) -> Plan:
         for item in (raw_steps if isinstance(raw_steps, list) else [])
         if (step := _step(item)) is not None
     ]
-    return Plan(query_kind=query_kind, steps=tuple(steps))
+    return Plan(
+        query_kind=query_kind,
+        steps=tuple(steps),
+        asserted_premise=_premise(payload.get("asserted_premise")),
+    )
+
+
+def _premise(item: object) -> PremiseAssertion | None:
+    """The asserted premise, or ``None`` if there is not a usable one.
+
+    Both names or neither. A half-stated premise is not a weaker premise, it is an unusable one, and
+    guessing the missing half from the query would be exactly the inference this field exists to avoid.
+    """
+    if not isinstance(item, dict):
+        return None
+    subject, obj = item.get("subject"), item.get("object")
+    if not isinstance(subject, str) or not isinstance(obj, str):
+        return None
+    if not subject.strip() or not obj.strip():
+        return None
+    return PremiseAssertion(subject=subject.strip(), object=obj.strip())
 
 
 def _step(item: object) -> PlanStep | None:
