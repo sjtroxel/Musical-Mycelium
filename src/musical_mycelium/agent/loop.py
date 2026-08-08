@@ -59,13 +59,35 @@ from musical_mycelium.graph.store import GraphStore
 #:
 #: Raised from 5 to 6 at phase 3 step 3, which is the plan turn and nothing else: the ceiling counts
 #: total model turns, so adding planning without this would have silently spent the slack rather than
-#: added a turn. Step 4 takes it to 8 and pairs it with ``MAX_ACCUMULATED_TOKENS``, because a turn count
-#: is a poor proxy for spend once tool payloads get large.
-MAX_TURNS = 6
+#: added a turn.
+#:
+#: Raised from 6 to 8 at phase 3 step 4, sized against the shape a run now has: one plan turn, up to six
+#: tool turns, one text turn. Seven registered tools and a graph that reaches six hops mean a real
+#: question can legitimately need more than the three tool turns v0.1 was sized for.
+MAX_TURNS = 8
+
+#: The other half of the budget, and the half that actually bounds spend. **A turn count is a poor proxy
+#: for cost**: an agentic loop re-sends its whole accumulated context every turn, so eight turns carrying
+#: large tool payloads can cost many multiples of eight ordinary ones. One pathological query — a
+#: coverage dump followed by a wide fan-out — bills far more than the turn cap suggests it can.
+#:
+#: Checked against the running ``Usage`` after each turn, so it bounds what has *already* been spent
+#: rather than predicting what the next turn will cost. Exceeding it stops the loop cleanly and gates
+#: whatever was collected; a truncated run still answers from its approved claims rather than erroring.
+#:
+#: The number is a ceiling on the pathological case, not a target. A normal lineage run is well under it.
+MAX_ACCUMULATED_TOKENS = 60_000
 
 #: A plan is a small JSON object. Capping it separately keeps a model that decides to think out loud
 #: from billing a full answer's worth of output before the traversal has even started.
 PLAN_MAX_TOKENS = 400
+
+#: The model stopped asking for tools, which is the ordinary ending: **the stop condition is a judgment,
+#: not a step count**. The caps below are the failure endings, and they are named rather than inferred
+#: from a count so that "this answer may be incomplete" is a fact the run reports about itself.
+STOP_COMPLETE = "complete"
+STOP_MAX_TURNS = "max_turns"
+STOP_MAX_TOKENS = "max_tokens"
 
 #: Deliberately free of tool names. v0.1's prompt hard-coded the two-step procedure — "use resolve_node,
 #: then get_influences" — which meant a third tool needed a prompt edit inside the loop module to ever be
@@ -210,6 +232,11 @@ class Done:
     model_id: str
     planned_steps: int
     executed_steps: int
+    #: Why the traversal stopped. **A truncated answer must never be presented as a complete one** — a
+    #: run that hit a cap may have stopped one tool call short of the edge that mattered, and it will
+    #: read exactly like a confident short answer unless it says so. This is the field that lets a
+    #: client, and the eval harness, tell the two apart.
+    stop_reason: str = STOP_COMPLETE
 
 
 Event = Planned | ToolCalled | ClaimApproved | ClaimRejected | PathWalked | Token | Refused | Done
@@ -392,6 +419,7 @@ def run(
     llm: LLM,
     registry: ToolRegistry,
     max_turns: int = MAX_TURNS,
+    max_accumulated_tokens: int = MAX_ACCUMULATED_TOKENS,
 ) -> Iterator[Event]:
     """Answer one question, emitting events as it goes.
 
@@ -426,13 +454,21 @@ def run(
     # same gate as every proposal a tool made, with no special path and no privileged outcome.
     premise = premise_proposal(plan, store)
 
+    # Falling out of the loop without breaking means the turns ran out, so this is the pessimistic
+    # default and the ordinary ending has to be claimed explicitly. The other way round, a future edit
+    # that adds an exit path gets ``complete`` for free and reports a truncated run as a finished one.
+    stop_reason = STOP_MAX_TURNS
+
     # ``max_turns`` counts the plan turn, so what is left is the execution budget. Spending it here
     # rather than adding a turn is what keeps the ceiling an honest statement of what a run can cost.
     for _turn in range(max_turns - 1):
         response = llm.converse(messages, system=SYSTEM_PROMPT, tool_config=tool_config)
         usage = usage + response.usage
 
+        # **The stop condition is a judgment, not a step count.** The model deciding it has enough is
+        # the ordinary ending; the two caps below are the failure endings.
         if not response.wants_tools:
+            stop_reason = STOP_COMPLETE
             break
 
         messages.append(assistant_tool_use_message(response))
@@ -453,6 +489,14 @@ def run(
                     visited.append(node_id)
 
             messages.append(tool_result_message(use.id, result.content, is_error=result.is_error))
+
+        # Checked *after* the turn, against what has already been spent rather than a prediction of the
+        # next turn's cost. Stopping here is clean rather than exceptional: everything collected so far
+        # still goes through the gate below and still produces a grounded answer — the run just says on
+        # the way out that it stopped early, so the answer is not read as a complete one.
+        if usage.total_tokens >= max_accumulated_tokens:
+            stop_reason = STOP_MAX_TOKENS
+            break
 
     # The premise goes first so its verdict is the substantive one. Gated last, a premise a tool
     # happened to propose too would come back DUPLICATE, and "already claimed" is not an answer to
@@ -509,6 +553,7 @@ def run(
         model_id=llm.model_id,
         planned_steps=len(plan.steps),
         executed_steps=executed,
+        stop_reason=stop_reason,
     )
 
 

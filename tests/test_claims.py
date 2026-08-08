@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import pytest
 
+from musical_mycelium.agent import claims as claims_module
 from musical_mycelium.agent.claims import (
     ALLOWED_PREDICATES,
+    UNREACHABLE,
     Claim,
     ClaimProposal,
     GateResult,
@@ -23,16 +25,22 @@ from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
+    VERIFICATION_HAND,
+    VERIFICATION_LEVELS,
     VERIFICATION_PROSE_AUTO,
     Artifact,
     Edge,
     Node,
 )
+from musical_mycelium.graph.store import Direction
 
 BLUES_ROCK, BLUES = "Q193355", "Q9759"
 ACID_JAZZ, JAZZ = "Q221772", "Q8341"
 HEAVY_METAL = "Q38848"
 INFLUENCED_BY = "influenced_by"
+
+#: Test claims state a verification level explicitly, the same rule every construction site obeys.
+HAND = VERIFICATION_HAND
 
 
 @pytest.fixture(scope="module")
@@ -57,12 +65,18 @@ def test_a_proposal_cannot_carry_sources() -> None:
 
 def test_an_uncited_claim_cannot_be_constructed() -> None:
     with pytest.raises(ValueError, match="no sources"):
-        Claim(subject_id=BLUES_ROCK, predicate=INFLUENCED_BY, object_id=BLUES, source_ids=())
+        Claim(
+            subject_id=BLUES_ROCK,
+            predicate=INFLUENCED_BY,
+            object_id=BLUES,
+            source_ids=(),
+            verification=HAND,
+        )
 
 
 def test_a_claim_has_no_span_until_synthesis_attaches_one() -> None:
     """Claims first, prose second. At gate time there is no prose, so there is nothing to point at."""
-    claim = Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",))
+    claim = Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND)
     assert claim.span is None
     anchored = claim.with_span(0, 12)
     assert anchored.span == Span(0, 12)
@@ -305,3 +319,99 @@ def test_a_mixed_batch_keeps_both_halves(store: InMemoryGraphStore) -> None:
     assert len(result.approved) == 2
     assert len(result.rejected) == 1
     assert not result.refused_everything
+
+
+# --- step 4: verification, copied not supplied ------------------------------------------------------
+
+
+def test_the_gate_copies_verification_off_the_edge(store: InMemoryGraphStore) -> None:
+    """The same rule ``source_ids`` obeys, and for the same reason: the model may not supply it, so the
+    model cannot inflate it. A claim's verification is whatever the artifact edge says and nothing else.
+    """
+    proposal = ClaimProposal(BLUES_ROCK, INFLUENCED_BY, BLUES)
+    approved = gate([proposal], store).approved
+    assert len(approved) == 1
+
+    edge = next(
+        e
+        for e in store.neighbors(BLUES_ROCK, Direction.INFLUENCED_BY)
+        if e.object_id == BLUES and e.predicate == INFLUENCED_BY
+    )
+    assert approved[0].verification == edge.verification
+
+
+def test_a_proposal_cannot_carry_verification() -> None:
+    """The structural half. If ``ClaimProposal`` ever grows this field, a model can assert that its own
+    claim was hand-verified, and "grounded" quietly becomes whatever the model says it is."""
+    assert not hasattr(ClaimProposal(BLUES_ROCK, INFLUENCED_BY, BLUES), "verification")
+
+
+def test_a_claim_cannot_invent_a_verification_level() -> None:
+    with pytest.raises(ValueError, match="expected one of"):
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), "TRIPLE_CHECKED")
+
+
+def test_every_approved_claim_carries_a_real_level(store: InMemoryGraphStore) -> None:
+    """Across a whole fan-out, not one claim. The level must always be one the schema defines, because
+    a client rendering an unknown string has no way to tell strong evidence from a typo."""
+    proposals = [
+        ClaimProposal(BLUES_ROCK, INFLUENCED_BY, edge.object_id)
+        for edge in store.neighbors(BLUES_ROCK, Direction.INFLUENCED_BY)
+    ]
+    approved = gate(proposals, store).approved
+    assert approved
+    assert all(claim.verification in VERIFICATION_LEVELS for claim in approved)
+
+
+# --- step 4: the states this corpus cannot express --------------------------------------------------
+
+
+def test_the_unreachable_states_are_declared_with_their_preconditions() -> None:
+    """Declared rather than silently absent. Someone reading ``contested`` in the rules doc and grepping
+    for it must find this, not nothing — and must find *why* it is not built."""
+    assert set(UNREACHABLE) == {"contested", "checks_disagree"}
+    for state, precondition in UNREACHABLE.items():
+        assert precondition.strip(), (
+            f"{state} is declared with no precondition, which explains nothing"
+        )
+
+
+def test_no_artifact_edge_can_produce_an_unreachable_state() -> None:
+    """**This test is the lock**, and without it the declaration above rots.
+
+    ``contested`` needs two sources to disagree; every edge here has exactly one. ``checks_disagree``
+    needs an edge whose checks conflict; ``select_edges()`` keeps those out by policy. Both are checked
+    against the artifact rather than asserted, so a future corpus that *could* express one of them fails
+    here — which is the notification, rather than the state quietly becoming reachable in silence.
+    """
+    # Loaded straight from the pinned directory rather than walked through the store: the claim is
+    # about **every edge in the corpus**, and a walk only ever reaches the edges it happens to visit.
+    artifact = Artifact.load(artifact_directory())
+    assert artifact.edges
+
+    for edge in artifact.edges:
+        assert len(resolve_sources(edge)) <= 1, (
+            f"{edge.subject_id} -> {edge.object_id} resolves to more than one source. "
+            f"'contested' may now be reachable: {UNREACHABLE['contested']}"
+        )
+        assert edge.verification in VERIFICATION_LEVELS, (
+            f"{edge.subject_id} -> {edge.object_id} carries {edge.verification!r}, which is not a "
+            f"declared level. 'checks_disagree' may now be reachable: {UNREACHABLE['checks_disagree']}"
+        )
+
+
+def test_verification_is_not_documented_as_agreement() -> None:
+    """The docstring obligation, as an assertion rather than a convention.
+
+    These tiers record **how strongly one source was checked** — not how many sources agree, and not
+    whether anything is disputed. That sentence is what stops the slide from *traceable* to *correct*,
+    and a docstring is the only place a reader meets the field, so it is where the sentence has to be.
+    """
+    doc = Claim.__doc__ or ""
+    field_doc = claims_module.__doc__ or ""
+    combined = f"{doc}\n{field_doc}".lower()
+    assert "one source" in combined or "single source" in combined
+    for overclaim in ("sources agree", "corroborat", "cross-check"):
+        assert overclaim not in doc.lower(), (
+            f"Claim's docstring implies {overclaim!r}; verification is not corroboration"
+        )

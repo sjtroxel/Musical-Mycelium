@@ -71,6 +71,7 @@ def claim(subject: str, obj: str, source: str | None = None) -> Claim:
         predicate=INFLUENCED_BY,
         object_id=obj,
         source_ids=(source or STATEMENTS.get((subject, obj), "http://example.invalid/made-up"),),
+        verification=VERIFICATION_PROSE_AUTO,
     )
 
 

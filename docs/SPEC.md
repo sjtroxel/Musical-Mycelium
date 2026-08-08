@@ -314,8 +314,34 @@ The `done` frame carries `planned_steps` and `executed_steps` alongside the clai
 data, not an error** — an agent that plans three steps and takes five has said something worth measuring,
 so both numbers ship and neither is corrected against the other.
 
+**Added 2026-08-08 (phase 3 step 4).** `done` also carries `stop_reason`: `complete` when the model
+stopped asking for tools, `max_turns` or `max_tokens` when a budget bound first. **A truncated answer must
+never be presented as a complete one** — a run that stopped one call short of the edge that mattered reads
+exactly like a confident short answer unless it says otherwise. A budget stop is clean rather than
+exceptional: whatever was gathered still goes through the gate and still produces a grounded answer.
+
 ## 7. Claim contract — OPEN in detail, fixed in shape
 
-`Claim(subject_id, predicate, object_id, source_ids, span)`. The pipeline is claims first, prose second:
-the agent emits claims, a deterministic gate approves them, and prose is generated from the approved set
-only. Prose generation cannot see anything else. See `.claude/rules/grounding-and-claims.md`.
+`Claim(subject_id, predicate, object_id, source_ids, verification, span)`. The pipeline is claims first,
+prose second: the agent emits claims, a deterministic gate approves them, and prose is generated from the
+approved set only. Prose generation cannot see anything else. See
+`.claude/rules/grounding-and-claims.md`.
+
+**`verification` added 2026-08-08 (phase 3 step 4).** One of `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`,
+`EXPOSURE_AUTO`, copied off the artifact edge by the gate exactly as `source_ids` is — the model may not
+supply it, so the model cannot inflate it. It says **how strongly this claim's one source was checked. It
+is not a count of agreeing sources and not a disputed flag.** Every edge in this corpus has exactly one
+source, always Wikidata, so there is nothing here that could corroborate anything; reading these tiers as
+agreement is reading the opposite of the truth.
+
+What it buys: a user reading a five-claim answer can see that four rest on an automated assertion filter
+and one rests on documented exposure at 20% recall. That is a **per-claim** honesty guarantee, where
+before the output published verification only in aggregate under `corpus.verification`.
+
+**Two evidential states are declared and unreachable**, in `agent/claims.py:UNREACHABLE`, with a test
+asserting no artifact edge can produce either. `contested` needs a second source to disagree with the
+first, and every edge has one. `checks_disagree` needs an edge whose checks conflict, and `select_edges()`
+excludes those by policy. They are named rather than silently absent so nobody reads them in a design doc
+and assumes they are populated — and so a future corpus that *could* express one fails the test rather
+than making it reachable in silence. `contested` is genuinely owed; phase 6's second source is what would
+change the answer.

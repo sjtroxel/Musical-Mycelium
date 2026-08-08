@@ -17,9 +17,15 @@ below is a dictionary lookup or a string comparison, so it is free, reproducible
 which is also what makes the Tier 1 eval metrics possible at all.
 
 Not here, and deliberately: **contested** claims. ``.claude/rules/grounding-and-claims.md`` makes
-contested a first-class state rather than an error, and it will need a third outcome alongside approved
-and rejected. Nothing in the v0.1 corpus can mark an edge as disputed, so adding a state nothing can
-produce would be speculative structure. It arrives with the data that justifies it, in phase 2 or 6.
+contested a first-class state rather than an error, and it is genuinely owed. It is also not buildable
+on this corpus, and the reason is arithmetic rather than effort: **disagreement needs two sources and
+every edge has exactly one, always Wikidata.** Shipping the state anyway would mean a `contested` field
+that is structurally always false — worse than absent, because it would read as a check that passed.
+
+So it is declared rather than implemented, in ``UNREACHABLE`` below, with the precondition that would
+make it real and a test asserting no artifact edge can produce it. What ships in its place is
+``Claim.verification``: **how strongly the one source was checked**, which is a different and weaker
+guarantee and is labelled as one. Phase 6's second source is what would change the answer.
 """
 
 from __future__ import annotations
@@ -27,13 +33,39 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from enum import StrEnum
 
-from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY, SOURCE_WIKIDATA, Edge
+from musical_mycelium.graph.schema import (
+    PREDICATE_INFLUENCED_BY,
+    SOURCE_WIKIDATA,
+    VERIFICATION_LEVELS,
+    Edge,
+)
 from musical_mycelium.graph.store import Direction, GraphStore
 
 #: Predicates a claim is allowed to assert at v0.1. P279 is absent from the artifact entirely, so this is
 #: a second lock on the same door: even a corpus that later carries ``subclass_of`` cannot have it
 #: narrated as derivation without someone editing this line on purpose.
 ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY})
+
+#: Evidential states this corpus **cannot express**, kept visible with their preconditions so nobody
+#: re-derives them by accident — and so nobody reads the names in a design doc and assumes they are
+#: populated. A test asserts no artifact edge can produce either; that test is the lock. Without it a
+#: future corpus change makes one reachable and nothing notices.
+#:
+#: ``contested`` is the one that matters, because ``.claude/rules/grounding-and-claims.md`` makes it a
+#: first-class state and it is genuinely owed. It is not buildable here and the reason is arithmetic
+#: rather than effort: **disagreement needs two sources and every v0.5.0 edge has exactly one.** What
+#: replaced it is ``Claim.verification`` — how strongly the one source was checked — which is a
+#: different and weaker guarantee, stated as such rather than dressed up as corroboration.
+UNREACHABLE: dict[str, str] = {
+    "contested": (
+        "needs a SECOND SOURCE to disagree with the first; every v0.5.0 edge has exactly one, "
+        "always Wikidata"
+    ),
+    "checks_disagree": (
+        "needs an edge whose checks conflict; select_edges() excludes hand-rejected edges by "
+        "policy, so no edge in any corpus carries a disagreement to report"
+    ),
+}
 
 _WIKIDATA_STATEMENT_PREFIX = "http://www.wikidata.org/entity/statement/"
 
@@ -75,15 +107,27 @@ class ClaimProposal:
 class Claim:
     """An approved claim. ``SPEC.md`` 7 fixes this shape.
 
-    ``source_ids`` are copied off the artifact edge by the gate, never accepted from a caller that got
-    them from a model. ``span`` is empty until synthesis attaches it, because at gate time there is no
-    prose yet — that ordering *is* the claims-first rule.
+    ``source_ids`` and ``verification`` are both copied off the artifact edge by the gate, never
+    accepted from a caller that got them from a model. ``span`` is empty until synthesis attaches it,
+    because at gate time there is no prose yet — that ordering *is* the claims-first rule.
     """
 
     subject_id: str
     predicate: str
     object_id: str
     source_ids: tuple[str, ...]
+    #: **How strongly this claim's ONE source was checked. Not how many sources agree, and not whether
+    #: anything is disputed.** That sentence is the whole point of the field and it is not decoration:
+    #: every edge in this corpus has exactly one source, always Wikidata, so there is nothing here that
+    #: could corroborate anything. ``HAND`` means a person read the subject's article; ``PROSE_AUTO``
+    #: means only that an automated check found the object named in body prose, and it over-accepts at
+    #: roughly one in five. A reader who takes these as agreement between sources has been told the
+    #: opposite of the truth, which is the "grounded slides into correct" failure ``CLAUDE.md`` forbids.
+    #:
+    #: **Required with no default**, on the ``Node.kind`` and ``Edge.verification`` precedent: any
+    #: default would be wrong for one half of the corpus, and mislabelling verification strength is the
+    #: exact error the field exists to prevent.
+    verification: str
     span: Span | None = None
 
     def __post_init__(self) -> None:
@@ -91,6 +135,11 @@ class Claim:
             raise ValueError(
                 f"claim {self.subject_id} -{self.predicate}-> {self.object_id} has no sources; "
                 f"an uncited claim is a refusal, not a claim"
+            )
+        if self.verification not in VERIFICATION_LEVELS:
+            raise ValueError(
+                f"claim {self.subject_id} -{self.predicate}-> {self.object_id} has verification "
+                f"{self.verification!r}, expected one of {sorted(VERIFICATION_LEVELS)}"
             )
 
     def with_span(self, start: int, end: int) -> Claim:
@@ -233,6 +282,10 @@ def gate(proposals: list[ClaimProposal], store: GraphStore) -> GateResult:
                 predicate=proposal.predicate,
                 object_id=proposal.object_id,
                 source_ids=sources,
+                # Copied off the edge, exactly as ``source_ids`` is, and for exactly the same reason:
+                # the model may not supply it, so the model cannot inflate it. No computation and no
+                # derived state — ``graph/schema.py`` already owns the vocabulary.
+                verification=edge.verification,
             )
         )
 

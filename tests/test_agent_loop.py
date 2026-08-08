@@ -65,12 +65,19 @@ from musical_mycelium.agent.tools import (
     default_registry,
 )
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import NODE_KIND_ARTIST, NODE_KIND_GENRE
+from musical_mycelium.graph.schema import (
+    NODE_KIND_ARTIST,
+    NODE_KIND_GENRE,
+    VERIFICATION_HAND,
+)
 
 BLUES_ROCK, BLUES = "Q193355", "Q9759"
 ACID_JAZZ, JAZZ = "Q221772", "Q8341"
 HEAVY_METAL = "Q38848"
 INFLUENCED_BY = "influenced_by"
+
+#: Test claims state a verification level explicitly, the same rule every construction site obeys.
+HAND = VERIFICATION_HAND
 
 #: The ``adv_013`` pair, read off the frozen adversarial set and confirmed against the artifact rather
 #: than recalled — see ``reference-never-recall-wikidata-qids``. Thrash metal came out of punk rock, and
@@ -481,7 +488,7 @@ def test_usage_accumulates() -> None:
 def test_claim_set_rejects_a_label_no_claim_mentions() -> None:
     """The structural half of the leak-proofing. A caller cannot smuggle extra context into synthesis
     by attaching it to the labels map."""
-    claim = Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",))
+    claim = Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND)
     with pytest.raises(ValueError, match="no approved claim mentions"):
         ApprovedClaimSet(
             claims=(claim,), labels={BLUES_ROCK: "blues rock", HEAVY_METAL: "heavy metal"}
@@ -496,7 +503,7 @@ def test_synthesize_refuses_to_run_on_an_empty_claim_set() -> None:
 def test_claim_set_rejects_a_chain_hop_no_claim_supports() -> None:
     """The ordering half of the same leak-proofing. A chain is an assertion about descent, so a hop the
     gate never approved cannot ride into synthesis just because it was listed between two that were."""
-    claims = (Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",)),)
+    claims = (Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),)
     with pytest.raises(ValueError, match="no approved claim supports"):
         ApprovedClaimSet(claims=claims, chain=(HEAVY_METAL, BLUES_ROCK, BLUES))
 
@@ -506,8 +513,8 @@ def test_claim_set_rejects_a_chain_running_the_wrong_way() -> None:
     blues as coming out of heavy metal, which is false and is exactly the confident wrong answer this
     project exists not to produce."""
     claims = (
-        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",)),
-        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",)),
+        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
     )
     ApprovedClaimSet(
         claims=claims, chain=(HEAVY_METAL, BLUES_ROCK, BLUES)
@@ -519,8 +526,8 @@ def test_claim_set_rejects_a_chain_running_the_wrong_way() -> None:
 def test_the_chain_prompt_keeps_the_chain_in_order() -> None:
     """A reordered chain is a different history. The prompt states the order and the labels carry it."""
     claims = (
-        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",)),
-        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",)),
+        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
     )
     claim_set = ApprovedClaimSet(
         claims=claims,
@@ -977,11 +984,18 @@ def test_the_plan_turn_is_billed(store: InMemoryGraphStore) -> None:
     assert done.usage.output_tokens >= 15 + 20 + 25 + 30
 
 
-def test_max_turns_default_is_small(store: InMemoryGraphStore) -> None:
-    """Raised 5 -> 6 at phase 3 step 3 for the plan turn, so the execution budget is unchanged at 5.
-    Step 4 takes it to 8 and pairs it with a token budget; until then the turn count is the only cost
-    control here, so the ceiling stays where the work actually needs it."""
-    assert agent_loop.MAX_TURNS <= 6, "an agentic loop's turn ceiling is a cost control"
+def test_the_budgets_stay_bounded(store: InMemoryGraphStore) -> None:
+    """Both caps, because at step 4 the turn count stopped being the binding one.
+
+    5 -> 6 at step 3 bought the plan turn; 6 -> 8 at step 4 buys the tool turns seven tools and a
+    six-hop graph actually need. **A turn count is a poor proxy for spend** — an agentic loop re-sends
+    its accumulated context every turn, so the token ceiling is what genuinely bounds the bill and the
+    turn ceiling is now the coarse backstop.
+    """
+    assert agent_loop.MAX_TURNS <= 8, "an agentic loop's turn ceiling is a cost control"
+    assert agent_loop.MAX_ACCUMULATED_TOKENS <= 100_000, (
+        "so is the token ceiling, and it binds first"
+    )
 
 
 # --- DoD #13: a backwards premise ------------------------------------------------------------------
@@ -1022,8 +1036,8 @@ def synthesis_prompt(llm: ScriptedLLM) -> str:
 def test_descent_is_approved_follows_claim_orientation() -> None:
     """One hop, two hops, and never backwards. A claim ``(s, o)`` means *s came out of o*."""
     claims = (
-        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",)),
-        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",)),
+        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
     )
     assert agent_loop.descent_is_approved(HEAVY_METAL, BLUES_ROCK, claims), "one hop"
     assert agent_loop.descent_is_approved(HEAVY_METAL, BLUES, claims), "two hops"
@@ -1038,8 +1052,8 @@ def test_descent_is_approved_terminates_on_a_cycle() -> None:
     """Musical influence is not acyclic and the corpus does not promise it is. A pair of claims
     pointing at each other must return an answer rather than walk forever."""
     claims = (
-        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",)),
-        Claim(BLUES, INFLUENCED_BY, BLUES_ROCK, ("stmt/2",)),
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),
+        Claim(BLUES, INFLUENCED_BY, BLUES_ROCK, ("stmt/2",), HAND),
     )
     assert agent_loop.descent_is_approved(BLUES_ROCK, BLUES, claims)
     assert not agent_loop.descent_is_approved(BLUES_ROCK, HEAVY_METAL, claims)
@@ -1048,7 +1062,7 @@ def test_descent_is_approved_terminates_on_a_cycle() -> None:
 def test_claim_set_rejects_an_inverted_premise_the_claims_do_not_reverse() -> None:
     """The same leak-proofing ``chain`` gets, for the same reason. A correction the gate did not
     produce cannot be constructed, so the framing can never outrun the claim set."""
-    claims = (Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",)),)
+    claims = (Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),)
     with pytest.raises(ValueError, match="not established in reverse"):
         ApprovedClaimSet(claims=claims, inverted_premise=(BLUES, HEAVY_METAL))
 
@@ -1056,22 +1070,22 @@ def test_claim_set_rejects_an_inverted_premise_the_claims_do_not_reverse() -> No
 def test_claim_set_rejects_an_inverted_premise_the_claims_state_forwards() -> None:
     """The nastier direction error. If the approved claims say the question was RIGHT, framing the
     answer as a reversal tells a user they had it backwards when they did not."""
-    claims = (Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",)),)
+    claims = (Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),)
     with pytest.raises(ValueError, match="not established in reverse"):
         ApprovedClaimSet(claims=claims, inverted_premise=(BLUES_ROCK, BLUES))
 
 
 def test_claim_set_accepts_an_inverted_premise_the_claims_reverse() -> None:
     claims = (
-        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",)),
-        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",)),
+        Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
+        Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
     )
     claim_set = ApprovedClaimSet(claims=claims, inverted_premise=(BLUES, HEAVY_METAL))
     assert claim_set.inverted_premise == (BLUES, HEAVY_METAL)
 
 
 def test_claim_set_rejects_a_malformed_inverted_premise() -> None:
-    claims = (Claim(HEAVY_METAL, INFLUENCED_BY, BLUES, ("stmt/1",)),)
+    claims = (Claim(HEAVY_METAL, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),)
     with pytest.raises(ValueError, match="not established in reverse"):
         ApprovedClaimSet(claims=claims, inverted_premise=(BLUES,))
 
@@ -1207,7 +1221,7 @@ def test_the_prose_states_the_orientation_and_denies_nothing(
     subject_id, _, object_id = correction["asserted"]
 
     claims = tuple(
-        Claim(descendant, INFLUENCED_BY, ancestor, (f"stmt/{i}",))
+        Claim(descendant, INFLUENCED_BY, ancestor, (f"stmt/{i}",), HAND)
         for i, (descendant, ancestor) in enumerate(pairwise(documented))
     )
     labels = {node_id: _label_of(store, node_id) for node_id in documented}
@@ -1307,3 +1321,123 @@ def test_a_rejected_premise_with_no_reverse_is_an_ordinary_refusal(
     premise = ClaimProposal(BLUES, INFLUENCED_BY, HEAVY_METAL)
     decision = gate([premise], store)
     assert agent_loop._inverted_premise(premise, decision) == ()
+
+
+# --- step 4: the budget, and saying so when it binds ------------------------------------------------
+
+
+def endless_tool_script(turns: int, *, tokens_per_turn: int = 0) -> list[LLMResponse]:
+    """A model that never stops asking for tools. The plan turn, then ``turns`` identical tool turns."""
+    return [
+        plan_turn("origins", "resolve_node"),
+        *(
+            LLMResponse(
+                tool_uses=(ToolUse(id=f"t{i}", name="resolve_node", arguments={"name": "blues"}),),
+                stop_reason="tool_use",
+                usage=Usage(tokens_per_turn, 0),
+            )
+            for i in range(turns)
+        ),
+        LLMResponse(text="prose"),
+    ]
+
+
+def test_an_ordinary_run_reports_that_it_finished(store: InMemoryGraphStore) -> None:
+    llm = ScriptedLLM(resolve_then_influences("acid jazz", ACID_JAZZ))
+    events = list(
+        run(
+            "Where did acid jazz come from?", store=store, llm=llm, registry=default_registry(store)
+        )
+    )
+    assert next(e for e in events if isinstance(e, Done)).stop_reason == agent_loop.STOP_COMPLETE
+
+
+def test_running_out_of_turns_is_reported_not_hidden(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """**A truncated answer must never read as a complete one.** A run that stopped one tool call short
+    of the edge that mattered looks exactly like a confident short answer unless it says otherwise."""
+    llm = ScriptedLLM(endless_tool_script(turns=10))
+    events = list(
+        run("Where did blues come from?", store=store, llm=llm, registry=registry, max_turns=4)
+    )
+
+    done = next(e for e in events if isinstance(e, Done))
+    assert done.stop_reason == agent_loop.STOP_MAX_TURNS
+    assert done.executed_steps == 3, (
+        "the plan turn is inside the ceiling, so three tool turns remain"
+    )
+
+
+def test_the_token_budget_stops_the_loop_and_says_so(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """The cap that actually binds. A turn count is a poor proxy for spend, because every turn re-sends
+    the whole accumulated context — so a few turns with large payloads outcost many small ones."""
+    llm = ScriptedLLM(endless_tool_script(turns=10, tokens_per_turn=5_000))
+    events = list(
+        run(
+            "Where did blues come from?",
+            store=store,
+            llm=llm,
+            registry=registry,
+            max_turns=9,
+            max_accumulated_tokens=8_000,
+        )
+    )
+
+    done = next(e for e in events if isinstance(e, Done))
+    assert done.stop_reason == agent_loop.STOP_MAX_TOKENS
+    assert done.executed_steps < 8, "it stopped on tokens, well before the turn ceiling"
+    assert done.usage.total_tokens >= 8_000
+
+
+def test_a_budget_stop_still_answers_from_what_it_gathered(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """Stopping is clean, not exceptional. Everything collected still goes through the gate, so a
+    truncated run answers from its approved claims rather than erroring or refusing outright."""
+    llm = ScriptedLLM(
+        [
+            plan_turn("origins", "resolve_node", "get_influences"),
+            LLMResponse(
+                tool_uses=(
+                    ToolUse(id="t1", name="get_influences", arguments={"node_id": BLUES_ROCK}),
+                ),
+                stop_reason="tool_use",
+                usage=Usage(9_000, 0),
+            ),
+            LLMResponse(text="prose"),
+        ]
+    )
+    events = list(
+        run(
+            "Where did blues rock come from?",
+            store=store,
+            llm=llm,
+            registry=registry,
+            max_accumulated_tokens=5_000,
+        )
+    )
+
+    done = next(e for e in events if isinstance(e, Done))
+    assert done.stop_reason == agent_loop.STOP_MAX_TOKENS
+    assert done.claim_count > 0, "the claims it did gather must still be gated and answered"
+    assert not any(isinstance(e, Refused) for e in events)
+
+
+def test_the_token_budget_counts_the_plan_turn(store: InMemoryGraphStore) -> None:
+    """The plan turn is billed, so it is inside the budget as well as inside the turn ceiling. A cost
+    control that excluded the one turn every single run makes would be understating the bill."""
+    llm = ScriptedLLM(resolve_then_influences("acid jazz", ACID_JAZZ))
+    events = list(
+        run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=llm,
+            registry=default_registry(store),
+            max_accumulated_tokens=100,
+        )
+    )
+    done = next(e for e in events if isinstance(e, Done))
+    assert done.stop_reason == agent_loop.STOP_MAX_TOKENS

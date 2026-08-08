@@ -193,7 +193,7 @@ Each item is tagged with what it needs. **LOCAL** items need no AWS at all and a
 |---|---|---|---|
 | 1 | A query produces an inspectable plan, then a traversal that follows it | LOCAL | — |
 | 2 | Seven tools registered and callable; the last one added required no loop edit | LOCAL | tool list revised (§1.4, §1.5) |
-| 3 | **Every approved claim carries its own `verification` tier in the output**, so `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO` and `EXPOSURE_AUTO` are distinguishable per claim rather than only in aggregate; `contested` and `checks_disagree` are both defined, documented and **test-locked as unreachable** | LOCAL | **recalibrated per §1.3 A1** |
+| 3 | **Every approved claim carries its own `verification` tier in the output**, so `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO` and `EXPOSURE_AUTO` are distinguishable per claim rather than only in aggregate; `contested` and `checks_disagree` are both defined, documented and **test-locked as unreachable** | LOCAL | **GREEN — step 4, 2026-08-08** |
 | 4 | A false-premise query is refused and reported as a refusal | LOCAL | **already met** — re-scoped to a regression test |
 | 5 | A planted injection in a fixture is ignored, and a test fails if that stops being true | LOCAL | deterministic half only; behavioural half → #10 |
 | 6 | Refusal accuracy reported as a pair, over the adversarial set, against scripted traces | LOCAL | scorer + gold traces; live numbers → #11 |
@@ -492,6 +492,8 @@ honesty guarantee the product does not currently make**, and it is the thing DoD
 
 **Budgets.** `MAX_TURNS` is 5 — sized at phase 2 step 5 for resolve/resolve/trace plus a text turn. A
 planning turn plus seven tools needs more, and an unbounded loop is a cost bug before it is a latency bug.
+*(As built: it was 6 by the time step 4 started — step 3a raised it for the plan turn. The target of 8 and
+the arithmetic below are unaffected.)*
 
 - `MAX_TURNS` → **8**. One plan turn, up to six tool turns, one text turn.
 - **A token budget alongside it**, `MAX_ACCUMULATED_TOKENS`, checked after each turn against the running
@@ -886,10 +888,48 @@ Two near-misses the tests caught rather than the reasoning: a scripted `trace_li
 it needs ids (which failed loudly, as it should), and an ordering assertion by `str.index` that "blues"
 is a prefix of "blues rock" makes meaningless.
 
-### Next — step 4
+### Step 4 — DONE, 2026-08-08 — per-claim verification, and the budget (DoD #3)
 
-**DoD 1–9 and 13 are the `v0.3.0-local` gate; 13 is now green.** Steps 4–7 remain: §4.4 corroboration
-plus budgets and `MAX_TURNS` → 8, §4.5 untrusted text delimited, §4.6 the model-routing seam, §4.7 the
-scorers and slicing.
+`make check` green at **536 tests**, root 15/18, terraform valid. Touched `agent/claims.py`,
+`agent/loop.py`, `docs/SPEC.md` §6 and §7, and 22 `Claim` construction sites.
+
+**§4.4 went in as written. No amendment was owed** — unlike §4.3, the timing worked out: `gate()` already
+holds the `Edge` when it builds the `Claim`, so `verification` is a genuine one-line copy off the artifact
+and `graph/schema.py` already owned the vocabulary.
+
+**The required-field cascade was the bulk of the diff and that is the design working.** `verification` has
+no default, on the `Node.kind` and `Edge.verification` precedent, so all 22 construction sites had to
+state a level — 20 in tests, one in `gate()`, one in a docstring. A default would have to be wrong for one
+half of the corpus, and silently mislabelling verification strength is the exact "grounded slides into
+correct" failure the field exists to prevent.
+
+**`UNREACHABLE` is declared, and the test is the lock.** `contested` and `checks_disagree` ship as names
+with their preconditions attached. The lock loads the artifact **directly from the pinned directory**
+rather than walking it through the store, because the claim is about every edge in the corpus and a walk
+only reaches the edges it happens to visit. A future corpus that could express either state fails there —
+which is the notification, rather than the state quietly becoming reachable in silence.
+
+**Budgets: two caps, and the turn count is now the coarse one.** `MAX_TURNS` 6 → 8 (one plan turn, up to
+six tool turns, one text turn) and `MAX_ACCUMULATED_TOKENS` alongside it, checked after each turn against
+the running `Usage`. The token cap is what genuinely bounds spend, because a loop re-sends its whole
+accumulated context every turn — a few turns with large payloads outcost many small ones, so a turn
+ceiling alone lets one pathological query cost far more than it appears to permit.
+
+`Done.stop_reason` records which ending happened. Two details worth keeping:
+
+- **The pessimistic value is the default.** `stop_reason` starts at `max_turns` and `complete` has to be
+  claimed explicitly by the model declining tools. The other way round, any future edit that adds an exit
+  path gets `complete` for free and reports a truncated run as a finished one.
+- **A budget stop still answers.** Everything gathered goes through the gate and produces prose from the
+  approved claims; it does not error and does not refuse. The run simply says on the way out that it
+  stopped early, so a truncated answer is never read as a complete one.
+
+The API cost nothing again: `render` is generic over `asdict`, so both `verification` on the `claim` frame
+and `stop_reason` on `done` appear with no edit to `api/app.py`. Verified by rendering them, not assumed.
+
+### Next — step 5
+
+**DoD 1–9 and 13 are the `v0.3.0-local` gate; 3 and 13 are green.** Steps 5–7 remain: §4.5 untrusted text
+delimited, §4.6 the model-routing seam, §4.7 the scorers and slicing.
 
 **Still open before step 8, unchanged:** the full gold set (20–30) and the sealed held-out 10.
