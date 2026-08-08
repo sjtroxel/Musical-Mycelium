@@ -23,6 +23,11 @@ gate, built **before** the loop on purpose so the gate is not shaped to fit it. 
 contract and the two v0.1 tools. ``llm.py`` is the provider seam. ``loop.py`` is the loop itself, as a
 generator of events.
 
+``plan.py`` arrived at phase 3 step 3: an explicit traversal plan the agent emits before it walks. Note
+what it is not — nothing in ``loop.py`` reads the plan back. Execution is still the model driving the
+registry turn by turn, and the plan is inspectable without being an authority. A plan that decided
+control flow would be a second, ungated way for the model to steer the answer.
+
 Note the two claim types. ``ClaimProposal`` is what the model may emit and it carries **no sources**;
 ``Claim`` carries ``source_ids`` and can only be produced by ``gate()``, which reads them off the artifact
 edge. A model that cannot name a citation cannot fabricate one, and that is enforced by the types rather

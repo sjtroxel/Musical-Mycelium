@@ -278,6 +278,26 @@ metal* while the descent runs the other way. `chain` is empty for an origins que
 influences is a set, not a sequence) and empty when the gate rejected any hop — a broken chain is never
 displayed as a chain, and the surviving claims are listed instead.
 
+**Added 2026-08-08 (phase 3 step 3).** Every run opens with a `plan` frame, before any tool has run:
+
+```json
+{ "plan": { "query_kind": "lineage",
+            "steps": [ { "tool": "resolve_node", "reason": "resolve the first name",
+                         "arguments": {} } ] },
+  "unregistered": [] }
+```
+
+`query_kind` is one of `origins`, `lineage`, `descendants`, `coverage`, `unknown`, and it is **never
+absent** — a model turn that cannot be parsed as a plan yields `unknown` with no steps rather than a
+missing field, because a run without it cannot be sliced by query type. `reason` is model-authored prose
+for a client to narrate and is never read for control flow. `unregistered` lists step names no tool
+answers to: the plan is a *proposal*, execution still runs through the registry turn by turn, so naming a
+tool that does not exist is reported here rather than failing the run.
+
+The `done` frame carries `planned_steps` and `executed_steps` alongside the claim counts. **Divergence is
+data, not an error** — an agent that plans three steps and takes five has said something worth measuring,
+so both numbers ship and neither is corrected against the other.
+
 ## 7. Claim contract — OPEN in detail, fixed in shape
 
 `Claim(subject_id, predicate, object_id, source_ids, span)`. The pipeline is claims first, prose second:

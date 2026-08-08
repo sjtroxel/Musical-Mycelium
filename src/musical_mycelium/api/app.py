@@ -34,6 +34,7 @@ from musical_mycelium.agent.loop import (
     Done,
     Event,
     PathWalked,
+    Planned,
     Refused,
     Token,
     ToolCalled,
@@ -53,7 +54,12 @@ app = FastAPI(
 #: ``SPEC.md`` 5.3 fixes ``claim``, ``token``, ``path`` and ``done``. The rest are additive and exist
 #: because the demo is watching the machinery work — a visitor seeing ``tool`` and ``rejected`` frames
 #: is seeing the grounding actually happen rather than being told about it afterwards.
+#:
+#: ``plan`` joined at phase 3 step 3 and cost exactly this line: ``render`` is generic over
+#: ``EVENT_NAMES`` and ``asdict``, and ``asdict`` walks the nested ``Plan`` and ``PlanStep`` without
+#: help. A frame type that needed a handler here would mean ``api`` had grown logic.
 EVENT_NAMES: dict[type, str] = {
+    Planned: "plan",
     ToolCalled: "tool",
     ClaimApproved: "claim",
     ClaimRejected: "rejected",

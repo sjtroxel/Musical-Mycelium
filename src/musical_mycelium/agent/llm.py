@@ -42,6 +42,15 @@ SYNTHESIS_MODEL_ENV = "MYCELIUM_SYNTHESIS_MODEL_ID"
 DEFAULT_REGION = "us-east-1"
 DEFAULT_MAX_TOKENS = 1024
 
+#: A marker the planning system prompt embeds so ``LocalLLM`` can tell a planning turn from a tool turn.
+#:
+#: It lives here, in the seam, rather than in ``agent/plan.py`` where the prompt is written, for one
+#: reason: this module deliberately imports nothing from the rest of the project. That isolation is what
+#: makes the provider swappable, and spending it on a string constant would be a poor trade. ``plan.py``
+#: imports it from here and builds the prompt around it, so rewording the prompt cannot silently break
+#: the fixture's detection.
+PLANNING_SENTINEL = "TRAVERSAL PLAN"
+
 
 @dataclass(frozen=True, slots=True)
 class Usage:
@@ -301,6 +310,9 @@ class LocalLLM:
         self.requests.append({"messages": messages, "system": system, "tool_config": tool_config})
         usage = Usage(input_tokens=_rough_tokens(messages), output_tokens=24)
 
+        if system is not None and PLANNING_SENTINEL in system:
+            return self._plan_turn(messages, usage)
+
         pair = _genre_pair(messages)
         if pair is not None:
             return self._lineage_turn(messages, pair, usage)
@@ -325,6 +337,32 @@ class LocalLLM:
                 usage=usage,
             )
         return LLMResponse(text="Done.", stop_reason="end_turn", usage=usage)
+
+    def _plan_turn(self, messages: list[dict[str, Any]], usage: Usage) -> LLMResponse:
+        """The plan for the one path this fixture can walk, as JSON on a text turn.
+
+        It states the sequence it is *about* to hard-code below, which is the honest thing for a fixture
+        to do and is also why local runs give a plan-adherence of exactly 1.0 — a number that means
+        nothing until a real model produces it, and is labelled as a fixture value wherever it appears.
+        """
+        if _genre_pair(messages) is not None:
+            plan = {
+                "query_kind": "lineage",
+                "steps": [
+                    {"tool": "resolve_node", "reason": "resolve the first name"},
+                    {"tool": "resolve_node", "reason": "resolve the second name"},
+                    {"tool": "trace_lineage", "reason": "walk between the two ids"},
+                ],
+            }
+        else:
+            plan = {
+                "query_kind": "origins",
+                "steps": [
+                    {"tool": "resolve_node", "reason": "resolve the name asked about"},
+                    {"tool": "get_influences", "reason": "list what it came out of"},
+                ],
+            }
+        return LLMResponse(text=json.dumps(plan), stop_reason="end_turn", usage=usage)
 
     def _lineage_turn(
         self, messages: list[dict[str, Any]], pair: tuple[str, str], usage: Usage

@@ -356,6 +356,34 @@ Three properties that matter:
 **Divergence is data, not an error.** The loop records planned-vs-executed and `Done` carries the count.
 An agent that plans three steps and takes five has told us something worth measuring.
 
+#### As built, 2026-08-08 — the plan object only; DoD #13 is not in this commit
+
+Step 3 was split. The plan object shipped; **the asserted premise and the inverted-premise correction
+below did not**, and DoD #13 is still open. The split cost nothing: the delta is additive — a field on
+`Plan`, a paragraph in the prompt, a field on `ApprovedClaimSet` — and `parse_plan` ignores unknown JSON
+keys from the first commit precisely so adding one is not a breaking change to every scripted plan.
+
+Four things §4.3 left open, decided while building:
+
+- **Transport: JSON on a text turn**, not a forced `submit_plan` tool call. Chosen by sjtroxel. The
+  planning turn gets its own system prompt and **no tool config** — handing a planner the toolbox invites
+  it to start walking mid-plan. Parsing slices from the first `{` to the last `}`, which absorbs markdown
+  fences, a preamble and a sign-off in one rule; anything unusable degrades to `Plan()`.
+- **The plan prompt is rendered from the registry**, in `planning_prompt(registry)`. Hard-coding the tool
+  list would be invariant 4 leaking through the prose door — the exact failure v0.1's `SYSTEM_PROMPT`
+  had. `PLANNING_PROMPT_TEMPLATE` is held to `test_no_prompt_names_a_tool` alongside the other three.
+- **`MAX_TURNS` 5 → 6, and the ceiling counts the plan turn.** Taking the planning turn *outside* the
+  budget would have loosened a documented cost control while looking like it left it alone. Step 4 still
+  takes it to 8 with `MAX_ACCUMULATED_TOKENS`.
+- **The prompt and the parser are locked together by a test** that feeds the rendered prompt to
+  `parse_plan` and asserts the example reads back as a valid plan. Without it, the JSON example can drift
+  to a `query_kind` the validator rejects and every real model then copies a shape that silently degrades.
+
+One test-design finding worth keeping: prepending the plan turn to the scripted responses is **not
+optional**. A script missing it does not fail — its first tool turn is silently consumed by the planner
+and the test goes green having exercised the wrong sequence. Two tests were passing that way before the
+`plan_turn()` helper was added. 496 tests green, `make check` clean.
+
 #### The asserted premise, and correcting a backwards one
 
 *(Added 2026-08-07, decided by sjtroxel after step 1 surfaced that the system could not tell a user their

@@ -13,6 +13,7 @@ assume it — a rejected edge appearing in that prompt is the leak the 7/27 revi
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from typing import Any
 
@@ -22,6 +23,7 @@ from musical_mycelium.agent import loop as agent_loop
 from musical_mycelium.agent.claims import Claim, ClaimProposal, RejectionReason
 from musical_mycelium.agent.llm import (
     LLM,
+    PLANNING_SENTINEL,
     LLMResponse,
     ScriptedLLM,
     ToolUse,
@@ -35,6 +37,7 @@ from musical_mycelium.agent.loop import (
     ClaimRejected,
     Done,
     PathWalked,
+    Planned,
     Refused,
     Token,
     ToolCalled,
@@ -42,6 +45,7 @@ from musical_mycelium.agent.loop import (
     run,
     synthesize,
 )
+from musical_mycelium.agent.plan import PLANNING_PROMPT_TEMPLATE, UNKNOWN_QUERY_KIND, Plan
 from musical_mycelium.agent.tools import (
     GetInfluences,
     ResolveNode,
@@ -74,9 +78,24 @@ def registry(store: InMemoryGraphStore) -> ToolRegistry:
     return default_registry(store)
 
 
+def plan_turn(query_kind: str, *tools: str) -> LLMResponse:
+    """The planning turn every run now opens with.
+
+    **Prepended to every script rather than made skippable**, and that is not pedantry. A script without
+    it does not fail: its first tool turn is silently consumed by the planner, the run shifts by one, and
+    the test goes green having exercised the wrong sequence. Two tests were passing that way in the hour
+    this helper was written.
+    """
+    return LLMResponse(
+        text=json.dumps({"query_kind": query_kind, "steps": [{"tool": t} for t in tools]}),
+        usage=Usage(80, 15),
+    )
+
+
 def resolve_then_influences(name: str, node_id: str) -> list[LLMResponse]:
-    """The two tool turns v0.1 expects, then a final text turn."""
+    """The plan turn, the two tool turns v0.1 expects, then a final text turn."""
     return [
+        plan_turn("origins", "resolve_node", "get_influences"),
         LLMResponse(
             tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": name}),),
             stop_reason="tool_use",
@@ -128,11 +147,16 @@ def test_no_prompt_names_a_tool(store: InMemoryGraphStore) -> None:
     this test the day it is registered. Widened 2026-08-07 from the system prompt alone to **all three
     prompts**: the synthesis prompts must not name tools either, and going from three tools to seven is
     exactly when that property is most likely to be quietly broken.
+
+    Widened again 2026-08-08 to the planning **template**. The planning prompt is the one place a tool
+    name legitimately appears, and it gets there by being rendered from the registry — so the template
+    is held to the same rule and ``test_plan.py`` asserts the rendered result names them all.
     """
     prompts = {
         "SYSTEM_PROMPT": agent_loop.SYSTEM_PROMPT,
         "SYNTHESIS_PROMPT": agent_loop.SYNTHESIS_PROMPT,
         "CHAIN_SYNTHESIS_PROMPT": agent_loop.CHAIN_SYNTHESIS_PROMPT,
+        "PLANNING_PROMPT_TEMPLATE": PLANNING_PROMPT_TEMPLATE,
     }
     for name in default_registry(store).names:
         for prompt_name, prompt in prompts.items():
@@ -170,6 +194,7 @@ def test_a_new_tool_does_not_touch_the_loop(store: InMemoryGraphStore) -> None:
 
     llm = ScriptedLLM(
         [
+            plan_turn("unknown", "count_genres"),
             LLMResponse(
                 tool_uses=(ToolUse(id="t1", name="count_genres", arguments={}),),
                 stop_reason="tool_use",
@@ -522,6 +547,7 @@ def test_synthesis_prompt_contains_only_approved_claims(store: InMemoryGraphStor
     registry = ToolRegistry([Fabricating()])
     llm = ScriptedLLM(
         [
+            plan_turn("origins", "fabricate"),
             LLMResponse(
                 tool_uses=(ToolUse(id="t1", name="fabricate", arguments={}),),
                 stop_reason="tool_use",
@@ -685,6 +711,7 @@ def test_a_rejected_hop_drops_the_chain_rather_than_narrating_it(
 
     llm = ScriptedLLM(
         [
+            plan_turn("lineage", "broken_chain"),
             LLMResponse(
                 tool_uses=(ToolUse(id="t1", name="broken_chain", arguments={}),),
                 stop_reason="tool_use",
@@ -722,6 +749,7 @@ def test_a_refusal_run_never_calls_the_model_for_prose(store: InMemoryGraphStore
     nothing and the refusal is a template — reliable rather than probabilistic, and free."""
     llm = ScriptedLLM(
         [
+            plan_turn("origins", "resolve_node", "get_influences"),
             LLMResponse(
                 tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": "the blues"}),),
                 stop_reason="tool_use",
@@ -749,6 +777,7 @@ def test_a_refusal_run_never_calls_the_model_for_prose(store: InMemoryGraphStore
 def test_an_unresolvable_genre_refuses_with_a_different_reason(store: InMemoryGraphStore) -> None:
     llm = ScriptedLLM(
         [
+            plan_turn("origins", "resolve_node", "get_influences"),
             LLMResponse(
                 tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": "bebop"}),),
                 stop_reason="tool_use",
@@ -783,7 +812,7 @@ def test_the_loop_is_bounded(store: InMemoryGraphStore) -> None:
             )
 
     generator = endless()
-    llm = ScriptedLLM([next(generator) for _ in range(20)])
+    llm = ScriptedLLM([plan_turn("unknown"), *(next(generator) for _ in range(20))])
     events = list(
         run(
             "loop forever",
@@ -793,9 +822,146 @@ def test_the_loop_is_bounded(store: InMemoryGraphStore) -> None:
             max_turns=3,
         )
     )
-    assert len([e for e in events if isinstance(e, ToolCalled)]) == 3
+    # Two, not three: ``max_turns`` counts **total model turns** and the plan turn is one of them. That
+    # is the property under test as much as the ceiling itself — a plan turn taken outside the budget
+    # would loosen a cost control while looking like it had left it alone.
+    assert len([e for e in events if isinstance(e, ToolCalled)]) == 2
     assert any(isinstance(e, Done) for e in events)
 
 
+def test_every_run_opens_with_a_plan(store: InMemoryGraphStore) -> None:
+    """First event, always. A client rendering the traversal needs it before anything is walked, and
+    DoD #7's query-type slice reads ``query_kind`` off it."""
+    llm = ScriptedLLM(resolve_then_influences("acid jazz", ACID_JAZZ))
+    events = list(
+        run(
+            "Where did acid jazz come from?", store=store, llm=llm, registry=default_registry(store)
+        )
+    )
+
+    assert isinstance(events[0], Planned)
+    assert events[0].plan.query_kind == "origins"
+    assert [step.tool for step in events[0].plan.steps] == ["resolve_node", "get_influences"]
+
+
+def test_a_plan_that_will_not_parse_still_produces_an_answer(store: InMemoryGraphStore) -> None:
+    """The plan is a proposal, so losing it costs the run its plan and nothing else. A model that
+    answers the planning turn with prose must not take the answer down with it."""
+    script = resolve_then_influences("acid jazz", ACID_JAZZ)
+    script[0] = LLMResponse(text="I would rather just answer the question.", usage=Usage(80, 15))
+    events = list(
+        run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=ScriptedLLM(script),
+            registry=default_registry(store),
+        )
+    )
+
+    planned = next(e for e in events if isinstance(e, Planned))
+    assert planned.plan == Plan(), "an unparseable plan must degrade, not raise"
+    assert planned.plan.query_kind == UNKNOWN_QUERY_KIND
+    assert [e.claim for e in events if isinstance(e, ClaimApproved)], "the run lost its answer too"
+    assert not [e for e in events if isinstance(e, Refused)]
+
+
+def test_a_plan_naming_an_unregistered_tool_is_reported_and_the_run_continues(
+    store: InMemoryGraphStore,
+) -> None:
+    """Reported, not crashed on — the same posture ``ToolRegistry.invoke`` takes for a tool the model
+    actually calls. Here it never calls it; it only said it would."""
+    script = resolve_then_influences("acid jazz", ACID_JAZZ)
+    script[0] = plan_turn("origins", "resolve_node", "consult_the_oracle")
+    events = list(
+        run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=ScriptedLLM(script),
+            registry=default_registry(store),
+        )
+    )
+
+    assert next(e for e in events if isinstance(e, Planned)).unregistered == ("consult_the_oracle",)
+    assert [e.claim for e in events if isinstance(e, ClaimApproved)]
+
+
+def test_the_loop_executes_what_the_model_calls_not_what_the_plan_said(
+    store: InMemoryGraphStore,
+) -> None:
+    """**The plan is not a control-flow mechanism**, and this is that claim as an assertion.
+
+    The plan names one tool; the model then calls two entirely different ones. The loop follows the
+    model. If a later change makes execution follow the plan instead, the plan has become a second
+    ungated way for the model to steer the answer and this test is what catches it.
+    """
+    script = resolve_then_influences("acid jazz", ACID_JAZZ)
+    script[0] = plan_turn("coverage", "corpus_coverage")
+    events = list(
+        run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=ScriptedLLM(script),
+            registry=default_registry(store),
+        )
+    )
+
+    called = [e.name for e in events if isinstance(e, ToolCalled)]
+    assert called == ["resolve_node", "get_influences"]
+    assert "corpus_coverage" not in called
+
+
+def test_done_carries_planned_and_executed_counts(store: InMemoryGraphStore) -> None:
+    """**Divergence is data, not an error.** The plan says one step; the model takes two; the run
+    reports both rather than the loop deciding one of them is wrong. Phase 4 computes plan adherence
+    from exactly this pair."""
+    script = resolve_then_influences("acid jazz", ACID_JAZZ)
+    script[0] = plan_turn("origins", "resolve_node")
+    events = list(
+        run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=ScriptedLLM(script),
+            registry=default_registry(store),
+        )
+    )
+
+    done = next(e for e in events if isinstance(e, Done))
+    assert done.planned_steps == 1
+    assert done.executed_steps == 2
+
+
+def test_the_planning_turn_is_not_shown_the_toolbox(store: InMemoryGraphStore) -> None:
+    """It is asked for JSON, not for tool use. Handing it the tool config invites a model to start
+    walking mid-plan, which spends a turn and produces a tool call nothing has planned for."""
+    llm = ScriptedLLM(resolve_then_influences("acid jazz", ACID_JAZZ))
+    list(
+        run(
+            "Where did acid jazz come from?", store=store, llm=llm, registry=default_registry(store)
+        )
+    )
+
+    planning_request = llm.requests[0]
+    assert planning_request["tool_config"] is None
+    assert PLANNING_SENTINEL in planning_request["system"]
+
+
+def test_the_plan_turn_is_billed(store: InMemoryGraphStore) -> None:
+    """An extra model turn on every query is a real cost, and whether it earns it is an open question
+    the phase names. It cannot be answered if the turn's tokens are missing from the total."""
+    llm = ScriptedLLM(resolve_then_influences("acid jazz", ACID_JAZZ))
+    events = list(
+        run(
+            "Where did acid jazz come from?", store=store, llm=llm, registry=default_registry(store)
+        )
+    )
+
+    done = next(e for e in events if isinstance(e, Done))
+    assert done.usage.input_tokens >= 80 + 100 + 150 + 200
+    assert done.usage.output_tokens >= 15 + 20 + 25 + 30
+
+
 def test_max_turns_default_is_small(store: InMemoryGraphStore) -> None:
-    assert agent_loop.MAX_TURNS <= 5, "an agentic loop's turn ceiling is a cost control"
+    """Raised 5 -> 6 at phase 3 step 3 for the plan turn, so the execution budget is unchanged at 5.
+    Step 4 takes it to 8 and pairs it with a token budget; until then the turn count is the only cost
+    control here, so the ceiling stays where the work actually needs it."""
+    assert agent_loop.MAX_TURNS <= 6, "an agentic loop's turn ceiling is a cost control"

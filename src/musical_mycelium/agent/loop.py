@@ -11,6 +11,12 @@ became a claim and groundedness would read 100% while the text hallucinated.
 prose in, so the refusal is a deterministic template. That makes refusal reliable rather than
 probabilistic, and it is free.
 
+**The plan is inspectable, and it is not an authority.** Phase 3 step 3 puts a planning turn ahead of the
+traversal, so a run opens by saying what it intends to do. Nothing in ``run()`` reads it back: execution
+is still the model driving the registry turn by turn. That split is the point — a plan that decided
+control flow would be a second, ungated way for the model to steer the answer, and it would make
+divergence unmeasurable by making it impossible.
+
 **The loop is a generator of events, not a function returning an answer.** The API layer in step 7 maps
 these one-to-one onto SSE frames and owns no logic, which is what ``CLAUDE.md`` requires of ``api``. It
 also means the walked path and each claim reach the client *as they happen*, which is the demo.
@@ -31,17 +37,27 @@ from musical_mycelium.agent.llm import (
     tool_result_message,
     user_message,
 )
+from musical_mycelium.agent.plan import Plan, parse_plan, planning_prompt
 from musical_mycelium.agent.tools import ToolRegistry
 from musical_mycelium.graph.store import GraphStore
 
-#: Hard ceiling on model turns. It is a **cost control** as much as a safety one — an agentic loop
-#: re-sends its accumulated context every turn, so an unbounded loop is an unbounded bill
-#: (``.claude/rules/aws-and-cost.md``).
+#: Hard ceiling on model turns, **planning turn included**. It is a **cost control** as much as a safety
+#: one — an agentic loop re-sends its accumulated context every turn, so an unbounded loop is an
+#: unbounded bill (``.claude/rules/aws-and-cost.md``).
 #:
 #: Raised from 4 to 5 at phase 2 step 5. A lineage question needs **three** tool turns — resolve, resolve,
 #: trace — plus a final text turn, which consumed the whole v0.1 budget and left a real model no room to
 #: recover from one bad argument. One turn of slack, not a blank cheque.
-MAX_TURNS = 5
+#:
+#: Raised from 5 to 6 at phase 3 step 3, which is the plan turn and nothing else: the ceiling counts
+#: total model turns, so adding planning without this would have silently spent the slack rather than
+#: added a turn. Step 4 takes it to 8 and pairs it with ``MAX_ACCUMULATED_TOKENS``, because a turn count
+#: is a poor proxy for spend once tool payloads get large.
+MAX_TURNS = 6
+
+#: A plan is a small JSON object. Capping it separately keeps a model that decides to think out loud
+#: from billing a full answer's worth of output before the traversal has even started.
+PLAN_MAX_TOKENS = 400
 
 #: Deliberately free of tool names. v0.1's prompt hard-coded the two-step procedure — "use resolve_node,
 #: then get_influences" — which meant a third tool needed a prompt edit inside the loop module to ever be
@@ -80,6 +96,23 @@ Do not hedge and do not editorialise."""
 
 
 # --- events ---------------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class Planned:
+    """What the agent said it would do, emitted before it does any of it.
+
+    First event of every run, without exception — including when the plan failed to parse, because a run
+    with no ``query_kind`` is a run that cannot be sliced by query type (DoD #7). The degraded value is
+    ``unknown``, never absent.
+
+    ``unregistered`` is the plan naming a tool that does not exist. Reported here rather than raised: the
+    plan is a proposal and never drives execution, so the model being wrong about its own toolbox is a
+    measurement, not a failure.
+    """
+
+    plan: Plan
+    unregistered: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,13 +170,19 @@ class Refused:
 
 @dataclass(frozen=True, slots=True)
 class Done:
+    """**Divergence is data, not an error.** An agent that plans three steps and takes five has told us
+    something worth measuring, so both counts ride here rather than the loop enforcing agreement. This
+    is what ``plan_adherence`` is computed from in phase 4."""
+
     usage: Usage
     claim_count: int
     rejection_count: int
     model_id: str
+    planned_steps: int
+    executed_steps: int
 
 
-Event = ToolCalled | ClaimApproved | ClaimRejected | PathWalked | Token | Refused | Done
+Event = Planned | ToolCalled | ClaimApproved | ClaimRejected | PathWalked | Token | Refused | Done
 
 
 # --- the approved claim set: the only thing synthesis is allowed to see ------------------------------
@@ -258,8 +297,13 @@ def run(
 ) -> Iterator[Event]:
     """Answer one question, emitting events as it goes.
 
-    Order is deliberate: tools, then gating, then the path, then prose. Prose is generated **after** the
-    gate has run and only from what survived it.
+    Order is deliberate: plan, then tools, then gating, then the path, then prose. Prose is generated
+    **after** the gate has run and only from what survived it.
+
+    The plan turn is the one addition phase 3 step 3 makes here, and note what it is *not*: nothing below
+    reads ``plan``. Execution is unchanged — the model still drives the registry turn by turn — so the
+    plan is inspectable without becoming a control-flow mechanism. If a later change makes the loop
+    branch on ``plan.steps``, the plan has stopped being a proposal and that change is wrong.
     """
     messages: list[dict[str, object]] = [user_message(query)]
     tool_config = registry.tool_config()
@@ -267,8 +311,20 @@ def run(
     proposals: list[ClaimProposal] = []
     visited: list[str] = []
     chain: tuple[str, ...] = ()
+    executed = 0
 
-    for _turn in range(max_turns):
+    # Its own call, with its own system prompt and **no tool config**: the planning turn is asked for
+    # JSON, not for tool use, and handing it the toolbox invites it to start walking mid-plan.
+    plan_response = llm.converse(
+        [user_message(query)], system=planning_prompt(registry), max_tokens=PLAN_MAX_TOKENS
+    )
+    usage = usage + plan_response.usage
+    plan = parse_plan(plan_response.text)
+    yield Planned(plan=plan, unregistered=plan.unregistered(registry))
+
+    # ``max_turns`` counts the plan turn, so what is left is the execution budget. Spending it here
+    # rather than adding a turn is what keeps the ceiling an honest statement of what a run can cost.
+    for _turn in range(max_turns - 1):
         response = llm.converse(messages, system=SYSTEM_PROMPT, tool_config=tool_config)
         usage = usage + response.usage
 
@@ -278,6 +334,7 @@ def run(
         messages.append(assistant_tool_use_message(response))
         for use in response.tool_uses:
             result = registry.invoke(use.name, use.arguments)
+            executed += 1
             yield ToolCalled(name=use.name, arguments=use.arguments, is_error=result.is_error)
 
             proposals.extend(result.proposals)
@@ -341,6 +398,8 @@ def run(
         claim_count=len(decision.approved),
         rejection_count=len(decision.rejected),
         model_id=llm.model_id,
+        planned_steps=len(plan.steps),
+        executed_steps=executed,
     )
 
 

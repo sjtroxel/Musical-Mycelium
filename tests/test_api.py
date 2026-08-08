@@ -81,6 +81,38 @@ def test_lineage_streams_the_spec_events(client: TestClient) -> None:
     assert names[-1] == "done", "done must be the last frame or a client cannot tell it finished"
 
 
+def test_the_plan_is_on_the_wire_before_anything_is_walked(client: TestClient) -> None:
+    """The plan frame cost one dictionary entry in ``EVENT_NAMES`` — ``render`` is generic over
+    ``asdict``, which walks the nested ``Plan`` and ``PlanStep`` unaided. A frame type that needed a
+    handler in ``app.py`` would mean ``api`` had grown logic, which invariant 6 forbids."""
+    events = frames(client.get("/lineage", params={"q": "acid jazz"}).text)
+    names = [name for name, _ in events]
+
+    assert names[0] == "plan", "a client cannot narrate a traversal it is told about afterwards"
+    assert names.index("plan") < names.index("tool")
+
+    plan = events[0][1]["plan"]
+    assert plan["query_kind"] == "origins"
+    assert [step["tool"] for step in plan["steps"]] == ["resolve_node", "get_influences"]
+    assert all("reason" in step and "arguments" in step for step in plan["steps"])
+    assert events[0][1]["unregistered"] == []
+
+
+def test_done_reports_planned_against_executed(client: TestClient) -> None:
+    """Divergence is data. Both counts ride on ``done`` so phase 4 can compute plan adherence without
+    replaying the stream — and so a run that departed from its plan says so rather than looking tidy.
+
+    The local provider plans the sequence it then hard-codes, so this reads 2 and 2. That number is a
+    **fixture value and means nothing about model behaviour**; it becomes informative the first time a
+    real model fills the planning turn.
+    """
+    events = frames(client.get("/lineage", params={"q": "acid jazz"}).text)
+    done = next(payload for name, payload in events if name == "done")
+
+    assert done["planned_steps"] == 2
+    assert done["executed_steps"] == 2
+
+
 def test_claims_arrive_with_their_citations(client: TestClient) -> None:
     """The demo beat: citations resolve as claims are made. If ``source_ids`` is missing from the wire,
     the product's whole pitch is invisible to the client."""
