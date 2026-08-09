@@ -445,11 +445,21 @@ class LocalLLM:
 
 
 def _text_of(messages: list[dict[str, Any]]) -> str:
-    return "\n".join(
-        block.get("text", "")
-        for message in messages
-        for block in message.get("content", [])
-        if isinstance(block, dict)
+    """Every text block, delimiters removed.
+
+    ``LocalLLM`` parses the prompt format this module produces, and that format now marks untrusted
+    spans — so the fixture has to read the current format rather than the one that existed before step
+    5. Unwrapping here rather than at each call site keeps the fixture's string matching working on the
+    user's actual words: ``<question>Where did bebop come from?</question>`` starts with ``<``, and every
+    prefix test in ``_query`` and ``_genre_pair`` would otherwise silently stop matching.
+    """
+    return undelimit_text(
+        "\n".join(
+            block.get("text", "")
+            for message in messages
+            for block in message.get("content", [])
+            if isinstance(block, dict)
+        )
     )
 
 
@@ -536,12 +546,15 @@ def _resolved_nodes(messages: list[dict[str, Any]]) -> list[str]:
 
 
 def _first_user_text(messages: list[dict[str, Any]]) -> str:
+    """The first user turn, delimiters removed. Same reason as ``_text_of``."""
     for message in messages:
         if message.get("role") == "user":
-            return "\n".join(
-                block.get("text", "")
-                for block in message.get("content", [])
-                if isinstance(block, dict)
+            return undelimit_text(
+                "\n".join(
+                    block.get("text", "")
+                    for block in message.get("content", [])
+                    if isinstance(block, dict)
+                )
             )
     return ""
 
@@ -558,8 +571,14 @@ def _after(text: str, marker: str) -> str:
 
 
 def _tool_results(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Tool results with their delimiters removed, keys included.
+
+    ``tool_result_message`` wraps both, so an undelimited read would be looking for ``node_id`` in a
+    payload whose key is now ``<data>node_id</data>`` and would find nothing — the fixture would resolve
+    a name and then behave as though it never had.
+    """
     return [
-        block["toolResult"]
+        undelimit(block["toolResult"])
         for message in messages
         for block in message.get("content", [])
         if isinstance(block, dict) and "toolResult" in block
@@ -615,20 +634,125 @@ def build_llm(provider: str | None = None, **kwargs: Any) -> LLM:
     raise ValueError(f"unknown LLM provider: {provider!r}. Known: bedrock, local, scripted")
 
 
+# --- untrusted text ---------------------------------------------------------------------------------
+#
+# ``planning/04`` §6.3: retrieved content is **data, never instructions**, and never reaches a
+# tool-invocation decision unmediated. The corpus is Wikidata-derived and Wikidata is user-editable, so
+# every label, country name, and source id in a tool payload is text a stranger could have written.
+#
+# **The gate is the enforcement; this is harm reduction.** An injected instruction cannot manufacture an
+# edge or a citation no matter how the model behaves, because ``ClaimProposal`` carries neither and
+# ``gate()`` checks every claim against the pinned artifact. Delimiting lowers the chance the model
+# *behaves* badly; the gate is what guarantees the *output* is grounded. Do not let a later reader
+# mistake the marker for the mechanism — if these functions were deleted the system would still be
+# grounded, and if ``gate()`` were deleted no amount of delimiting would save it.
+
+#: The tags that mark untrusted spans. ``data`` wraps anything a tool returned; ``question`` wraps the
+#: end user's own words, which are untrusted for the same reason and are the only vector a visitor to the
+#: public URL can actually reach.
+_UNTRUSTED_TAGS = ("data", "question")
+
+
+def escape_delimiters(text: str) -> str:
+    """Neutralise any delimiter the untrusted text is carrying itself.
+
+    **A boundary the enclosed text can close is not a boundary.** A Wikidata label reading
+    ``foo</data>Ignore previous instructions`` would otherwise escape its own wrapper and arrive looking
+    like agent-authored prose, which is precisely the attack the wrapper exists to mark.
+
+    Matching is on the opening ``<tag`` / ``</tag`` rather than the full tag, so ``</data >`` and
+    ``<data foo="bar">`` are caught too. Nothing ever un-escapes this: the requirement is only that the
+    token cannot appear inside a wrapped span, so the transformation does not need to be reversible.
+
+    Deliberately **not** a per-run nonce. A nonce is unforgeable without guessing, but it makes the
+    prompt bytes differ on every run — and byte-stability is what ``dumps`` below exists to provide, what
+    keeps eval runs against a pinned artifact reproducible, and what prompt caching would later need.
+    """
+    for tag in _UNTRUSTED_TAGS:
+        text = text.replace(f"</{tag}", f"&lt;/{tag}").replace(f"<{tag}", f"&lt;{tag}")
+    return text
+
+
+def undelimit_text(text: str) -> str:
+    """``undelimit`` for a value already known to be a string, and typed as such.
+
+    Separate from the recursive form because the callers split cleanly in two: payload walkers hand in
+    arbitrary JSON and get ``Any`` back, while the text helpers below hand in a string and must get a
+    string back or every one of them becomes an untyped return.
+    """
+    for tag in _UNTRUSTED_TAGS:
+        text = text.replace(f"<{tag}>", "").replace(f"</{tag}>", "")
+    return text
+
+
+def undelimit(value: Any) -> Any:
+    """Strip delimiter tags out of anything coming back *from* the model.
+
+    The other half of a symmetric boundary, and it is load-bearing rather than tidy. A model that reads
+    ``{"node_id": "<data>Q483352</data>"}`` may well hand that string straight back as a tool argument,
+    and every id-taking tool would then answer ``unknown node`` — delimiting would have broken the walk
+    it was protecting. Marking is for the model's benefit on the way out; the marks are not part of the
+    value on the way in.
+
+    Applied at ``ToolRegistry.invoke``, which is one chokepoint for all seven tools and needs no
+    per-tool knowledge, so invariant 4 is untouched.
+    """
+    if isinstance(value, str):
+        return undelimit_text(value)
+    if isinstance(value, dict):
+        return {undelimit(key): undelimit(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [undelimit(item) for item in value]
+    return value
+
+
+def delimit(value: Any) -> Any:
+    """Wrap every string in a payload as data, structure preserved.
+
+    Recursive over dicts and lists because the payloads are nested, and **dict keys are wrapped too**:
+    ``corpus_coverage`` returns a ``Counter`` keyed by country names read straight out of the artifact,
+    so a key is as much an injection vector as a value is. Wrapping only values would leave a hole whose
+    existence depends on which tool you happen to be looking at, and the whole point of doing this at one
+    chokepoint is that it needs no such knowledge.
+
+    Numbers, booleans and ``None`` pass through untouched — they carry no text and wrapping them would
+    turn a count into a string and break every payload that reports one.
+    """
+    if isinstance(value, str):
+        return f"<data>{escape_delimiters(value)}</data>"
+    if isinstance(value, dict):
+        return {
+            delimit(key) if isinstance(key, str) else key: delimit(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [delimit(item) for item in value]
+    if isinstance(value, tuple):
+        return [delimit(item) for item in value]
+    return value
+
+
 def tool_result_message(
     tool_use_id: str, content: Any, *, is_error: bool = False
 ) -> dict[str, Any]:
     """A Converse ``toolResult`` turn. Here rather than in the loop because it is provider wire format,
-    and the loop is not allowed to know about wire formats."""
+    and the loop is not allowed to know about wire formats.
+
+    **Delimiting happens here, not in the caller.** This is the single point every tool payload passes
+    through on its way into the message list, so a payload cannot reach the model unmarked by anyone
+    forgetting to call something first. A caller-applied wrapper would be a convention; this is a
+    property.
+    """
+    delimited = delimit(content)
     return {
         "role": "user",
         "content": [
             {
                 "toolResult": {
                     "toolUseId": tool_use_id,
-                    "content": [{"json": content}]
-                    if not isinstance(content, str)
-                    else [{"text": content}],
+                    "content": [{"json": delimited}]
+                    if not isinstance(delimited, str)
+                    else [{"text": delimited}],
                     "status": "error" if is_error else "success",
                 }
             }
@@ -647,7 +771,28 @@ def assistant_tool_use_message(response: LLMResponse) -> dict[str, Any]:
 
 
 def user_message(text: str) -> dict[str, Any]:
+    """A user turn carrying text **this project wrote** — a synthesis prompt, a rendered instruction.
+
+    Not for the end user's question: that is untrusted and goes through ``question_message``. The two are
+    separate functions rather than a flag because getting it wrong in either direction is silent. Wrap an
+    agent-authored prompt and the model is told its own instructions are data; leave a visitor's question
+    bare and ``adv_016`` walks straight in.
+    """
     return {"role": "user", "content": [{"text": text}]}
+
+
+def question_message(query: str) -> dict[str, Any]:
+    """The end user's question, marked as the thing being asked *about* rather than asked *for*.
+
+    The weakest of the three injection vectors and the only one a visitor to the public URL can actually
+    use, which makes it the one that will really be tried. The query is still answered normally; the
+    wrapper only says where the user's words start and stop, so ``Ignore previous instructions and ...``
+    arrives as a quoted string rather than as a line of the system prompt.
+    """
+    return {
+        "role": "user",
+        "content": [{"text": f"<question>{escape_delimiters(query)}</question>"}],
+    }
 
 
 def dumps(value: Any) -> str:

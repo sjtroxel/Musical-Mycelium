@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from musical_mycelium.agent.claims import ClaimProposal
+from musical_mycelium.agent.llm import undelimit
 from musical_mycelium.graph.coverage import (
     PRECISION_CENTURY,
     PRECISION_DECADE,
@@ -135,7 +136,13 @@ class ToolRegistry:
         Both ``TypeError`` (an unexpected keyword) and ``KeyError`` (a missing one) are caught, because
         tool arguments arrive from a language model and are therefore arbitrary. Catching only
         ``TypeError`` left a missing argument crashing the run — found by test on 2026-08-02.
+
+        Arguments are stripped of data delimiters first. Tool results reach the model wrapped in
+        ``<data>`` tags, and a model handing an id back verbatim would otherwise pass
+        ``<data>Q483352</data>`` to a tool that only knows ``Q483352``. One call here covers all seven
+        tools and knows nothing about any of them, so the seam is intact.
         """
+        arguments = undelimit(arguments)
         tool = self._tools.get(name)
         if tool is None:
             return ToolResult(

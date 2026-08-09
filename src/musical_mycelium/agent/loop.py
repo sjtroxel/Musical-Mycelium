@@ -23,6 +23,21 @@ the graph holds is data, so ``gate()`` is the right judge. The premise arrives w
 gate, same rejection reasons, same event — and the correction it can produce asserts nothing beyond the
 claims that gate already approved.
 
+**Untrusted text is marked, and the gate is what actually stops it.** Every tool payload and the user's
+own question arrive delimited (``llm.delimit``, ``llm.question_message``), because the corpus is
+Wikidata-derived and Wikidata is user-editable. That marking lowers the chance the model *behaves*
+badly. It is not the defence: an injected instruction cannot manufacture an edge or a citation because
+``ClaimProposal`` carries neither and ``gate()`` checks every proposal against the pinned artifact.
+Delete the delimiting and the output is still grounded; delete the gate and nothing else would save it.
+
+One span is deliberately **not** delimited, and it should stay named rather than discovered later: the
+labels ``synthesize`` renders into its prompt. Those are artifact text too, so a poisoned label reaches
+the synthesis turn bare. Wrapping them would be worse — synthesis must reproduce a label verbatim in
+prose, so a wrapped one invites ``<data>bebop</data>`` into the user-visible answer. What bounds the
+damage is that a label only gets there by being an endpoint of a claim the gate approved, and what
+remains genuinely uncovered is the label *text* of an approved edge. That residual is real and is
+recorded here rather than smoothed over.
+
 **The loop is a generator of events, not a function returning an answer.** The API layer in step 7 maps
 these one-to-one onto SSE frames and owns no logic, which is what ``CLAUDE.md`` requires of ``api``. It
 also means the walked path and each claim reach the client *as they happen*, which is the demo.
@@ -40,6 +55,7 @@ from musical_mycelium.agent.llm import (
     Usage,
     assistant_tool_use_message,
     dumps,
+    question_message,
     tool_result_message,
     user_message,
 )
@@ -432,7 +448,7 @@ def run(
     read into the proposals and nowhere else. If a later change makes the loop branch on ``plan.steps``,
     the plan has stopped being a proposal and that change is wrong.
     """
-    messages: list[dict[str, object]] = [user_message(query)]
+    messages: list[dict[str, object]] = [question_message(query)]
     tool_config = registry.tool_config()
     usage = Usage()
     proposals: list[ClaimProposal] = []
@@ -443,7 +459,7 @@ def run(
     # Its own call, with its own system prompt and **no tool config**: the planning turn is asked for
     # JSON, not for tool use, and handing it the toolbox invites it to start walking mid-plan.
     plan_response = llm.converse(
-        [user_message(query)], system=planning_prompt(registry), max_tokens=PLAN_MAX_TOKENS
+        [question_message(query)], system=planning_prompt(registry), max_tokens=PLAN_MAX_TOKENS
     )
     usage = usage + plan_response.usage
     plan = parse_plan(plan_response.text)
