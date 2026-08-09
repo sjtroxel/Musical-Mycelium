@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Iterator
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -116,12 +116,21 @@ class LLM(Protocol):
         *,
         system: str | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
-    ) -> Iterator[str]:
-        """Text deltas. Used for synthesis, where the API streams tokens to the browser.
+    ) -> Generator[str, None, Usage]:
+        """Text deltas, **returning the usage they cost**. Used for synthesis, where the API streams
+        tokens to the browser.
 
         Streaming is invariant 9 and a product decision, not a workaround — it is what keeps a
         multi-step tool loop from exceeding the 29s API Gateway ceiling and what masks cold-start
         latency instead of paying for provisioned concurrency.
+
+        **The return value is why the signature is ``Generator`` and not ``Iterator``** (phase 3 step 6).
+        Until then this yielded text and reported nothing, so synthesis tokens never reached
+        ``Done.usage`` at all — a local run served five model calls and totalled four. That was survivable
+        while one model did everything and stops being survivable the moment traversal and synthesis run
+        on **different** models, because two models price differently and a single summed number is then
+        not merely incomplete, it is uncostable. Callers read it with ``usage = yield from llm.stream(…)``
+        (PEP 380), which keeps the stream lazy — the value arrives on exhaustion, not up front.
         """
         ...
 
@@ -180,7 +189,15 @@ class BedrockLLM:
         *,
         system: str | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
-    ) -> Iterator[str]:
+    ) -> Generator[str, None, Usage]:
+        """Text deltas, then the usage Bedrock reports in its trailing ``metadata`` event.
+
+        **Unverified against a live call, like everything else in this class.** The Converse streaming
+        API documents a final ``metadata`` event carrying ``usage``; that is where the number below comes
+        from. If the shape is wrong, fix it against the real response rather than guessing again — and
+        note the degraded value is an empty ``Usage``, so a shape mismatch under-reports cost rather than
+        crashing a user's answer half-streamed.
+        """
         request: dict[str, Any] = {
             "modelId": self._model_id,
             "messages": messages,
@@ -189,11 +206,15 @@ class BedrockLLM:
         if system:
             request["system"] = [{"text": system}]
 
+        usage = Usage()
         response = self.client.converse_stream(**request)
         for event in response["stream"]:
             delta = event.get("contentBlockDelta", {}).get("delta", {})
             if "text" in delta:
                 yield delta["text"]
+            if "metadata" in event:
+                usage = _usage_of(event["metadata"])
+        return usage
 
 
 def _parse_converse(response: dict[str, Any]) -> LLMResponse:
@@ -215,15 +236,26 @@ def _parse_converse(response: dict[str, Any]) -> LLMResponse:
                 ToolUse(id=use["toolUseId"], name=use["name"], arguments=use.get("input", {}))
             )
 
-    raw_usage = response.get("usage", {})
     return LLMResponse(
         text="".join(text_parts),
         tool_uses=tuple(tool_uses),
         stop_reason=response.get("stopReason", "end_turn"),
-        usage=Usage(
-            input_tokens=raw_usage.get("inputTokens", 0),
-            output_tokens=raw_usage.get("outputTokens", 0),
-        ),
+        usage=_usage_of(response),
+    )
+
+
+def _usage_of(payload: dict[str, Any]) -> Usage:
+    """A Converse ``usage`` block as a ``Usage``.
+
+    One function knows the wire key names because the same block arrives in two envelopes: at the top
+    level of a ``converse`` response, and inside the trailing ``metadata`` event of a ``converse_stream``
+    one. Missing keys degrade to zero rather than raising — an unverified shape should under-report cost,
+    not destroy an answer.
+    """
+    raw = payload.get("usage", {})
+    return Usage(
+        input_tokens=raw.get("inputTokens", 0),
+        output_tokens=raw.get("outputTokens", 0),
     )
 
 
@@ -273,9 +305,16 @@ class ScriptedLLM:
         *,
         system: str | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
-    ) -> Iterator[str]:
+    ) -> Generator[str, None, Usage]:
+        """One scripted response as a single chunk, and the usage that response declared.
+
+        Reporting the script's own ``Usage`` rather than a zero is what lets a test assert that
+        traversal and synthesis were billed to **different** models — give the two scripts distinct
+        numbers and the split in ``Done`` is checkable without a model or a dollar.
+        """
         response = self.converse(messages, system=system, max_tokens=max_tokens)
         yield response.text
+        return response.usage
 
 
 class LocalLLM:
@@ -409,8 +448,12 @@ class LocalLLM:
         *,
         system: str | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
-    ) -> Iterator[str]:
+    ) -> Generator[str, None, Usage]:
         self.requests.append({"messages": messages, "system": system, "tool_config": None})
+        # Same stand-in count ``converse`` uses. **Not an estimate of anything** — but it must not be
+        # zero, or the local path would report synthesis as free and reintroduce, in the one provider
+        # anybody can run today, exactly the blind spot step 6 exists to close.
+        usage = Usage(input_tokens=_rough_tokens(messages), output_tokens=24)
         prompt = _text_of(messages)
 
         # The reversal framing, rendered rather than skipped: ``v0.3.0-local`` ships on this provider,
@@ -426,14 +469,14 @@ class LocalLLM:
             for ancestor in chain[2:]:
                 yield f", which came out of {ancestor}"
             yield ". Every link above traces to a cited source."
-            return
+            return usage
 
         genre = _after(prompt, "Genre: ")
         influences = json.loads(_after(prompt, "Documented influences: ") or "[]")
 
         if not influences:
             yield f"The graph records no influences for {genre}."
-            return
+            return usage
         listed = (
             influences[0]
             if len(influences) == 1
@@ -442,6 +485,7 @@ class LocalLLM:
         # Yielded in pieces so a local run exercises the streaming path rather than sending one blob.
         yield f"{preface}{_lead(genre, preface)} came out of {listed}. "
         yield "Every link above traces to a cited source."
+        return usage
 
 
 def _text_of(messages: list[dict[str, Any]]) -> str:
@@ -617,15 +661,54 @@ def _rough_tokens(messages: list[dict[str, Any]]) -> int:
     return max(1, len(json.dumps(messages, default=str)) // 4)
 
 
-def build_llm(provider: str | None = None, **kwargs: Any) -> LLM:
+#: The two jobs a run gives a model, and the axis the cheap/strong split runs along
+#: (``.claude/rules/aws-and-cost.md``). ``traversal`` is the tool loop: many turns, input-heavy, each one
+#: re-sending the whole accumulated context, which is where a cheap model earns its keep. ``synthesis``
+#: is one short call over an already-approved claim set, which is where a stronger one is affordable.
+ROLE_TRAVERSAL = "traversal"
+ROLE_SYNTHESIS = "synthesis"
+
+#: Which env var names the model for each role. ``synthesis`` falls back to the traversal model when
+#: ``MYCELIUM_SYNTHESIS_MODEL_ID`` is unset, so **one configured model still runs the whole product** —
+#: the split is an optimisation to switch on, never a second thing you are obliged to configure before
+#: anything works.
+_ROLE_MODEL_ENV = {
+    ROLE_TRAVERSAL: (DEFAULT_MODEL_ENV,),
+    ROLE_SYNTHESIS: (SYNTHESIS_MODEL_ENV, DEFAULT_MODEL_ENV),
+}
+
+
+def model_id_for(role: str) -> str:
+    """The configured model id for one role, or the documented default.
+
+    **No model is chosen here and none is chosen in this phase.** Which model, and US-vs-Global
+    inference profile, cannot be settled until a ``converse`` call succeeds — see §10 of the phase 3
+    IMPLEMENTATION doc. This resolves configuration; it does not make a decision.
+    """
+    if role not in _ROLE_MODEL_ENV:
+        raise ValueError(f"unknown model role: {role!r}. Known: {sorted(_ROLE_MODEL_ENV)}")
+    for name in _ROLE_MODEL_ENV[role]:
+        configured = os.environ.get(name)
+        if configured:
+            return configured
+    return DEFAULT_MODEL_ID
+
+
+def build_llm(provider: str | None = None, *, role: str = ROLE_TRAVERSAL, **kwargs: Any) -> LLM:
     """The factory invariant 7 asks for. Provider and model are configuration.
 
     ``MYCELIUM_LLM_PROVIDER=scripted`` runs the whole stack with no AWS at all — the local dev path
     while the Bedrock quota is at zero.
+
+    ``role`` selects **which configured model**, not which provider — the cheap/strong split is a model
+    choice and both roles run through the same seam. It only reaches ``BedrockLLM``, because the two
+    fixtures have no model to choose; ``role`` is still accepted for them so a caller can build a pair
+    without branching on provider, which is what makes the routing testable with no AWS at all.
     """
     provider = (provider or os.environ.get("MYCELIUM_LLM_PROVIDER") or "bedrock").lower()
 
     if provider == "bedrock":
+        kwargs.setdefault("model_id", model_id_for(role))
         return BedrockLLM(**kwargs)
     if provider == "local":
         return LocalLLM(**kwargs)

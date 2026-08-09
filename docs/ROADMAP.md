@@ -109,25 +109,40 @@ cause identified and an active internal review to **restore the standard new-acc
 allocation**, and state that no action is required from us. No ETA. Do not re-file, do not open a second
 case, do not chase it.
 
-### Phase 3 — planned 2026-08-07, not yet started
+### Phase 3 — planned 2026-08-07, **steps 1–6 built (2026-08-09); step 7 is the last local one**
 
-Scope doc amended (A1–A5) and IMPLEMENTATION doc written and approved the same night. **No code has been
-written.**
+Scope doc amended (A1–A5) and IMPLEMENTATION doc written and approved the same night. Per-step as-built
+records live in `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §11 — that doc is the detail, this is
+the ledger.
 
 The phase is sequenced around the Bedrock block rather than waiting on it: **steps 1–7 need no model at
 all** and ship as **`v0.3.0-local`**; **step 8 is a single skippable Bedrock gate** carrying DoD items
 10–12, with **phase 4 as its named home** if quota is still absent when the local work finishes.
 
-| step | what | needs |
-|---|---|---|
-| 1 | the adversarial set — 18 cases, hand-authored **before** any loop code | LOCAL |
-| 2 | four new tools (7 total); `corpus_coverage` registered last as the invariant-4 seam test | LOCAL |
-| 3 | the plan object and the `Planned` event | LOCAL |
-| 4 | `Corroboration`, `MAX_TURNS` 5 → 8, and a token budget | LOCAL |
-| 5 | untrusted-text delimiting; the three injection tests | LOCAL |
-| 6 | the cheap/strong routing seam, proven with two `ScriptedLLM`s | LOCAL |
-| 7 | the deterministic scorers and the era/region/density/query-type slicing | LOCAL |
-| 8 | **the Bedrock gate — smoke call, model IDs, live adversarial run, cost to CloudWatch** | BEDROCK |
+| step | what | needs | status |
+|---|---|---|---|
+| 1 | the adversarial set — 18 cases, hand-authored **before** any loop code | LOCAL | DONE 08-07 |
+| 2 | four new tools (7 total); `corpus_coverage` registered last as the invariant-4 seam test | LOCAL | DONE 08-07 |
+| 3 | the plan object and the `Planned` event; **3b** the backwards premise (DoD #13) | LOCAL | DONE 08-08 |
+| 4 | per-claim `verification`, `MAX_TURNS` 5 → 8, and a token budget (DoD #3) | LOCAL | DONE 08-08 |
+| 5 | untrusted-text delimiting; the three injection tests (DoD #5) | LOCAL | DONE 08-09 |
+| 6 | the cheap/strong routing seam, proven with two `ScriptedLLM`s (DoD #8) | LOCAL | DONE 08-09 |
+| 7 | the deterministic scorers and the era/region/density/query-type slicing | LOCAL | next |
+| 8 | **the Bedrock gate — smoke call, model IDs, live adversarial run, cost to CloudWatch** | BEDROCK | blocked |
+
+**Step 4 is not "corroboration".** This table said `Corroboration` until 2026-08-09; the A1 recalibration
+of 2026-08-07 replaced it with per-claim `verification`, because **`contested` is unbuildable on a corpus
+with one source per edge** — arithmetic, not effort. `contested` and `checks_disagree` ship as
+test-locked-unreachable names. Do not re-litigate.
+
+**Two things found by building, recorded here because they outlive the step that found them:**
+
+- **Delimiting untrusted text needs a return path** (step 5). Marking tool payloads without stripping the
+  marks off incoming tool arguments breaks the walk it was protecting — a model hands a wrapped node id
+  straight back and every id-taking tool answers `unknown node`.
+- **A streamed call reported no usage, so synthesis was billed and never counted** (step 6). Survivable
+  while one model does everything; uncostable the moment two roles run on differently-priced models.
+  `LLM.stream` is now `Generator[str, None, Usage]` and `done` reports cost **per role, never summed**.
 
 **`get_descendants` closes a real gap:** `Direction.INFLUENCED` has been supported by `GraphStore` since
 phase 2 and no registered tool exposes it, so "what came out of the blues?" is currently unanswerable

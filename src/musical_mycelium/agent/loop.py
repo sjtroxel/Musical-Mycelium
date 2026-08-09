@@ -45,7 +45,7 @@ also means the walked path and each claim reach the client *as they happen*, whi
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Iterator, Mapping
 from dataclasses import dataclass, field
 from itertools import pairwise
 
@@ -242,12 +242,25 @@ class Done:
     something worth measuring, so both counts ride here rather than the loop enforcing agreement. This
     is what ``plan_adherence`` is computed from in phase 4."""
 
+    #: Traversal cost: the plan turn plus every tool turn. **This field's meaning has not changed** —
+    #: it never included synthesis, because a streamed call reported no usage until step 6. What
+    #: changed is that the missing half now has a name of its own instead of being silently absent.
     usage: Usage
     claim_count: int
     rejection_count: int
+    #: The model that walked the graph.
     model_id: str
     planned_steps: int
     executed_steps: int
+    #: Synthesis cost, kept **separate rather than summed** (phase 3 step 6). Traversal and synthesis
+    #: may run on different models, and two models price differently — so one combined token count
+    #: cannot be turned into a number of dollars by anyone downstream, which is precisely what
+    #: ``.claude/rules/aws-and-cost.md`` asks this project to track from day one. Summing is a
+    #: presentation choice and belongs to whoever knows both prices; it is not this loop's to make.
+    synthesis_usage: Usage = field(default_factory=Usage)
+    #: The model that wrote the prose. Equal to ``model_id`` whenever one model does both, which is the
+    #: default and the whole local path.
+    synthesis_model_id: str = ""
     #: Why the traversal stopped. **A truncated answer must never be presented as a complete one** — a
     #: run that hit a cap may have stopped one tool call short of the edge that mattered, and it will
     #: read exactly like a confident short answer unless it says so. This is the field that lets a
@@ -374,13 +387,17 @@ def descent_is_approved(descendant: str, ancestor: str, claims: tuple[Claim, ...
     return False
 
 
-def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Iterator[str]:
+def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Usage]:
     """Prose from approved claims, and nothing but approved claims.
 
-    Note the signature. There is no ``query`` parameter, no ``store``, no ``GateResult``, no message
-    history. If a future change needs one of those here, that change is reintroducing the leak. The
-    chain form added in phase 2 obeys that: the ordering rides *inside* the claim set, where it was
-    validated against the approved claims, rather than arriving as a second argument.
+    Note the signature. There is **still exactly one** claim-bearing parameter: no ``query``, no
+    ``store``, no ``GateResult``, no message history. If a future change needs one of those here, that
+    change is reintroducing the leak. The chain form added in phase 2 obeys that, and so does step 6 —
+    the second ``LLM`` a run now holds is a *provider*, not a source of claims, and it arrives as the
+    same ``llm`` parameter this function always had rather than as new context.
+
+    Returns the synthesis usage (step 6). Prose is streamed, so the number can only be known once the
+    stream is exhausted; ``yield from`` carries it out without making the caller wait for the text.
     """
     if not claim_set:
         raise ValueError(
@@ -398,7 +415,7 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Iterator[str]:
             f"\n\nGenre: {subject}\nDocumented influences: {dumps(influences)}"
         )
 
-    yield from llm.stream([user_message(prompt)], max_tokens=200)
+    return (yield from llm.stream([user_message(prompt)], max_tokens=200))
 
 
 def _reversal(claim_set: ApprovedClaimSet) -> str:
@@ -434,6 +451,7 @@ def run(
     store: GraphStore,
     llm: LLM,
     registry: ToolRegistry,
+    synthesis_llm: LLM | None = None,
     max_turns: int = MAX_TURNS,
     max_accumulated_tokens: int = MAX_ACCUMULATED_TOKENS,
 ) -> Iterator[Event]:
@@ -441,6 +459,13 @@ def run(
 
     Order is deliberate: plan, then tools, then gating, then the path, then prose. Prose is generated
     **after** the gate has run and only from what survived it.
+
+    ``synthesis_llm`` is the cheap/strong split (phase 3 step 6) and it is **optional on purpose**:
+    omitted, synthesis runs on the same model the traversal did, so one configured model still runs the
+    whole product and every existing caller keeps working untouched. A required second argument would
+    have made a cost optimisation into a setup obligation, and it would have cascaded through ~34 call
+    sites for no gain — the opposite of the ``verification`` cascade in step 4, where the point *was*
+    to force every site to state something only it could know.
 
     The plan turn is the one addition phase 3 step 3 makes here, and note what it is *not*: no branch
     below reads ``plan``. Execution is unchanged — the model still drives the registry turn by turn — so
@@ -450,7 +475,9 @@ def run(
     """
     messages: list[dict[str, object]] = [question_message(query)]
     tool_config = registry.tool_config()
+    prose_llm = synthesis_llm if synthesis_llm is not None else llm
     usage = Usage()
+    synthesis_usage = Usage()
     proposals: list[ClaimProposal] = []
     visited: list[str] = []
     chain: tuple[str, ...] = ()
@@ -559,8 +586,7 @@ def run(
             chain=approved_chain,
             inverted_premise=inverted_premise,
         )
-        for chunk in synthesize(claim_set, llm):
-            yield Token(chunk)
+        synthesis_usage = yield from _tokens(synthesize(claim_set, prose_llm))
 
     yield Done(
         usage=usage,
@@ -570,7 +596,29 @@ def run(
         planned_steps=len(plan.steps),
         executed_steps=executed,
         stop_reason=stop_reason,
+        synthesis_usage=synthesis_usage,
+        synthesis_model_id=prose_llm.model_id,
     )
+
+
+def _tokens(prose: Generator[str, None, Usage]) -> Generator[Token, None, Usage]:
+    """Wrap each chunk as a ``Token`` event and hand back what the stream cost.
+
+    The plumbing exists because ``run`` transforms what it forwards — a bare ``yield from`` would pass
+    the raw strings straight through and the loop yields ``Event`` objects. Written as a generator
+    rather than by draining the stream first because **draining it would destroy the streaming**: the
+    usage is only known at exhaustion, and waiting for it before emitting the first token would hold the
+    whole answer back and undo invariant 9.
+    """
+    while True:
+        try:
+            chunk = next(prose)
+        except StopIteration as exhausted:
+            # ``StopIteration.value`` is untyped by construction, so the annotation is where the
+            # generator's declared return type gets re-attached rather than leaking out as ``Any``.
+            cost: Usage = exhausted.value
+            return cost
+        yield Token(chunk)
 
 
 def premise_proposal(plan: Plan, store: GraphStore) -> ClaimProposal | None:

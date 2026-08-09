@@ -27,6 +27,8 @@ from musical_mycelium.agent.claims import Claim, ClaimProposal, RejectionReason,
 from musical_mycelium.agent.llm import (
     LLM,
     PLANNING_SENTINEL,
+    ROLE_SYNTHESIS,
+    ROLE_TRAVERSAL,
     LLMResponse,
     LocalLLM,
     ScriptedLLM,
@@ -34,6 +36,7 @@ from musical_mycelium.agent.llm import (
     Usage,
     _parse_converse,
     build_llm,
+    model_id_for,
 )
 from musical_mycelium.agent.loop import (
     ApprovedClaimSet,
@@ -431,6 +434,182 @@ def test_build_llm_selects_a_provider() -> None:
 
 def test_scripted_llm_satisfies_the_protocol() -> None:
     assert isinstance(ScriptedLLM([]), LLM)
+
+
+# --- the model-routing seam (phase 3 step 6) ------------------------------------------------------
+
+
+def test_a_role_selects_a_configured_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MYCELIUM_MODEL_ID", "cheap-model")
+    monkeypatch.setenv("MYCELIUM_SYNTHESIS_MODEL_ID", "strong-model")
+    assert model_id_for(ROLE_TRAVERSAL) == "cheap-model"
+    assert model_id_for(ROLE_SYNTHESIS) == "strong-model"
+
+
+def test_synthesis_falls_back_to_the_traversal_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One configured model still runs the whole product.
+
+    The split is an optimisation to switch on, never a second thing you must configure before anything
+    works — so an unset ``MYCELIUM_SYNTHESIS_MODEL_ID`` is a normal state, not a misconfiguration.
+    """
+    monkeypatch.setenv("MYCELIUM_MODEL_ID", "cheap-model")
+    monkeypatch.delenv("MYCELIUM_SYNTHESIS_MODEL_ID", raising=False)
+    assert model_id_for(ROLE_SYNTHESIS) == "cheap-model"
+
+
+def test_an_unknown_role_is_refused() -> None:
+    with pytest.raises(ValueError, match="unknown model role"):
+        model_id_for("judging")
+
+
+def test_the_two_roles_are_served_by_two_different_models(store: InMemoryGraphStore) -> None:
+    """**The §4.6 test**: two distinct providers, and each does exactly its own half.
+
+    This is what "wire the routing without choosing the models" can actually be proven with — no
+    Bedrock, no credentials, no spend. The traversal script must be consumed by the plan and tool turns
+    and the synthesis script by ``synthesize``; if the wiring were wrong the traversal model would be
+    asked to write the prose and one of these two request counts would be off.
+    """
+    script = resolve_then_influences("acid jazz", ACID_JAZZ)
+    traversal = ScriptedLLM(script[:-1], model_id="cheap-model")
+    synthesis = ScriptedLLM(script[-1:], model_id="strong-model")
+
+    events = list(
+        run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=traversal,
+            registry=default_registry(store),
+            synthesis_llm=synthesis,
+        )
+    )
+
+    # Four turns of traversal — the plan turn, two tool turns, the final text turn — and exactly one
+    # call to the synthesis model. Both scripts fully consumed, so neither model did the other's work.
+    assert len(traversal.requests) == 4
+    assert len(synthesis.requests) == 1
+    assert traversal.exhausted and synthesis.exhausted
+
+    # The one synthesis request is the synthesis prompt, and it went to the strong model.
+    assert "Documented influences:" in synthesis.requests[0]["messages"][0]["content"][0]["text"]
+
+    done = next(e for e in events if isinstance(e, Done))
+    assert done.model_id == "cheap-model"
+    assert done.synthesis_model_id == "strong-model"
+
+
+def test_cost_is_reported_per_role_and_never_summed(store: InMemoryGraphStore) -> None:
+    """Two models price differently, so one combined token count cannot be turned into dollars.
+
+    Summing is a presentation choice belonging to whoever knows both prices; the loop reports the two
+    halves and declines to make it. Distinct numbers in the two scripts are what make the split
+    checkable at all.
+    """
+    script = resolve_then_influences("acid jazz", ACID_JAZZ)
+    script[-1] = LLMResponse(text="A grounded answer.", usage=Usage(11, 7))
+    traversal = ScriptedLLM(script[:-1], model_id="cheap-model")
+    synthesis = ScriptedLLM(script[-1:], model_id="strong-model")
+
+    done = next(
+        e
+        for e in run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=traversal,
+            registry=default_registry(store),
+            synthesis_llm=synthesis,
+        )
+        if isinstance(e, Done)
+    )
+
+    assert done.synthesis_usage == Usage(11, 7)
+    # Traversal is the sum of the four scripted turns and carries none of the synthesis cost.
+    assert done.usage == Usage(80 + 100 + 150 + 200, 15 + 20 + 25 + 30)
+    assert done.synthesis_usage.total_tokens not in (0, done.usage.total_tokens)
+
+
+def test_synthesis_tokens_are_counted_at_all(store: InMemoryGraphStore) -> None:
+    """The regression test for what step 6 actually found.
+
+    Before this step ``stream`` reported no usage, so synthesis was billed and never counted: a local
+    run served five model calls and totalled four. Tolerable while one model did everything, and
+    uncostable the moment the two roles differ.
+    """
+    llm = LocalLLM()
+    done = next(
+        e
+        for e in run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=llm,
+            registry=default_registry(store),
+        )
+        if isinstance(e, Done)
+    )
+
+    assert done.synthesis_usage.total_tokens > 0, "synthesis is billed; it must be counted"
+    # Every call the fixture served is now represented: it charges 24 output tokens per call.
+    assert done.usage.output_tokens + done.synthesis_usage.output_tokens == 24 * len(llm.requests)
+
+
+def test_omitting_the_second_model_runs_everything_on_the_first(store: InMemoryGraphStore) -> None:
+    """The default, and the whole local path. A cost optimisation must not become a setup obligation."""
+    llm = LocalLLM()
+    done = next(
+        e
+        for e in run(
+            "Where did acid jazz come from?",
+            store=store,
+            llm=llm,
+            registry=default_registry(store),
+        )
+        if isinstance(e, Done)
+    )
+    assert done.model_id == done.synthesis_model_id == llm.model_id
+
+
+def test_reporting_usage_did_not_destroy_the_streaming(store: InMemoryGraphStore) -> None:
+    """Invariant 9, and the trap this step could easily have walked into.
+
+    Synthesis usage is only known when the stream is exhausted. Draining the stream to read it and
+    *then* emitting tokens would still produce a correct number and would silently turn streaming back
+    into request/response — the whole answer held until the last chunk. So this asserts laziness
+    directly: when the first ``Token`` reaches the caller, the underlying stream must still be partway
+    through rather than finished.
+    """
+
+    class CountingLLM:
+        """Yields three chunks and records how many have left the generator."""
+
+        model_id = "counting"
+        yielded = 0
+
+        def converse(self, messages: Any, **kwargs: Any) -> LLMResponse:
+            raise AssertionError("this fixture is only used for the synthesis stream")
+
+        def stream(self, messages: Any, **kwargs: Any) -> Any:
+            for chunk in ("one ", "two ", "three"):
+                self.yielded += 1
+                yield chunk
+            return Usage(3, 3)
+
+    prose_llm = CountingLLM()
+    events = run(
+        "Where did acid jazz come from?",
+        store=store,
+        llm=LocalLLM(),
+        registry=default_registry(store),
+        synthesis_llm=prose_llm,
+    )
+
+    for event in events:
+        if isinstance(event, Token):
+            # The first token is out while two chunks are still unproduced. A drained implementation
+            # would read 3 here.
+            assert prose_llm.yielded == 1
+            break
+    else:  # pragma: no cover - only reached if synthesis never ran
+        raise AssertionError("no Token event was emitted")
 
 
 def test_bedrock_llm_satisfies_the_protocol_without_touching_aws() -> None:

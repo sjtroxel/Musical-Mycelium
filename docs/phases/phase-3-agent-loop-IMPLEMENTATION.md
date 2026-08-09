@@ -198,7 +198,7 @@ Each item is tagged with what it needs. **LOCAL** items need no AWS at all and a
 | 5 | A planted injection in a fixture is ignored, and a test fails if that stops being true | LOCAL | **GREEN — step 5, 2026-08-09.** Deterministic half only; behavioural half → #10 |
 | 6 | Refusal accuracy reported as a pair, over the adversarial set, against scripted traces | LOCAL | scorer + gold traces; live numbers → #11 |
 | 7 | Results sliced by era, region, density and query type; sparse slices reported, not averaged | LOCAL | — |
-| 8 | Cheap/strong routing is wired through `build_llm` and proven with two distinct providers | LOCAL | **seam only** — real models → #12 |
+| 8 | Cheap/strong routing is wired through `build_llm` and proven with two distinct providers | LOCAL | **GREEN — step 6, 2026-08-09.** Seam only; real models → #12 |
 | 9 | Phase 2's tests still pass against pinned artifact v0.5.0 | LOCAL | — |
 | 10 | The model ignores an injected instruction in a real tool result | BEDROCK | split out of #5 |
 | 11 | Refusal accuracy and traversal recall measured on real model output | BEDROCK | split out of #6 |
@@ -997,9 +997,63 @@ bounds the damage is that a label only gets there by being an endpoint of a clai
 remains genuinely uncovered is the label *text* of an approved edge. Recorded in `agent/loop.py`'s
 docstring as well as here.
 
-### Next — step 6
+### Step 6 — DONE, 2026-08-09 — the model-routing seam, and per-role cost
 
-**DoD 1–9 and 13 are the `v0.3.0-local` gate; 3, 5 and 13 are green.** Steps 6–7 remain: §4.6 the
-model-routing seam, §4.7 the scorers and slicing.
+`make check` green at **564 tests** (+8), root 15/18, terraform valid. Touched `agent/llm.py`,
+`agent/loop.py`, `api/app.py`, `docs/SPEC.md` §6.
+
+**§4.6 went in as written and the wiring itself was small.** `build_llm` grew a `role`, `model_id_for`
+resolves it, `run` grew an optional `synthesis_llm`, and the §4.6 test passes two distinct `ScriptedLLM`
+instances and asserts the traversal script was consumed by the plan and tool turns and the synthesis
+script by `synthesize` — genuine routing, no model, no spend. **No model is chosen here**, exactly as
+§4.6 and §10 require.
+
+**`synthesis_llm` is optional, and that is the whole reason this step was cheap.** There are ~34 `llm=`
+call sites; a required second argument would have cascaded through all of them and turned a cost
+optimisation into a setup obligation. This is the deliberate opposite of step 4's `verification`
+cascade, where forcing every site to state something only it could know *was* the point. Same question,
+opposite answer, because the defaults differ in kind: there is no sane default for a verification tier
+and there is an obviously correct one for a second model.
+
+#### The finding: synthesis was billed and never counted
+
+Measured before touching anything — a local run served **five** model calls and `Done.usage` reflected
+**four**. `synthesize` streams through `llm.stream()`, which returned `Iterator[str]` and reported no
+usage, so synthesis tokens never reached the total. Tolerable while one model does everything. **Not
+tolerable once the two roles differ**: two models price differently, so a single summed count is not
+merely incomplete, it is uncostable — and `.claude/rules/aws-and-cost.md` asks this project to track real
+token cost from day one.
+
+So `LLM.stream` is now `Generator[str, None, Usage]`. That is a change to the invariant-7 protocol and
+was the bulk of the step. Callers read the value with `usage = yield from llm.stream(…)` (PEP 380).
+`_usage_of` now parses the Converse usage block for both envelopes — the top level of a `converse`
+response and the trailing `metadata` event of a `converse_stream` one — so one function knows the wire
+key names. Bedrock's streaming usage is **unverified like the rest of `BedrockLLM`**, and degrades to an
+empty `Usage` rather than raising: a wrong shape should under-report cost, not destroy a half-streamed
+answer.
+
+`Done` now carries `usage`/`model_id` for traversal and `synthesis_usage`/`synthesis_model_id` for prose,
+**kept separate rather than summed**. Summing is a presentation choice belonging to whoever knows both
+prices. Note `usage`'s meaning did not change — it never included synthesis; the missing half simply has
+a name now.
+
+#### The trap this step could have walked into
+
+Synthesis usage is only known at exhaustion, so the obvious implementation drains the stream, reads the
+number, then emits the tokens. That produces a **correct** total and silently turns streaming back into
+request/response, holding the whole answer until the last chunk — invariant 9 undone by a cost feature,
+with every test still green. `_tokens()` in `loop.py` forwards chunk by chunk and captures the return
+value from `StopIteration`, and `test_reporting_usage_did_not_destroy_the_streaming` asserts laziness
+directly: when the first `Token` reaches the caller, the underlying stream must still be partway through.
+
+The API cost nothing for the third time running: `render` is generic over `asdict`, so both new fields
+appear on the `done` frame with no edit to `api/app.py`. Verified by reading a live SSE frame off the
+local provider, not assumed. `api/app.py` did change — it now builds both roles — but that is a caller
+change, not a `render` one.
+
+### Next — step 7
+
+**DoD 1–9 and 13 are the `v0.3.0-local` gate; 3, 5, 8 and 13 are green.** Step 7 remains: §4.7 the
+scorers and the slicing.
 
 **Still open before step 8, unchanged:** the full gold set (20–30) and the sealed held-out 10.

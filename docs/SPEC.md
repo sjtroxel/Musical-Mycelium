@@ -320,6 +320,18 @@ never be presented as a complete one** — a run that stopped one call short of 
 exactly like a confident short answer unless it says otherwise. A budget stop is clean rather than
 exceptional: whatever was gathered still goes through the gate and still produces a grounded answer.
 
+**Added 2026-08-09 (phase 3 step 6).** `done` reports cost **per role, never summed**: `usage` and
+`model_id` for the traversal, `synthesis_usage` and `synthesis_model_id` for the prose. A run may use two
+different models — the tool loop is input-heavy and suits a cheap one, synthesis is a single short call
+over an approved claim set and can afford a stronger one — and two models price differently, so one
+combined token count cannot be turned into a number of dollars by anyone downstream. Summing is a
+presentation choice that belongs to whoever knows both prices; it is not the loop's to make. With one
+model configured, both ids are equal and the split costs nothing.
+
+`usage` has always meant traversal only. Until step 6 a streamed call reported no usage at all, so
+synthesis was billed and never counted; what changed is that the missing half now has a name rather than
+being silently absent.
+
 ## 7. Claim contract — OPEN in detail, fixed in shape
 
 `Claim(subject_id, predicate, object_id, source_ids, verification, span)`. The pipeline is claims first,

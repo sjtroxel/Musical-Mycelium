@@ -27,7 +27,7 @@ from fastapi import FastAPI, Query
 from fastapi.responses import StreamingResponse
 
 from musical_mycelium.agent import loop as agent_loop
-from musical_mycelium.agent.llm import build_llm
+from musical_mycelium.agent.llm import ROLE_SYNTHESIS, ROLE_TRAVERSAL, build_llm
 from musical_mycelium.agent.loop import (
     ClaimApproved,
     ClaimRejected,
@@ -93,10 +93,16 @@ def stream_answer(query: str) -> Iterator[str]:
     planned eval metric.
     """
     started = time.monotonic()
-    llm = build_llm()
+    # Two roles through one seam. With ``MYCELIUM_SYNTHESIS_MODEL_ID`` unset both resolve to the same
+    # model, so this is the previous behaviour until the day someone sets that variable — no decision
+    # about which models is made here or anywhere else in this phase.
+    llm = build_llm(role=ROLE_TRAVERSAL)
+    synthesis_llm = build_llm(role=ROLE_SYNTHESIS)
     registry = default_registry(STORE)
 
-    for event in agent_loop.run(query, store=STORE, llm=llm, registry=registry):
+    for event in agent_loop.run(
+        query, store=STORE, llm=llm, registry=registry, synthesis_llm=synthesis_llm
+    ):
         if isinstance(event, Done):
             payload = asdict(event)
             payload["elapsed_seconds"] = round(time.monotonic() - started, 3)
