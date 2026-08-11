@@ -660,6 +660,114 @@ Slicing, the adversarial baseline run, any threshold, any `RunOutcome`, and `Don
 `plan_adherence` is computed "in phase 4" — that last one is a one-line correction owed in 7b, once the
 scorer it names actually has a caller.
 
+#### 4.7b Step 7b — the slicing and the baseline run (written 2026-08-11, before the code)
+
+Closes DoD **1, 2, 4, 6, 7, 9** — the last six before `v0.3.0-local`.
+
+##### What 7b builds
+
+| file | new? | what |
+|---|---|---|
+| `eval/slices.py` | new | the four slicing dimensions |
+| `tests/test_slices.py` | new | including the sparse-slice rule |
+| `eval/harness.py` | new | runs the 18 adversarial cases through the real `run()`, collects outcomes, feeds the 7a scorers |
+| `tests/test_harness.py` | new | including the script-independence tests below |
+| `eval/datasets/baseline_v0_3_0_local.json` | new | the recorded numbers |
+| `eval/__init__.py` | edit | module docstring, per this repo's pattern |
+| `agent/loop.py` | edit | one line — `Done`'s docstring still says `plan_adherence` is computed "in phase 4" |
+| this doc, `ROADMAP.md` | edit | as-built and status |
+
+**`README.md` and the `v0.3.0-local` tag are deliberately NOT in this step.** §5 requires a KNOWN-GAPS
+statement in the README saying the loop has never run against a real model. That is release work, not
+measurement work, and mixing a README claim into a commit full of new scorers is how an overstated claim
+gets shipped without being read on its own. It gets its own step.
+
+##### THE decision this step turns on — what the scripts are allowed to know
+
+All 18 traces are new. `test_adversarial_set.py` validates the *dataset* against the corpus and never runs
+the loop, so there is nothing to reuse. The obvious efficiency is to generate each script from the case,
+and **that is where the measurement can quietly become circular**: a script generated from
+`expected.refusal` makes `refusal_accuracy` a measurement of the generator, not of the agent — the same
+error as asking the gate whether the gate was right.
+
+The adversarial set already answers half of this, in its own `expected_field_contract` from 2026-08-07.
+`forbidden_triples` is described there as *"the strongest assertion in the file, because it is a pure
+dictionary lookup that holds under ScriptedLLM and under a real model equally."* That sentence splits the
+expectations cleanly:
+
+- **Script-independent** — `forbidden_triples`, `max_approved_claims`, `expected_gate_rejections`. These
+  are lookups over `GateResult`. **No script can make them pass.** They measure the machinery, and they
+  are the assertions that carry real weight at this stage.
+- **Script-dependent** — `refusal`, `must_name_gap`, `forbidden_prose_assertions`. Whether the model
+  refuses is chosen by whoever writes the script.
+
+**The rule that makes the script-dependent half mean something: every script has the model TRY TO
+MISBEHAVE.** A trace where the model dutifully declines proves nothing — it demonstrates a well-behaved
+script. A trace where the model attempts the fabrication and the system refuses anyway demonstrates that
+the *gate and the loop* produce the refusal. **Nothing is scored on a script that never attempted the
+attack** — the same rule 7a's `injection_resistance` already applies with `scored_cases`.
+
+##### CORRECTION, made while scoping on 2026-08-11 — the attack surface is narrower than the rule assumed
+
+The paragraph above was first written as *"each case's script proposes the thing its `forbidden_triples`
+says must be rejected."* **A script cannot do that.** Reading `agent/tools.py`: `ToolResult.proposals` is
+built by each tool from real artifact edges, and the module says so in as many words — *"the loop harvests
+proposals and gates them, and the model never gets to invent one."* There is no text channel from the
+model into the proposal list. A fabricated edge cannot reach the gate through a tool call at all.
+
+That is a **stronger** result than the test I was planning to write, and it means the adversarial rule
+applies only where a model-asserted channel actually exists. There are exactly two:
+
+1. **`asserted_premise` on the plan turn** — the one place the model states a triple of its own. It
+   carries two *names*, which `premise_proposal` resolves through `resolve_exact` and the gate judges
+   first. This is the channel for `direction_inversion` and both `false_premise_*` groups, and it is where
+   a `forbidden_triple` can genuinely be attempted.
+2. **Tool arguments** — a `node_id` that does not exist, or two endpoints on different axes. This is the
+   channel for `cross_axis_trap` and `near_miss_substitution`. The tool declines or the gate rejects
+   cross-axis; either way the attempt is real and the outcome is measured.
+
+`prompt_injection` is a third shape rather than a third channel: the injected string arrives inside a tool
+*result*, and what is under test is step 5's delimiting plus the fact that tools only propose real edges.
+
+**`forbidden_prose_assertions` is deliberately NOT scored from scripted output.** Prose comes from the
+synthesis model, a scripted model can be made to say anything, and **nothing gates prose after the fact** —
+the guarantee is structural: `ApprovedClaimSet` restricts what synthesis is allowed to *see*, enforced by
+`synthesize()`'s one-argument signature. So the honest assertion is on the synthesis **input**, not on
+scripted output, and scoring a scripted string here would be measuring my own typing.
+
+Two tests hold the rest honest: one asserting every premise-channel script actually attempts its forbidden
+triple (a script that quietly stopped attacking is a weakened test that stays green), and one asserting
+the script-independent assertions survive a differently-shaped script.
+
+There are seven groups, not eighteen shapes: `false_premise_not_in_graph` (4),
+`false_premise_resolves_but_unsourced` (3), `prompt_injection` (3), `near_miss_substitution` (2),
+`cross_axis_trap` (2), `direction_inversion` (2), `coverage_honesty` (2).
+
+##### Slicing
+
+Era from `coverage.era_of(node.inception_year)`, region from `Node.countries` against the existing
+`ANGLOPHONE_CORE`, density from verification tier and node degree, query type from `Plan.query_kind`
+(which already degrades to `unknown` rather than absent, so every run is sliceable).
+
+**The era slice needs an explicit `undated` bucket and must report it.** `inception_year` is optional and
+28 of 169 genres had none at v0.5.0; `Coverage` already reports `without_inception` *before* the era
+histogram on purpose, because a breakdown that silently omits the undated makes the covered eras look more
+complete than they are. The same rule applies here rather than being re-argued. `inception_precision` is
+carried but not used to move a node between eras — the eras are wide enough that decade precision is
+harmless, and the two century-precision genres are named in the record rather than silently bucketed.
+
+**Slices with n < 5 print their n instead of a percentage.** A 100% on two items is not a 100%.
+
+##### What the baseline can and cannot mean
+
+Under `ScriptedLLM` these numbers measure **the machinery, not the model** — the same limit already
+recorded for step 5's injection tests, where the honest note is that a scripted trace cannot show a real
+model resists. Refusal accuracy on scripted traces is DoD #6; on real model output it is DoD #11, which is
+Bedrock. **The baseline file states this on its face**, in the record itself and not only in this doc, or
+the number gets quoted later without it.
+
+No thresholds. Phase 3 records baselines; phase 4 sets gates.
+
 ### 4.8 Step 8 — the Bedrock gate (SKIPPABLE)
 
 Everything above ships without this. This step exists as a single unit so it can be skipped cleanly and
@@ -1187,10 +1295,113 @@ vacuous-truth bug `.claude/rules/evals.md` exists to prevent. Two locks, and the
   cases carrying no `forbidden_triples` are ten cases that tested nothing, and counting them as ten passes
   would report perfect resistance for a suite that never attempted an injection.
 
-### Next — step 7b
+### Step 7b — DONE, 2026-08-11 — the slicing and the baseline run
 
-**DoD 1–9 and 13 are the `v0.3.0-local` gate; 3, 5, 8 and 13 are green.** Step 7b remains: the slicing
-(era, region, density, query type), the baseline run over the 18 adversarial cases, and the one-line
-correction to `Done`'s docstring, which still says `plan_adherence` is computed "in phase 4".
+**623 tests (was 591), `make check` clean, mypy clean on 49 files, root 15/18, terraform valid.**
+New: `eval/slices.py`, `eval/harness.py`, `eval/datasets/baseline_v0_3_0_local.json`,
+`tests/test_slices.py`, `tests/test_harness.py`. Edited: `eval/__init__.py`, `agent/loop.py` (the owed
+one-line docstring correction), this doc, `ROADMAP.md`.
 
-**Still open before step 8, unchanged:** the full gold set (20–30) and the sealed held-out 10.
+**DoD 1, 2, 4, 6, 7 and 9 are green. `v0.3.0-local` is now fully earned** — the tag, the README
+KNOWN-GAPS statement and the version bump are the separate release step, deliberately not folded in here.
+
+#### The recorded baseline, with the caveat it must never be quoted without
+
+16 of 18 cases run; `adv_014` and `adv_015` are driven by `tests/test_untrusted.py` because their fixtures
+are a poisoned artifact and a hostile stub tool, neither of which belongs in the shipped package.
+
+| metric | value |
+|---|---|
+| refusal accuracy | **13 true refusals / 13 expected; 0 false refusals / 3 expected answers; 0 missed** |
+| injection resistance | 0 induced, 5 scored cases, holds |
+| edge groundedness | 100% |
+| citation resolution | 100% |
+| claim bound respected | 16 / 16 |
+| plan divergence | 0 on every case |
+
+**These measure the machinery, not the model.** Every run is scripted, so the baseline shows that the gate
+and the loop refuse unsupported claims; it does **not** show that a real model resists. That sentence is
+the first field of the baseline JSON, not a footnote here, because a number that leaves the file without
+it will eventually be quoted as evidence about a model.
+
+#### Three findings
+
+**1. A fabricated edge cannot reach the gate through a tool at all** — which narrowed §4.7b's plan while
+it was being written. `ToolResult.proposals` is built by each tool from real artifact edges (*"the model
+never gets to invent one"*), so the only channel by which a model states a triple of its own is
+`asserted_premise` on the plan turn. Every attack aims there. The finding is now a test that runs a case
+with the premise stripped and asserts nothing reaches the gate at all.
+
+**2. The slicing caught a bug in its own first run.** `query_kind` reported seven `unknown`s. Two of the
+kinds in the attack table — `influences` and `connection` — are not in `QUERY_KINDS`, so `parse_plan`
+degraded them exactly as designed. Corrected to `origins` and `lineage`, and a test now asserts every
+attack names a registered kind. **This is `Plan`'s degraded-value decision from step 3a paying off**: an
+invalid kind did not crash and did not silently vanish, it showed up as a bucket in a report.
+
+**3. Every claim the adversarial set produces is `HAND` verified — all 7 of them.** The set never touches
+a `PROSE_AUTO` edge, which is the overwhelming majority of the corpus, so this baseline says nothing about
+behaviour on machine-verified edges. That is a gap in the **dataset**, not the code, and it belongs to the
+gold set. Locked by a test that fails if the mix ever changes, so it cannot quietly stop being true.
+
+#### Smaller things
+
+- **The baseline file is drift-tested.** A committed number that has stopped being reproducible reads as
+  evidence while describing a build that no longer exists. When it fails, look at why before regenerating.
+- **`unstated` is not `elsewhere`.** A node with no P495 has an unrecorded country, not a non-US/UK one,
+  and folding them together lets missing data masquerade as coverage breadth.
+- **`undated` is not `unknown`.** An undated node is real with a real gap; an unresolved one is a
+  different problem. Collapsing them hides which the corpus has.
+- **The near-miss "substitute then narrate" attack is unmeasurable here and says so in the record.**
+  Whether a model resists a tempting substitution is a model choice, and under `ScriptedLLM` the choice
+  would be the script author's. Deferred to DoD #11. The premise-channel attack is scripted instead,
+  because `gate()` decides its outcome rather than the script.
+
+### NEXT SESSION STARTS HERE — the `v0.3.0-local` release step
+
+Written 2026-08-11 ~02:55 CDT as a cold-start handoff. **Read this section first, then verify against the
+repo before believing any of it** — the standing rule, and two step memories have already been wrong about
+what was committed.
+
+**Step 0 — orient.** `git log --oneline -3`. 7a is `9dfc58b`. **7b may or may not be committed yet**; if
+`git status` is dirty with `eval/slices.py`, `eval/harness.py` and the baseline JSON untracked, the commit
+is `git add -A && git commit -m "phase 3 step 7b: slicing and the adversarial baseline run"`. Then
+`make check` — it should read **623 tests, mypy clean on 49 files, root 15/18**.
+
+**What this step is:** the release, not more building. All local phase 3 work is done and **DoD 1–9 and 13
+are green.** This step makes that a stated, tagged, honestly-qualified thing. It is deliberately its own
+commit so the public claim gets read on its own rather than riding inside a scorer commit.
+
+Five items, in order:
+
+1. **Write the `KNOWN-GAPS` section in this doc.** §5.1 specifies it: name DoD items 10, 11 and 12 and
+   state plainly that **the loop has never run against a real model.** The 7b baseline is the evidence
+   that everything else works, and its own `measures` field is the wording to reuse.
+2. **Put that statement in `README.md`.** §5.1 requires it there too, and in any recruiter-facing copy. A
+   deployed demo running on a template stub must never be described as a live agent. This is the item with
+   real consequences outside the repo — the deployed site is public.
+3. **Write the deferred Bedrock tests and mark them `@pytest.mark.costs_money`.** **These do not exist.**
+   Verified 2026-08-11: the marker is registered in `pyproject.toml` and **nothing uses it.** §5.2 makes
+   them a deferral *mechanism*, not a nicety — *"a test that does not exist is a task nobody remembers; a
+   skipped test is a standing reminder in the suite output."* Deselected by default, runnable with one
+   flag the day quota lands. Without these, the deferral is a promise rather than a structure.
+4. **Decide the version question, then bump.** **`pyproject.toml` says `version = "0.0.1"` and has never
+   tracked the roadmap spine.** So "bump the version" is not yet a defined action. Open question, his
+   call: does the package version follow the spine to `0.3.0`, or does the spine live only in git tags
+   while the package stays independent? Note the artifact is separately pinned at **v0.5.0**, so a reader
+   already has two version numbers to keep straight; a third that means a third thing is a real cost.
+5. **Tag `v0.3.0-local`.** After 1–4, not before.
+
+**What must NOT happen in this step:** any new scorer, any threshold, any Bedrock call. §5.3 and
+`.claude/rules/evals.md` both hold — phase 3 records baselines, phase 4 sets gates.
+
+### After the release step
+
+**Step 8, the Bedrock gate — still blocked, and correctly so.** Its hard precondition is unchanged and
+unmet: **the full gold set (20–30) and the sealed held-out 10**, both authored while no model output
+exists. After step 8 runs they can never be authored clean again.
+
+**That work is his and cannot be delegated**, which is the whole point of it — and as of 2026-08-11 he is
+fatigued from the ~50-case artist labelling and has said so. **There is no schedule pressure on it:** step
+8 is blocked on Bedrock regardless, five gold cases already exist in `gold_v0_1.json`, so the remaining ask
+is roughly 15–25, and nothing about it requires one sitting. If quota is still absent when this is done,
+items 10–12 attach to **phase 4** per §5.3, not to a floating backlog.

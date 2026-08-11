@@ -109,7 +109,7 @@ cause identified and an active internal review to **restore the standard new-acc
 allocation**, and state that no action is required from us. No ETA. Do not re-file, do not open a second
 case, do not chase it.
 
-### Phase 3 — planned 2026-08-07, **steps 1–6 built (2026-08-09); step 7 is the last local one**
+### Phase 3 — planned 2026-08-07, **all local steps built (2026-08-11); only the Bedrock gate remains**
 
 Scope doc amended (A1–A5) and IMPLEMENTATION doc written and approved the same night. Per-step as-built
 records live in `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §11 — that doc is the detail, this is
@@ -127,8 +127,13 @@ all** and ship as **`v0.3.0-local`**; **step 8 is a single skippable Bedrock gat
 | 4 | per-claim `verification`, `MAX_TURNS` 5 → 8, and a token budget (DoD #3) | LOCAL | DONE 08-08 |
 | 5 | untrusted-text delimiting; the three injection tests (DoD #5) | LOCAL | DONE 08-09 |
 | 6 | the cheap/strong routing seam, proven with two `ScriptedLLM`s (DoD #8) | LOCAL | DONE 08-09 |
-| 7 | the deterministic scorers and the era/region/density/query-type slicing | LOCAL | next |
+| 7a | the six deterministic scorers; **claims no DoD item, by design** | LOCAL | DONE 08-11 |
+| 7b | the era/region/density/query-type slicing and the adversarial baseline run | LOCAL | DONE 08-11 |
+| — | **the `v0.3.0-local` release: tag, KNOWN-GAPS, the README statement** | LOCAL | next |
 | 8 | **the Bedrock gate — smoke call, model IDs, live adversarial run, cost to CloudWatch** | BEDROCK | blocked |
+
+**Step 7 was split 7a/7b on the 3a/3b precedent.** 7a is six pure functions and closes nothing; 7b is the
+slicing and the run, and closes DoD 1, 2, 4, 6, 7 and 9. **DoD 1–9 and 13 are now green.**
 
 **Step 4 is not "corroboration".** This table said `Corroboration` until 2026-08-09; the A1 recalibration
 of 2026-08-07 replaced it with per-claim `verification`, because **`contested` is unbuildable on a corpus
@@ -143,6 +148,13 @@ test-locked-unreachable names. Do not re-litigate.
 - **A streamed call reported no usage, so synthesis was billed and never counted** (step 6). Survivable
   while one model does everything; uncostable the moment two roles run on differently-priced models.
   `LLM.stream` is now `Generator[str, None, Usage]` and `done` reports cost **per role, never summed**.
+- **A fabricated edge cannot reach the gate through a tool at all** (step 7b). Every proposal is built by
+  a tool from a real artifact edge, so the only channel by which a model states a triple of its own is
+  `asserted_premise` on the plan turn. This narrowed the adversarial harness while it was being written,
+  and it is a stronger result than the test it replaced.
+- **The adversarial set only ever walks `HAND`-verified edges** (step 7b) — all 7 approved claims across
+  16 cases. The baseline therefore says nothing about the `PROSE_AUTO` majority of the corpus. A gap in
+  the **dataset**, owed to the gold set, and locked by a test so it cannot quietly stop being true.
 
 **`get_descendants` closes a real gap:** `Direction.INFLUENCED` has been supported by `GraphStore` since
 phase 2 and no registered tool exposes it, so "what came out of the blues?" is currently unanswerable

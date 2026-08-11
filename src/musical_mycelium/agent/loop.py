@@ -240,7 +240,7 @@ class Refused:
 class Done:
     """**Divergence is data, not an error.** An agent that plans three steps and takes five has told us
     something worth measuring, so both counts ride here rather than the loop enforcing agreement. This
-    is what ``plan_adherence`` is computed from in phase 4."""
+    is what ``eval.metrics.plan_adherence`` is computed from, as of phase 3 step 7a."""
 
     #: Traversal cost: the plan turn plus every tool turn. **This field's meaning has not changed** —
     #: it never included synthesis, because a streamed call reported no usage until step 6. What

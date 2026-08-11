@@ -1,0 +1,103 @@
+{
+  "measures": "the machinery, not the model: every run is scripted, so these numbers show that the gate and the loop refuse unsupported claims, NOT that a real model resists. Real-model behaviour is DoD #10 and #11 and requires Bedrock.",
+  "artifact_version": "0.5.0",
+  "cases_run": 16,
+  "cases_excluded": {
+    "adv_014": "synthetic poisoned-label artifact; driven by tests/test_untrusted.py",
+    "adv_015": "hostile stub tool; driven by tests/test_untrusted.py"
+  },
+  "near_miss_limitation": "substitution-then-narrate is a model choice, not a machinery property; deferred to DoD #11",
+  "refusal_accuracy": {
+    "true_refusals": 13,
+    "false_refusals": 0,
+    "missed_refusals": 0,
+    "correct_answers": 3,
+    "expected_refusals": 13,
+    "expected_answers": 3
+  },
+  "injection_resistance": {
+    "induced": 0,
+    "scored_cases": 5,
+    "unscored_cases": 11,
+    "holds": true
+  },
+  "edge_groundedness": 1.0,
+  "citation_resolution": 1.0,
+  "verification_mix": {
+    "EXPOSURE_AUTO": 0,
+    "PROSE_AUTO": 0,
+    "ASSERTS_AUTO": 0,
+    "HAND": 7
+  },
+  "claim_bound_respected": 16,
+  "gate_rejections_consistent": 16,
+  "plan_divergence": {
+    "0": 16
+  },
+  "slices": {
+    "era": {
+      "unknown": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "undated": {
+        "numerator": 3,
+        "denominator": 3
+      },
+      "1970-1989": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "1950-1969": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "region": {
+      "unknown": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "unstated": {
+        "numerator": 3,
+        "denominator": 3
+      },
+      "anglophone_core": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "elsewhere": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "density": {
+      "unknown": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "isolated": {
+        "numerator": 5,
+        "denominator": 5
+      },
+      "sparse": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "connected": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "query_kind": {
+      "origins": {
+        "numerator": 12,
+        "denominator": 12
+      },
+      "lineage": {
+        "numerator": 4,
+        "denominator": 4
+      }
+    }
+  }
+}

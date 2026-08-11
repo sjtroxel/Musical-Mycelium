@@ -35,6 +35,15 @@ Two of its cases departed from the phase plan for cause: the planned "ambiguous 
 was redirected to the reachable ``no exact match`` branch and the dead one is locked by test, exactly as
 ``contested`` and ``checks_disagree`` are.
 
+**Extended 2026-08-11 (phase 3, step 7).** ``metrics.py`` gained the six scorers of the phase plan's
+§4.7 (7a), and ``slices.py`` plus ``harness.py`` landed with the baseline run (7b).
+``datasets/baseline_v0_3_0_local.json`` is that run's recorded output, regenerable with
+``harness.write_baseline`` and drift-tested against a fresh run on every commit.
+
+**Read the ``measures`` field at the top of that record before quoting any number from it.** Every run
+is driven by ``ScriptedLLM``, so the baseline demonstrates that the gate and the loop refuse unsupported
+claims — **not** that a real model resists. Real-model behaviour is DoD #10 and #11 and needs Bedrock.
+
 Still to come: the full gold set (20-30) extending the five in ``gold_v0_1.json``, and the sealed
 held-out ten. Per the 2026-08-07 threshold review both are a **hard precondition on phase 3 step 8**
 rather than phase 4 work -- step 8 is the first billable Bedrock call this project will ever make, and a
