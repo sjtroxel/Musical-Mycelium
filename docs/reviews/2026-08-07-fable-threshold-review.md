@@ -1,5 +1,9 @@
 # Threshold review — 2026-08-07 (Fable)
 
+> **Historical record. Not updated after the fact.** Its Bedrock-quota statements were accurate on
+> 2026-08-07; the block was resolved 2026-08-11 (`ROADMAP.md` §3 and §4). Left unedited on purpose — a
+> dated review rewritten to match later facts stops being a record of the reasoning it captured.
+
 > Second independent review, requested at the phase 2 → phase 3 boundary, before any phase 3 code.
 > The first (`2026-08-01-fable-status-review.md`) covered scaffolding through the phase-1 plan; this one
 > covers everything since — the phase 1 and 2 builds, artifact v0.1.0 → v0.5.0, the deploy pipeline, the

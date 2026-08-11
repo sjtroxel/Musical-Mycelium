@@ -1,19 +1,26 @@
 """The LLM provider seam — ``CLAUDE.md`` invariant 7.
 
 The model and the provider are **configuration, not structure**. Everything above this module talks to
-the ``LLM`` protocol; nothing above it imports boto3 or knows what Bedrock is. That is what makes the
-Bedrock-quota block survivable: the loop is developed and tested against ``ScriptedLLM`` today and the
-deployed product swaps in ``BedrockLLM`` the day the quota clears, with no change above this line.
+the ``LLM`` protocol; nothing above it imports boto3 or knows what Bedrock is. That is what made the
+2026-07-30 to 08-11 Bedrock-quota block survivable: the loop was developed and tested against
+``ScriptedLLM`` throughout, and swapping in ``BedrockLLM`` needed no change above this line.
 
 **This project calls Bedrock through boto3 `bedrock-runtime` Converse, deliberately** — the hand-built
 Converse tool loop is the thing the project exists to demonstrate, so a managed agent framework or a
 higher-level SDK would hide exactly the engineering that is the point (see ``agent/__init__``).
 
-**Honest status of ``BedrockLLM``: written, never executed.** Every Bedrock daily-token quota on the
-account reads 0, so no ``converse`` call has been made. The request and response shapes below follow the
-Converse API as documented, but they are **unverified against a live call** — step 1 of the phase-1 plan
-(the ``converse`` smoke call) is what confirms them. Treat a shape mismatch here as expected, not as a
-surprise, and fix it against the real response rather than by guessing again.
+**Honest status of ``BedrockLLM``: executed against the live API on 2026-08-11.** All three shapes in
+this module were written from the Converse documentation on 2026-08-02 without a live call to check
+them, and all three were confirmed correct when the quota was restored:
+
+- ``converse`` / ``_parse_converse`` — text, ``stop_reason`` and ``Usage`` parse from a real response.
+- ``stream`` — text deltas followed by a **non-empty** ``Usage`` from the trailing ``metadata`` event.
+  This was the highest-risk guess in the file: the degraded path is a silent empty ``Usage``, which
+  would have under-reported cost forever without ever raising.
+- ``toolConfig`` — a real ``stop_reason='tool_use'`` turn parsed into a ``ToolUse``.
+
+**What that verification does not cover:** the agent loop above this seam has still never run end to end
+against a real model. Everything proven here is single-turn.
 """
 
 from __future__ import annotations
@@ -24,13 +31,17 @@ from collections.abc import Generator
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
-#: The model is genuinely undecided, and the IMPLEMENTATION doc 10 says so: which model, and US vs
-#: Global inference profile, cannot be settled until the quota clears and the first ``converse`` call
-#: runs. The 8/1 diagnosis sharpened it — if the cross-region row is restored and the on-demand row is
-#: not, a cross-region profile becomes mandatory rather than a cost preference.
+#: **Settled 2026-08-11 by the first live call.** The default below — Claude Haiku 4.5 on the ``us.``
+#: geo cross-region inference profile — is confirmed working on this account. The 8/1 worry that a
+#: cross-region profile might become *mandatory* rather than a cost preference did not materialise:
+#: quota was restored on both the geo and global cross-region rows (5M TPM / 10 RPM each).
 #:
-#: So this is an env var with a documented default, not a hardcoded fact. Set ``MYCELIUM_MODEL_ID`` to
-#: whatever the smoke call proves works, and record the answer in the IMPLEMENTATION doc.
+#: **RPM is the binding constraint, not tokens.** 5M tokens per minute against 10 requests per minute
+#: means an agentic loop runs out of requests long before it runs out of tokens, so anything that fans
+#: out — the eval suite above all — needs throttling and backoff rather than more context budget.
+#:
+#: It stays an env var with a documented default, not a hardcoded fact, because the model choice is a
+#: two-way door. Set ``MYCELIUM_MODEL_ID`` to override.
 DEFAULT_MODEL_ENV = "MYCELIUM_MODEL_ID"
 DEFAULT_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
@@ -136,7 +147,8 @@ class LLM(Protocol):
 
 
 class BedrockLLM:
-    """Bedrock Converse via boto3. Written 2026-08-02; **not yet executed against the API.**"""
+    """Bedrock Converse via boto3. Written 2026-08-02; **first executed against the live API
+    2026-08-11**, single-turn, streaming, and tool-use, all three shapes confirmed."""
 
     def __init__(
         self,
@@ -192,11 +204,11 @@ class BedrockLLM:
     ) -> Generator[str, None, Usage]:
         """Text deltas, then the usage Bedrock reports in its trailing ``metadata`` event.
 
-        **Unverified against a live call, like everything else in this class.** The Converse streaming
-        API documents a final ``metadata`` event carrying ``usage``; that is where the number below comes
-        from. If the shape is wrong, fix it against the real response rather than guessing again — and
-        note the degraded value is an empty ``Usage``, so a shape mismatch under-reports cost rather than
-        crashing a user's answer half-streamed.
+        **Verified against a live call 2026-08-11**: 8 deltas followed by a populated ``Usage``. This
+        was the shape most worth checking, because its failure mode is silent. The degraded value is an
+        empty ``Usage``, chosen so a mismatch under-reports cost rather than crashing a user's answer
+        half-streamed — which also means a wrong shape here would never have raised, and cost tracking
+        would have read zero forever. It does not.
         """
         request: dict[str, Any] = {
             "modelId": self._model_id,
@@ -221,7 +233,8 @@ def _parse_converse(response: dict[str, Any]) -> LLMResponse:
     """Pull text, tool calls and usage out of a Converse response.
 
     Kept separate from ``BedrockLLM`` so it can be unit-tested against a recorded payload without an
-    AWS client — which is the only way to test any of this before the quota clears.
+    AWS client. That was the only way to test any of this during the quota block, and it remains the
+    right default afterwards: these tests stay free and offline rather than billing a call per run.
     """
     blocks = response.get("output", {}).get("message", {}).get("content", [])
     text_parts: list[str] = []
@@ -249,8 +262,8 @@ def _usage_of(payload: dict[str, Any]) -> Usage:
 
     One function knows the wire key names because the same block arrives in two envelopes: at the top
     level of a ``converse`` response, and inside the trailing ``metadata`` event of a ``converse_stream``
-    one. Missing keys degrade to zero rather than raising — an unverified shape should under-report cost,
-    not destroy an answer.
+    one. **Both envelopes verified live 2026-08-11.** Missing keys still degrade to zero rather than
+    raising: a shape that drifts should under-report cost, not destroy an answer.
     """
     raw = payload.get("usage", {})
     return Usage(
@@ -263,8 +276,9 @@ class ScriptedLLM:
     """A model that says exactly what it was told to say, in order.
 
     Not only a test double. It is what lets the entire loop — tools, gating, synthesis, SSE — be built
-    and run locally with no AWS account, no credentials, and no spend, which is why steps 6 and 7 of the
-    phase-1 plan are not blocked on the Bedrock quota.
+    and run locally with no AWS account, no credentials, and no spend. That kept steps 6 and 7 of the
+    phase-1 plan moving through the quota block, and it is still how the suite runs by default now that
+    Bedrock works: 623 tests that cost nothing beat 623 tests that bill.
 
     It records every request it received, so tests can assert on **what the model was shown** — which is
     how the claims-first invariant gets checked rather than assumed.
@@ -322,8 +336,12 @@ class LocalLLM:
 
     **This is not a model and does not pretend to be one.** It is a development fixture: it walks the
     fixed v0.1 path (resolve, then influences, then stop) and renders prose from a template. It exists
-    so ``make dev`` works, so the SSE plumbing can be verified end to end locally, and so none of that
-    is blocked on the Bedrock quota.
+    so ``make dev`` works and so the SSE plumbing can be verified end to end locally. That was
+    load-bearing during the quota block; afterwards it is what keeps local development free.
+
+    **It is still the deployed provider.** Bedrock access was restored 2026-08-11, but the Lambda has
+    not been redeployed onto it, so the public URL's prose remains a template and its token counts
+    remain synthetic. Do not describe the live demo as model-generated until that redeploy happens.
 
     It reads the query out of the first user turn and the influence list out of the synthesis prompt.
     Parsing its own prompt format is fine for a fixture and would be indefensible for anything else —
@@ -451,8 +469,8 @@ class LocalLLM:
     ) -> Generator[str, None, Usage]:
         self.requests.append({"messages": messages, "system": system, "tool_config": None})
         # Same stand-in count ``converse`` uses. **Not an estimate of anything** — but it must not be
-        # zero, or the local path would report synthesis as free and reintroduce, in the one provider
-        # anybody can run today, exactly the blind spot step 6 exists to close.
+        # zero, or the local path would report synthesis as free and reintroduce, in the provider the
+        # deployed URL still runs, exactly the blind spot step 6 exists to close.
         usage = Usage(input_tokens=_rough_tokens(messages), output_tokens=24)
         prompt = _text_of(messages)
 
@@ -549,7 +567,7 @@ def _genre_pair(messages: list[dict[str, Any]]) -> tuple[str, str] | None:
 
     String matching against a fixed list, which is a fixture's job and would be indefensible in a
     provider that mattered — the point is only that the local stub can drive the multi-hop path so the
-    SSE plumbing and the deployed demo are not blocked on Bedrock quota.
+    SSE plumbing and the deployed demo need no model call at all.
     """
     raw = _first_user_text(messages).strip().rstrip("?").strip()
     lowered = raw.lower()
@@ -697,8 +715,8 @@ def model_id_for(role: str) -> str:
 def build_llm(provider: str | None = None, *, role: str = ROLE_TRAVERSAL, **kwargs: Any) -> LLM:
     """The factory invariant 7 asks for. Provider and model are configuration.
 
-    ``MYCELIUM_LLM_PROVIDER=scripted`` runs the whole stack with no AWS at all — the local dev path
-    while the Bedrock quota is at zero.
+    ``MYCELIUM_LLM_PROVIDER=scripted`` runs the whole stack with no AWS at all — the free local dev
+    path, and the default for the test suite.
 
     ``role`` selects **which configured model**, not which provider — the cheap/strong split is a model
     choice and both roles run through the same seam. It only reaches ``BedrockLLM``, because the two

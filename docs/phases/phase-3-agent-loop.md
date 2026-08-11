@@ -63,6 +63,20 @@ groundedness gate at 100%" is fully claimable** (`ROADMAP.md` §1).
 > **If quota is still absent at the start of phase 4**, that is the point at which invariant 7 gets
 > exercised for real and `build_llm` is pointed at a non-Bedrock provider. That is a budget decision, not
 > a free swap.
+>
+> ---
+>
+> **A4 UPDATE, 2026-08-11: quota landed.** Access was restored hours after step 7b, so the deferral
+> structure was never needed and the non-Bedrock fallback is off the table. Two consequences worth
+> stating rather than assuming:
+>
+> - **The `v0.3.0` remainder is now reachable**, gated only by the gold set and held-out 10 — which are
+>   *his* work and deliberately not schedule-pressured (see the IMPLEMENTATION doc's "After the release
+>   step").
+> - **The resume line is still not claimable at `v0.3.0-local`**, and being able to call Bedrock does not
+>   change that. What makes it claimable is the loop running end to end against a real model with the
+>   groundedness gate measured on that run. A verified provider seam is not that. The split's cost was
+>   real and is not retroactively refunded by the quota clearing.
 
 The seam under test is invariant 4. Adding a tool must never require editing the loop. If it does, the seam
 is broken, and finding that out here is the whole reason the tool contract was written in phase 1.
@@ -77,7 +91,8 @@ is broken, and finding that out here is the whole reason the tool contract was w
   > **A2, 2026-08-07.** **Seven tools**, and two of the six named above are dropped for cause.
   >
   > **Dropped — "semantic search over node embeddings."** Embeddings mean either a Bedrock embedding
-  > model (spend, plus the same quota wall this phase is routing around) or a local model (a large
+  > model (spend; the quota wall this clause also cited is gone as of 2026-08-11, but the spend argument
+  > was always the load-bearing one) or a local model (a large
   > dependency inside a 250MB-capped image). Both are the wrong trade for a 973-node corpus where
   > `store.search()` already resolves labels and where the honest failure — refusing an unresolvable
   > name — is a *feature* rather than a gap. Moved to the ROADMAP backlog.

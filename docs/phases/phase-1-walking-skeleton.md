@@ -26,8 +26,22 @@ Not a build step and not its own phase, but nothing else in this phase can start
    expire 12 months from account creation.
 3. **Get Bedrock model access:** the Anthropic First-Time-Use form plus Marketplace permissions. This is not
    automatic.
+
+   **This line was right and was forgotten. Done 2026-08-11.** Written 2026-07-29, it named the exact two
+   things that gated the first Anthropic call twelve days later — the FTU form and Marketplace
+   permissions. It got lost because the account-wide tokens-per-day zero arrived first and dominated
+   attention, and when that cleared the resulting `AccessDeniedException` read as a continuation of the
+   same problem rather than the separate, already-documented one it was. Cost: a few minutes of assuming
+   another support case was needed. **The lesson is about attention, not analysis — a correct note in the
+   scope doc is worthless if nobody re-reads it when the blocker it predicted actually fires.**
 4. **Arm the budget alarms before anything else** — Budgets at $5/$10/$20 plus Cost Anomaly Detection.
 5. **One successful `converse` call is task one.** If it is blocked, everything waits. Do not build around it.
+
+   **Amended 2026-08-01, and the amendment was correct.** "Everything waits" was written when the risk
+   was an AWS account that might never materialise. Once the account existed and the block was one quota
+   dimension, waiting would have cost twelve idle days; steps 2–8 proceeded instead and phases 1–3's local
+   work was complete *before* access arrived on 08-11. Kept here unedited, with the amendment attached,
+   because the original rule was reasonable on the day it was written.
 
 ## Delivers
 
@@ -84,9 +98,10 @@ judge, the artist axis, contested-claim UI, caching, and any density work. Each 
 the distro, not Docker Desktop). The AWS account exists on the paid plan in `us-east-1` with the $20 budget
 armed.
 
-**Still gating:** all 160 Bedrock quotas read 0 TPM and 0 RPM. Nothing in this phase can make a `converse`
-call until that clears, which is exactly why step zero is step zero. It does not block writing the
-IMPLEMENTATION doc.
+**Was gating, now cleared:** all 160 Bedrock quotas read 0 TPM and 0 RPM from 2026-07-30, so nothing in
+this phase could make a `converse` call, which is exactly why step zero was step zero. **Resolved
+2026-08-11** — quota restored, a real `converse` call made and logged, DoD #1 closed. See `ROADMAP.md` §3
+for the resolution and the Marketplace-subscription second gate that followed it.
 
 ## Cost
 

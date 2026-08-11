@@ -15,8 +15,10 @@ that is *present in the messages* still cannot become an approved claim, because
 carries no sources and ``gate()`` checks every proposal against the pinned artifact. That is the gate
 being load-bearing and the delimiter being harm reduction, demonstrated rather than asserted.
 
-The real-model half is not testable until the Bedrock quota clears, and it is listed as open in the
-phase 3 IMPLEMENTATION doc rather than quietly implied to be covered.
+The real-model half became *possible* on 2026-08-11 when Bedrock access was restored, but it is still
+**not done**: these tests run under ``ScriptedLLM``, which can prove the delimiting is applied and
+cannot prove a real model resists what it delimits. That remains open in the phase 3 IMPLEMENTATION
+doc rather than quietly implied to be covered — access was the blocker, and now the work is.
 """
 
 from __future__ import annotations

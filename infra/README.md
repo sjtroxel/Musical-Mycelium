@@ -98,7 +98,7 @@ make tf-plan     # read it
 make tf-apply
 ```
 
-**Deploying while the Bedrock quota is still 0.** Add `-var llm_provider=local`:
+**Deploying without spending anything on model calls.** Add `-var llm_provider=local`:
 
 ```bash
 terraform -chdir=infra/terraform/main apply -var llm_provider=local
@@ -106,9 +106,17 @@ terraform -chdir=infra/terraform/main apply -var llm_provider=local
 
 That deploys a real, public, streaming endpoint that walks the graph, gates every claim, and cites
 real Wikidata statement URIs — with no model call and no spend. It proves the infrastructure, the
-grounding path, and SSE-through-LWA, which is the last open uncertainty in the phase. The prose comes
-from a template rather than a model, so it does **not** close phase 1's definition of done (a real
-`converse` call, and measured token cost). When the quota clears, `apply` again without the flag.
+grounding path, and SSE-through-LWA. The prose comes from a template rather than a model, so a `local`
+deploy alone does **not** close phase 1's definition of done.
+
+This was the only way to deploy at all during the 2026-07-30 to 08-11 Bedrock quota block, and it is
+still the current deployed state. Quota was restored on 08-11 and phase 1 DoD #1 (a real `converse`
+call) is satisfied locally, but the public URL has not been redeployed onto Bedrock.
+
+**Before dropping the flag, decide the timeout.** Per `.claude/rules/aws-and-cost.md`, streamed
+responses are billed for the full function duration even when the client disconnects, so a public URL
+on a real model bills for every visitor who triggers the loop and closes the tab. The flag is a spend
+decision, not a formality.
 
 This is only possible because of the LLM provider seam (invariant 7). It is the seam paying out.
 

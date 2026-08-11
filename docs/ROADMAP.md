@@ -95,19 +95,38 @@ alarm armed. A deeply unimpressive product and a completely correct skeleton.
 `ASSERTS_AUTO`, 57 `EXPOSURE_AUTO`. Live on AWS. `v0.1.0` through `v0.4.0` stay on disk and in S3 as
 frozen records; `v0.1.0` and `v0.2.0` are deliberately unloadable under the current schema.
 
-**The one thing still blocking, and it is not a build gap:** the deployed stack runs on
-`llm_provider=local`, so the prose is a template and the token counts are synthetic. **Two v0.1 DoD
-items (#1 and #7) stay open until Bedrock has a non-zero quota.** Support case `178545883500013`; a
-reproducible two-region defect report was submitted 2026-08-06 and nothing further is owed on it. Every
-other part of the stack — Lambda, ECR, S3, CloudFront, Terraform, IAM, OIDC, CloudWatch, Budgets — is
-applied and working.
+**RESOLVED 2026-08-11. Phase 1 DoD #1 is closed.** A real `converse` call was made and logged against
+Claude Haiku 4.5. What remains is a **deployment** gap, not an access gap: the deployed stack still runs
+`llm_provider=local`, so the public URL's prose is a template and its token counts are synthetic until a
+deliberate redeploy. Every other part of the stack — Lambda, ECR, S3, CloudFront, Terraform, IAM, OIDC,
+CloudWatch, Budgets — is applied and working.
 
-**AWS update, 2026-08-06 23:48 CDT.** Support confirmed the diagnosis in their own words — the block is
+**AWS update, 2026-08-06 23:48 CDT.** Support confirmed the diagnosis in their own words — the block was
 "at the account level at the Bedrock runtime layer, not a per-model or per-region quota setting, which is
-why the values visible in Service Quotas do not reflect what is being enforced." They report the root
+why the values visible in Service Quotas do not reflect what is being enforced." They reported the root
 cause identified and an active internal review to **restore the standard new-account inference
-allocation**, and state that no action is required from us. No ETA. Do not re-file, do not open a second
-case, do not chase it.
+allocation**, with no action required from us and no ETA.
+
+**Resolution, 2026-08-11 ~17:25 CDT.** The allocation was restored. **AWS never said so** — no reply
+landed on case `178545883500013`; the restored numbers were found by checking the Bedrock Quotas console
+directly. Two gates in sequence, and only the first was AWS's:
+
+1. **The tokens-per-day zero: gone.** Amazon Nova Micro returned real usage on the first attempt.
+2. **Anthropic models then threw `AccessDeniedException`** naming `aws-marketplace:ViewSubscriptions`
+   and `Subscribe`. **This was not a quota problem and not a support case.** The Bedrock "Model access"
+   page is retired; third-party models auto-subscribe on first invocation, but only when invoked by an
+   identity holding Marketplace permissions, and `mycelium-dev` is a scoped IAM user that lacks them.
+   Fixed in about five minutes, self-serve: as root, Model catalog → Claude Haiku 4.5 → Playground,
+   submit the Anthropic first-time-use form (instant, not a review queue), invoke once. That created
+   Marketplace agreement `agmt-khy4nwv8klfzzthldwq47ty1` at $0.00 and entitled the whole account.
+   `mycelium-dev` then worked with plain `bedrock:InvokeModel`; **no Marketplace permission was added
+   to the dev key or to the Lambda execution role, and none is needed.**
+
+**Provisioned quotas, and the constraint that actually matters.** Claude Haiku 4.5 5M TPM / 10 RPM;
+Sonnet 4.6 6M / 10; Nova Pro 2M / 25. **RPM binds, not tokens** — an agentic loop exhausts 10 requests
+per minute long before 5M tokens, so anything that fans out needs throttling and backoff. That is a
+phase 4 design input, not a discovery to make mid-run. Newest-generation rows (Opus 5, Sonnet 5,
+Fable 5, Opus 4.7/4.8) read 0 and are normal provisioning lag, not an account fault.
 
 ### Phase 3 — planned 2026-08-07, **all local steps built (2026-08-11); only the Bedrock gate remains**
 
@@ -115,9 +134,13 @@ Scope doc amended (A1–A5) and IMPLEMENTATION doc written and approved the same
 records live in `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §11 — that doc is the detail, this is
 the ledger.
 
-The phase is sequenced around the Bedrock block rather than waiting on it: **steps 1–7 need no model at
+The phase was sequenced around the Bedrock block rather than waiting on it: **steps 1–7 need no model at
 all** and ship as **`v0.3.0-local`**; **step 8 is a single skippable Bedrock gate** carrying DoD items
-10–12, with **phase 4 as its named home** if quota is still absent when the local work finishes.
+10–12, with **phase 4 as its named home** if quota were still absent when the local work finished.
+
+**That contingency did not fire.** Access was restored 2026-08-11, hours after step 7b landed, so step 8
+is now *unblocked rather than deferred*. The sequencing decision still looks right in hindsight: the
+local work was finished, committed and testable before access arrived, and nothing had to wait.
 
 | step | what | needs | status |
 |---|---|---|---|
@@ -130,7 +153,7 @@ all** and ship as **`v0.3.0-local`**; **step 8 is a single skippable Bedrock gat
 | 7a | the six deterministic scorers; **claims no DoD item, by design** | LOCAL | DONE 08-11 |
 | 7b | the era/region/density/query-type slicing and the adversarial baseline run | LOCAL | DONE 08-11 |
 | — | **the `v0.3.0-local` release: tag, KNOWN-GAPS, the README statement** | LOCAL | next |
-| 8 | **the Bedrock gate — smoke call, model IDs, live adversarial run, cost to CloudWatch** | BEDROCK | blocked |
+| 8 | **the Bedrock gate — smoke call, model IDs, live adversarial run, cost to CloudWatch** | BEDROCK | unblocked 08-11; smoke call and model IDs DONE, live adversarial run and CloudWatch cost open |
 
 **Step 7 was split 7a/7b on the 3a/3b precedent.** 7a is six pure functions and closes nothing; 7b is the
 slicing and the run, and closes DoD 1, 2, 4, 6, 7 and 9. **DoD 1–9 and 13 are now green.**
@@ -262,16 +285,16 @@ All present as of 2026-07-30: `uv`, Terraform 1.15.8, Docker Engine 29.6.2 (in-d
 Make. Python is 3.12 locally; `uv` provisions the 3.13 this project targets, so there is no `.python-version`
 file.
 
-**The one remaining gate is Bedrock quotas.** Diagnosed 2026-08-01: the failure is `ThrottlingException`,
-not `AccessDenied`, so **model access is granted** and this is a quota gate. The dimension at zero is
-**tokens per DAY**, and it reads 0.0 across every vendor in `us-east-1` — a new-account provisioning
-condition, one switch rather than sixty, which is why "try a different model" is not a workaround. Support
-case `178545883500013` was filed 2026-07-30 and escalated to the Bedrock service team on 07-31. Phase 1's
-DoD #1 (a real `converse` call) and #7 (measured token cost) are blocked behind it.
+**There is no remaining local prerequisite.** Bedrock was the last one and it cleared 2026-08-11; see
+§3's phase-1 block for the full resolution. The account is live, both Terraform roots are applied, the
+deployed Lambda serves a public streaming URL on `llm_provider=local`, and `BedrockLLM` has been executed
+against the live Converse API.
 
-**Nothing else is.** The account is live, both Terraform roots are applied, and the deployed Lambda serves a
-public streaming URL on `llm_provider=local` — invariant 7 paying out. Ingestion, traversal, the corpus, the
-prose check, evals and docs all touch Bedrock zero times.
+**Two things to keep straight, because they are easy to conflate.** The *provider seam* is verified —
+single-turn, streaming with real usage, and a real tool-use turn. The *agent loop* on top of it has still
+never run end to end against a real model, so nothing that depends on real model **behaviour** — tool
+selection, injection resistance — is demonstrated yet. And the deployed URL has not been redeployed onto
+Bedrock, so the live demo's prose remains a template.
 
 ## 4. Decision history
 
@@ -369,6 +392,21 @@ exists.
   as a measurement rather than quietly restated as a success. **Resolved the same day: DoD #2 is amended
   to the depth the corpus supports (scope doc A5), and `max_path_hops` is published on `/health`.** The
   artist axis is the identified route to depth and stays cuttable. Numbers in `docs/graph-semantics.md` §5.1.
+- **2026-08-11 — Bedrock access restored; the twelve-day block was two gates, not one.** The
+  tokens-per-day zero was AWS's and cleared silently, with no reply on case `178545883500013`. The
+  `AccessDeniedException` that followed on Anthropic models was **ours**: a Marketplace subscription that
+  any identity with `aws-marketplace:Subscribe` can create by invoking once, fixed self-serve in minutes.
+  The lesson worth keeping is diagnostic, not procedural — the second error *looked* like a continuation
+  of the first and was a different problem with a different owner. Reading the error text precisely, and
+  separating "genuinely blocked" from "feels blocked," is what turned an assumed two-week wait into a
+  five-minute fix. **Model choice settled at the same time:** Claude Haiku 4.5 on the `us.` geo
+  cross-region profile, with **RPM (10) binding before TPM (5M)**, which is a phase 4 input.
+- **2026-08-11 — The recorded Converse fixture is now a real recording.** `test_agent_loop.py`'s parser
+  test previously ran against a payload shaped the way the docs describe, with an explicit instruction to
+  replace it once a real call landed. It has been replaced with a verbatim capture. The documented shape
+  was correct, but the live envelope carries `role`, a `metrics` block, and cache-token keys that the
+  assumed one did not — so the fixture now proves the parser tolerates the real wire format, extra keys
+  and all, rather than proving it can parse our own assumptions back to us.
 - **2026-08-05 — Structure is recomputed at load, not read from the manifest.** `build_manifest` records
   it for every future build, but the pinned v0.2.0 manifest was **not** rewritten to add it: artifacts are
   immutable, and rewriting one under its own version is what the pin exists to prevent. The runtime

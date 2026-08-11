@@ -44,11 +44,15 @@ variable "llm_provider" {
     Which LLM implementation the deployed function builds — `build_llm()`'s provider, as
     MYCELIUM_LLM_PROVIDER.
 
-    This is a variable rather than a constant because it is the thing that decouples DEPLOYING from
-    the Bedrock quota. `local` runs the whole stack — tool loop, deterministic gate, real cited claims
-    off the pinned artifact, SSE — with no model call and no spend, so the infrastructure can be
-    proven end to end while every daily-token quota still reads 0. Flip it to `bedrock` and redeploy
-    when that clears; nothing else changes.
+    This is a variable rather than a constant because it is the thing that decoupled DEPLOYING from
+    the Bedrock quota, through the 2026-07-30 to 08-11 block. `local` runs the whole stack — tool loop,
+    deterministic gate, real cited claims off the pinned artifact, SSE — with no model call and no
+    spend, which is how the infrastructure was proven end to end while every daily-token quota read 0.
+
+    Quota was restored 2026-08-11 and `bedrock` is now a working value, but the deployed function has
+    NOT yet been flipped to it. Doing so is a redeploy and a spend decision, not a config typo: a
+    public URL calling a real model bills for every visitor, and per aws-and-cost.md the Lambda timeout
+    is the cost control that bounds it. Decide the timeout before flipping this.
 
     That is invariant 7 (the LLM provider seam) doing the job it was put there to do.
 
@@ -69,10 +73,13 @@ variable "model_id" {
   description = <<-EOT
     The Bedrock model the agent calls, as MYCELIUM_MODEL_ID.
 
-    Genuinely undecided as of 2026-08-03 and recorded as such in the phase-1 IMPLEMENTATION doc 10:
-    which model, and US vs Global inference profile, cannot be settled until the daily-token quota
-    clears and a real `converse` call runs. It is configuration precisely so that answer can land
-    without touching code or rebuilding the image.
+    Undecided from 2026-08-03 until the quota cleared; **settled 2026-08-11** by the first real
+    `converse` call. The default below — Claude Haiku 4.5 on the `us.` geo cross-region inference
+    profile — is confirmed working on this account at 5M TPM / 10 RPM.
+
+    Note that RPM, not TPM, is the binding constraint: 10 requests per minute against 5M tokens per
+    minute means a fan-out workload runs out of requests first. It stays configuration so the choice
+    can change without touching code or rebuilding the image.
   EOT
   type        = string
   default     = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
@@ -122,9 +129,13 @@ variable "reserved_concurrency" {
     originally predicted. This account's entire concurrency ceiling is ~10 against a normal 1,000, so
     a reservation of 5 was refused and the deploy runs at -1 with the account ceiling doing the job.
 
-    Worth knowing for a reason beyond Lambda: it is independent evidence that the Bedrock zero-token
-    quota is new-account posture rather than anything specific to this account or its owner. Two
+    Worth knowing for a reason beyond Lambda: it was independent evidence that the Bedrock zero-token
+    quota was new-account posture rather than anything specific to this account or its owner. Two
     unrelated services, clamped by the same automation.
+
+    That inference was CONFIRMED on 2026-08-11, when Bedrock's standard allocation was restored
+    without any change on this side. Worth keeping as a worked example: the reasoning that read a
+    second, unrelated clamped service as evidence about the first turned out to be correct.
   EOT
   type        = number
   default     = 5

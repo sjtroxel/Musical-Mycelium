@@ -859,9 +859,14 @@ exists, and phase 2 is where several of these numbers get their first measuremen
 ingestion runs locally against WDQS and the Wikipedia API. The only new AWS resource is one S3 bucket
 holding a few MB.
 
-The deployed Lambda stays on `llm_provider=local` until the Bedrock quota clears, so a larger corpus
-changes the artifact the container carries and nothing about spend. Image growth from ~64MB is a few MB —
-irrelevant against ECR's 500MB free allowance.
+The deployed Lambda stayed on `llm_provider=local` throughout, so a larger corpus changed the artifact the
+container carries and nothing about spend. Image growth from ~64MB is a few MB — irrelevant against ECR's
+500MB free allowance.
+
+**Still true after the 2026-08-11 quota restoration**, because the deployed function has not been flipped
+to `bedrock`. Note what changes when it is: a larger corpus stops being spend-neutral, because tool
+results are what fill the model's context and an agentic loop re-sends accumulated context every turn.
+Corpus size becomes a cost input at that point, not before.
 
 ---
 

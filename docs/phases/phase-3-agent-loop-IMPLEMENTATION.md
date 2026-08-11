@@ -149,9 +149,10 @@ don't have — what I do have is two independent checks per edge, and I report w
 ### 1.4 "Semantic search over node embeddings" costs money and adds a Bedrock dependency
 
 The scope doc's tool list includes *"semantic search over node embeddings."* Embeddings mean either a
-Bedrock embedding model (spend, plus the same quota wall) or a local model (a large dependency inside a
-Lambda image capped at 250MB). Both are the wrong trade for a 973-node corpus where `search()` already
-resolves labels and the honest failure mode — refusing an unresolvable name — is a *feature*.
+Bedrock embedding model (spend; the quota wall cited here cleared 2026-08-11, and the spend argument
+stands on its own) or a local model (a large dependency inside a Lambda image capped at 250MB). Both are
+the wrong trade for a 973-node corpus where `search()` already resolves labels and the honest failure
+mode — refusing an unresolvable name — is a *feature*.
 
 **Dropped from phase 3**, moved to the ROADMAP backlog. §4.2 substitutes four tools that need neither.
 
@@ -803,6 +804,14 @@ Not a vague "we'll do it later." Three mechanisms, all in the repo:
    `KNOWN-GAPS` section in this doc naming items 10–12 and stating plainly that the loop has never run
    against a real model. That statement also goes in the README and in any recruiter-facing copy — a
    deployed demo running on a template stub must never be described as a live agent.
+
+   **Amended 2026-08-11, and the statement gets narrower rather than deleted.** Bedrock access was
+   restored and `BedrockLLM` has now been executed, so "no Bedrock call has ever been made" is false. What
+   is still true, and is the claim that actually matters, is that **the loop has never run end to end
+   against a real model** — the provider seam is verified single-turn; the multi-turn behaviour on top of
+   it is not. The deployed URL also still runs the template stub. Both facts survive the quota fix, and
+   the temptation to quietly upgrade "we can call Bedrock" into "it runs on Bedrock" is exactly what this
+   mechanism exists to prevent.
 2. **A skip marker, not a deleted test.** The Bedrock-dependent tests are written now and marked
    **`@pytest.mark.costs_money`** — the marker `pyproject.toml` already registers, described there as
    *"makes a billable Bedrock call; never runs unattended"*, which is exactly what these are. Reused
@@ -811,11 +820,21 @@ Not a vague "we'll do it later." Three mechanisms, all in the repo:
    visible, counted, and
    runnable with one flag the day quota lands. A test that does not exist is a task nobody remembers; a
    skipped test is a standing reminder in the suite output.
+
+   **Status 2026-08-11: these tests still DO NOT EXIST, and quota is no longer the excuse.** The mechanism
+   was designed as a deferral structure and never got built, so item 2 is currently a plan rather than a
+   thing in the repo. It is now the highest-value piece of the release step: the marker is registered, the
+   flag works, and the calls they would make are proven to succeed.
 3. **A named later home.** If quota is still absent when phase 3's local work is done, items 10–12 attach
    to **phase 4**, not to a floating backlog — phase 4 is the eval suite and cannot ship without real
    model output anyway, so the dependency is already there. If quota is still absent at the *start* of
    phase 4, that is the point at which invariant 7 gets exercised for real and `build_llm` is pointed at a
    non-Bedrock provider. That is a budget decision, not a free swap, and it is his to make.
+
+   **Moot as of 2026-08-11.** Quota landed before phase 3's local work shipped, so the fallback to a
+   non-Bedrock provider is not needed and the "named later home" is a choice rather than a necessity:
+   items 10–12 can be done now, or still attached to phase 4 on their merits. Keeping the paragraph
+   because the contingency was sound and may be needed again — a restored quota is not a guarantee.
 
 **What is genuinely lost by deferring.** Not nothing, and I will not pretend otherwise:
 
@@ -942,9 +961,12 @@ for step 3's prompt rewrite), and `pyproject.toml` already registers a **`costs_
   benefit (inspectability, narratable structure for phase 5) that is mostly paid out later. If step 8 shows
   the planning turn dominating cost with no quality gain, the honest move is to record that and reconsider,
   not to defend the design.
-- **How long Bedrock stays blocked.** Unknown, and outside our control. AWS has identified the root cause
-  and has an open review; there is no ETA, and no further action is owed by us. This plan is built so that
-  the answer does not gate the work.
+- **How long Bedrock stays blocked. RESOLVED 2026-08-11 — the answer was twelve days.** Quota was
+  restored the same day step 7b landed, so the contingency this plan was built around never had to fire.
+  Worth keeping as a calibration note rather than deleting: the plan deliberately treated an
+  unknown-duration external block as something to route around instead of wait on, and that was the right
+  call for a reason that has nothing to do with how long the block actually lasted. Waiting would have
+  produced twelve idle days *and* the same finish date.
 
 ---
 
@@ -1181,8 +1203,11 @@ on: an injected string that is *present in the messages* still cannot become an 
 test asserts the hostile literal really did reach the transcript — otherwise it would be proving only that
 the fixture never delivered the attack.
 
-**The real-model half is not testable until the Bedrock quota clears.** It is listed here as open rather
-than implied to be covered, and it belongs to step 8.
+**The real-model half became testable on 2026-08-11 and is still not done.** The quota block was the
+reason it could not be attempted; now it is simply outstanding work, and it belongs to step 8. The
+distinction matters for how it gets described: this is no longer "blocked by AWS," it is "not yet run."
+`ScriptedLLM` can prove the delimiting is applied to every untrusted string and cannot prove a real model
+honours the boundary, and no amount of local testing will change that.
 
 #### The residual, named rather than discovered later
 
@@ -1373,17 +1398,33 @@ commit so the public claim gets read on its own rather than riding inside a scor
 
 Five items, in order:
 
+> **Amended 2026-08-11 ~17:30 CDT — Bedrock access was restored partway through this release step.**
+> Items 1–3 all change wording; none are removed. The precise claim is now: **the loop has never run end
+> to end against a real model**, and the **deployed URL still runs the template stub**. `BedrockLLM`
+> itself has been executed and verified, so "no Bedrock call has ever been made" is no longer true and
+> must not be written. See `ROADMAP.md` §3.
+
 1. **Write the `KNOWN-GAPS` section in this doc.** §5.1 specifies it: name DoD items 10, 11 and 12 and
-   state plainly that **the loop has never run against a real model.** The 7b baseline is the evidence
-   that everything else works, and its own `measures` field is the wording to reuse.
+   state plainly that **the loop has never run end to end against a real model.** The 7b baseline is the
+   evidence that everything else works, and its own `measures` field is the wording to reuse. **Do not
+   write that Bedrock is unavailable** — it is available as of 08-11, and the gap is unrun work, not an
+   external block.
 2. **Put that statement in `README.md`.** §5.1 requires it there too, and in any recruiter-facing copy. A
    deployed demo running on a template stub must never be described as a live agent. This is the item with
-   real consequences outside the repo — the deployed site is public.
+   real consequences outside the repo — the deployed site is public. **Done 2026-08-11** for the Status
+   section; re-read it once KNOWN-GAPS exists so the two say the same thing.
+
+   **The interview-facing risk changed shape.** While quota was zero, the honest line was "AWS has my
+   account throttled," which is unambiguous and outside your control. Now it is "I can call Bedrock and
+   have; the loop on top of it hasn't been exercised against a real model yet." That is a subtler
+   sentence and an easier one to accidentally round up. Round it down instead.
 3. **Write the deferred Bedrock tests and mark them `@pytest.mark.costs_money`.** **These do not exist.**
    Verified 2026-08-11: the marker is registered in `pyproject.toml` and **nothing uses it.** §5.2 makes
    them a deferral *mechanism*, not a nicety — *"a test that does not exist is a task nobody remembers; a
    skipped test is a standing reminder in the suite output."* Deselected by default, runnable with one
-   flag the day quota lands. Without these, the deferral is a promise rather than a structure.
+   flag. **This item got both more valuable and more urgent on 08-11**: it was written as a placeholder
+   for calls that could not be made, and it is now a real, runnable check of calls that are proven to
+   work. Without these, the deferral is a promise rather than a structure.
 4. **Decide the version question, then bump.** **`pyproject.toml` says `version = "0.0.1"` and has never
    tracked the roadmap spine.** So "bump the version" is not yet a defined action. Open question, his
    call: does the package version follow the spine to `0.3.0`, or does the spine live only in git tags
@@ -1396,12 +1437,26 @@ Five items, in order:
 
 ### After the release step
 
-**Step 8, the Bedrock gate — still blocked, and correctly so.** Its hard precondition is unchanged and
-unmet: **the full gold set (20–30) and the sealed held-out 10**, both authored while no model output
-exists. After step 8 runs they can never be authored clean again.
+**Step 8, the Bedrock gate — no longer blocked by AWS as of 2026-08-11, and still correctly gated.** Its
+hard precondition is unchanged and unmet: **the full gold set (20–30) and the sealed held-out 10**, both
+authored while no model output exists. After step 8 runs they can never be authored clean again.
+
+**Read the change precisely. The external blocker lifted; the precondition did not.** These are different
+things and conflating them would be a real mistake, in the expensive direction. The gold set exists to be
+uncontaminated by model output, and that property is destroyed permanently the first time step 8 runs
+against a real model. Bedrock being available makes it *possible* to destroy it early, not advisable.
 
 **That work is his and cannot be delegated**, which is the whole point of it — and as of 2026-08-11 he is
-fatigued from the ~50-case artist labelling and has said so. **There is no schedule pressure on it:** step
-8 is blocked on Bedrock regardless, five gold cases already exist in `gold_v0_1.json`, so the remaining ask
-is roughly 15–25, and nothing about it requires one sitting. If quota is still absent when this is done,
-items 10–12 attach to **phase 4** per §5.3, not to a floating backlog.
+fatigued from the ~50-case artist labelling and has said so.
+
+**There is still no schedule pressure on it, and the quota restoration does not create any.** The original
+argument rested partly on "step 8 is blocked on Bedrock regardless," and that clause is now void, so the
+argument is restated on grounds that do not depend on it:
+
+- Five gold cases already exist in `gold_v0_1.json`; the remaining ask is roughly 15–25.
+- Nothing about it requires one sitting, and a set labelled while fatigued is a worse set — this is
+  measurement equipment, and the whole eval suite inherits its errors permanently.
+- A one-way door has no deadline. The cost of authoring it late is a wait; the cost of authoring it
+  badly, or after contamination, is that every correctness number the project reports becomes unfalsifiable.
+
+Items 10–12 attach to **phase 4** per §5.3 if they are not done here, not to a floating backlog.

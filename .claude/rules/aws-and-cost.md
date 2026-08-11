@@ -36,3 +36,20 @@ roughly $20/month total across all tooling, and there is a history of a real spe
   accumulated context. Any operation that spends money at scale (the eval suite above all) goes behind an
   explicit confirmation prompt, ported from Patchwork's `confirm_spend`.
 - **Track real token cost to CloudWatch from day one** so measured numbers replace the estimates.
+- **Bedrock access, as actually provisioned (confirmed by live calls 2026-08-11).** The account read 0
+  across every quota from 07-30 and the standard allocation was restored on 08-11. Working today:
+  **Claude Haiku 4.5** on `us.anthropic.claude-haiku-4-5-20251001-v1:0` (geo cross-region, 5M TPM /
+  10 RPM), Sonnet 4.6 (6M / 10), and **Nova Pro** (2M / 25) — the non-Anthropic judge `evals.md` requires,
+  which needs no Marketplace step at all. **Newest-generation rows read 0** (Opus 5, Sonnet 5, Fable 5,
+  Opus 4.7/4.8): normal provisioning lag, not an account fault, so do not diagnose it as one.
+- **RPM is the binding constraint, not TPM, and this is a design input.** 10 requests/minute against 5M
+  tokens/minute means a fan-out workload exhausts requests first. The eval suite must throttle and back
+  off; `planning/07` §315 already caps concurrency at 2–4 with exponential backoff, and that number is now
+  a measured requirement rather than a precaution. More context budget does not help.
+- **Third-party models need a one-time Marketplace subscription, and a scoped key cannot create it.**
+  Bedrock's "Model access" page is retired; serverless models auto-enable on first invocation, but for
+  Marketplace-served models (all Anthropic ones) the *first* invocation must come from an identity holding
+  `aws-marketplace:Subscribe`. `mycelium-dev` deliberately does not have it. Done once for this account on
+  2026-08-11 (agreement `agmt-khy4nwv8klfzzthldwq47ty1`, $0.00, no end date) via the console as root, which
+  invariant 5 explicitly permits. **Do not add Marketplace permissions to the dev key or the Lambda
+  execution role** — the entitlement is account-wide and `bedrock:InvokeModel` is sufficient afterwards.

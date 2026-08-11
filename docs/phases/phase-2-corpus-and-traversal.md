@@ -465,10 +465,13 @@ structure and states the constraint honestly; it does not fix it.
 >   artist axis landed. That is invariant 3 enforced rather than the corpus accommodated, but it is an
 >   edit caused by a corpus change and is recorded as one.
 >
-> **The only thing still blocking is Bedrock, and it is not a build gap.** `llm_provider=local` means
-> prose is a template and token counts are synthetic, so **v0.1 DoD #1 and #7 stay open** until the
-> account has a non-zero quota. Case `178545883500013`; a reproducible two-region defect report was
-> submitted 2026-08-06 and **nothing further is owed on it**. Everything else — Lambda, ECR, S3,
+> **The only thing still blocking is Bedrock, and it is not a build gap.** *(True as written; resolved
+> 2026-08-11.)* `llm_provider=local` means prose is a template and token counts are synthetic, so v0.1
+> DoD #1 and #7 stayed open while the account had a zero quota.
+>
+> **Quota restored 2026-08-11: DoD #1 is closed, #7 is unblocked.** What remains is a redeploy, not a
+> block — the deployed function still runs `local`, so its prose is still a template and its token counts
+> are still synthetic until someone flips the flag and pays for it. Everything else — Lambda, ECR, S3,
 > CloudFront, Terraform, IAM, OIDC, CloudWatch, Budgets — is applied and working.
 
 ## Data rules that govern this phase

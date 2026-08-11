@@ -12,13 +12,13 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-08-07. Phase 2 complete; phase 3 planned, not
-started.
+**Deployed, and honestly incomplete.** Last updated 2026-08-11. Phase 2 complete; phase 3's local work
+complete and not yet deployed.
 
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 333 tests.
+generated. 623 tests.
 
 **The corpus is artifact v0.5.0: 973 nodes, 950 edges** across two axes — genre-to-genre and
 artist-to-artist, both from Wikidata P737 only. Every edge carries how strongly it was checked: 22 read
@@ -28,15 +28,18 @@ recall**, so it is a floor on what exists in the sources and is never quoted as 
 
 Two things are deliberately not done, and saying so is the point of this section:
 
-- **The agent is running its local provider, not Bedrock.** Every Bedrock token quota on this account
-  reads zero — a new-account provisioning condition, not a model-access one — so the deployed loop walks
-  the graph, gates the claims and cites real Wikidata statement URIs, but **the prose comes from a
-  template rather than a model, and the token counts are synthetic.** AWS confirmed on 2026-08-06 that
-  the block is an account-level fault at the runtime layer and has an open review to restore the standard
-  allocation. The provider is a deploy-time variable precisely so this was survivable.
-- **The loop does not plan yet.** It resolves, walks and gates across three registered tools. Planning,
-  seven tools, corroboration states and the adversarial eval set are phase 3, which is sequenced so that
-  everything not needing a model ships first.
+- **The deployed URL still runs the local provider, not Bedrock.** Bedrock access was restored on
+  2026-08-11, after a twelve-day account-level quota fault, and the provider seam has now been exercised
+  against the live Converse API — single-turn, streaming with real token usage, and a real tool-use turn.
+  What has *not* happened is a redeploy: the public URL still walks the graph, gates the claims and cites
+  real Wikidata statement URIs while **the prose comes from a template rather than a model, and the token
+  counts are synthetic.** The provider is a deploy-time variable precisely so the twelve days were
+  survivable.
+- **The full loop has never run end-to-end against a real model.** The provider is verified; the agent
+  loop on top of it is not. Every loop test to date runs against a scripted or local provider, which can
+  demonstrate the control flow but cannot demonstrate that a real model resists prompt injection or
+  chooses tools sensibly. That distinction is load-bearing and is not smoothed over anywhere in this
+  repo.
 
 **Coverage is a computed number, not a disclaimer.** The corpus skews Western, anglophone and recent, and
 the output says so with figures rather than a footnote. But concentration is not absence: it spans 500 CE
@@ -51,9 +54,9 @@ plus an independent review.
 
 ## What it is
 
-A hand-built tool-use loop on Amazon Bedrock's Converse API. Given a genre or an artist, it walks a
-pre-built provenance graph of musical influence and synthesizes a grounded, cited lineage. Planning and
-cross-referencing arrive in phase 3.
+A hand-built tool-use loop on Amazon Bedrock's Converse API. Given a genre or an artist, it plans a
+traversal, walks a pre-built provenance graph of musical influence across seven registered tools, and
+synthesizes a grounded, cited lineage.
 
 You ask it where something came from — "Where did Detroit techno come from?" — and it streams back a
 lineage with a source on every link. It will also take two points and walk the chain between them, hop by

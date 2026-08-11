@@ -4,12 +4,21 @@
 > in `CLAUDE.md`. It absorbs what phase 0 and the 2026-07-31 P279/P737 validation actually taught. This doc
 > is allowed to be wrong; it is not allowed to be silently wrong — update it as reality diverges.
 >
-> **The AWS steps are gated; the build is not.** All Bedrock daily-token quotas read 0 across every
-> vendor; support case `178545883500013` is escalated. The scope doc's "everything waits" rule dates from
-> 2026-07-29, when the risk was an AWS account that might never materialize. That risk is retired: the
-> account exists, streaming is verified by a real deploy, and model access is granted (the block is one
-> quota dimension). Amended 2026-08-01 (see `docs/reviews/2026-08-01-fable-status-review.md` §4.1): the
-> `converse` smoke call gates AWS spend and deploy — steps 1 and 9 of §12 — and steps 2–8 proceed now.
+> **The AWS steps were gated; the build was not.** *(Written 2026-08-01, when all Bedrock daily-token
+> quotas read 0 and support case `178545883500013` was escalated.)* The scope doc's "everything waits"
+> rule dates from 2026-07-29, when the risk was an AWS account that might never materialize. That risk is
+> retired: the account exists, streaming is verified by a real deploy, and model access is granted (the
+> block is one quota dimension). Amended 2026-08-01 (see
+> `docs/reviews/2026-08-01-fable-status-review.md` §4.1): the `converse` smoke call gates AWS spend and
+> deploy — steps 1 and 9 of §12 — and steps 2–8 proceed now.
+>
+> **UNGATED 2026-08-11.** Quota restored; a real `converse` call made and logged; **DoD #1 closed and
+> #7 unblocked**. `BedrockLLM` has been executed and all three of its guessed shapes were correct. The
+> decision to proceed on steps 2–8 rather than wait is vindicated by the outcome: phases 1–3's local work
+> was finished and committed before access arrived. See `ROADMAP.md` §3 and §4 for the resolution,
+> including the separate Marketplace-subscription gate that followed the quota fix.
+> **Still open: the loop has never run end to end against a real model, and the deployed URL has not been
+> redeployed onto Bedrock.**
 
 ## 1. What this phase delivers
 
@@ -271,17 +280,20 @@ Decisions inside that shape, each because the alternative is worse:
 - **The OIDC trust policy is pinned to one repo AND one branch ref.** Pinned to the repo alone, a pull
   request from a fork can mint credentials for the account. The deploy policy is scoped to specific
   ARNs, with `iam:PassRole` constrained to the one execution role and to `lambda.amazonaws.com`.
-- **`deploy.yml` is `workflow_dispatch` only for now.** Bootstrap has not been applied and the Bedrock
-  quota is still 0, so a push trigger would fail on every commit — and a workflow that is always red is
+- **`deploy.yml` is `workflow_dispatch` only for now.** Bootstrap had not been applied and the Bedrock
+  quota was still 0, so a push trigger would fail on every commit — and a workflow that is always red is
   a workflow that gets ignored inside a week. The `push:` block is written and commented out; enabling
-  it belongs to step 9, after a live `converse` call works.
+  it belongs to step 9, after a live `converse` call works. **That precondition was met 2026-08-11**, so
+  the reason for `workflow_dispatch` is now cost and blast radius rather than a failing call — decide it
+  on those terms, not by treating the old constraint as still binding.
 - **`llm_provider` is a Terraform variable, not a constant.** This is what decouples *deploying* from
   the Bedrock quota. `-var llm_provider=local` deploys a real public streaming endpoint that walks the
   graph, gates every claim, and cites real statement URIs, with no model call and no spend — proving
-  the infrastructure, the grounding path, and SSE-through-LWA while every daily-token quota reads 0.
-  It closes five of the seven definition-of-done items in §1. It does **not** close #1 (a successful
-  `converse` call) or #7 (measured token cost), so phase 1 stays open and should be described that
-  way. Invariant 7 is the reason this is a one-flag change rather than a fork of the deployment.
+  the infrastructure, the grounding path, and SSE-through-LWA while every daily-token quota read 0.
+  It closes five of the seven definition-of-done items in §1. **#1 was closed separately on 2026-08-11
+  by a live `converse` call; #7 (measured token cost) is unblocked but not yet done, because the
+  deployed function still runs `local` and its token counts are synthetic.** Invariant 7 is the reason
+  flipping it is a one-flag change rather than a fork of the deployment.
 - **CI gained a credential-free Terraform job.** `init -backend=false` skips the only part of `init`
   that authenticates, so `fmt -check` and `validate` run on every commit against no AWS account.
   `make check` runs the same thing.
@@ -364,16 +376,24 @@ synthesizes from the survivors.
 - **`MAX_TURNS = 4` is a cost control, not just a safety net.** An agentic loop re-sends its
   accumulated context every turn, so an unbounded loop is an unbounded bill.
 
-**The model ID is configuration, not a constant.** §10 says the model and the US-vs-Global inference
-profile cannot be settled until the quota clears, so `agent/llm.py` reads `MYCELIUM_MODEL_ID` with a
-documented default rather than hardcoding a verified ID. `MYCELIUM_LLM_PROVIDER=scripted` runs the whole
-stack with no AWS at all, which is the local-dev path while the quota is at zero.
+**The model ID is configuration, not a constant.** `agent/llm.py` reads `MYCELIUM_MODEL_ID` with a
+documented default rather than hardcoding an ID. **§10's open question was settled 2026-08-11:** Claude
+Haiku 4.5 on the `us.` geo cross-region profile, confirmed by the first live call. It stays configuration
+because the model choice is a two-way door, not because the answer is unknown.
+`MYCELIUM_LLM_PROVIDER=scripted` still runs the whole stack with no AWS at all — now the free local-dev
+path rather than the only available one.
 
-**`BedrockLLM` is written but has never been executed.** No `converse` call has succeeded on this
-account. The request and response shapes follow the Converse API as documented and are unverified
-against a live call; `_parse_converse` is factored out and unit-tested against a hand-built payload so
-the parsing is at least exercised. Step 1 (the smoke call) is what confirms the shapes — treat a
-mismatch there as expected and fix it against the real response.
+**`BedrockLLM` was executed for the first time on 2026-08-11**, after being written on 08-02 against the
+documentation with no way to check it. **All three shapes were correct:** single-turn `converse`,
+streaming with a populated `Usage` from the trailing `metadata` event, and a real `tool_use` turn.
+`_parse_converse` was factored out and unit-tested against a hand-built payload precisely so the parsing
+was exercised during the block; that fixture has since been **replaced with a verbatim capture of a real
+response**, which surfaced three envelope fields the documented shape had not mentioned (`role`, a
+`metrics` block, and cache-token keys). None broke the parser.
+
+**What step 1 did not prove.** It is a single turn. The loop above the seam has still never run end to
+end against a real model, so real-model *behaviour* — tool selection, injection resistance — remains
+untested and is tracked in the phase 3 IMPLEMENTATION doc, not here.
 
 ## 8. Testing
 
@@ -433,10 +453,13 @@ Token cost goes to CloudWatch from the first call, so phase 4 has measured numbe
 
 Named rather than smoothed over.
 
-- **Which model, and US vs Global inference profile.** Cannot be settled until quota clears. It sits behind
-  `build_llm()`, which is what the seam is for, but it is a real open item — and the 8/1 diagnosis sharpened
-  it: if the cross-region row is restored and the on-demand row is not, a cross-region profile becomes
-  mandatory rather than a cost preference. First `converse` call decides it.
+- **Which model, and US vs Global inference profile. RESOLVED 2026-08-11.** Claude Haiku 4.5 on the
+  `us.` geo cross-region profile, confirmed by the first live `converse` call. The 8/1 worry — that a
+  cross-region profile might become *mandatory* rather than a cost preference if only the cross-region
+  row were restored — did not materialise: both the geo and global cross-region rows came back at 5M TPM
+  / 10 RPM. **The genuinely useful finding was different from the one anticipated: RPM binds, not TPM.**
+  10 requests per minute against 5M tokens per minute means a fan-out workload exhausts requests first,
+  which makes throttling and backoff a phase 4 design input rather than a tuning detail.
 - **Whether ~15 edges can produce a non-embarrassing two-sentence answer.** The corpus skews to recent
   electronic and hip-hop micro-genres, so the demo genre may not be one anyone recognizes. If so the honest
   move is to say the coverage is thin, not to pick a genre the data does not support.
@@ -476,6 +499,9 @@ From `planning/09` §6, the list that exists so nothing is lost between planning
 
 1. `converse` smoke call, logged — as soon as the quota clears. It gates step 9 and any Bedrock spend;
    steps 2–8 do not wait for it (amended 2026-08-01, consistent with the header).
+   **DONE 2026-08-11.** Quota restored; Claude Haiku 4.5 returned `Usage(input_tokens=10,
+   output_tokens=5)` on the `us.` geo cross-region profile. Steps 2–8 had all completed by then, which
+   is the amendment paying out — this step landed last rather than first and cost the build nothing.
 2. Hand-verify ~15 P737 PROSE edges; author the five gold cases from the same pass.
 3. Ingestion → artifact + manifest, locally.
 4. `GraphStore` + `InMemoryGraphStore`, with tests.
@@ -490,3 +516,8 @@ From `planning/09` §6, the list that exists so nothing is lost between planning
 10. Plain-English write-up of what this phase does — the cold-articulation rep, per the skill's step 7.
 
 Steps 2 through 8 need no AWS. If the quota clears mid-build, step 1 slots in ahead of step 9.
+
+**What actually happened:** the quota did not clear mid-build. It cleared on 2026-08-11, after steps 2–8
+were complete and after phases 2 and 3's local work had shipped on top of them, so step 1 ran last of all.
+The ordering rule was never exercised and the plan still worked, because the thing it protected — not
+serialising the whole build behind an external dependency — was the part that mattered.

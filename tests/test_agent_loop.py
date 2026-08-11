@@ -623,16 +623,67 @@ def test_bedrock_llm_satisfies_the_protocol_without_touching_aws() -> None:
 
 
 def test_converse_response_parsing_against_a_recorded_payload() -> None:
-    """The only way to test the Bedrock shape before the quota clears.
+    """Parsing a **real** Converse response, captured verbatim from Claude Haiku 4.5 on 2026-08-11.
 
-    This is a payload shaped the way the Converse API documents, **not** one captured from a real call
-    — no ``converse`` call has ever succeeded on this account. When the smoke call lands, replace this
-    fixture with the real response and fix whatever disagrees.
+    This fixture used to be a payload shaped the way the API documents, because no ``converse`` call
+    had ever succeeded on this account. The smoke call landed on 2026-08-11 and this is what came back,
+    copied unedited except for dropping ``ResponseMetadata``.
+
+    The documented shape was right, but the real envelope carries three things the assumed one did not:
+    ``role`` on the message, a ``metrics`` block, and ``cacheRead``/``cacheWriteInputTokens`` inside
+    ``usage``. They are kept here deliberately — the point of a recorded fixture is to prove the parser
+    tolerates the **actual** wire format, extra keys included, so nobody later tightens it into
+    something that breaks the first time AWS adds a field.
     """
     parsed = _parse_converse(
         {
             "output": {
                 "message": {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "toolUse": {
+                                "toolUseId": "tooluse_VXjuK9qJAWos49xR6XnT88",
+                                "name": "resolve_node",
+                                "input": {"name": "acid jazz"},
+                                "type": "tool_use",
+                            }
+                        }
+                    ],
+                }
+            },
+            "stopReason": "tool_use",
+            "usage": {
+                "inputTokens": 1488,
+                "outputTokens": 55,
+                "totalTokens": 1543,
+                "cacheReadInputTokens": 0,
+                "cacheWriteInputTokens": 0,
+            },
+            "metrics": {"latencyMs": 1012},
+        }
+    )
+    assert parsed.text == ""
+    assert parsed.wants_tools
+    assert parsed.stop_reason == "tool_use"
+    assert parsed.tool_uses[0].name == "resolve_node"
+    assert parsed.tool_uses[0].arguments == {"name": "acid jazz"}
+    assert parsed.usage.input_tokens == 1488
+    assert parsed.usage.total_tokens == 1543
+
+
+def test_converse_parsing_handles_text_and_a_tool_call_together() -> None:
+    """Synthetic on purpose, and labelled as such.
+
+    The recorded payload above has no text block — the model went straight to the tool. A model may
+    also narrate before calling one, and the parser has to keep both, so this case is constructed
+    rather than captured. Do not mistake it for a recording.
+    """
+    parsed = _parse_converse(
+        {
+            "output": {
+                "message": {
+                    "role": "assistant",
                     "content": [
                         {"text": "Looking that up."},
                         {
@@ -642,7 +693,7 @@ def test_converse_response_parsing_against_a_recorded_payload() -> None:
                                 "input": {"name": "acid jazz"},
                             }
                         },
-                    ]
+                    ],
                 }
             },
             "stopReason": "tool_use",
@@ -651,9 +702,7 @@ def test_converse_response_parsing_against_a_recorded_payload() -> None:
     )
     assert parsed.text == "Looking that up."
     assert parsed.wants_tools
-    assert parsed.tool_uses[0].name == "resolve_node"
     assert parsed.tool_uses[0].arguments == {"name": "acid jazz"}
-    assert parsed.usage.input_tokens == 412
     assert parsed.usage.total_tokens == 470
 
 
@@ -810,7 +859,7 @@ def test_a_full_answer_run(store: InMemoryGraphStore) -> None:
 
 def test_a_lineage_run_narrates_the_chain(store: InMemoryGraphStore) -> None:
     """``SPEC.md`` 2.2's signature query, **worded exactly as the SPEC words it**, end to end on the
-    local provider — which is what the deployed URL runs while the Bedrock quota is at zero. Three tool
+    local provider — which is what the deployed URL still runs, pending a redeploy onto Bedrock. Three tool
     turns, two approved hops, chain prose. Wording it verbatim is the point: the first run of this
     query refused, because "heavy metal" did not resolve to "heavy metal music"."""
     llm = build_llm("local")

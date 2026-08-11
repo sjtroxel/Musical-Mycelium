@@ -36,7 +36,14 @@ than by review.
 The same shape appears again one level up: ``loop.synthesize()`` takes only an ``ApprovedClaimSet``, so
 prose generation has no parameter through which the query, the graph, or a rejected claim could reach it.
 
-``BedrockLLM`` is written but **has never been executed** — every Bedrock daily-token quota on the
-account reads 0. Everything here runs today against ``ScriptedLLM``; the smoke call swaps the
-implementation and nothing above the seam changes.
+``BedrockLLM`` was **first executed against the live API on 2026-08-11**, after a quota block that ran
+from 07-30. Single-turn, streaming and tool-use all parse correctly. Everything in this package still
+runs against ``ScriptedLLM`` by default, because free offline tests are the right default, not because
+Bedrock is unavailable — and swapping the implementation changes nothing above the seam, which is the
+whole point of invariant 7.
+
+**The loop itself has still never run end to end against a real model.** The provider underneath it is
+verified; the multi-turn behaviour on top of it is not. Anything that depends on how a real model
+*behaves* — tool selection, injection resistance — remains unproven and is listed as open in the phase
+3 IMPLEMENTATION doc rather than quietly implied to be covered.
 """

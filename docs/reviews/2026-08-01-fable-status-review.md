@@ -1,5 +1,11 @@
 # Status review — 2026-08-01 (Fable)
 
+> **Historical record. Not updated after the fact.** This is a snapshot of what was known on 2026-08-01
+> and its Bedrock-quota statements were accurate then. The block was resolved 2026-08-11; see
+> `ROADMAP.md` §3 and §4. Nothing below has been rewritten to reflect that, because a dated review that
+> gets edited to look prescient is worthless as a record. Read it as evidence of the reasoning at the
+> time, not as current status.
+
 > Independent review of the whole project, requested during the Bedrock quota wait. Last Fable review was
 > the pre-build pass that produced `planning/08` and `09`. This one covers everything since: scaffolding,
 > the scope docs, the P279/P737 validation, the streaming spike, and the phase-1 IMPLEMENTATION doc.
