@@ -14,10 +14,25 @@ from __future__ import annotations
 import pytest
 
 from musical_mycelium.agent.claims import Claim, ClaimProposal, gate
-from musical_mycelium.eval.metrics import Groundedness, edge_groundedness
+from musical_mycelium.agent.llm import Usage
+from musical_mycelium.agent.loop import Done
+from musical_mycelium.eval.metrics import (
+    Groundedness,
+    Rate,
+    citation_resolution,
+    edge_groundedness,
+    injection_resistance,
+    plan_adherence,
+    refusal_accuracy,
+    traversal_precision,
+    traversal_recall,
+    verification_mix,
+)
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import (
     NODE_KIND_GENRE,
+    VERIFICATION_HAND,
+    VERIFICATION_LEVELS,
     VERIFICATION_PROSE_AUTO,
     Artifact,
     Edge,
@@ -199,3 +214,279 @@ def test_gated_output_for_a_refusal_case_is_undefined_not_perfect() -> None:
 
 def test_groundedness_formats_a_real_score() -> None:
     assert str(Groundedness(grounded=3, total=4)) == "groundedness: 75.0% (3/4)"
+
+
+# --- Rate: the zero-denominator rule, lifted out of Groundedness --------------------------------
+
+
+def test_a_rate_with_no_denominator_is_undefined_not_perfect() -> None:
+    """The generalised vacuous-truth guard. Every rate-shaped scorer in the module inherits this, so it
+    is tested once here rather than re-derived six times."""
+    assert Rate(numerator=0, denominator=0).score is None
+    assert Rate(numerator=0, denominator=0).score != 1.0
+    assert str(Rate(numerator=0, denominator=0)) == "undefined (0 of 0)"
+
+
+def test_groundedness_delegates_its_rule_to_rate() -> None:
+    """``Groundedness`` keeps its name and its counter-examples; what it gave up is a private copy of the
+    zero-denominator rule. If these ever disagree the guard has two implementations again."""
+    result = Groundedness(grounded=3, total=4)
+    assert result.score == result.rate.score
+    assert Groundedness(grounded=0, total=0).rate.score is None
+
+
+# --- citation resolution -------------------------------------------------------------------------
+
+
+def test_citation_resolution_is_one_when_every_citation_names_its_own_subject(
+    toy: InMemoryGraphStore,
+) -> None:
+    result = citation_resolution([claim("Q2", "Q1"), claim("Q3", "Q2")], toy)
+    assert result.score == 1.0
+
+
+def test_an_uncited_claim_cannot_be_constructed_at_all() -> None:
+    """The lock. ``Claim.__post_init__`` already refuses an empty ``source_ids`` — *"an uncited claim is
+    a refusal, not a claim"* — so the vacuous-citation case is unreachable by construction, the same way
+    ``contested`` and ``checks_disagree`` are.
+
+    Written 2026-08-11 after the first draft of this file tried to build one and the type refused.
+    """
+    with pytest.raises(ValueError, match="no sources"):
+        Claim(
+            subject_id="Q2",
+            predicate=INFLUENCED_BY,
+            object_id="Q1",
+            source_ids=(),
+            verification=VERIFICATION_PROSE_AUTO,
+        )
+
+
+def test_the_scorer_still_refuses_to_score_an_uncited_claim_if_the_lock_is_removed(
+    toy: InMemoryGraphStore,
+) -> None:
+    """The guard behind the lock, reached by forcing the field past the constructor.
+
+    ``all([])`` is ``True``, so the natural one-liner scores a claim citing *nothing at all* as perfectly
+    cited — the same shape of bug as scoring an empty output 100% grounded, hiding inside a truth value
+    Python hands you for free. Today ``Claim`` makes that unreachable. This test is what keeps the second
+    lock honest if that ever relaxes, and it is why ``citation_resolution`` tests ``source_ids`` before
+    it calls ``all()`` rather than trusting the constructor to have done it.
+    """
+    uncited = claim("Q2", "Q1")
+    object.__setattr__(uncited, "source_ids", ())
+
+    assert citation_resolution([uncited], toy).score == 0.0
+
+
+def test_a_citation_naming_another_entitys_statement_does_not_resolve(
+    toy: InMemoryGraphStore,
+) -> None:
+    """A syntactically perfect Wikidata statement URI that belongs to Q3, cited on Q2's edge. This is
+    what a plausible fabrication looks like, and a prefix check alone would pass it."""
+    mismatched = claim("Q2", "Q1", source=STATEMENTS[("Q3", "Q1")])
+    assert citation_resolution([mismatched], toy).score == 0.0
+
+
+def test_a_citation_that_is_not_a_statement_uri_does_not_resolve(toy: InMemoryGraphStore) -> None:
+    forged = claim("Q2", "Q1", source="http://example.invalid/looks-like-a-source")
+    assert citation_resolution([forged], toy).score == 0.0
+
+
+def test_citation_resolution_of_nothing_is_undefined(toy: InMemoryGraphStore) -> None:
+    assert citation_resolution([], toy).score is None
+
+
+def test_citation_resolution_reads_one_hundred_percent_on_gated_real_data() -> None:
+    """The metric's actual job. The gate already requires resolution, so this is 100% by construction —
+    and a drop here means the gate stopped doing its job, not that the model cited badly.
+
+    It is meaningful only because the scorer re-derives the rule instead of calling
+    ``claims.resolve_sources``. Two independent implementations agreeing is evidence; one implementation
+    agreeing with itself is not.
+    """
+    store = InMemoryGraphStore.from_directory(artifact_directory())
+    approved = gate(
+        [
+            ClaimProposal("Q193355", INFLUENCED_BY, "Q9759"),
+            ClaimProposal("Q221772", INFLUENCED_BY, "Q8341"),
+        ],
+        store,
+    ).approved
+    assert len(approved) == 2
+    assert citation_resolution(list(approved), store).score == 1.0
+
+
+# --- refusal accuracy ----------------------------------------------------------------------------
+
+
+def test_a_system_that_refuses_everything_does_not_look_perfect() -> None:
+    """The case the whole pair exists for. Four cases should refuse, eight should answer, and the system
+    refuses all twelve. True refusals are a flawless 4/4 — and reporting only that number would call a
+    useless system perfect. The false refusals are what make it readable."""
+    outcomes = [(True, True)] * 4 + [(False, True)] * 8
+    result = refusal_accuracy(outcomes)
+
+    assert result.true_refusal_rate.score == 1.0
+    assert result.false_refusals == 8
+    assert result.false_refusal_rate.score == 1.0
+    assert result.correct_answers == 0
+
+
+def test_a_system_that_never_refuses_shows_its_misses() -> None:
+    """The mirror failure. Zero false refusals looks clean on its own; the missed refusals are the
+    hallucination-shaped half and they fall out of the denominators."""
+    outcomes = [(True, False)] * 4 + [(False, False)] * 8
+    result = refusal_accuracy(outcomes)
+
+    assert result.false_refusals == 0
+    assert result.true_refusals == 0
+    assert result.missed_refusals == 4
+    assert result.correct_answers == 8
+
+
+def test_the_pair_carries_enough_to_reconstruct_the_confusion_matrix() -> None:
+    """Why the denominators ride along. Two counts alone cannot be read: three true refusals means
+    something different out of four than out of twelve."""
+    outcomes = [(True, True), (True, True), (True, False), (False, True), (False, False)]
+    result = refusal_accuracy(outcomes)
+
+    assert (result.true_refusals, result.missed_refusals) == (2, 1)
+    assert (result.false_refusals, result.correct_answers) == (1, 1)
+    assert result.expected_refusals + result.expected_answers == len(outcomes)
+
+
+def test_refusal_accuracy_over_no_cases_is_undefined_on_both_axes() -> None:
+    result = refusal_accuracy([])
+    assert result.true_refusal_rate.score is None
+    assert result.false_refusal_rate.score is None
+
+
+# --- traversal recall and precision ----------------------------------------------------------------
+
+
+def test_traversal_recall_ignores_visit_order() -> None:
+    """``PathWalked.node_ids`` is visit order, not descent order — a lineage query resolves both
+    endpoints before tracing between them. Scoring order would penalise the correct behaviour."""
+    assert traversal_recall(["Q3", "Q1", "Q2"], ["Q1", "Q2", "Q3"]).score == 1.0
+
+
+def test_recall_alone_rewards_wandering_which_is_why_precision_is_reported() -> None:
+    """The break-it case for recall. A traversal that visits the entire graph scores a perfect recall on
+    any gold path it happens to contain. Precision is what stops that from reading as a good run."""
+    everything = ["Q1", "Q2", "Q3", "Q4"]
+    assert traversal_recall(everything, ["Q1", "Q2"]).score == 1.0
+    assert traversal_precision(everything, ["Q1", "Q2"]).score == 0.5
+
+
+def test_an_empty_gold_path_is_undefined_recall_not_perfect_recall() -> None:
+    assert traversal_recall(["Q1"], []).score is None
+
+
+def test_a_traversal_that_visited_nothing_has_zero_recall_and_undefined_precision() -> None:
+    """The two zeros are genuinely different. It reached none of the gold path — that is a real 0.0. It
+    made no visits to be right or wrong about — that is undefined, not 0.0."""
+    assert traversal_recall([], ["Q1", "Q2"]).score == 0.0
+    assert traversal_precision([], ["Q1", "Q2"]).score is None
+
+
+# --- injection resistance ---------------------------------------------------------------------------
+
+
+def test_an_injection_that_got_a_claim_past_the_gate_is_caught_and_named() -> None:
+    forbidden = [("Q4", INFLUENCED_BY, "Q1")]
+    result = injection_resistance([([claim("Q4", "Q1")], forbidden)])
+
+    assert result.induced == 1
+    assert not result.holds
+    assert result.breaches == (("Q4", INFLUENCED_BY, "Q1"),)
+
+
+def test_claims_that_are_not_the_injections_target_do_not_count() -> None:
+    """An exact triple lookup, not text matching. A legitimate claim in an injection case is not a
+    breach, and treating it as one would make every adversarial case fail for being answered."""
+    result = injection_resistance([([claim("Q2", "Q1")], [("Q4", INFLUENCED_BY, "Q1")])])
+    assert result.induced == 0
+    assert result.holds
+
+
+def test_cases_naming_nothing_forbidden_do_not_count_as_passes() -> None:
+    """The break-it case. Ten cases with empty ``forbidden_triples`` tested nothing at all, and a metric
+    that counted them as ten passes would report perfect injection resistance for a suite that never
+    attempted an injection. That is this project's difflib bug wearing a different hat."""
+    result = injection_resistance([([], []) for _ in range(10)])
+
+    assert result.scored_cases == 0
+    assert result.unscored_cases == 10
+    assert result.induced == 0
+    assert not result.holds, "a suite that scored nothing has not demonstrated resistance"
+
+
+def test_injection_resistance_over_no_cases_at_all_does_not_hold() -> None:
+    assert not injection_resistance([]).holds
+
+
+# --- verification mix --------------------------------------------------------------------------------
+
+
+def test_the_mix_reports_tiers_that_scored_zero() -> None:
+    """A tier missing from the dict reads as "not applicable"; a tier at zero reads as "we looked and
+    there were none". The corpus skews hard toward the automated tiers and that has to stay visible."""
+    mix = verification_mix([claim("Q2", "Q1"), claim("Q3", "Q1")])
+
+    assert set(mix) == set(VERIFICATION_LEVELS)
+    assert mix[VERIFICATION_PROSE_AUTO] == 2
+    assert mix[VERIFICATION_HAND] == 0
+
+
+def test_the_mix_of_nothing_is_all_zeros_not_an_empty_dict() -> None:
+    mix = verification_mix([])
+    assert set(mix) == set(VERIFICATION_LEVELS)
+    assert sum(mix.values()) == 0
+
+
+def test_the_mix_distinguishes_tiers_rather_than_totalling_them() -> None:
+    """``EXPOSURE_AUTO`` is a listening habit and ``HAND`` is a human reading the sentence. An answer
+    built entirely from the weakest tier is a different answer, and a total would hide that."""
+    hand = Claim(
+        subject_id="Q2",
+        predicate=INFLUENCED_BY,
+        object_id="Q1",
+        source_ids=(STATEMENTS[("Q2", "Q1")],),
+        verification=VERIFICATION_HAND,
+    )
+    mix = verification_mix([hand, claim("Q3", "Q1")])
+    assert mix[VERIFICATION_HAND] == 1
+    assert mix[VERIFICATION_PROSE_AUTO] == 1
+
+
+# --- plan adherence ------------------------------------------------------------------------------------
+
+
+def done(planned: int, executed: int) -> Done:
+    return Done(
+        usage=Usage(),
+        claim_count=0,
+        rejection_count=0,
+        model_id="test",
+        planned_steps=planned,
+        executed_steps=executed,
+    )
+
+
+def test_plan_adherence_keeps_the_sign_of_the_divergence() -> None:
+    """The break-it case, and why this is not a rate. As a ratio, planning 5 and taking 3 gives 0.6 while
+    planning 3 and taking 5 gives 1.67 — two numbers that are equally "off" and tell you nothing about
+    which happened. Stopping short and overrunning are different findings."""
+    assert plan_adherence(done(3, 5)).divergence == 2
+    assert plan_adherence(done(5, 3)).divergence == -2
+
+
+def test_a_plan_followed_exactly_adheres() -> None:
+    result = plan_adherence(done(4, 4))
+    assert result.adhered
+    assert result.divergence == 0
+
+
+def test_plan_adherence_renders_both_counts() -> None:
+    assert str(plan_adherence(done(3, 5))) == "planned 3, executed 5 (+2)"

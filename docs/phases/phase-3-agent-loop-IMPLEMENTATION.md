@@ -1,4 +1,4 @@
-# Phase 3 — Agent Loop (v0.3): IMPLEMENTATION
+a# Phase 3 — Agent Loop (v0.3): IMPLEMENTATION
 
 > **As-built plan.** Written 2026-08-07, immediately before phase 3 is built, so it absorbs what phases
 > 0–2 actually taught. The scope doc (`phase-3-agent-loop.md`) was written 2026-07-30, before the corpus,
@@ -557,7 +557,7 @@ Deterministic, free, CI-runnable. Extends `eval/metrics.py` (which currently hol
 | `traversal_recall` / `traversal_precision` | over the visited set vs the gold path | baseline recorded, no threshold invented |
 | `citation_resolution` | fraction of approved claims whose `source_ids` resolve | should be 100% by construction; the point is a test that notices if it stops being |
 | `injection_resistance` | count of approved claims an injection caused | zero, or the build is broken |
-| `corroboration_mix` | counts per `Corroboration` state | descriptive, not a target |
+| `verification_mix` | counts per `VERIFICATION_LEVELS` tier | descriptive, not a target *(corrected 2026-08-11 — was `corroboration_mix` over a `Corroboration` state that A1 deleted on 08-07; the type does not exist)* |
 | `plan_adherence` | planned steps vs executed steps | descriptive |
 
 **Slicing** by era (from `coverage.era_of`), region (`Node.countries`, with `ANGLOPHONE_CORE` already
@@ -571,6 +571,94 @@ inputs where the answer is known by construction, and at least one deliberate at
 
 **No thresholds are set in this phase.** `.claude/rules/evals.md`: do not invent thresholds before a
 baseline exists. Phase 3 records baselines; phase 4 sets gates.
+
+#### 4.7a Step 7a — the scorers alone (written 2026-08-11, before the code)
+
+Step 7 is split, on the step 3a/3b precedent, which cost nothing there. **7a is the six scorers and their
+break-it tests. 7b is the slicing and the baseline run over the adversarial set.** The split falls where it
+does because 7a is a set of pure functions whose inputs already exist, and 7b is the first thing in this
+phase that runs all 18 adversarial cases end to end — a different kind of work with a different failure mode.
+
+**7a closes no DoD item on its own.** DoD #6 needs the adversarial run, #7 needs the slices. Saying so up
+front is the point: a commit that adds six functions and claims six DoD items would be the kind of green
+that hides work.
+
+##### What 7a builds
+
+Six scorers in `eval/metrics.py`, alongside `edge_groundedness`, each with unit tests over synthetic inputs
+where the answer is known by construction, and each with at least one deliberate attempt to break it.
+
+##### Four decisions this step makes, and why
+
+**1. The zero-denominator rule generalises. It is not a groundedness quirk.**
+
+`Groundedness.score` already returns `None` rather than `1.0` at `total == 0`, because an answer that
+asserts nothing has undefined groundedness, not perfect groundedness. That is the vacuous-truth guard
+`.claude/rules/evals.md` names. **Every rate-shaped scorer in 7a inherits it** — the rule is "a denominator
+of zero is not a 100%", and re-deriving it six times is six chances to get it wrong once. So 7a lifts the
+idiom into one shared `Rate` type carrying `numerator` / `denominator`, with `score -> float | None`, and
+`Groundedness` keeps its own name and docstring but is expressed in those terms. A scorer that cannot be a
+`Rate` (the pair, the counts) does not pretend to be one.
+
+**2. `citation_resolution` must NOT import `resolve_sources`.**
+
+`gate()` already requires source resolution as its fifth condition, so this metric is 100% by construction —
+which is exactly what makes it dangerous. If the scorer calls `claims.resolve_sources`, it asks the gate's
+own helper whether the gate was right, and `metrics.py`'s module docstring already forbids precisely that:
+*"a measurement that asks the gate whether the gate was right measures nothing."* The scorer therefore
+**re-derives the resolution rule independently** — a Wikidata statement URI must name the claim's own
+subject — and if the two implementations ever disagree, that disagreement is a finding, not an
+inconsistency to paper over. This is the same reasoning that already governs `edge_groundedness`, applied a
+second time rather than invented.
+
+**3. `refusal_accuracy` is a pair, and a bare pair is not reconstructible.**
+
+`.claude/rules/grounding-and-claims.md` requires true refusals and false refusals, always together, because
+a system that refuses everything scores perfectly on hallucination and is useless. But two counts alone
+cannot be read: 3 true refusals is a different fact when 4 cases should have refused than when 12 should
+have. **So the result carries its denominators** — how many cases were expected to refuse, how many were
+not — and the misses (a case that should have refused and did not) fall out of the arithmetic rather than
+being tracked separately. Four numbers, one object, no percentage on the face of it.
+
+**4. `injection_resistance` reads `forbidden_triples` off the dataset.**
+
+Attributing an approved claim to an injection needs to know what the injection was trying to induce, and
+guessing that from prose is the fuzzy-text-matching failure this project exists to avoid. `adversarial_v1.json`
+already carries `forbidden_triples` per case, hand-authored on 08-07. The scorer is therefore a set
+intersection over `Claim.triple` — an exact lookup, no matching, no judgement. **A case with an empty
+`forbidden_triples` contributes zero to the denominator and is not scored as a pass**, or the metric
+inflates itself with cases that never tested anything.
+
+##### The open question — scorer arity
+
+The six scorers do not all take the same input, and this is the one thing I want decided rather than
+assumed:
+
+- **Per-run:** `edge_groundedness`, `citation_resolution`, `verification_mix`, `plan_adherence` — each
+  reads one run's output.
+- **Per-set:** `refusal_accuracy`, `injection_resistance` — each is only meaningful across a set of cases
+  with expectations attached.
+
+Two ways to hold that:
+
+- **(a) Loose arguments.** Each scorer takes exactly what it needs (`list[Claim]`, `store`, a `Done`, a list
+  of case-outcome pairs). What `edge_groundedness` does today. Break-it tests stay trivial to write because
+  constructing an input is constructing two or three values.
+- **(b) A `RunOutcome` dataclass** in `eval/`, capturing one run's events, with every scorer reading it.
+  Tidier call sites and one obvious place for 7b's collector to write to — but it fixes a shape now, before
+  the adversarial run in 7b has ever exercised it, and every break-it test has to build a whole `RunOutcome`
+  to probe one field.
+
+**Recommendation: (a) for 7a, and let 7b introduce a collector if the call sites actually turn out to be
+noisy.** The cost of being wrong about (a) is a refactor of six pure functions with full test coverage. The
+cost of being wrong about (b) is a shape baked into the metrics module before the thing that consumes it
+exists — and this phase has already been bitten once by a name that outlived its type.
+
+##### Explicitly not in 7a
+
+Slicing, the adversarial baseline run, any threshold, any `RunOutcome`, and `Done`'s docstring claim that
+`plan_adherence` is computed "in phase 4" — that last one is a one-line correction owed in 7b, once the
+scorer it names actually has a caller.
 
 ### 4.8 Step 8 — the Bedrock gate (SKIPPABLE)
 
@@ -1051,9 +1139,58 @@ appear on the `done` frame with no edit to `api/app.py`. Verified by reading a l
 local provider, not assumed. `api/app.py` did change — it now builds both roles — but that is a caller
 change, not a `render` one.
 
-### Next — step 7
+### Step 7a — DONE, 2026-08-11 — the six scorers
 
-**DoD 1–9 and 13 are the `v0.3.0-local` gate; 3, 5, 8 and 13 are green.** Step 7 remains: §4.7 the
-scorers and the slicing.
+**591 tests (was 564), `make check` clean, root 15/18, terraform valid.** `eval/metrics.py` and
+`tests/test_metrics.py` only; nothing else in the repo was touched, which is what the split bought.
+
+**No DoD item is claimed by this step,** exactly as §4.7a said up front. #6 needs the adversarial run and
+#7 needs the slices, both of which are 7b.
+
+Built per §4.7a with option (a), loose arguments: `Rate`, `citation_resolution`, `refusal_accuracy` +
+`RefusalAccuracy`, `traversal_recall` / `traversal_precision`, `injection_resistance` +
+`InjectionResistance`, `verification_mix`, `plan_adherence` + `PlanAdherence`. `Groundedness` keeps its
+name, fields and public API and delegates the zero-denominator rule to `Rate` via a new `.rate` property.
+
+#### The finding — the vacuous-citation case is unreachable, and the type caught it
+
+The planned break-it test for `citation_resolution` was to score a claim citing nothing at all, because
+`all(())` is `True` and the natural one-liner reports it as perfectly cited. **The test could not be
+written: `Claim.__post_init__` already raises on an empty `source_ids` — "an uncited claim is a refusal,
+not a claim."** The state the guard defends against cannot be constructed.
+
+That is the same shape as `contested` and `checks_disagree`, so it is handled the same way rather than by
+deleting the guard:
+
+1. **`test_an_uncited_claim_cannot_be_constructed_at_all`** asserts the lock — the constructor refuses.
+2. **`test_the_scorer_still_refuses_to_score_an_uncited_claim_if_the_lock_is_removed`** reaches the guard
+   by forcing the field past the constructor with `object.__setattr__`, and asserts the metric still
+   scores 0.0.
+
+Deleting the guard on the grounds that the type prevents it would make `citation_resolution` silently
+correct — right today, and wrong the first time `Claim` relaxes, with `all(())` handing back the exact
+vacuous-truth bug `.claude/rules/evals.md` exists to prevent. Two locks, and the second one is tested.
+
+#### Smaller things
+
+- **`_STATEMENT_PREFIX` is duplicated from `agent/claims.py` on purpose,** not imported. Sharing the
+  constant is a step back toward sharing the logic, and the whole value of `citation_resolution` is that
+  it re-derives the rule. Its 100%-on-real-data test means something only because two independent
+  implementations agree; one implementation agreeing with itself proves nothing.
+- **`plan_adherence` is deliberately not a rate.** As a ratio, planning 5 and taking 3 gives 0.6 while
+  planning 3 and taking 5 gives 1.67 — equally "off", and neither tells you which happened. Stopping
+  short and overrunning are different findings, so the divergence is signed.
+- **`traversal_recall` is set-valued, not order-valued,** because `PathWalked.node_ids` is visit order and
+  not descent order. Scoring order would penalise a lineage query for resolving both endpoints first,
+  which is the correct behaviour.
+- **`InjectionResistance.holds` requires `scored_cases > 0`**, on the `is_fully_grounded` precedent. Ten
+  cases carrying no `forbidden_triples` are ten cases that tested nothing, and counting them as ten passes
+  would report perfect resistance for a suite that never attempted an injection.
+
+### Next — step 7b
+
+**DoD 1–9 and 13 are the `v0.3.0-local` gate; 3, 5, 8 and 13 are green.** Step 7b remains: the slicing
+(era, region, density, query type), the baseline run over the 18 adversarial cases, and the one-line
+correction to `Done`'s docstring, which still says `plan_adherence` is computed "in phase 4".
 
 **Still open before step 8, unchanged:** the full gold set (20–30) and the sealed held-out 10.
