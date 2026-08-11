@@ -127,12 +127,18 @@ jobs:
 
       # All three -vars are load-bearing, and this step failed without two of them on 2026-08-05:
       #
-      #   llm_provider         `main/variables.tf` defaults it to `bedrock`, and every daily-token
-      #                        quota on the account still reads 0. Deploying that way leaves /health
-      #                        green while /lineage dies with Runtime.StreamError on the first
-      #                        converse call — a healthy health check over a dead stream IS the
-      #                        signature of this, not an LWA or streaming bug. Choose `bedrock` at
-      #                        dispatch time once the quota clears.
+      #   llm_provider         `main/variables.tf` defaulted to `bedrock` while every daily-token quota
+      #                        on the account read 0. Deploying that way left /health green while
+      #                        /lineage died with Runtime.StreamError on the first converse call — a
+      #                        healthy health check over a dead stream IS the signature of this, not an
+      #                        LWA or streaming bug. Keep that in mind if it ever reappears.
+      #
+      #                        The default flipped to `local` on 2026-08-11, when quota was restored:
+      #                        the same forgotten flag stopped failing loudly and started succeeding
+      #                        expensively. This `||` fallback is now belt-and-braces rather than the
+      #                        only thing standing between a dispatch and a billable public URL — keep
+      #                        it anyway. Pass `bedrock` at dispatch time deliberately, and only after
+      #                        timeout_seconds has been set from a real measurement.
       #   reserved_concurrency defaults to 5; this account's entire concurrency ceiling is ~10, so
       #                        PutFunctionConcurrency is refused and the apply fails AFTER it has
       #                        already updated the function. -1 leaves the account ceiling in charge.

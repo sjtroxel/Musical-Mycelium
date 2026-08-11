@@ -167,11 +167,31 @@ class BedrockLLM:
 
     @property
     def client(self) -> Any:
-        """Created lazily so importing this module never builds an AWS client or reads credentials."""
+        """Created lazily so importing this module never builds an AWS client or reads credentials.
+
+        **Adaptive retries, because RPM is this account's binding constraint — measured 2026-08-11.**
+        Haiku 4.5 is provisioned at 5M TPM against **10 RPM**, and one query is not one request: a plan
+        turn, a tool turn per hop, and a synthesis turn. A single run can approach the per-minute
+        request ceiling on its own, and two at once will pass it. This was not theoretical — the first
+        run of the live loop tests threw ``ThrottlingException`` on exactly this.
+
+        ``adaptive`` mode adds client-side rate limiting on top of retries, so the client slows itself
+        when it sees throttling rather than hammering and failing. The default ``legacy`` mode retries
+        far less and has no rate limiter, which is what produced the failure.
+
+        Note the interaction with the Lambda timeout, which is a cost control: retries consume wall
+        clock, and a streamed response bills for the full duration. Backoff is the correct behaviour
+        here, but it is not free, and that tension is real rather than resolved.
+        """
         if self._client is None:
             import boto3
+            from botocore.config import Config
 
-            self._client = boto3.client("bedrock-runtime", region_name=self._region)
+            self._client = boto3.client(
+                "bedrock-runtime",
+                region_name=self._region,
+                config=Config(retries={"max_attempts": 8, "mode": "adaptive"}),
+            )
         return self._client
 
     def converse(

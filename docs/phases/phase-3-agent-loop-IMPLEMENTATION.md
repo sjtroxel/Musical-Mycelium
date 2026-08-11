@@ -1381,16 +1381,52 @@ gold set. Locked by a test that fails if the mix ever changes, so it cannot quie
   would be the script author's. Deferred to DoD #11. The premise-channel attack is scripted instead,
   because `gate()` decides its outcome rather than the script.
 
-### NEXT SESSION STARTS HERE — the `v0.3.0-local` release step
+### NEXT SESSION STARTS HERE — fix one bug, then the `v0.3.0-local` release step
 
-Written 2026-08-11 ~02:55 CDT as a cold-start handoff. **Read this section first, then verify against the
-repo before believing any of it** — the standing rule, and two step memories have already been wrong about
-what was committed.
+> **REWRITTEN 2026-08-11 ~18:50 CDT, end of the Bedrock-unblock session. This supersedes the 02:55
+> handoff below it.** Two things changed that morning's plan: Bedrock access was restored, and the first
+> live-model test found a real bug in the loop.
+>
+> **Read this section first, then verify against the repo before believing any of it** — the standing
+> rule, and step memories have been wrong about what was committed more than once.
 
-**Step 0 — orient.** `git log --oneline -3`. 7a is `9dfc58b`. **7b may or may not be committed yet**; if
-`git status` is dirty with `eval/slices.py`, `eval/harness.py` and the baseline JSON untracked, the commit
-is `git add -A && git commit -m "phase 3 step 7b: slicing and the adversarial baseline run"`. Then
-`make check` — it should read **623 tests, mypy clean on 49 files, root 15/18**.
+**Step 0 — orient.** `git log --oneline -3`. The docs pass is `57c8409`; 7b is `c264fcc`. The evening's
+second batch (telemetry, live tests, RPM retries, budget `cost_types`) may or may not be committed — if
+`git status` is dirty, the message is
+`git add -A && git commit -m "cost telemetry, live Bedrock tests, RPM retries, budget measures gross spend"`.
+Then `make check`: it should read **637 passed, 7 deselected**, mypy clean on 50 files, root 15/18.
+
+**Step 1 — FIX THE MULTI-TOOL-TURN BUG. This is the first work of the day, before the release step.**
+
+`tests/test_bedrock_live.py::test_the_loop_runs_end_to_end_against_a_real_model` fails with:
+
+```
+ValidationException: Expected toolResult blocks at messages.6.content for the following Ids: tooluse_...
+```
+
+`agent/loop.py` (the `for use in response.tool_uses:` block, ~518-534) appends **one message per tool
+result**. Bedrock Converse requires **every toolResult for one assistant turn to sit in a single user
+message as multiple content blocks**, and requires strict user/assistant alternation — so two
+consecutive result messages is invalid twice over. The loop therefore breaks whenever a real model asks
+for **two or more tools in one turn**.
+
+**Why nothing caught it:** every `ScriptedLLM` fixture in the suite emits exactly one tool use per turn,
+so this path has no local coverage at all. This is the ScriptedLLM-versus-real-model gap this phase has
+been writing about, showing up as an actual defect within minutes of the first live run.
+
+**The fix:** accumulate results across the whole loop and append **one** message afterwards carrying one
+toolResult block per tool use. **Write a `ScriptedLLM` test emitting two tool uses in one turn as part of
+the same change** — otherwise the only thing covering it is a billable test, which is a coverage gap
+wearing a receipt. Then re-run `uv run pytest -m costs_money` to confirm; 6 of 7 passed at the point this
+was written, and this is the 7th.
+
+**What is already known-good, so do not re-diagnose it.** `BedrockLLM` is verified live: single-turn,
+streaming with real usage, and tool-use parsing. `ThrottlingException` on the first live run was **10 RPM**
+— this account's binding constraint, since one query is a plan turn plus one per hop plus synthesis — and
+is already fixed by `Config(retries={"max_attempts": 8, "mode": "adaptive"})` on the client. If throttling
+reappears under load, that is a known constraint to design around, not a regression.
+
+**Step 2 onward — the release step, unchanged except where the amendment note above marks it.**
 
 **What this step is:** the release, not more building. All local phase 3 work is done and **DoD 1–9 and 13
 are green.** This step makes that a stated, tagged, honestly-qualified thing. It is deliberately its own

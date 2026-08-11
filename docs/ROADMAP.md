@@ -152,7 +152,8 @@ local work was finished, committed and testable before access arrived, and nothi
 | 6 | the cheap/strong routing seam, proven with two `ScriptedLLM`s (DoD #8) | LOCAL | DONE 08-09 |
 | 7a | the six deterministic scorers; **claims no DoD item, by design** | LOCAL | DONE 08-11 |
 | 7b | the era/region/density/query-type slicing and the adversarial baseline run | LOCAL | DONE 08-11 |
-| — | **the `v0.3.0-local` release: tag, KNOWN-GAPS, the README statement** | LOCAL | next |
+| — | **FIX FIRST: the multi-tool-turn bug** — `loop.py` sends one message per tool result; Bedrock needs all of a turn's results in one. Found 08-11 by the first live-model test | BEDROCK-FOUND | **next** |
+| — | **the `v0.3.0-local` release: KNOWN-GAPS, the README statement, tag** | LOCAL | after the bug. Version decided 08-11 (spine, `0.3.0`); `costs_money` tests DONE |
 | 8 | **the Bedrock gate — smoke call, model IDs, live adversarial run, cost to CloudWatch** | BEDROCK | unblocked 08-11; smoke call and model IDs DONE, live adversarial run and CloudWatch cost open |
 
 **Step 7 was split 7a/7b on the 3a/3b precedent.** 7a is six pure functions and closes nothing; 7b is the

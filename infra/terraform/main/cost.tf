@@ -16,6 +16,26 @@ resource "aws_budgets_budget" "monthly" {
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
+  # MEASURE GROSS SPEND, NOT WHAT IS LEFT TO PAY AFTER CREDITS. Added 2026-08-11.
+  #
+  # AWS Budgets includes credits by default, which means a budget tracks cost *after* promotional
+  # credits are applied. This account is carrying ~$160 of them, so with the default the entire
+  # $5/$10/$20 ladder reads near-zero and never fires for as long as the credits last — and then
+  # starts firing at full burn rate the moment they run out, with no ramp and no warning.
+  #
+  # That is the exact failure mode behind the widely-reported 2026 case where Activate credits
+  # silently absorbed ~$8k before the invoice appeared. The alarm was working as configured; it was
+  # configured to watch the wrong number.
+  #
+  # These alarms exist to catch a runaway eval run (the docs put the suite at $5-25/run, the largest
+  # line item in the project) or a hammered public URL on `llm_provider=bedrock`. Both are situations
+  # where credits would be doing the absorbing, so the default setting blinds the guardrail precisely
+  # when it is needed. Expect alarm emails during the credit period. That is the point: it means the
+  # ladder is tracking real burn rather than reporting a subsidised zero.
+  cost_types {
+    include_credit = false
+  }
+
   # Both notifications, not one. ACTUAL tells you money is already spent; FORECASTED tells you the
   # current burn rate will get there — which is the one that arrives early enough to do something
   # about a runaway eval run or a hammered public URL.

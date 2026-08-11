@@ -40,6 +40,7 @@ from musical_mycelium.agent.loop import (
     ToolCalled,
 )
 from musical_mycelium.agent.tools import default_registry
+from musical_mycelium.api.telemetry import emit_query_cost
 from musical_mycelium.graph.memory import default_store
 
 #: Paid during Lambda INIT, not during the first request. See the module docstring.
@@ -104,8 +105,20 @@ def stream_answer(query: str) -> Iterator[str]:
         query, store=STORE, llm=llm, registry=registry, synthesis_llm=synthesis_llm
     ):
         if isinstance(event, Done):
+            elapsed = round(time.monotonic() - started, 3)
+            # `.claude/rules/aws-and-cost.md`: measured token cost to CloudWatch from day one. Emitted
+            # here because this is where a query ends and where both models' usage is finally in one
+            # place. Writes a log line and makes no AWS call — see `telemetry` for why EMF rather than
+            # `put_metric_data`, and why dollars appear only when prices are configured.
+            emit_query_cost(
+                traversal_usage=event.usage,
+                traversal_model_id=event.model_id,
+                synthesis_usage=event.synthesis_usage,
+                synthesis_model_id=event.synthesis_model_id or event.model_id,
+                elapsed_seconds=elapsed,
+            )
             payload = asdict(event)
-            payload["elapsed_seconds"] = round(time.monotonic() - started, 3)
+            payload["elapsed_seconds"] = elapsed
             payload["artifact_version"] = STORE.artifact_version
             payload["corpus"] = corpus_summary()
             yield sse("done", payload)

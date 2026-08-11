@@ -4,7 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "musical-mycelium"
-version = "0.0.1"
+# Tracks the ROADMAP product spine, decided 2026-08-11. It had sat at 0.0.1 since scaffolding and never
+# tracked anything, which made "bump the version" an undefined action at release time.
+#
+# There are exactly two version numbers in this project and this is one of them: the PRODUCT version
+# (here, and the git tag) and the ARTIFACT version (the corpus pin, currently v0.5.0). A third number
+# meaning a third thing was the cost being avoided. The git tag may carry a qualifier the package
+# version cannot — `v0.3.0-local` marks the Bedrock-gated remainder as still open — so read the tag for
+# release status and this for which phase the code is.
+version = "0.3.0"
 description = "A cited-lineage engine for music history: a Bedrock agent that walks a provenance graph where every influence edge traces to a source."
 readme = "README.md"
 # Upper bound is deliberate. Without it uv resolves to the newest interpreter on the machine (it picked
@@ -104,7 +112,14 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --strict-markers --strict-config"
+# `-m "not integration and not costs_money"` is a SPEND GUARD, not a speed one, and it belongs here
+# rather than only in CI. `ci.yml` has carried this deselection since the workflow was written, but a
+# local `make check` had nothing — so the first `costs_money` test to exist would have billed Bedrock on
+# every run, on the machine where tests run most often. Added 2026-08-11 alongside the first such test.
+#
+# A later `-m` on the command line overrides this one, which is how the tests are meant to be run:
+#   uv run pytest -m costs_money
+addopts = "-q --strict-markers --strict-config -m 'not integration and not costs_money'"
 markers = [
   "integration: touches a real external service; skipped by default in CI",
   "costs_money: makes a billable Bedrock call; never runs unattended",

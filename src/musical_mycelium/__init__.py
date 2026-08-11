@@ -14,4 +14,10 @@ refactor. Keep the dependency direction pointing one way::
 ``eval`` may import anything. Nothing imports ``eval``.
 """
 
-__version__ = "0.0.1"
+#: Tracks the ROADMAP product spine (decided 2026-08-11), and must equal ``pyproject.toml``'s
+#: ``version``. Two literals in two files is a drift waiting to happen, so
+#: ``tests/test_architecture.py`` asserts they match rather than trusting whoever edits one to
+#: remember the other. Deliberately a literal and not ``importlib.metadata.version`` — that reads
+#: installed distribution metadata, which is stale until reinstall and absent if the package is ever
+#: run from a path rather than installed.
+__version__ = "0.3.0"

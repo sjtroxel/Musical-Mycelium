@@ -98,11 +98,17 @@ make tf-plan     # read it
 make tf-apply
 ```
 
-**Deploying without spending anything on model calls.** Add `-var llm_provider=local`:
+**Deploying without spending anything on model calls.** This is the default as of 2026-08-11 — a bare
+`apply` deploys the local provider and costs nothing:
 
 ```bash
-terraform -chdir=infra/terraform/main apply -var llm_provider=local
+terraform -chdir=infra/terraform/main apply
 ```
+
+The default used to be `bedrock`, and flipping it was a **safety** change, not a preference. With every
+quota at 0, forgetting `-var llm_provider=local` failed loudly and free. Once quota was restored, the
+same omission would have quietly succeeded and put a billable model behind a public unauthenticated URL.
+Spending money now requires typing `-var llm_provider=bedrock` on purpose.
 
 That deploys a real, public, streaming endpoint that walks the graph, gates every claim, and cites
 real Wikidata statement URIs — with no model call and no spend. It proves the infrastructure, the

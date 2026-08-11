@@ -49,19 +49,33 @@ variable "llm_provider" {
     deterministic gate, real cited claims off the pinned artifact, SSE — with no model call and no
     spend, which is how the infrastructure was proven end to end while every daily-token quota read 0.
 
-    Quota was restored 2026-08-11 and `bedrock` is now a working value, but the deployed function has
-    NOT yet been flipped to it. Doing so is a redeploy and a spend decision, not a config typo: a
-    public URL calling a real model bills for every visitor, and per aws-and-cost.md the Lambda timeout
-    is the cost control that bounds it. Decide the timeout before flipping this.
-
     That is invariant 7 (the LLM provider seam) doing the job it was put there to do.
+
+    **THE DEFAULT CHANGED FROM `bedrock` TO `local` ON 2026-08-11, AND THE REASON IS THE POINT.**
+
+    While every quota read 0, defaulting to `bedrock` was self-correcting: a forgotten
+    `-var llm_provider=local` produced a loud, free failure — /health green, /lineage dead with
+    Runtime.StreamError on the first converse call. The blast radius of the mistake was an error message.
+
+    Quota was restored on 08-11 and that inverted without a line of code changing. The same forgotten
+    flag now SUCCEEDS, putting a real, billable model behind a public unauthenticated URL. Nothing warns
+    you, because nothing is wrong — it just costs money on every visit, and per aws-and-cost.md a
+    streamed response bills the full function duration even when the visitor closes the tab.
+
+    So the default is now the safe value, and spending money requires typing it out. `local` is also
+    what is actually deployed, so a bare `plan` reports no drift. CI is unaffected: deploy.yml passes
+    this explicitly (`inputs.llm_provider || 'local'`) and always did.
+
+    **Before ever passing `bedrock`, decide `timeout_seconds`.** It is 30 and documented there as a
+    placeholder awaiting a measurement of the real loop that has not happened yet. That number is the
+    per-visitor exposure ceiling.
 
     Be honest about what a `local` deploy is: the prose comes from a template, not a model. It proves
     the plumbing, the grounding path, and the streaming. It does not close phase 1's definition of
     done, which requires a real converse call and measured token cost.
   EOT
   type        = string
-  default     = "bedrock"
+  default     = "local"
 
   validation {
     condition     = contains(["bedrock", "local"], var.llm_provider)

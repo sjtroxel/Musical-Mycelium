@@ -28,6 +28,27 @@ def test_version_is_exposed() -> None:
     assert musical_mycelium.__version__
 
 
+def test_package_version_matches_pyproject() -> None:
+    """The version is written in two files and they must agree.
+
+    Added 2026-08-11, when the decision that ``pyproject.toml`` follows the ROADMAP product spine made
+    the version a thing that gets edited every phase. It had sat at ``0.0.1`` since scaffolding, which
+    is exactly why the drift went unnoticed: a number nobody changes cannot disagree with itself.
+
+    This is the cheap enforcement of a convention that would otherwise be remembered or not.
+    """
+    import tomllib
+
+    import musical_mycelium
+
+    pyproject = SRC.parents[1] / "pyproject.toml"
+    declared = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["version"]
+
+    assert musical_mycelium.__version__ == declared, (
+        f"__init__.py says {musical_mycelium.__version__!r}, pyproject.toml says {declared!r}"
+    )
+
+
 def test_graph_does_not_import_ingest() -> None:
     """``ingest`` may depend on ``graph``; never the reverse.
 
