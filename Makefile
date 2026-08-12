@@ -3,7 +3,8 @@
 
 .DEFAULT_GOAL := help
 .PHONY: help install fmt lint typecheck test cov check root-check clean dev ingest \
-        image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push
+        image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
+        heldout-key heldout-seal heldout-verify heldout-check
 
 UV := $(shell command -v uv 2>/dev/null)
 
@@ -136,6 +137,42 @@ tf-destroy: ## Destroy the main root. Bootstrap is destroyed separately and AFTE
 # against a service that is degraded in 2026, so run it when the corpus changes, not on every loop.
 ingest: ## Rebuild the pinned graph artifact from Wikidata (local only; requires --force to overwrite)
 	uv run python -m musical_mycelium.ingest.wikidata $(ARGS)
+
+# --- the sealed held-out set -------------------------------------------------
+# .claude/rules/evals.md requires a held-out set "never looked at during development". The threat is the
+# coding agent, not the author: an agent greps, opens files to check a schema, and reads test failures,
+# and a plaintext held-out set reaches its context eventually. See src/musical_mycelium/eval/heldout.py.
+#
+# THE KEY LIVES OUTSIDE THIS REPO and losing it loses access permanently — the ciphertext is committed so
+# the data survives, but a set that cannot be opened after a live run can never be re-authored clean.
+
+HELDOUT_KEY := $(HOME)/.config/musical-mycelium/heldout.key
+
+heldout-key: ## Generate the held-out key (refuses to overwrite an existing one)
+	@if [ -f "$(HELDOUT_KEY)" ]; then \
+		echo "A key already exists at $(HELDOUT_KEY)."; \
+		echo "Overwriting it would make the sealed set unopenable forever. Refusing."; \
+		exit 1; \
+	fi
+	@mkdir -p "$(dir $(HELDOUT_KEY))"
+	@openssl rand -base64 48 > "$(HELDOUT_KEY)"
+	@chmod 600 "$(HELDOUT_KEY)"
+	@echo "key written to $(HELDOUT_KEY)"
+	@echo "BACK IT UP NOW — password manager, and one copy off this machine."
+
+# PLAINTEXT= must point OUTSIDE this repo. Sealing streams through memory and writes only the ciphertext
+# and the public manifest; the authored file is left untouched for you to move or delete.
+heldout-seal: ## Seal an authored held-out set. Usage: make heldout-seal PLAINTEXT=~/path/heldout_v1.json
+	@test -n "$(PLAINTEXT)" || { echo "Usage: make heldout-seal PLAINTEXT=~/path/heldout_v1.json"; exit 1; }
+	uv run python -m musical_mycelium.eval.heldout --key "$(HELDOUT_KEY)" seal "$(PLAINTEXT)"
+
+heldout-verify: ## Check the sealed set against its manifest (no key, no decryption — CI-safe)
+	uv run python -m musical_mycelium.eval.heldout verify
+
+# Run this when the artifact version moves. Prints case ids and problem codes, never case content, so
+# running it does not open the set.
+heldout-check: ## Validate the sealed set against the pinned corpus (needs the key)
+	uv run python -m musical_mycelium.eval.heldout --key "$(HELDOUT_KEY)" check
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .mypy_cache .ruff_cache dist build .coverage

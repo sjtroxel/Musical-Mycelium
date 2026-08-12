@@ -20,7 +20,7 @@ from typing import Any
 import pytest
 
 from musical_mycelium.agent.claims import ClaimProposal, gate
-from musical_mycelium.eval.metrics import edge_groundedness
+from musical_mycelium.eval.metrics import edge_groundedness, traversal_recall
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 
 GOLD_PATH = (
@@ -145,6 +145,72 @@ def test_case_claims_survive_the_gate_and_measure_as_grounded(
         assert measured.is_fully_grounded
         assert measured.score == 1.0
         assert measured.total == len(case["expected_claims"])
+
+
+# --- expected_path: what traversal_recall reads -----------------------------------------------------
+
+
+@pytest.mark.parametrize("case_id", case_ids())
+def test_case_carries_an_expected_path_of_real_nodes(
+    case_id: str, gold: dict[str, Any], store: InMemoryGraphStore
+) -> None:
+    """``traversal_recall(visited, gold)`` takes node ids and this schema had none until 2026-08-12,
+    which is why that metric had never scored a run. Every id in the field must be a node the corpus
+    actually holds, or the metric measures a walk toward somewhere that does not exist."""
+    case = get_case(gold, case_id)
+    path = case["expected_path"]
+    assert path, f"{case_id}: expected_path is empty"
+    for node_id in path:
+        assert store.get_node(node_id) is not None, f"{case_id}: {node_id} is not in the corpus"
+
+
+@pytest.mark.parametrize("case_id", case_ids())
+def test_expected_path_contains_the_subject_and_every_claim_endpoint(
+    case_id: str, gold: dict[str, Any]
+) -> None:
+    """**Broader than the claims is allowed; narrower is not.** The field is authored rather than derived
+    because a path case legitimately visits intermediates that produce no claim, and
+    ``traversal_precision`` penalises off-path visits — so what counts as on-path is a judgement. This
+    locks the one direction that is never a judgement call: a node the case *claims* an edge for must be
+    a node the case *expects the traversal to reach*.
+
+    Membership, not position: ``traversal_recall`` is set-valued, because ``PathWalked.node_ids`` is
+    visit order rather than descent order.
+    """
+    case = get_case(gold, case_id)
+    path = set(case["expected_path"])
+
+    assert case["expected_resolution"]["node_id"] in path, f"{case_id}: subject missing from path"
+    for claim in case["expected_claims"]:
+        assert claim["subject_id"] in path, f"{case_id}: claim subject off the expected path"
+        assert claim["object_id"] in path, f"{case_id}: claim object off the expected path"
+
+
+def test_the_refusal_case_expects_the_subject_alone(gold: dict[str, Any]) -> None:
+    """The reason the field is authored and not derived. A refusal case has no claims, so a derived node
+    set would be empty and ``traversal_recall`` would return ``Rate(0, 0)`` — which ``Rate`` correctly
+    reports as *undefined* rather than perfect. That is the quiet failure: the metric would never score a
+    refusal case at all, and the behaviour these cases exist to test — reaching the node, then declining
+    to narrate it — would go unmeasured while the suite looked healthy.
+    """
+    refusals = [c for c in gold["cases"] if c["expected_refusal"]]
+    assert refusals, "no refusal case to check"
+    for case in refusals:
+        assert case["expected_path"] == [case["expected_resolution"]["node_id"]]
+        assert not case["expected_claims"]
+
+
+@pytest.mark.parametrize("case_id", case_ids())
+def test_a_perfect_walk_scores_perfect_recall_on_every_case(
+    case_id: str, gold: dict[str, Any]
+) -> None:
+    """``traversal_recall``'s first caller outside its own unit tests. A traversal that visited exactly
+    the expected path scores 1.0 — including the refusal case, whose denominator is 1 rather than 0."""
+    case = get_case(gold, case_id)
+    path = case["expected_path"]
+
+    assert traversal_recall(path, path).score == 1.0
+    assert traversal_recall([], path).score == 0.0
 
 
 # --- the rejected edges must not creep back in ------------------------------------------------------
