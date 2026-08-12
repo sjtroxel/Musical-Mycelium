@@ -805,13 +805,27 @@ Not a vague "we'll do it later." Three mechanisms, all in the repo:
    against a real model. That statement also goes in the README and in any recruiter-facing copy — a
    deployed demo running on a template stub must never be described as a live agent.
 
-   **Amended 2026-08-11, and the statement gets narrower rather than deleted.** Bedrock access was
-   restored and `BedrockLLM` has now been executed, so "no Bedrock call has ever been made" is false. What
-   is still true, and is the claim that actually matters, is that **the loop has never run end to end
-   against a real model** — the provider seam is verified single-turn; the multi-turn behaviour on top of
-   it is not. The deployed URL also still runs the template stub. Both facts survive the quota fix, and
-   the temptation to quietly upgrade "we can call Bedrock" into "it runs on Bedrock" is exactly what this
-   mechanism exists to prevent.
+   **Amended 2026-08-11 — SUPERSEDED the next day, kept because the reasoning is the point.** Bedrock
+   access was restored and `BedrockLLM` had been executed, so "no Bedrock call has ever been made" became
+   false. The narrower statement adopted that day was that **the loop had never run end to end against a
+   real model** — provider seam verified single-turn, multi-turn behaviour on top of it not. That held for
+   about ten hours.
+
+   **DONE 2026-08-12, as [`docs/KNOWN-GAPS.md`](../KNOWN-GAPS.md) — a file rather than a section here, and
+   it is the canonical list. Do not restate it in this doc.** Two reasons for the file. It is read by
+   anyone evaluating the project, and burying it 800 lines into a phase doc is a way of half-publishing
+   it; and the define-once rule means the open items get one home rather than two that drift.
+
+   **What the re-derivation changed.** The 08-11 sentence above is now false too: the loop **has** run end
+   to end against a real model. What replaces it is narrower again — real-model behaviour is
+   *demonstrated but not measured*, because refusal accuracy, traversal recall and injection resistance
+   are recorded only against scripted traces. One live case is an anecdote, not a rate. **The
+   deployed-stub half is unchanged** and remains the one claim here with consequences outside the repo.
+
+   Three sentences have now been retired in three days, each one narrower than the last, and every
+   revision moved in the same direction: the honest statement kept shrinking toward the deployed stub.
+   That is the mechanism working. The temptation it exists to resist — quietly upgrading "we can call
+   Bedrock" into "it runs on Bedrock" — has gotten stronger at every step, not weaker.
 2. **A skip marker, not a deleted test.** The Bedrock-dependent tests are written now and marked
    **`@pytest.mark.costs_money`** — the marker `pyproject.toml` already registers, described there as
    *"makes a billable Bedrock call; never runs unattended"*, which is exactly what these are. Reused
@@ -1460,8 +1474,8 @@ Five items, in order:
 > 08-11) and "the loop has never run against a real model" (false since 08-12). **What remains true and
 > unqualified is the deployed stub.** See `ROADMAP.md` §3.
 
-> **The five places that still say "never run end to end", verified by grep 2026-08-12 04:15. All five
-> are now FALSE and all five belong to items 1–2 below, so they are listed rather than fixed here —
+> **The places that still say "never run end to end", verified by grep 2026-08-12 04:15. All of them
+> are now FALSE and all belong to items 1–2 below, so they are listed rather than fixed here —
 > fixing them piecemeal ahead of `KNOWN-GAPS` is how the two end up disagreeing.** Note the direction of
 > the error: every one of them **understates** what works, so nothing public is overclaiming and none of
 > this is urgent.
@@ -1470,23 +1484,41 @@ Five items, in order:
 > - `docs/ROADMAP.md:296`
 > - `src/musical_mycelium/agent/llm.py:22` — the module docstring's "what that verification does not cover".
 > - `docs/phases/phase-1-walking-skeleton-IMPLEMENTATION.md:20` and `:394`
+> - `src/musical_mycelium/agent/__init__.py:45` — **found 2026-08-12 10:45, missing from the original
+>   list, which said five.** The 04:15 grep matched on single lines and this one wraps across two, so it
+>   was invisible to it. Worth remembering the next time a grep is treated as an inventory: the count was
+>   not wrong because the search was careless, it was wrong because the pattern could not express the
+>   thing being counted.
 >
 > **What replaces them is narrower, not wider:** the loop is live-verified end to end, and **the deployed
 > URL still runs the template stub**. Do not let the second half get dropped while rewriting the first.
+>
+> **ALL SIX REWRITTEN 2026-08-12 ~11:00**, along with `README.md:21`'s stale 623-test count. The
+> replacement wording throughout is *demonstrated but not measured*.
 
-1. **Write the `KNOWN-GAPS` section in this doc.** **STILL OWED — the only real writing left.** §5.1
-   specifies it: name the open DoD items and state the residual gaps plainly. **Re-derive which DoD items
-   are actually still open before writing — do not copy the old list.** The 08-11/08-12 work closed or
-   narrowed several: `costs_money` tests exist and pass, CloudWatch token cost is emitted
-   (`api/telemetry.py`), and the loop is live-verified. The 7b baseline is the evidence that everything
-   else works, and its own `measures` field is the wording to reuse. **Do not write that Bedrock is
-   unavailable** — it has been available since 08-11, and every remaining gap is unrun work, not an
-   external block.
-2. **Put that statement in `README.md`.** §5.1 requires it there too, and in any recruiter-facing copy. A
-   deployed demo running on a template stub must never be described as a live agent. This is the item with
-   real consequences outside the repo — the deployed site is public. **Done 2026-08-11** for the Status
-   section, but **it now says something false and must be re-read against item 1**: it was written while
-   the loop had never run live.
+1. **~~Write the `KNOWN-GAPS` section in this doc.~~ DONE 2026-08-12 as `docs/KNOWN-GAPS.md`** — a file,
+   not a section, for the reasons in §5.1. 11 open checkboxes, 3 already earned, and 8 standing limits
+   that deliberately get no checkbox because they will never be ticked.
+
+   **The re-derivation moved three items and found one thing worth carrying into phase 4.** DoD #10 is
+   green but narrow — one case, one channel, one model, one run, and the gate would have refused the
+   triple anyway, so it is defence in depth *confirmed*, not *discovered*. DoD #12 splits: the model ID is
+   recorded, and no EMF record has ever reached CloudWatch, because the deployed Lambda runs
+   `llm_provider=local` and the live tests write to a terminal. **DoD #11 splits unevenly, and this is the
+   finding:** its refusal half is merely unrun, but `traversal_recall` and `traversal_precision` have
+   **never scored a single run, scripted or live** — their only callers in the repo are
+   `tests/test_metrics.py`. They need expected paths, which need the gold set, which holds 5 cases. That
+   half is gated on hand-authoring, not on Bedrock, and reading it as "just run it live" would have been
+   wrong in the expensive direction.
+2. **~~Put that statement in `README.md`.~~ DONE 2026-08-12.** §5.1 requires it there too, and in any
+   recruiter-facing copy. A deployed demo running on a template stub must never be described as a live
+   agent. This is the item with real consequences outside the repo — the deployed site is public.
+
+   The Status section now links `docs/KNOWN-GAPS.md`, carries the corrected 640-test count, and replaces
+   the false "never run end-to-end" bullet with **demonstrated but not measured** — which says the loop
+   ran, says the first live run found a bug every scripted test had missed, and then says the published
+   numbers describe the machinery rather than the model. The deployed-stub bullet above it is unchanged,
+   because nothing about it changed.
 
    **The interview-facing risk has changed shape twice, and it gets subtler each time.** While quota was
    zero, the honest line was "AWS has my account throttled" — unambiguous, outside your control. On 08-11

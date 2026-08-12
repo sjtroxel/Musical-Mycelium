@@ -42,8 +42,10 @@ runs against ``ScriptedLLM`` by default, because free offline tests are the righ
 Bedrock is unavailable — and swapping the implementation changes nothing above the seam, which is the
 whole point of invariant 7.
 
-**The loop itself has still never run end to end against a real model.** The provider underneath it is
-verified; the multi-turn behaviour on top of it is not. Anything that depends on how a real model
-*behaves* — tool selection, injection resistance — remains unproven and is listed as open in the phase
-3 IMPLEMENTATION doc rather than quietly implied to be covered.
+**The loop itself was verified end to end against a real model on 2026-08-12** — plan, multi-tool
+traversal, gate, synthesis and prose — and that run immediately found a multi-tool-turn bug that every
+scripted test had missed. What is still open is *measurement* rather than existence: real-model refusal
+accuracy, traversal recall and injection resistance are recorded only against scripted traces, so how a
+real model **behaves** across a set is unquantified. Listed as open in ``docs/KNOWN-GAPS.md`` rather
+than quietly implied to be covered.
 """

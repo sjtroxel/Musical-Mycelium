@@ -17,8 +17,9 @@
 > decision to proceed on steps 2–8 rather than wait is vindicated by the outcome: phases 1–3's local work
 > was finished and committed before access arrived. See `ROADMAP.md` §3 and §4 for the resolution,
 > including the separate Marketplace-subscription gate that followed the quota fix.
-> **Still open: the loop has never run end to end against a real model, and the deployed URL has not been
-> redeployed onto Bedrock.**
+> **Amended 2026-08-12: the loop HAS now run end to end against a real model** (7 of 7 billable tests
+> green). **Still open: the deployed URL has not been redeployed onto Bedrock,** so the live demo's prose
+> is still a template. Open items are tracked in `docs/KNOWN-GAPS.md`.
 
 ## 1. What this phase delivers
 
@@ -391,9 +392,9 @@ was exercised during the block; that fixture has since been **replaced with a ve
 response**, which surfaced three envelope fields the documented shape had not mentioned (`role`, a
 `metrics` block, and cache-token keys). None broke the parser.
 
-**What step 1 did not prove.** It is a single turn. The loop above the seam has still never run end to
-end against a real model, so real-model *behaviour* — tool selection, injection resistance — remains
-untested and is tracked in the phase 3 IMPLEMENTATION doc, not here.
+**What step 1 did not prove.** It is a single turn. The loop above the seam was verified separately on
+2026-08-12; what remains untested is real-model *behaviour* measured across a set — refusal accuracy,
+traversal recall, injection resistance as a rate — which is tracked in `docs/KNOWN-GAPS.md`, not here.
 
 ## 8. Testing
 

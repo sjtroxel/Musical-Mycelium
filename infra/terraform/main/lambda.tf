@@ -112,6 +112,11 @@ resource "aws_lambda_function" "app" {
       MYCELIUM_LLM_PROVIDER = var.llm_provider
       MYCELIUM_MODEL_ID     = var.model_id
       AWS_REGION_NAME       = var.region
+
+      # Empty by default, and that is a working configuration: token counts still reach CloudWatch and
+      # dollar figures stay silent. Present here rather than absent so the silence is visibly deliberate
+      # — see `variables.tf` and `api/telemetry.py` for why a hardcoded price is worse than no price.
+      MYCELIUM_TOKEN_PRICES = var.token_prices
     }
   }
 

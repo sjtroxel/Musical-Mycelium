@@ -292,10 +292,12 @@ deployed Lambda serves a public streaming URL on `llm_provider=local`, and `Bedr
 against the live Converse API.
 
 **Two things to keep straight, because they are easy to conflate.** The *provider seam* is verified —
-single-turn, streaming with real usage, and a real tool-use turn. The *agent loop* on top of it has still
-never run end to end against a real model, so nothing that depends on real model **behaviour** — tool
-selection, injection resistance — is demonstrated yet. And the deployed URL has not been redeployed onto
-Bedrock, so the live demo's prose remains a template.
+single-turn, streaming with real usage, and a real tool-use turn — and as of 2026-08-12 the *agent loop*
+on top of it is verified too: plan, multi-tool traversal, gate, synthesis and prose, end to end against a
+real model. What is not demonstrated is real model behaviour **measured across a set**: refusal accuracy,
+traversal recall and injection resistance are recorded only against scripted traces. And the deployed URL
+has not been redeployed onto Bedrock, so the live demo's prose remains a template. The full list is
+`docs/KNOWN-GAPS.md`.
 
 ## 4. Decision history
 

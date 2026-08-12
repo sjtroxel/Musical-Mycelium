@@ -19,8 +19,11 @@ them, and all three were confirmed correct when the quota was restored:
   would have under-reported cost forever without ever raising.
 - ``toolConfig`` — a real ``stop_reason='tool_use'`` turn parsed into a ``ToolUse``.
 
-**What that verification does not cover:** the agent loop above this seam has still never run end to end
-against a real model. Everything proven here is single-turn.
+**What that verification does not cover:** everything proven here is single-turn. The loop above this
+seam was verified separately on 2026-08-12 — plan, multi-tool traversal, gate and synthesis against a
+real model — and finding the multi-tool-turn bug is what that run bought. What remains unproven is
+*measured* real-model behaviour: refusal accuracy and traversal recall are recorded only against scripted
+traces. See ``docs/KNOWN-GAPS.md``.
 """
 
 from __future__ import annotations

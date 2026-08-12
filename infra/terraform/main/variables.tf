@@ -99,6 +99,27 @@ variable "model_id" {
   default     = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 }
 
+variable "token_prices" {
+  description = <<-EOT
+    JSON mapping model id to USD per million tokens, as MYCELIUM_TOKEN_PRICES. Shape:
+
+      {"us.anthropic.claude-haiku-4-5-20251001-v1:0": {"input": 0.0, "output": 0.0}}
+
+    **The default is empty on purpose, and empty is a working state, not a broken one.** With this
+    unset the Lambda still emits measured token counts to CloudWatch and simply says nothing about
+    dollars. `api/telemetry.py` explains the asymmetry: token counts are measured and cannot go stale,
+    while a price baked into source is wrong the moment a vendor changes it — and a wrong price does not
+    fail, it silently produces a plausible cost number that every downstream decision then trusts.
+
+    So this variable exists to make the silence deliberate rather than accidental. Before 2026-08-12 the
+    environment block had no such key at all, which meant a Bedrock redeploy would have produced missing
+    dollar metrics that read as a bug. Look the real numbers up when setting it. Do not copy them from
+    this description, which is a format illustration and nothing else.
+  EOT
+  type        = string
+  default     = ""
+}
+
 variable "memory_mb" {
   description = <<-EOT
     Lambda memory, which also buys proportional CPU.
