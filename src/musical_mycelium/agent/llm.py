@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -853,31 +853,60 @@ def delimit(value: Any) -> Any:
     return value
 
 
-def tool_result_message(
-    tool_use_id: str, content: Any, *, is_error: bool = False
-) -> dict[str, Any]:
-    """A Converse ``toolResult`` turn. Here rather than in the loop because it is provider wire format,
-    and the loop is not allowed to know about wire formats.
+@dataclass(frozen=True, slots=True)
+class ToolOutcome:
+    """One tool's result paired with the id of the call that asked for it.
+
+    Exists so the loop can accumulate a turn's results without touching wire format. The loop knows a
+    tool ran and what it returned; it does not know what a ``toolResult`` block looks like, and that
+    boundary is what keeps invariant 4 honest.
+    """
+
+    tool_use_id: str
+    content: Any
+    is_error: bool = False
+
+
+def tool_results_message(outcomes: Sequence[ToolOutcome]) -> dict[str, Any]:
+    """**One** Converse user turn carrying **every** toolResult for the assistant turn that requested
+    them. Here rather than in the loop because it is provider wire format, and the loop is not allowed
+    to know about wire formats.
+
+    **It takes a sequence, and there is deliberately no single-result variant.** A model may ask for two
+    or more tools in one turn, and Converse requires all of that turn's results in a single user message
+    as multiple content blocks — it validates the set, and it also demands strict user/assistant
+    alternation, so appending one message per result is invalid twice over. That was a real bug
+    (2026-08-11): the loop appended per result, which is the shape a singular helper invites. A function
+    that is correct when called once and wrong when called in a loop is a trap, so the singular form is
+    gone rather than documented, the same reasoning that keeps ``user_message`` and ``question_message``
+    apart.
 
     **Delimiting happens here, not in the caller.** This is the single point every tool payload passes
     through on its way into the message list, so a payload cannot reach the model unmarked by anyone
     forgetting to call something first. A caller-applied wrapper would be a convention; this is a
     property.
     """
-    delimited = delimit(content)
+    if not outcomes:
+        # Unreachable from the loop, which only gets here when the model asked for at least one tool.
+        # Raising rather than emitting an empty content list keeps it that way: the wire error for an
+        # empty user turn names neither this function nor the turn that produced it.
+        raise ValueError("a toolResult turn needs at least one outcome")
     return {
         "role": "user",
-        "content": [
-            {
-                "toolResult": {
-                    "toolUseId": tool_use_id,
-                    "content": [{"json": delimited}]
-                    if not isinstance(delimited, str)
-                    else [{"text": delimited}],
-                    "status": "error" if is_error else "success",
-                }
-            }
-        ],
+        "content": [_tool_result_block(outcome) for outcome in outcomes],
+    }
+
+
+def _tool_result_block(outcome: ToolOutcome) -> dict[str, Any]:
+    delimited = delimit(outcome.content)
+    return {
+        "toolResult": {
+            "toolUseId": outcome.tool_use_id,
+            "content": [{"json": delimited}]
+            if not isinstance(delimited, str)
+            else [{"text": delimited}],
+            "status": "error" if outcome.is_error else "success",
+        }
     }
 
 

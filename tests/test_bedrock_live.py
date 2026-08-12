@@ -38,7 +38,7 @@ import pytest
 
 import musical_mycelium
 from musical_mycelium.agent.llm import BedrockLLM, Usage
-from musical_mycelium.agent.loop import ClaimApproved, Done, Planned, Refused, run
+from musical_mycelium.agent.loop import ClaimApproved, Done, Planned, Refused, Token, run
 from musical_mycelium.agent.tools import default_registry
 from musical_mycelium.graph.memory import InMemoryGraphStore, default_store
 
@@ -136,10 +136,17 @@ def test_the_loop_runs_end_to_end_against_a_real_model(
     Deliberately asserts structure rather than content: a plan is emitted first, the run terminates, and
     whatever claims survive the gate are real. It does **not** assert which edges come back, because the
     model chooses the traversal and pinning that would be pinning a model's judgement.
+
+    **The query is chosen so the corpus can actually answer it**, and that is not a thumb on the scale.
+    This test's job is to prove the whole path runs, synthesis included. It first ran on 2026-08-12 asking
+    where Detroit techno came from — which the artifact cannot answer, because ``techno`` is a node with
+    **zero** edges — so the run refused, correctly, and never reached prose. A run that refuses is covered
+    by ``test_an_unresolvable_name_is_refused_rather_than_invented``; what was untested was a run that
+    finishes. ``acid jazz`` carries four sourced influences and is the same node the local suite walks.
     """
     events = list(
         run(
-            "Where did Detroit techno come from?",
+            "Where did acid jazz come from?",
             store=store,
             llm=llm,
             registry=default_registry(store),
@@ -148,17 +155,31 @@ def test_the_loop_runs_end_to_end_against_a_real_model(
 
     assert isinstance(events[0], Planned), "every run emits its plan first, without exception"
 
+    # **``Done`` is the terminal event and it is unconditional; ``Refused`` is a modality marker that
+    # rides alongside it.** This assertion read ``len(done) + len(refused) == 1`` until 2026-08-12, when
+    # the first run that actually refused failed it. That was the test being wrong, not the loop:
+    # ``eval/harness.py`` asserts a ``Done`` for *every* case and carries ``refused`` as a separate
+    # boolean, and a refused run still spends tokens — suppressing ``Done`` would drop a real bill out of
+    # the cost telemetry that ``.claude/rules/aws-and-cost.md`` requires.
     done = [event for event in events if isinstance(event, Done)]
     refused = [event for event in events if isinstance(event, Refused)]
-    assert len(done) + len(refused) == 1, "a run ends exactly once, in exactly one way"
+    assert len(done) == 1, "a run ends exactly once, and it ends with Done"
+    assert len(refused) <= 1, "a run refuses at most once"
 
-    if done:
-        finished = done[0]
-        assert finished.usage.total_tokens > 0, (
-            "traversal must report measured tokens, not estimates"
-        )
-        assert finished.model_id, "the model that walked the graph must be recorded"
-        assert finished.executed_steps > 0
+    finished = done[0]
+    assert finished.usage.total_tokens > 0, "traversal must report measured tokens, not estimates"
+    assert finished.model_id, "the model that walked the graph must be recorded"
+    assert finished.executed_steps > 0
+
+    # The half a refusing query never reached. Prose is generated only from approved claims, so tokens
+    # arriving at all is the end-to-end statement this test exists to make.
+    assert not refused, (
+        f"the corpus can answer this one; refusal means something moved: {events[-2:]}"
+    )
+    assert finished.claim_count > 0, (
+        "acid jazz carries sourced influences; the gate should approve some"
+    )
+    assert any(isinstance(event, Token) for event in events), "synthesis never produced prose"
 
 
 def test_a_real_model_earns_its_claims_through_the_gate(

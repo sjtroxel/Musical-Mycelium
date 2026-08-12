@@ -34,12 +34,13 @@ from musical_mycelium.agent.claims import ClaimProposal
 from musical_mycelium.agent.llm import (
     LLMResponse,
     ScriptedLLM,
+    ToolOutcome,
     ToolUse,
     Usage,
     delimit,
     escape_delimiters,
     question_message,
-    tool_result_message,
+    tool_results_message,
     undelimit,
     undelimit_text,
     user_message,
@@ -278,7 +279,7 @@ def test_no_tool_payload_reaches_the_model_unmarked(registry: ToolRegistry) -> N
 
     for name, arguments in calls:
         result = registry.invoke(name, arguments)
-        message = tool_result_message("t1", result.content)
+        message = tool_results_message([ToolOutcome("t1", result.content)])
         payload = message["content"][0]["toolResult"]["content"][0]
 
         for text in strings_in(payload["json"] if "json" in payload else payload["text"]):
@@ -292,7 +293,9 @@ def test_the_country_counter_keys_are_marked(registry: ToolRegistry) -> None:
 
     ``corpus_coverage`` keys its country counts by label, and those labels are artifact text.
     """
-    message = tool_result_message("t1", registry.invoke("corpus_coverage", {}).content)
+    message = tool_results_message(
+        [ToolOutcome("t1", registry.invoke("corpus_coverage", {}).content)]
+    )
     countries = message["content"][0]["toolResult"]["content"][0]["json"]["<data>countries</data>"]
 
     assert countries, "the coverage payload should carry country counts"

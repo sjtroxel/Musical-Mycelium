@@ -98,17 +98,36 @@ make tf-plan     # read it
 make tf-apply
 ```
 
-**Deploying without spending anything on model calls.** This is the default as of 2026-08-11 — a bare
-`apply` deploys the local provider and costs nothing:
+**Deploying without spending anything on model calls.** `llm_provider` defaults to `local` as of
+2026-08-11, so that one no longer needs a flag:
 
 ```bash
-terraform -chdir=infra/terraform/main apply
+TF_VAR_alert_email=you@example.com terraform -chdir=infra/terraform/main apply \
+  -var image_tag=<the sha currently deployed> \
+  -var reserved_concurrency=-1
 ```
 
-The default used to be `bedrock`, and flipping it was a **safety** change, not a preference. With every
-quota at 0, forgetting `-var llm_provider=local` failed loudly and free. Once quota was restored, the
-same omission would have quietly succeeded and put a billable model behind a public unauthenticated URL.
-Spending money now requires typing `-var llm_provider=bedrock` on purpose.
+**A BARE `apply` IS NOT SAFE, and the reason is not the provider.** Verified the hard way on 2026-08-11:
+the other two variables are still load-bearing and a bare apply silently proposes both of these.
+
+- **`image_tag` defaults to `latest`**, so a bare apply **replaces the running pinned image** with
+  whatever `latest` points at. Read the current tag out of the plan's `image_uri` (or the `image_uri`
+  output) and pass it back to keep the deployed image where it is.
+- **`reserved_concurrency` defaults to 5**, and this account's entire concurrency ceiling is ~10, so
+  `PutFunctionConcurrency` is refused — **after Terraform has already updated the function.** Pass `-1`.
+
+`deploy.yml` has said all three are load-bearing since 2026-08-05 and passes them explicitly, which is
+why CI has never hit this. Only the manual path is exposed.
+
+**Always read the plan before confirming.** For a guardrail-only change it should list nothing but the
+resource you meant to touch; if `aws_lambda_function.app` appears when you were only editing budgets,
+a variable is missing.
+
+**On the provider default.** It used to be `bedrock`, and flipping it was a **safety** change, not a
+preference. With every quota at 0, forgetting `-var llm_provider=local` failed loudly and free. Once
+quota was restored on 08-11, the same omission would have quietly succeeded and put a billable model
+behind a public unauthenticated URL. Spending money now requires typing `-var llm_provider=bedrock` on
+purpose.
 
 That deploys a real, public, streaming endpoint that walks the graph, gates every claim, and cites
 real Wikidata statement URIs — with no model call and no spend. It proves the infrastructure, the

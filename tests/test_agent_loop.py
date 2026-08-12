@@ -32,11 +32,13 @@ from musical_mycelium.agent.llm import (
     LLMResponse,
     LocalLLM,
     ScriptedLLM,
+    ToolOutcome,
     ToolUse,
     Usage,
     _parse_converse,
     build_llm,
     model_id_for,
+    tool_results_message,
 )
 from musical_mycelium.agent.loop import (
     ApprovedClaimSet,
@@ -708,6 +710,93 @@ def test_converse_parsing_handles_text_and_a_tool_call_together() -> None:
 
 def test_usage_accumulates() -> None:
     assert (Usage(10, 5) + Usage(3, 2)) == Usage(13, 7)
+
+
+# --- the multi-tool turn: every result in ONE message ---------------------------------------------
+#
+# This section exists because of a real bug, found 2026-08-11 by the first live-model run of the loop:
+# ``ValidationException: Expected toolResult blocks at messages.6.content``. The loop appended one user
+# message per tool result, which Converse rejects twice over — it validates that a turn's results arrive
+# as one set, and it requires strict user/assistant alternation.
+#
+# **It survived weeks of a green suite because every script until now emitted one tool use per turn.**
+# The path was not hard to reach; nothing had ever asked for it. That is the ``ScriptedLLM``/real-model
+# gap, and these tests are what close it locally and for free.
+
+
+def test_two_results_are_one_message_with_two_blocks() -> None:
+    """The wire shape, unit level. Two results, one user turn, both ids present and in call order."""
+    message = tool_results_message(
+        [ToolOutcome("t1", {"a": 1}), ToolOutcome("t2", "plain text", is_error=True)]
+    )
+
+    assert message["role"] == "user"
+    assert len(message["content"]) == 2, "the two results did not land in one message"
+    assert [block["toolResult"]["toolUseId"] for block in message["content"]] == ["t1", "t2"]
+    assert [block["toolResult"]["status"] for block in message["content"]] == ["success", "error"]
+
+
+def test_an_empty_turn_is_refused_rather_than_sent() -> None:
+    """An empty content list is invalid on the wire and the resulting error names nothing useful."""
+    with pytest.raises(ValueError, match="at least one outcome"):
+        tool_results_message([])
+
+
+def test_a_turn_asking_for_two_tools_keeps_the_messages_alternating(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """The loop-level regression, and the one that would have caught the live failure.
+
+    The script asks for ``resolve_node`` **and** ``get_influences`` in a single turn. What is asserted is
+    not "the run succeeded" — the old code produced events perfectly well and only died at the provider
+    boundary — but the shape of the message list the model is handed.
+    """
+    llm = ScriptedLLM(
+        [
+            plan_turn("origins", "resolve_node", "get_influences"),
+            LLMResponse(
+                tool_uses=(
+                    ToolUse(id="t1", name="resolve_node", arguments={"name": "acid jazz"}),
+                    ToolUse(id="t2", name="get_influences", arguments={"node_id": ACID_JAZZ}),
+                ),
+                stop_reason="tool_use",
+                usage=Usage(120, 30),
+            ),
+            LLMResponse(text="Found them.", stop_reason="end_turn"),
+            LLMResponse(text="A grounded answer."),
+        ]
+    )
+    events = list(run("where does acid jazz come from", store=store, llm=llm, registry=registry))
+
+    # Both tools really ran; the message shape below is describing a turn that did two things.
+    assert len([e for e in events if isinstance(e, ToolCalled)]) == 2
+
+    # The traversal call, not the planning call (which is sent its own single-message list) and not the
+    # synthesis stream. ``ScriptedLLM`` records the live list by reference, so this is its final state —
+    # which is exactly what the provider would have been handed on the turn after the tools ran.
+    messages = llm.requests[1]["messages"]
+    roles = [message["role"] for message in messages]
+    assert all(a != b for a, b in pairwise(roles)), (
+        f"Converse requires strict user/assistant alternation; got {roles}"
+    )
+
+    tool_result_turns = [
+        message
+        for message in messages
+        if any("toolResult" in block for block in message["content"])
+    ]
+    assert len(tool_result_turns) == 1, "one assistant turn's results must be one user message"
+    assert len(tool_result_turns[0]["content"]) == 2, "both results must be blocks in that message"
+
+    # Every id the assistant asked for is answered, which is the specific thing Converse validates.
+    asked = [
+        block["toolUse"]["toolUseId"]
+        for message in messages
+        for block in message["content"]
+        if "toolUse" in block
+    ]
+    answered = [block["toolResult"]["toolUseId"] for block in tool_result_turns[0]["content"]]
+    assert asked == answered == ["t1", "t2"]
 
 
 # --- invariant 1: prose sees only approved claims -------------------------------------------------

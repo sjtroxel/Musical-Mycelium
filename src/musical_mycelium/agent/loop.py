@@ -52,11 +52,12 @@ from itertools import pairwise
 from musical_mycelium.agent.claims import Claim, ClaimProposal, GateResult, Rejection, gate
 from musical_mycelium.agent.llm import (
     LLM,
+    ToolOutcome,
     Usage,
     assistant_tool_use_message,
     dumps,
     question_message,
-    tool_result_message,
+    tool_results_message,
     user_message,
 )
 from musical_mycelium.agent.plan import Plan, parse_plan, planning_prompt
@@ -515,6 +516,11 @@ def run(
             break
 
         messages.append(assistant_tool_use_message(response))
+
+        # Collected across the whole turn and appended **once**, below. A model may ask for several
+        # tools at a time, and Converse wants that turn's results as multiple blocks in a single user
+        # message; one message per result is what broke against the first real model on 2026-08-11.
+        outcomes: list[ToolOutcome] = []
         for use in response.tool_uses:
             result = registry.invoke(use.name, use.arguments)
             executed += 1
@@ -531,7 +537,9 @@ def run(
                 if node_id not in visited:
                     visited.append(node_id)
 
-            messages.append(tool_result_message(use.id, result.content, is_error=result.is_error))
+            outcomes.append(ToolOutcome(use.id, result.content, is_error=result.is_error))
+
+        messages.append(tool_results_message(outcomes))
 
         # Checked *after* the turn, against what has already been spent rather than a prediction of the
         # next turn's cost. Stopping here is clean rather than exceptional: everything collected so far

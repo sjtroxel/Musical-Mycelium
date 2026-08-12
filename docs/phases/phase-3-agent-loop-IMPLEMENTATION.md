@@ -1381,50 +1381,67 @@ gold set. Locked by a test that fails if the mix ever changes, so it cannot quie
   would be the script author's. Deferred to DoD #11. The premise-channel attack is scripted instead,
   because `gate()` decides its outcome rather than the script.
 
-### NEXT SESSION STARTS HERE — fix one bug, then the `v0.3.0-local` release step
+### NEXT SESSION STARTS HERE — the `v0.3.0-local` release step, three items left
 
-> **REWRITTEN 2026-08-11 ~18:50 CDT, end of the Bedrock-unblock session. This supersedes the 02:55
-> handoff below it.** Two things changed that morning's plan: Bedrock access was restored, and the first
-> live-model test found a real bug in the loop.
+> **REWRITTEN 2026-08-12 ~04:10 CDT, end of the multi-tool-turn session. This supersedes the 08-11 18:50
+> handoff, which in turn superseded the 02:55 one.** What changed: the bug that handoff opened with is
+> **fixed and live-verified**, a second defect was found and fixed behind it, and **the full billable file
+> is 7 of 7 for the first time**.
 >
 > **Read this section first, then verify against the repo before believing any of it** — the standing
 > rule, and step memories have been wrong about what was committed more than once.
 
-**Step 0 — orient.** `git log --oneline -3`. The docs pass is `57c8409`; 7b is `c264fcc`. The evening's
-second batch (telemetry, live tests, RPM retries, budget `cost_types`) may or may not be committed — if
-`git status` is dirty, the message is
-`git add -A && git commit -m "cost telemetry, live Bedrock tests, RPM retries, budget measures gross spend"`.
-Then `make check`: it should read **637 passed, 7 deselected**, mypy clean on 50 files, root 15/18.
+**Step 0 — orient.** `git log --oneline -3`. The last commit of the 08-11 evening batch is `7a65503`
+(cost telemetry, live tests, RPM retries, budget); the docs pass is `57c8409`; 7b is `c264fcc`. **The
+08-12 work may still be uncommitted** — if `git status` is dirty across `src/musical_mycelium/agent` and
+`tests/`, the message is
+`git add src/musical_mycelium/agent tests && git commit -m "fix multi-tool turns: one toolResult message per turn"`.
+Then `make check`: it should read **640 passed, 7 deselected**, mypy clean on 52 files, root 15/18.
 
-**Step 1 — FIX THE MULTI-TOOL-TURN BUG. This is the first work of the day, before the release step.**
+**What happened on 2026-08-12, 03:30–04:05 — two defects, both fixed, do not re-diagnose them.**
 
-`tests/test_bedrock_live.py::test_the_loop_runs_end_to_end_against_a_real_model` fails with:
+1. **The multi-tool-turn bug: FIXED and live-verified.** `agent/loop.py` appended one user message per
+   tool result; Converse requires all of one assistant turn's results in a **single** user message as
+   multiple content blocks, and requires strict user/assistant alternation. `tool_result_message`
+   (singular) was **deleted** rather than kept as a wrapper — a helper that is correct called once and
+   wrong called in a loop is the trap that produced the bug, the same reasoning that keeps `user_message`
+   and `question_message` apart. It is replaced by `ToolOutcome` + `tool_results_message(Sequence[...])`,
+   with delimiting still at the single choke point. **Do not reintroduce the singular form.** Three tests
+   cover it in `test_agent_loop.py` under `# --- the multi-tool turn: every result in ONE message`, and
+   the loop-level one was **confirmed failing against the old code** before the fix went back in.
+2. **A second defect behind it: the live test's event-contract assertion was wrong.** It asserted
+   `len(done) + len(refused) == 1`. **`Done` is the unconditional terminal event; `Refused` is a modality
+   marker that rides alongside it** — `eval/harness.py:370` requires a `Done` for every case, and a
+   refused run still spends tokens, so suppressing `Done` would drop a real bill out of cost telemetry.
+   **The test was wrong, not the loop.**
 
-```
-ValidationException: Expected toolResult blocks at messages.6.content for the following Ids: tooluse_...
-```
+**The pattern worth carrying forward: both defects were assertions written from a mental model and never
+executed.** One waited on Bedrock; the other waited on a query that happened to refuse. That is the
+`ScriptedLLM`-versus-real-model gap this phase has been writing about, twice in one hour.
 
-`agent/loop.py` (the `for use in response.tool_uses:` block, ~518-534) appends **one message per tool
-result**. Bedrock Converse requires **every toolResult for one assistant turn to sit in a single user
-message as multiple content blocks**, and requires strict user/assistant alternation — so two
-consecutive result messages is invalid twice over. The loop therefore breaks whenever a real model asks
-for **two or more tools in one turn**.
-
-**Why nothing caught it:** every `ScriptedLLM` fixture in the suite emits exactly one tool use per turn,
-so this path has no local coverage at all. This is the ScriptedLLM-versus-real-model gap this phase has
-been writing about, showing up as an actual defect within minutes of the first live run.
-
-**The fix:** accumulate results across the whole loop and append **one** message afterwards carrying one
-toolResult block per tool use. **Write a `ScriptedLLM` test emitting two tool uses in one turn as part of
-the same change** — otherwise the only thing covering it is a billable test, which is a coverage gap
-wearing a receipt. Then re-run `uv run pytest -m costs_money` to confirm; 6 of 7 passed at the point this
-was written, and this is the 7th.
+**A corpus fact found on the way, worth knowing before writing any live test:** `techno` (`Q170611`) is a
+node with **zero** edges, so "Where did Detroit techno come from?" cannot be answered by artifact `0.5.0`
+and **correctly refuses** — a real model that knows the answer from its own weights declining to fill a
+hole in the graph, which is the project's whole claim, demonstrated live. The end-to-end test was
+retargeted to **`acid jazz`** (4 sourced influences) so it reaches synthesis. **Genres are thin — the
+best-connected top out at 4 outgoing edges; artists reach 25.** Pick live-test queries accordingly.
 
 **What is already known-good, so do not re-diagnose it.** `BedrockLLM` is verified live: single-turn,
-streaming with real usage, and tool-use parsing. `ThrottlingException` on the first live run was **10 RPM**
-— this account's binding constraint, since one query is a plan turn plus one per hop plus synthesis — and
-is already fixed by `Config(retries={"max_attempts": 8, "mode": "adaptive"})` on the client. If throttling
-reappears under load, that is a known constraint to design around, not a regression.
+streaming with real usage, and tool-use parsing. **The loop itself is now verified live end to end** —
+plan, multi-tool traversal, gate, synthesis, prose. `ThrottlingException` on the first live run was **10
+RPM** — this account's binding constraint, since one query is a plan turn plus one per hop plus synthesis
+— and is already fixed by `Config(retries={"max_attempts": 8, "mode": "adaptive"})` on the client. If
+throttling reappears under load, that is a known constraint to design around, not a regression.
+**A third quota axis surfaced on 08-12: 27,000,000 tokens per DAY on Haiku 4.5.** TPM recovers in sixty
+seconds; a blown daily cap locks the model out for the rest of the calendar day. That belongs in phase 4's
+eval throttling as a cumulative-token budget, not only per-request backoff.
+
+**Optional five-minute win, if a warm-up task is wanted before the bug.** Create an uncommitted
+`infra/terraform/main/local.auto.tfvars` holding `alert_email`, `image_tag` and
+`reserved_concurrency = -1`. `.gitignore` already ignores `*.tfvars` (keeping `*.tfvars.example`), so
+the repo anticipated this. It makes every manual apply a bare `terraform apply` and closes the
+three-load-bearing-variables footgun documented in `infra/README.md` — the one that proposed swapping
+the running image on 2026-08-11. Add a committed `.tfvars.example` next to it so the shape is discoverable.
 
 **Step 2 onward — the release step, unchanged except where the amendment note above marks it.**
 
@@ -1434,39 +1451,58 @@ commit so the public claim gets read on its own rather than riding inside a scor
 
 Five items, in order:
 
-> **Amended 2026-08-11 ~17:30 CDT — Bedrock access was restored partway through this release step.**
-> Items 1–3 all change wording; none are removed. The precise claim is now: **the loop has never run end
-> to end against a real model**, and the **deployed URL still runs the template stub**. `BedrockLLM`
-> itself has been executed and verified, so "no Bedrock call has ever been made" is no longer true and
-> must not be written. See `ROADMAP.md` §3.
+> **Amended twice. 2026-08-11 ~17:30 CDT — Bedrock access was restored partway through this release step.
+> 2026-08-12 ~04:10 CDT — items 3 and 4 are now DONE, and item 1's central sentence became false.**
+>
+> **The precise claim as of 08-12 is: the loop HAS now run end to end against a real model** (7 of 7
+> billable tests green), **and the deployed URL still runs the template stub.** Both of the older
+> formulations are now wrong and must not be written: "no Bedrock call has ever been made" (false since
+> 08-11) and "the loop has never run against a real model" (false since 08-12). **What remains true and
+> unqualified is the deployed stub.** See `ROADMAP.md` §3.
 
-1. **Write the `KNOWN-GAPS` section in this doc.** §5.1 specifies it: name DoD items 10, 11 and 12 and
-   state plainly that **the loop has never run end to end against a real model.** The 7b baseline is the
-   evidence that everything else works, and its own `measures` field is the wording to reuse. **Do not
-   write that Bedrock is unavailable** — it is available as of 08-11, and the gap is unrun work, not an
+> **The five places that still say "never run end to end", verified by grep 2026-08-12 04:15. All five
+> are now FALSE and all five belong to items 1–2 below, so they are listed rather than fixed here —
+> fixing them piecemeal ahead of `KNOWN-GAPS` is how the two end up disagreeing.** Note the direction of
+> the error: every one of them **understates** what works, so nothing public is overclaiming and none of
+> this is urgent.
+>
+> - `README.md:38` — the public one, and the only one a recruiter reads.
+> - `docs/ROADMAP.md:296`
+> - `src/musical_mycelium/agent/llm.py:22` — the module docstring's "what that verification does not cover".
+> - `docs/phases/phase-1-walking-skeleton-IMPLEMENTATION.md:20` and `:394`
+>
+> **What replaces them is narrower, not wider:** the loop is live-verified end to end, and **the deployed
+> URL still runs the template stub**. Do not let the second half get dropped while rewriting the first.
+
+1. **Write the `KNOWN-GAPS` section in this doc.** **STILL OWED — the only real writing left.** §5.1
+   specifies it: name the open DoD items and state the residual gaps plainly. **Re-derive which DoD items
+   are actually still open before writing — do not copy the old list.** The 08-11/08-12 work closed or
+   narrowed several: `costs_money` tests exist and pass, CloudWatch token cost is emitted
+   (`api/telemetry.py`), and the loop is live-verified. The 7b baseline is the evidence that everything
+   else works, and its own `measures` field is the wording to reuse. **Do not write that Bedrock is
+   unavailable** — it has been available since 08-11, and every remaining gap is unrun work, not an
    external block.
 2. **Put that statement in `README.md`.** §5.1 requires it there too, and in any recruiter-facing copy. A
    deployed demo running on a template stub must never be described as a live agent. This is the item with
    real consequences outside the repo — the deployed site is public. **Done 2026-08-11** for the Status
-   section; re-read it once KNOWN-GAPS exists so the two say the same thing.
+   section, but **it now says something false and must be re-read against item 1**: it was written while
+   the loop had never run live.
 
-   **The interview-facing risk changed shape.** While quota was zero, the honest line was "AWS has my
-   account throttled," which is unambiguous and outside your control. Now it is "I can call Bedrock and
-   have; the loop on top of it hasn't been exercised against a real model yet." That is a subtler
-   sentence and an easier one to accidentally round up. Round it down instead.
-3. **Write the deferred Bedrock tests and mark them `@pytest.mark.costs_money`.** **These do not exist.**
-   Verified 2026-08-11: the marker is registered in `pyproject.toml` and **nothing uses it.** §5.2 makes
-   them a deferral *mechanism*, not a nicety — *"a test that does not exist is a task nobody remembers; a
-   skipped test is a standing reminder in the suite output."* Deselected by default, runnable with one
-   flag. **This item got both more valuable and more urgent on 08-11**: it was written as a placeholder
-   for calls that could not be made, and it is now a real, runnable check of calls that are proven to
-   work. Without these, the deferral is a promise rather than a structure.
-4. **Decide the version question, then bump.** **`pyproject.toml` says `version = "0.0.1"` and has never
-   tracked the roadmap spine.** So "bump the version" is not yet a defined action. Open question, his
-   call: does the package version follow the spine to `0.3.0`, or does the spine live only in git tags
-   while the package stays independent? Note the artifact is separately pinned at **v0.5.0**, so a reader
-   already has two version numbers to keep straight; a third that means a third thing is a real cost.
-5. **Tag `v0.3.0-local`.** After 1–4, not before.
+   **The interview-facing risk has changed shape twice, and it gets subtler each time.** While quota was
+   zero, the honest line was "AWS has my account throttled" — unambiguous, outside your control. On 08-11
+   it became "I can call Bedrock; the loop on top of it hasn't been exercised." On 08-12 it became "the
+   loop works end to end against a real model; **what's deployed is still a stub, and the eval numbers
+   measure the machinery rather than the model.**" That last sentence is the easiest one yet to
+   accidentally round up. Round it down instead.
+3. **~~Write the deferred Bedrock tests and mark them `costs_money`.~~ DONE 2026-08-11**, and **7 of 7
+   green on 2026-08-12**. `tests/test_bedrock_live.py`, deselected by default, run with
+   `uv run pytest -m costs_money`. §5.2's argument held exactly as written — *"a test that does not exist
+   is a task nobody remembers; a skipped test is a standing reminder in the suite output"* — and the file
+   earned its keep immediately by finding the multi-tool-turn bug on its first run.
+4. **~~Decide the version question, then bump.~~ DONE.** Resolved in favour of the spine:
+   **`pyproject.toml` reads `version = "0.3.0"`.** The artifact stays separately pinned at **v0.5.0**;
+   two version numbers, meaning two different things, and no third.
+5. **Tag `v0.3.0-local`.** After 1 and 2, not before.
 
 **What must NOT happen in this step:** any new scorer, any threshold, any Bedrock call. §5.3 and
 `.claude/rules/evals.md` both hold — phase 3 records baselines, phase 4 sets gates.
