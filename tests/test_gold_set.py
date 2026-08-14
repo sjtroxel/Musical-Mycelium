@@ -6,9 +6,12 @@ pinned artifact** — either answerable or deliberately labelled a coverage-hone
 dictionary lookup, so a corpus change that silently breaks a demo query fails CI instead of failing in
 front of somebody.
 
-Note what this does *not* test: the agent. There is no agent yet, and that is the point — the gold set is
-hand-authored **before** the agent exists so it cannot be contaminated by the agent's output
-(``.claude/rules/evals.md``). What this asserts is that the gold set and the corpus still agree.
+Note what this does *not* test: the agent. What it asserts is that the gold set and the corpus still
+agree. The set is hand-authored so it cannot be contaminated by the agent's output
+(``.claude/rules/evals.md``) — but read that claim precisely as of 2026-08-14. The agent now exists and
+has run against a real model once, so the set is no longer clean *by construction*; it is clean *by
+procedure*, which is weaker. The procedure and its one narrow exposure are recorded in the dataset's own
+``provenance.honest_limits``.
 """
 
 from __future__ import annotations
@@ -22,6 +25,18 @@ import pytest
 from musical_mycelium.agent.claims import ClaimProposal, gate
 from musical_mycelium.eval.metrics import edge_groundedness, traversal_recall
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.store import Direction
+
+#: The query shapes a gold case may declare. Every case has carried a ``shape`` since v0.1 and until
+#: 2026-08-14 **nothing read it** — every test assumed origins, which was true of all fifteen cases then
+#: in the set and false for both remaining slots. Locked as a frozenset so a typo fails loudly rather
+#: than falling through a default branch into the wrong direction, which is the specific error
+#: ``Direction``'s own docstring warns about: "getting them backwards silently inverts music history".
+#:
+#: Refusal is deliberately **not** a shape. It is a ``difficulty``, because a refusal is a property of
+#: what the corpus can answer, not of what was asked — case 005 asks an origins question and case 010
+#: asks the same question of a node with no parents.
+CASE_SHAPES = frozenset({"origins", "descendants", "path"})
 
 GOLD_PATH = (
     Path(__file__).resolve().parents[1]
@@ -31,6 +46,23 @@ GOLD_PATH = (
     / "datasets"
     / "gold_v0_1.json"
 )
+
+#: The number of cases the gold set is *known* to hold. The set is authored incrementally across
+#: sittings — ``notes_on_composition.authoring_is_incremental`` — so this is bumped to the real count at
+#: the end of each one. That is the point of it: adding a case is a deliberate act that touches this
+#: line, and a case can never appear in the dataset without someone saying so here. The target is 25,
+#: distributed across the slots in ``notes_on_composition.composition_plan``. The requirement is
+#: 20 to 30 (``.claude/rules/evals.md``, ``planning/07`` 3.1); 25 is a choice inside it, not the rule.
+EXPECTED_CASE_COUNT = 25
+
+#: How many gold claims carry no independent citation and say so via ``citation_status``. Locked for the
+#: same reason as the case count, and it matters more: this one is an escape hatch from the project's
+#: central honesty rule. Eight of 67 claims as of 2026-08-14. Seven are non-Western; the eighth is
+#: Lady Gaga → the
+#: Beatles, where Wikipedia footnotes a fifteen-artist sentence one artist at a time and skips that one.
+#: That one is the useful one: uncited claims track Wikipedia's sourcing habits rather than a region, and
+#: they concentrate where coverage is thin without being confined there.
+UNCITED_CLAIM_COUNT = 8
 
 
 @pytest.fixture(scope="module")
@@ -53,6 +85,46 @@ def get_case(gold: dict[str, Any], case_id: str) -> dict[str, Any]:
     return case
 
 
+def corpus_edges_for(case: dict[str, Any], store: InMemoryGraphStore) -> set[tuple[str, str]]:
+    """The edge set the corpus must hold for this case, read according to its declared shape.
+
+    Each branch preserves the same invariant the origins-only version enforced — **exactly**, not a
+    subset — but asks the corpus a different question:
+
+    * ``origins`` — the subject's parents. What it came out of.
+    * ``descendants`` — the subject's children, which is the *same rows read the other way*, not a
+      different table. Passing the wrong ``Direction`` here does not error; it silently answers the
+      opposite question, which is why the shape is declared rather than inferred.
+    * ``path`` — the **shortest** sourced chain between two named endpoints. ``store.path`` is BFS, so
+      shortest is what a traversal should find, and pinning to it means a corpus that later grows a
+      shortcut fails this test instead of quietly leaving the gold case pointing down a longer route
+      that is no longer the right answer.
+    """
+    shape = case["shape"]
+    node_id = case["expected_resolution"]["node_id"]
+
+    if shape == "origins":
+        return {
+            (e.subject_id, e.object_id) for e in store.neighbors(node_id, Direction.INFLUENCED_BY)
+        }
+    if shape == "descendants":
+        return {(e.subject_id, e.object_id) for e in store.neighbors(node_id, Direction.INFLUENCED)}
+    if shape == "path":
+        end_id = case["expected_terminus"]["node_id"]
+        return {(e.subject_id, e.object_id) for e in store.path(node_id, end_id)}
+    raise AssertionError(f"{case['case_id']}: unknown shape {shape!r}")
+
+
+def corpus_can_answer(case: dict[str, Any], store: InMemoryGraphStore) -> bool:
+    """Whether the corpus holds an answer to the question this case actually asks.
+
+    Split out from the refusal test because "has edges" is shape-relative. A descendants case about a
+    node with many parents and no children is a **correct refusal**, and the origins-only version of
+    this check would have called it answerable.
+    """
+    return bool(corpus_edges_for(case, store))
+
+
 # --- the dataset itself ------------------------------------------------------------------------
 
 
@@ -63,22 +135,60 @@ def test_the_gold_set_is_pinned_to_the_artifact_this_suite_loads(
     assert gold["artifact_version_pin"] == store.artifact_version
 
 
-def test_there_are_five_cases_and_exactly_one_is_a_refusal(gold: dict[str, Any]) -> None:
-    """Both halves matter. Five is the phase scope; **at least one refusal** is what gives refusal
-    accuracy a true refusal to measure, and without it a system that answers everything looks flawless."""
+def test_the_case_count_is_locked_and_at_least_one_case_is_a_refusal(gold: dict[str, Any]) -> None:
+    """Both halves matter. The count is locked so a case cannot enter the set silently; **at least one
+    refusal** is what gives refusal accuracy a true refusal to measure, and without it a system that
+    answers everything looks flawless. The plan targets three refusal cases, so this floor rises as the
+    set fills rather than being pinned at the one case v0.1 shipped with."""
     cases = gold["cases"]
-    assert len(cases) == 5
-    assert sum(1 for c in cases if c["expected_refusal"]) == 1
+    assert len(cases) == EXPECTED_CASE_COUNT
+    assert sum(1 for c in cases if c["expected_refusal"]) >= 1
 
 
-def test_every_answerable_case_cites_an_independent_source(gold: dict[str, Any]) -> None:
+def test_every_answerable_case_cites_an_independent_source_or_says_why_not(
+    gold: dict[str, Any],
+) -> None:
     """``.claude/rules/grounding-and-claims.md``: the gold set cites sources independent of Wikidata, so
-    divergence between this graph and the outside world can surface."""
+    divergence between this graph and the outside world can surface.
+
+    A claim may fail to carry one **only** by saying so out loud. Silence is still forbidden — what is
+    now permitted is an explicit ``citation_status`` naming the sources that were searched and came up
+    empty. See ``provenance.schema_history`` for why that third option exists: the two obvious responses
+    were to attach an article's general reference list (passes this test, hides the weakness) or to drop
+    the cases (buys a perfect citation rate by excluding the global south, then reports the rate as a
+    property of the system).
+    """
     for case in gold["cases"]:
         if case["expected_refusal"]:
             continue
         for expected in case["expected_claims"]:
-            assert expected["independent_citations"], f"{case['case_id']} has an uncited claim"
+            if expected["independent_citations"]:
+                continue
+            status = expected.get("citation_status")
+            assert status, f"{case['case_id']} has a silently uncited claim"
+            assert status["state"] == "source_uncited"
+            assert status["searched"], (
+                f"{case['case_id']} flagged a claim without recording the search"
+            )
+            assert status["finding"]
+
+
+def test_the_number_of_uncited_claims_is_locked(gold: dict[str, Any]) -> None:
+    """The flag is an escape hatch, and an escape hatch that costs nothing to widen becomes the standard.
+
+    Locking the count means a future case cannot quietly join the flagged set: the number only moves when
+    someone edits this line on purpose, exactly as with ``EXPECTED_CASE_COUNT``. Every flag was applied
+    only after searching for a source in every language the subject plausibly has one in — a pass which
+    rescued kuduro's and cachaca's claims rather than flagging them, so the count reflects what is
+    genuinely unsourced rather than what was inconvenient to chase.
+    """
+    flagged = [
+        (case["case_id"], claim["object_label"])
+        for case in gold["cases"]
+        for claim in case["expected_claims"]
+        if not claim["independent_citations"]
+    ]
+    assert len(flagged) == UNCITED_CLAIM_COUNT, f"the flagged set moved: {flagged}"
 
 
 # --- every case, against the corpus ---------------------------------------------------------------
@@ -99,12 +209,16 @@ def test_case_claims_match_the_corpus_exactly(
     case_id: str, gold: dict[str, Any], store: InMemoryGraphStore
 ) -> None:
     """Not a subset — exactly. A corpus that grew an extra edge under a gold case is as much of a problem
-    as one that lost an edge, because the case would then under-specify the correct answer."""
+    as one that lost an edge, because the case would then under-specify the correct answer.
+
+    Shape-aware since 2026-08-14; see :func:`corpus_edges_for`. Before that this read
+    ``store.neighbors(node_id)`` unconditionally, which is correct for origins and wrong for the other
+    two shapes — a path case's claims mostly do not originate at its subject at all.
+    """
     case = get_case(gold, case_id)
-    node_id = case["expected_resolution"]["node_id"]
 
     expected = {(c["subject_id"], c["object_id"]) for c in case["expected_claims"]}
-    actual = {(e.subject_id, e.object_id) for e in store.neighbors(node_id)}
+    actual = corpus_edges_for(case, store)
     assert actual == expected, f"{case_id}: the corpus and the gold case disagree"
 
 
@@ -113,8 +227,21 @@ def test_case_expectation_of_refusal_still_holds(
     case_id: str, gold: dict[str, Any], store: InMemoryGraphStore
 ) -> None:
     case = get_case(gold, case_id)
-    has_edges = bool(store.neighbors(case["expected_resolution"]["node_id"]))
-    assert has_edges is not case["expected_refusal"]
+    assert corpus_can_answer(case, store) is not case["expected_refusal"]
+
+
+@pytest.mark.parametrize("case_id", case_ids())
+def test_case_declares_a_shape_the_harness_understands(case_id: str, gold: dict[str, Any]) -> None:
+    """A shape field nothing validates is a shape field that silently accepts ``"origns"``.
+
+    This matters more than a typo check. ``corpus_edges_for`` dispatches on this string, and two of its
+    branches read the same edge rows in opposite directions — so an unrecognised shape falling through
+    to a default would not raise, it would answer the wrong question and pass.
+    """
+    case = get_case(gold, case_id)
+    assert case["shape"] in CASE_SHAPES, f"{case_id}: unknown shape {case['shape']!r}"
+    if case["shape"] == "path":
+        assert case.get("expected_terminus"), f"{case_id}: a path case needs an expected_terminus"
 
 
 @pytest.mark.parametrize("case_id", case_ids())

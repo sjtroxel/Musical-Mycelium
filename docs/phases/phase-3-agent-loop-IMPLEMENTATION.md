@@ -293,6 +293,17 @@ They may trail steps 2–7; they may not trail the first `converse` call.
 
 Step 8 checks for both before its first billable call.
 
+> **Outcome, 2026-08-14.** The **gold set is done: 25 cases, 67 claims** — "the five that exist" above is
+> the state as of 2026-08-07 and is kept as written. Every prediction in that bullet held: the 46x-larger
+> corpus did supply artist-axis cases, multi-hop chains and boring middles. Two things it did not
+> anticipate. **Independent citation is not always available** — Wikipedia frequently leaves the sentence
+> a non-Western edge rests on unsourced, so 8 of the 67 claims carry an explicit `citation_status` saying
+> so rather than silently citing something adjacent; searching other languages first is now required and
+> rescued half the candidates. And the **held-out 10 is drawn, not written** — its purpose is detecting
+> overfitting to the gold set, and a curated one inherits the gold set's blind spots. "Never looked at by
+> him, by me, or by any other model" is now delivered by *nobody composing it at all*: a seeded sample of
+> the pinned artifact, with the seed the only secret.
+
 ### 4.2 Step 2 — four new tools, registered, no loop edit
 
 Current three plus four. Every one reads the pinned artifact; none calls a model; none touches the
@@ -777,6 +788,14 @@ picked up later without unpicking anything.
 **PRECONDITION, checked before the first billable call:** the full gold set (20–30) and the sealed
 held-out 10 both exist, authored while no model output did. See §4.1. This is not a nicety — after this
 step runs, they can never be authored clean again.
+
+> **Status 2026-08-14 — half satisfied.** The **gold set is complete at 25 cases / 67 claims**. The
+> **held-out 10 still does not exist**; it is now *drawn* rather than hand-authored, via
+> `make heldout-draw` with a seed only the author holds. Read the "authored while no model output did"
+> clause precisely: it stopped being true by construction on 2026-08-12, when the loop first ran live.
+> The exposure is narrow — that run's subject was `acid jazz`, gold case 002, authored ten days earlier —
+> but the honest statement is now **clean by procedure**, which is weaker. Recorded in the gold set's own
+> `provenance.honest_limits`.
 
 Ordered, and it stops at the first failure:
 
@@ -1509,7 +1528,10 @@ Five items, in order:
    **never scored a single run, scripted or live** — their only callers in the repo are
    `tests/test_metrics.py`. They need expected paths, which need the gold set, which holds 5 cases. That
    half is gated on hand-authoring, not on Bedrock, and reading it as "just run it live" would have been
-   wrong in the expensive direction.
+   wrong in the expensive direction. **Both halves of that gate are now cleared (2026-08-14): the gold
+   schema gained `expected_path` on 08-12 — the field the metric needed and never had — and the gold set
+   was completed at 25 cases including 5 multi-hop path cases. `traversal_recall` is now blocked on
+   Bedrock only, like its sibling.**
 2. **~~Put that statement in `README.md`.~~ DONE 2026-08-12.** §5.1 requires it there too, and in any
    recruiter-facing copy. A deployed demo running on a template stub must never be described as a live
    agent. This is the item with real consequences outside the repo — the deployed site is public.
@@ -1544,6 +1566,12 @@ Five items, in order:
 **Step 8, the Bedrock gate — no longer blocked by AWS as of 2026-08-11, and still correctly gated.** Its
 hard precondition is unchanged and unmet: **the full gold set (20–30) and the sealed held-out 10**, both
 authored while no model output exists. After step 8 runs they can never be authored clean again.
+
+> **Superseded in part, 2026-08-14.** The gold set is **done — 25 cases, 67 claims**, so the precondition
+> is half met and the remaining half is the held-out 10. The paragraph below is kept as written because
+> its reasoning still holds exactly, and because the sentence "there is still no schedule pressure on it"
+> turned out to be the load-bearing one: the set was finished in a single unplanned overnight sitting,
+> nine days after this was written, and nothing was lost by its having waited.
 
 **Read the change precisely. The external blocker lifted; the precondition did not.** These are different
 things and conflating them would be a real mistake, in the expensive direction. The gold set exists to be

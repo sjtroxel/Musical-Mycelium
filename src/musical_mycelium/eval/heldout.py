@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Any
 
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.store import Direction
 
 #: Where the sealed set and its public manifest live. Committed; the key is not.
 DATASETS_DIR = Path(__file__).resolve().parent / "datasets"
@@ -235,12 +236,38 @@ def load_sealed(key_path: Path = DEFAULT_KEY_PATH) -> dict[str, Any]:
 # --- checking the sealed set without opening it ---------------------------------------------------
 
 
+def _corpus_edges(
+    case: dict[str, Any], node_id: str, store: InMemoryGraphStore
+) -> set[tuple[str, str]]:
+    """The edges the corpus holds for this case, read in the direction the case actually asked about.
+
+    An unknown shape returns the empty set rather than raising, so a malformed case surfaces as a
+    ``claims-diverged`` finding — an id and a code — instead of a traceback that would print the case.
+    """
+    shape = str(case.get("shape", "origins"))
+    if shape == "descendants":
+        return {(e.subject_id, e.object_id) for e in store.neighbors(node_id, Direction.INFLUENCED)}
+    if shape == "path":
+        end_id = str(case.get("expected_terminus", {}).get("node_id", ""))
+        if not end_id:
+            return set()
+        return {(e.subject_id, e.object_id) for e in store.path(node_id, end_id)}
+    return {(e.subject_id, e.object_id) for e in store.neighbors(node_id, Direction.INFLUENCED_BY)}
+
+
 def check_against_corpus(data: dict[str, Any], store: InMemoryGraphStore) -> list[Finding]:
     """Validate held-out cases against the pinned corpus, reporting ids and codes only.
 
     The same agreement rules ``tests/test_gold_set.py`` applies to the gold set. Kept here rather than
     imported from the tests because the tests print assertion context on failure — which is exactly the
     disclosure this module exists to prevent.
+
+    **Shape-aware since 2026-08-14, and it was not before.** This function read ``store.neighbors``
+    with its default direction, which answers "what influenced this node" for every case regardless of
+    what the case asked. A sealed set containing a descendants or path case would therefore have been
+    reported as ``claims-diverged`` and ``refusal-flipped`` while being entirely correct — and because
+    findings never disclose content, that false alarm would have been undebuggable without opening the
+    set and destroying it. Found by ``tests/test_heldout_draw.py`` on its first run.
     """
     findings: list[Finding] = []
 
@@ -258,7 +285,7 @@ def check_against_corpus(data: dict[str, Any], store: InMemoryGraphStore) -> lis
             findings.append(Finding(case_id, "resolution-drift"))
 
         expected = {(c["subject_id"], c["object_id"]) for c in case.get("expected_claims", [])}
-        actual = {(e.subject_id, e.object_id) for e in store.neighbors(node_id)}
+        actual = _corpus_edges(case, node_id, store)
         if actual != expected:
             findings.append(Finding(case_id, "claims-diverged"))
 

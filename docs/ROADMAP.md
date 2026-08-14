@@ -179,6 +179,9 @@ test-locked-unreachable names. Do not re-litigate.
 - **The adversarial set only ever walks `HAND`-verified edges** (step 7b) — all 7 approved claims across
   16 cases. The baseline therefore says nothing about the `PROSE_AUTO` majority of the corpus. A gap in
   the **dataset**, owed to the gold set, and locked by a test so it cannot quietly stop being true.
+  **Closed 2026-08-14 by the completed gold set**, whose 67 claims break down `ASSERTS_AUTO` 29,
+  `PROSE_AUTO` 21, `HAND` 15, `EXPOSURE_AUTO` 2 — all four tiers, with the two weakest deliberately
+  walked rather than avoided.
 
 **`get_descendants` closes a real gap:** `Direction.INFLUENCED` has been supported by `GraphStore` since
 phase 2 and no registered tool exposes it, so "what came out of the blues?" is currently unanswerable
@@ -304,6 +307,26 @@ has not been redeployed onto Bedrock, so the live demo's prose remains a templat
 Decisions made before the repo existed live in `planning/00`–`09`. Recorded here from the point the repo
 exists.
 
+- **2026-08-14 — The gold set is complete at 25 cases / 67 claims, and two schema decisions came with it.**
+  Size decided by sjtroxel: 25, not the 27 of the composition draft — `.claude/rules/evals.md` requires
+  20–30 and both sit inside it. **(a) `citation_status`**, an optional per-claim flag for claims whose
+  supporting sentence Wikipedia leaves unsourced. Silence stays forbidden; what is now permitted is
+  saying so out loud, with the sources searched recorded. The two obvious alternatives were both worse:
+  attaching an article's general reference list passes the test while hiding the weakness, and dropping
+  the cases buys a 100% citation rate by excluding the global south and then reports that rate as a
+  property of the system. 8 of 67 claims carry it, and `tests/test_gold_set.py` locks the count.
+  **Searching other languages before flagging is mandatory** — it rescued two of four candidates, and
+  `kuduro`'s Spanish citation is the strongest in the set. **(b) The gold harness became shape-aware.**
+  Every case had carried a `shape` field since v0.1 and **nothing read it**; three separate places
+  assumed the origins direction and none of them raised — they answered the opposite question and passed.
+- **2026-08-14 — The held-out 10 is drawn, not hand-authored.** Decided by sjtroxel.
+  `eval/heldout_draw.py` takes a seed only he holds and samples the pinned artifact to the gold set's
+  shape distribution. Its job is detecting overfitting to the gold set, and **a curated held-out set
+  inherits the same blind spots the gold set already has**; an unbiased sample does not. It also removes
+  the hallucination surface entirely, which a model-authored set could not. The test written for it
+  immediately found that `heldout.check_against_corpus` was origins-only — a sealed descendants or path
+  case would have been reported as diverged while being correct, undebuggably, since findings never
+  disclose content.
 - **2026-07-24 — Concept locked.** Music-history influence and lineage graph. Data verified live: ~6,324
   Wikidata genres, ~7,936 derivation edges, inception dates reaching ~2000 BCE.
 - **2026-07-27 — Neptune killed.** ~$80/mo floor with no free tier, against a ~$20 ceiling. No managed

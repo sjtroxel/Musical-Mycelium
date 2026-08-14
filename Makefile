@@ -162,6 +162,11 @@ heldout-key: ## Generate the held-out key (refuses to overwrite an existing one)
 
 # PLAINTEXT= must point OUTSIDE this repo. Sealing streams through memory and writes only the ciphertext
 # and the public manifest; the authored file is left untouched for you to move or delete.
+heldout-draw: ## Draw a held-out set. Usage: make heldout-draw SEED='...' OUT=~/heldout_v1.json
+	@test -n "$(SEED)" || { echo "Usage: make heldout-draw SEED='something only you know' OUT=~/heldout_v1.json"; exit 1; }
+	@test -n "$(OUT)" || { echo "Usage: make heldout-draw SEED='something only you know' OUT=~/heldout_v1.json"; exit 1; }
+	uv run python -m musical_mycelium.eval.heldout_draw --seed "$(SEED)" --out "$(OUT)"
+
 heldout-seal: ## Seal an authored held-out set. Usage: make heldout-seal PLAINTEXT=~/path/heldout_v1.json
 	@test -n "$(PLAINTEXT)" || { echo "Usage: make heldout-seal PLAINTEXT=~/path/heldout_v1.json"; exit 1; }
 	uv run python -m musical_mycelium.eval.heldout --key "$(HELDOUT_KEY)" seal "$(PLAINTEXT)"

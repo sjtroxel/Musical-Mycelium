@@ -30,9 +30,10 @@ So DoD 5 and 6 below are substantially met already, and DoD 8 is built but unpro
 
 1. **Refusal accuracy on real model output** (phase 3 DoD #11a). `harness.py` hardcodes its dataset and
    takes no provider argument. Needs a provider seam through the harness, then one billable run.
-2. **Traversal recall on real model output** (phase 3 DoD #11b). **Never scored on any run, scripted or
-   live** — the scorers' only callers today are their own unit tests. Needs expected paths, which need the
-   gold set. **Gated on hand-authoring, not on Bedrock.**
+2. **Traversal recall on real model output** (phase 3 DoD #11b). **Never scored on a real run.** It had
+   never scored *any* run until `expected_path` was added on 2026-08-12; the scorers' only callers were
+   their own unit tests. **No longer gated on authoring** — the gold set was completed on 2026-08-14 with
+   five multi-hop path cases, so the metric has real chains to walk. Same billable run as item 1.
 3. **Injection resistance as a rate against a real model** (phase 3 DoD #10, breadth). One case scores
    live; `adv_015` has no live counterpart at all. Same billable run as item 1.
 4. **Token cost verified into CloudWatch** (phase 3 DoD #12). The EMF format is proven; no record has ever
@@ -47,10 +48,17 @@ So DoD 5 and 6 below are substantially met already, and DoD 8 is built but unpro
   re-litigated). What is measurable in its place is **`verification_mix`** — how strongly each single
   source was checked — and `checks_disagree`, where two independent checks on one edge reached opposite
   verdicts. Do not carry "contested flagging" into the IMPLEMENTATION doc as a deliverable.
-- **The gold set's size is now a number, not a worry.** It holds **5 cases of a planned 20–30**, and the
-  sealed held-out 10 does not exist. Both must be authored while no model output exists; the first live
-  gold run destroys that property permanently. This is the single hardest precondition in the phase and it
-  is not delegable.
+- **The gold set is DONE — 25 cases, 67 claims, completed 2026-08-14.** Superseding the 2026-08-12 note
+  that it held 5 of a planned 20–30. 16 origins, 5 path, 4 descendants; 10 genre and 10 artist; 3
+  refusals; all four verification tiers exercised. **What remains of this precondition is the sealed
+  held-out 10, which does not exist.** It is *drawn*, not hand-authored — `make heldout-draw` takes a seed
+  only the author knows — because its job is detecting overfitting to the gold set, and a curated held-out
+  set inherits the same blind spots the gold set has. Three things the authoring pass established that
+  this doc should carry forward: **8 of the 67 claims carry no independent citation and say so via
+  `citation_status`** with the sources searched recorded; **the `ASSERTS_AUTO` filter has a characterised
+  failure mode** (it fires on covers, collaborations and shared bills, four confirmed instances); and the
+  "authored while no model output exists" property is now **clean by procedure rather than by
+  construction**, since the loop first ran live on 2026-08-12.
 
 ### Three quota facts that are design inputs, not trivia
 
@@ -146,12 +154,14 @@ the fix is in scope; a new agent *feature* is not. Historical trend view and the
 
 - **Spend.** This is the only phase where a mistake costs meaningful money. Every judged path goes behind
   confirmation; there is a documented history of a real slip (`memory: spending incident 2026-06-23`).
-- **The gold set is the hard part and it gates everything** (`planning/04` §5.1). It is hand-built before the
-  agent exists — a gold set that is "what I believe about music" is worthless, and it must include boring
-  middles where a step is easy to skip. **As of 2026-08-12 it holds 5 of a planned 20–30 and the held-out
-  10 does not exist** (§0). Two things follow that were not obvious when this was written: it must include
-  `PROSE_AUTO` and `EXPOSURE_AUTO` edges rather than only hand-read ones, and **traversal recall cannot be
-  measured at all until it exists** — that scorer has never scored a run.
+- **The gold set was the hard part and it is done** (`planning/04` §5.1). Hand-built before the agent's
+  output existed — a gold set that is "what I believe about music" is worthless, and it must include
+  boring middles where a step is easy to skip. **Completed 2026-08-14 at 25 cases / 67 claims** (§0),
+  superseding the 2026-08-12 count of 5. Both things this bullet predicted turned out to matter and both
+  were done: it includes `PROSE_AUTO` and `EXPOSURE_AUTO` edges rather than only hand-read ones (21 and 2
+  claims respectively, against 15 `HAND` and 29 `ASSERTS_AUTO`), and **traversal recall now has five
+  multi-hop path cases to walk**, which it never had before. What still gates the phase is the held-out
+  10.
 - **Redeploying onto Bedrock is a spend decision, not a deploy step.** The Function URL is
   `authorization_type = "NONE"`, and per `.claude/rules/aws-and-cost.md` a streamed response bills the
   full function duration even when the visitor closes the tab. Today that is free to abuse because the

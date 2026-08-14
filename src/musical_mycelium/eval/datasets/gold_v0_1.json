@@ -11,17 +11,33 @@
     "honest_limits": [
       "These are Wikipedia-MEDIATED citations to independent works. Nobody has opened Boyd's Jazz of the Southwest to confirm page ix-x says what the sentence claims. Doing so is manual and is not done. Treat these as 'a checkable source exists and is named', not as 'independently confirmed'.",
       "AllMusic, Britannica, RateYourMusic and similar return 403 to automated fetch (docs/graph-semantics.md 7), so citation retrieval cannot currently be automated.",
-      "Grounded means traceable, not true. Every claim here traces to a checkable source. None of them is thereby correct."
+      "Grounded means traceable, not true. Every claim here traces to a checkable source. None of them is thereby correct.",
+      "CLEAN BY PROCEDURE, NOT BY CONSTRUCTION -- recorded 2026-08-14. docs/phases/phase-3-agent-loop-IMPLEMENTATION.md 4.3 argued that nothing in this repo could be contaminated by model output because Bedrock had never completed a call. That premise expired on 2026-08-12, when the loop ran end to end against a real model. The exposure is narrow and is stated here rather than glossed: the live run's subject was acid jazz, which is gold case 002, authored 2026-08-02, ten days before any model output existed. No case authored from 2026-08-14 onward is derived from agent output. Their subjects are selected from a population probe of the pinned artifact (density, region, path depth, verification tier), their claims are read from the artifact's edge list, and their prose and citations come from Wikipedia and the published works it cites. That is a checkable procedure rather than an accident of an unprovisioned account, and it is weaker. Step 8 -- the full evaluated run against a real model -- has still not happened, and authoring must finish before it does."
     ],
     "repin_history": [
       "Authored against artifact v0.1.0 (21 edges) on 2026-08-02. Re-pinned to v0.2.0 (133 edges) on 2026-08-04 when phase 2 replaced the hand-verified edge list with the full P737 discovery. Re-pinning is only safe because the neighbour set of every one of the five case subjects is IDENTICAL under both corpora -- checked pair-by-pair, not assumed -- so no case gained or lost an expected claim. The cases themselves are unchanged and remain pre-agent. If a future corpus change moves any case's neighbours, the gold set must be re-authored rather than re-pinned: re-pinning past a real divergence is exactly how a benchmark silently stops measuring anything."
     ],
     "schema_history": [
-      "2026-08-12: added expected_path to every case. eval/metrics.py traversal_recall(visited, gold) takes NODE IDS, and this schema had no field it could read -- which is why that metric has never scored a single run, scripted or live: its only callers were its own unit tests. The field is AUTHORED, not derived from expected_claims, for two reasons. (1) A refusal case has zero claims, so a derived node set gives Rate(0, 0). Rate already refuses to call that 100% -- score returns None -- so the failure is not a false perfect score but something quieter: traversal_recall would be permanently UNDEFINED on every refusal case, and the behaviour those cases exist to test would go unmeasured while the suite looked healthy. Refusal cases carry the subject alone, so the denominator is 1 and the metric asks a real question: did the traversal REACH the node before correctly declining to narrate it. (2) traversal_precision penalises visiting nodes off the gold path, so what counts as on-path has to be a judgement, not an inference -- a path case legitimately visits intermediates that produce no claim, and deriving from claims would score correct exploration as wandering. Additive and no case changed: all five expected_path values were computed from artifact v0.5.0 and every one matches that case's existing claim set exactly, checked pair-by-pair. test_gold_set.py locks the field so it can be broader than the claims but never narrower."
+      "2026-08-12: added expected_path to every case. eval/metrics.py traversal_recall(visited, gold) takes NODE IDS, and this schema had no field it could read -- which is why that metric has never scored a single run, scripted or live: its only callers were its own unit tests. The field is AUTHORED, not derived from expected_claims, for two reasons. (1) A refusal case has zero claims, so a derived node set gives Rate(0, 0). Rate already refuses to call that 100% -- score returns None -- so the failure is not a false perfect score but something quieter: traversal_recall would be permanently UNDEFINED on every refusal case, and the behaviour those cases exist to test would go unmeasured while the suite looked healthy. Refusal cases carry the subject alone, so the denominator is 1 and the metric asks a real question: did the traversal REACH the node before correctly declining to narrate it. (2) traversal_precision penalises visiting nodes off the gold path, so what counts as on-path has to be a judgement, not an inference -- a path case legitimately visits intermediates that produce no claim, and deriving from claims would score correct exploration as wandering. Additive and no case changed: all five expected_path values were computed from artifact v0.5.0 and every one matches that case's existing claim set exactly, checked pair-by-pair. test_gold_set.py locks the field so it can be broader than the claims but never narrower.",
+      "2026-08-14: added the optional per-claim citation_status field. .claude/rules/grounding-and-claims.md requires the gold set to cite sources INDEPENDENT of Wikidata so divergence with the outside world can surface, and test_gold_set.py enforced that by requiring independent_citations to be non-empty on every answerable claim. Authoring the non-Western slot broke that: the sentences those edges rest on are frequently uncited in Wikipedia itself. The two available responses were both bad. Attaching an article's general reference list per claim would have passed the test while making the weakness invisible -- the exact 'grounded slides into correct' failure CLAUDE.md forbids. Dropping the cases would have bought a 100% independent-citation rate by excluding the global south and then reported that rate as a property of the system rather than of the exclusion. citation_status is the third option: the claim states plainly that no independent source could be located, records WHICH sources were searched so the flag cannot be applied out of laziness, and makes the gap a number the suite can report. The flag is deliberately expensive to apply and its count is locked by test_gold_set.py, on the same reasoning as EXPECTED_CASE_COUNT: an escape hatch that costs nothing to widen stops being an escape hatch and becomes the standard. Applying it was preceded by a four-language search (en, es, pt, tl) which rescued two of the four candidate claims, including kuduro's, whose Spanish citation -- a peer-reviewed Dancecult article with a DOI -- is the strongest in the entire set. Read the flag as 'this edge is as traceable as any other and has no second opinion', not as 'this edge is unsourced'."
     ]
   },
   "notes_on_composition": {
-    "shape": "All five are origins-shaped, because v0.1's get_influences walks parent edges only. Descendant and path queries are later phases (docs/SPEC.md 2.2).",
+    "authoring_is_incremental": "Cases 006 onward are authored one at a time across separate sittings, and that is the intended mode, not a compromise: docs/phases/phase-3-agent-loop-IMPLEMENTATION.md says 'Nothing about it requires one sitting, and a set labelled while fatigued is a worse set -- this is measurement equipment, and the whole eval suite inherits its errors permanently.' This file is the save point. tests/test_gold_set.py declares EXPECTED_CASE_COUNT, which is bumped to the real count at the end of each sitting, so the suite is green at every stopping point and a case can never be added silently.",
+    "composition_plan": {
+      "target_total": 25,
+      "why_a_distribution_and_not_a_count": "Stopping early is fine; stopping lopsided is not. .claude/rules/evals.md requires results sliced by era, region, density and query type, and a set that is 100% genre-origins cannot exercise traversal_recall at all -- every path in artifact v0.5.0 past 4 hops is artists. Slots are filled in an order that keeps the distribution balanced as the set grows.",
+      "slots": {
+        "genre_origins_v0_1": "5 of 5 filled -- cases 001-005, authored 2026-08-02",
+        "dense_artist_origins": "3 of 3 filled -- cases 006, 007, 008. Reduced from 5 to 3 on 2026-08-14 to land the set on 25 rather than 27; origins is the shape already covered five times by the v0.1 genre cases, so it was the least costly slot to trim. 20-30 is the requirement (.claude/rules/evals.md, planning/07 3.1); 25 and 27 are both inside it.",
+        "non_western_genre_origins": "4 of 4 filled -- cases 011 (Paraguay), 012 (Angola), 013 (Brazil), 014 (Philippines). The pool is smaller than recorded: 15 genuinely non-Western nodes with any parent, not 19 -- the earlier figure was computed as 'not US/UK' and counted blackgaze (France), skweee (Finland/Sweden), tech trance and neo-medieval music (Germany).",
+        "path_multi_hop": "5 of 5 filled -- cases 016 (2 hops, genre, all HAND), 017 (2 hops, genre, non-Western), 018 (3 hops, artist), 019 (4 hops, artist), 020 (6 hops, artist, the deepest chain in the corpus). Every path past 4 hops is artists, so the length spread and the axis spread are not independent choices.",
+        "descendants": "4 of 4 filled -- cases 021 (hip-hop, 6 children), 022 (shoegaze, contains the documented mutual-influence cycle), 023 (reggae, most globally spread and worst sourced), 024 (Etta James, artist axis).",
+        "refusal": "3 of 3 filled -- cases 005 (genre), 009 (artist), 010 (genre)",
+        "deliberate_exposure_auto": "2 of 2 filled -- cases 015 (John Lydon) and 025 (Fela Kuti)."
+      }
+    },
+    "shape": "The first five are origins-shaped, because v0.1's get_influences walks parent edges only. Descendant and path queries are later phases (docs/SPEC.md 2.2).",
     "spread": "One trivial case (1 edge), one rich case (4 edges), two boring middles (2 edges each), one refusal. .claude/rules/evals.md requires the boring middles explicitly: a gold set made only of memorable cases hides the steps that are easy to skip.",
     "refusal": "Case 5 is not optional. Refusal accuracy is reported as a pair -- true refusals and false refusals -- and without a case where refusing is correct there is no true refusal to measure."
   },
@@ -36,7 +52,10 @@
         "node_id": "Q193355"
       },
       "expected_refusal": false,
-      "expected_path": ["Q193355", "Q9759"],
+      "expected_path": [
+        "Q193355",
+        "Q9759"
+      ],
       "expected_claims": [
         {
           "subject_id": "Q193355",
@@ -64,7 +83,13 @@
         "node_id": "Q221772"
       },
       "expected_refusal": false,
-      "expected_path": ["Q221772", "Q8341", "Q164444", "Q131272", "Q11401"],
+      "expected_path": [
+        "Q221772",
+        "Q8341",
+        "Q164444",
+        "Q131272",
+        "Q11401"
+      ],
       "expected_claims": [
         {
           "subject_id": "Q221772",
@@ -135,7 +160,11 @@
         "node_id": "Q205560"
       },
       "expected_refusal": false,
-      "expected_path": ["Q205560", "Q11401", "Q817138"],
+      "expected_path": [
+        "Q205560",
+        "Q11401",
+        "Q817138"
+      ],
       "expected_claims": [
         {
           "subject_id": "Q205560",
@@ -176,7 +205,11 @@
         "node_id": "Q1730388"
       },
       "expected_refusal": false,
-      "expected_path": ["Q1730388", "Q83440", "Q203775"],
+      "expected_path": [
+        "Q1730388",
+        "Q83440",
+        "Q203775"
+      ],
       "expected_claims": [
         {
           "subject_id": "Q1730388",
@@ -219,11 +252,1295 @@
         "node_id": "Q9759"
       },
       "expected_refusal": true,
-      "expected_path": ["Q9759"],
+      "expected_path": [
+        "Q9759"
+      ],
       "expected_claims": [],
       "expected_behavior": "The node RESOLVES -- blues is in the artifact and is cited as the source of blues rock in case 001 -- and has zero sourced parent edges. The correct output states that this graph has no sourced account of the origins of the blues. Naming any influence here is a hallucination, however historically defensible it would be.",
       "independent_citations": [],
       "notes": "This is the resolved-but-unsourced refusal, not the unknown-string refusal, and it is the stronger of the two: the system demonstrably knows the node, uses it as a citation elsewhere, and still declines to state its origins. 13 of the 28 nodes in the v0.1 artifact are in this position -- blues, jazz, funk, soul, hip-hop, punk rock, country music, swing, electronica, folk music, dub music, 2-step garage, UK garage. That is not a gap in the verification; it is the corpus. The regional coverage-honesty case (a sparse non-Western genre) is deliberately NOT here: v0.1's 21 hand-picked edges have no meaningful non-Western coverage to be honest about. It moves to the full gold set in phase 2, where the corpus contains motswako, kuduro, bouyon and Na mele paleoleo. Recorded so its absence is a decision, not an oversight."
+    },
+    {
+      "case_id": "gold_v0_1_006",
+      "query": "Who influenced Michael Jackson?",
+      "shape": "origins",
+      "difficulty": "dense",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Michael Jackson",
+        "node_id": "Q2831"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q2831",
+        "Q100937",
+        "Q181483",
+        "Q297816",
+        "Q36290",
+        "Q5950"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q2831",
+          "predicate": "influenced_by",
+          "object_id": "Q100937",
+          "subject_label": "Michael Jackson",
+          "object_label": "Fred Astaire",
+          "wikidata_statement": "Q2831 P737 Q100937",
+          "supporting_prose": "Jackson was influenced by musicians including James Brown, Little Richard, Jackie Wilson, Diana Ross, Fred Astaire, Sammy Davis Jr., Gene Kelly, and David Ruffin.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Michael_Jackson, Influences section, read 2026-08-14",
+          "independent_citations": [
+            "Tucker, Ken, \"Summer Reading; Firing Your Father Isn't Easy\", The New York Times, June 5, 1988, p. 751"
+          ]
+        },
+        {
+          "subject_id": "Q2831",
+          "predicate": "influenced_by",
+          "object_id": "Q181483",
+          "subject_label": "Michael Jackson",
+          "object_label": "Jackie Wilson",
+          "wikidata_statement": "Q2831 P737 Q181483",
+          "supporting_prose": "Jackson was influenced by musicians including James Brown, Little Richard, Jackie Wilson, Diana Ross, Fred Astaire, Sammy Davis Jr., Gene Kelly, and David Ruffin.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Michael_Jackson, Influences section, read 2026-08-14",
+          "independent_citations": [
+            "Tucker, Ken, \"Summer Reading; Firing Your Father Isn't Easy\", The New York Times, June 5, 1988, p. 751"
+          ]
+        },
+        {
+          "subject_id": "Q2831",
+          "predicate": "influenced_by",
+          "object_id": "Q297816",
+          "subject_label": "Michael Jackson",
+          "object_label": "Sammy Davis Jr.",
+          "wikidata_statement": "Q2831 P737 Q297816",
+          "supporting_prose": "Jackson was influenced by musicians including James Brown, Little Richard, Jackie Wilson, Diana Ross, Fred Astaire, Sammy Davis Jr., Gene Kelly, and David Ruffin.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Michael_Jackson, Influences section, read 2026-08-14",
+          "independent_citations": [
+            "Tucker, Ken, \"Summer Reading; Firing Your Father Isn't Easy\", The New York Times, June 5, 1988, p. 751"
+          ]
+        },
+        {
+          "subject_id": "Q2831",
+          "predicate": "influenced_by",
+          "object_id": "Q36290",
+          "subject_label": "Michael Jackson",
+          "object_label": "Diana Ross",
+          "wikidata_statement": "Q2831 P737 Q36290",
+          "supporting_prose": "Jackson was influenced by musicians including James Brown, Little Richard, Jackie Wilson, Diana Ross, Fred Astaire, Sammy Davis Jr., Gene Kelly, and David Ruffin.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Michael_Jackson, Influences section, read 2026-08-14",
+          "independent_citations": [
+            "Tucker, Ken, \"Summer Reading; Firing Your Father Isn't Easy\", The New York Times, June 5, 1988, p. 751",
+            "Taraborrelli, J. Randy, Michael Jackson: The Magic, The Madness, The Whole Story, 1958-2009, Grand Central Publishing, 2009, ISBN 978-0-446-56474-8, pp. 60, 64"
+          ]
+        },
+        {
+          "subject_id": "Q2831",
+          "predicate": "influenced_by",
+          "object_id": "Q5950",
+          "subject_label": "Michael Jackson",
+          "object_label": "James Brown",
+          "wikidata_statement": "Q2831 P737 Q5950",
+          "supporting_prose": "Jackson was influenced by musicians including James Brown, Little Richard, Jackie Wilson, Diana Ross, Fred Astaire, Sammy Davis Jr., Gene Kelly, and David Ruffin.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Michael_Jackson, Influences section, read 2026-08-14",
+          "independent_citations": [
+            "Tucker, Ken, \"Summer Reading; Firing Your Father Isn't Easy\", The New York Times, June 5, 1988, p. 751",
+            "\"Jackson Attends Brown's Public Funeral\", Contactmusic, January 2, 2007"
+          ]
+        }
+      ],
+      "notes": "The first artist-axis case, and the first dense one. Chosen over The Beatles because evals.md warns that a set of memorable cases hides the steps that get skipped, and over Deep Purple because that subject carries a live ASSERTS_AUTO false positive (Deep Purple influenced_by Led Zeppelin, whose five matched sentences are all peer mentions -- 'alongside Led Zeppelin and Black Sabbath' -- and none of which asserts influence). That edge is a corpus problem to be handled on its own terms, not underwritten by a gold case. Three things this case is deliberately carrying. (1) All five claims rest on ONE sentence, and three of the five -- Astaire, Wilson, Davis -- have exactly one independent citation, the same 1988 New York Times piece. That is the honest state of the evidence, not an authoring shortcut, and it is the single-check pattern verification_mix exists to report. (2) The sentence calls Fred Astaire a musician. He was not one; the influence is choreographic. The edge still asserts influence and so it is real ground truth, but a system that narrates it as a musical lineage step is overstating what the source says. (3) Diana Ross and James Brown each have stronger claim-specific prose elsewhere in the same article -- 'Jackson's vocal technique was influenced by Diana Ross' and 'Brown was his greatest inspiration' -- which is where their extra citations come from. supporting_prose still quotes the list sentence for all five because that is the sentence the corpus edge was actually matched on, and the gold set must not quietly re-ground an edge on better evidence than the ingestion used."
+    },
+    {
+      "case_id": "gold_v0_1_007",
+      "query": "Who influenced Oasis?",
+      "shape": "origins",
+      "difficulty": "dense",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Oasis",
+        "node_id": "Q382890"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q382890",
+        "Q11036",
+        "Q1299",
+        "Q188713",
+        "Q93346"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q382890",
+          "predicate": "influenced_by",
+          "object_id": "Q11036",
+          "subject_label": "Oasis",
+          "object_label": "The Rolling Stones",
+          "wikidata_statement": "Q382890 P737 Q11036",
+          "supporting_prose": "The band were also strongly influenced by the other 1960s British acts including the Kinks, the Rolling Stones, and the Who.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Oasis_(band), Musical style and influences, read 2026-08-14",
+          "independent_citations": [
+            "\"How Live Forever became Liam Gallagher's favourite Oasis song\", Radio X, August 8, 2024"
+          ]
+        },
+        {
+          "subject_id": "Q382890",
+          "predicate": "influenced_by",
+          "object_id": "Q1299",
+          "subject_label": "Oasis",
+          "object_label": "The Beatles",
+          "wikidata_statement": "Q382890 P737 Q1299",
+          "supporting_prose": "Oasis were most heavily influenced by the Beatles, an influence that was frequently labelled as an \"obsession\" by British media.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Oasis_(band), Musical style and influences, read 2026-08-14",
+          "independent_citations": [
+            "\"Song of the Year 1995: Oasis Wonderwall\", The Times",
+            "\"Can Coldplay steal Oasis's crown?\", The Telegraph, May 12, 2005",
+            "\"The Beatles' musical footprints\", BBC News, November 30, 2001"
+          ]
+        },
+        {
+          "subject_id": "Q382890",
+          "predicate": "influenced_by",
+          "object_id": "Q188713",
+          "subject_label": "Oasis",
+          "object_label": "The Kinks",
+          "wikidata_statement": "Q382890 P737 Q188713",
+          "supporting_prose": "The band were also strongly influenced by the other 1960s British acts including the Kinks, the Rolling Stones, and the Who.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Oasis_(band), Musical style and influences, read 2026-08-14",
+          "independent_citations": [
+            "\"Noel Gallagher & Bonehead\", Hotpress, September 6, 1994"
+          ]
+        },
+        {
+          "subject_id": "Q382890",
+          "predicate": "influenced_by",
+          "object_id": "Q93346",
+          "subject_label": "Oasis",
+          "object_label": "The Who",
+          "wikidata_statement": "Q382890 P737 Q93346",
+          "supporting_prose": "The band were also strongly influenced by the other 1960s British acts including the Kinks, the Rolling Stones, and the Who.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Oasis_(band), Musical style and influences, read 2026-08-14",
+          "independent_citations": [
+            "Kielty, Martin, \"How Noel Gallagher Blatantly Stole Pete Townshend's Guitar Sound\", Ultimate Classic Rock, June 8, 2023"
+          ]
+        }
+      ],
+      "notes": "The deliberate counterweight to case 006. Where Michael Jackson's five claims all rest on one blanket list sentence with three of them sharing a single 1988 citation, every claim here is separately cited: the Kinks to a 1994 Hotpress interview, the Rolling Stones to Radio X, the Who to Ultimate Classic Rock, and the Beatles to three sources at once. Both cases are honest reporting of what the evidence looks like -- the point of holding both is that citation density is a property the set MEASURES rather than a property it curates for. Note also that the Who and the Rolling Stones share a supporting sentence with the Kinks while carrying different citations, because Wikipedia footnotes that one sentence three times, once per band. A system that treats one span as implying one source will get this case's citation resolution wrong while its groundedness stays perfect."
+    },
+    {
+      "case_id": "gold_v0_1_008",
+      "query": "Who influenced Kenshi Yonezu?",
+      "shape": "origins",
+      "difficulty": "middle",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Kenshi Yonezu",
+        "node_id": "Q11604296"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q11604296",
+        "Q1062152",
+        "Q1196122",
+        "Q930143"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q11604296",
+          "predicate": "influenced_by",
+          "object_id": "Q1062152",
+          "subject_label": "Kenshi Yonezu",
+          "object_label": "Bump of Chicken",
+          "wikidata_statement": "Q11604296 P737 Q1062152",
+          "supporting_prose": "Yonezu considers Japanese bands Bump of Chicken, Asian Kung-Fu Generation and Radwimps big influences on his work, and Japanese authors Kenji Miyazawa and Yukio Mishima on his lyrics.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Kenshi_Yonezu, Artistry, read 2026-08-14",
+          "independent_citations": [
+            "Fuku, Ryu, \"Kenshi Yonezu 1st album Diorama interview\", Natalie, May 16, 2012 (ja)",
+            "\"Dream jobs 3 Days - Day 2: Mr. Kenshi Yonezu, first time at school\", School of Lock!, June 13, 2012 (ja)"
+          ]
+        },
+        {
+          "subject_id": "Q11604296",
+          "predicate": "influenced_by",
+          "object_id": "Q1196122",
+          "subject_label": "Kenshi Yonezu",
+          "object_label": "Radwimps",
+          "wikidata_statement": "Q11604296 P737 Q1196122",
+          "supporting_prose": "Yonezu considers Japanese bands Bump of Chicken, Asian Kung-Fu Generation and Radwimps big influences on his work, and Japanese authors Kenji Miyazawa and Yukio Mishima on his lyrics.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Kenshi_Yonezu, Artistry, read 2026-08-14",
+          "independent_citations": [
+            "Fuku, Ryu, \"Kenshi Yonezu 1st album Diorama interview\", Natalie, May 16, 2012 (ja)",
+            "\"Dream jobs 3 Days - Day 2: Mr. Kenshi Yonezu, first time at school\", School of Lock!, June 13, 2012 (ja)"
+          ]
+        },
+        {
+          "subject_id": "Q11604296",
+          "predicate": "influenced_by",
+          "object_id": "Q930143",
+          "subject_label": "Kenshi Yonezu",
+          "object_label": "Susumu Hirasawa",
+          "wikidata_statement": "Q11604296 P737 Q930143",
+          "supporting_prose": "He discovered Japanese musician Susumu Hirasawa on Nico Nico Douga and was strongly influenced by his work.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Kenshi_Yonezu, Early life, read 2026-08-14",
+          "independent_citations": [
+            "\"2018.03.17 ON AIR\", J-WAVE, Sapporo Beer Otoajito (ja)"
+          ]
+        }
+      ],
+      "notes": "The non-anglophone case, and it is here for coverage honesty rather than for the region slice: artists carry no country in artifact v0.5.0, so region slicing is genre-only and this case cannot move it. What it does move is the composition of the measurement equipment itself. .claude/rules/grounding-and-claims.md requires that the corpus skew be visible in output rather than disclaimed in a footnote, and a gold set that is entirely US/UK artists cannot make it visible. Chosen over Toshinobu Kubota, Jolin Tsai and Clara Luciani because all three have lineages that point straight back into anglophone pop, which documents influence flowing INTO a country rather than a lineage sitting outside the core; all three of Yonezu's parents are Japanese. The consequence lands in the citations: every independent source here is Japanese-language, two of them dead links preserved only in the Internet Archive. That is what non-anglophone grounding actually costs, and pretending otherwise by picking an easier subject would have hidden it."
+    },
+    {
+      "case_id": "gold_v0_1_009",
+      "query": "Who influenced Stevie Wonder?",
+      "shape": "origins",
+      "difficulty": "refusal",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Stevie Wonder",
+        "node_id": "Q714"
+      },
+      "expected_refusal": true,
+      "expected_path": [
+        "Q714"
+      ],
+      "expected_claims": [],
+      "expected_behavior": "The node RESOLVES and has zero sourced parent edges. The correct output states that this graph has no sourced account of who influenced Stevie Wonder. Naming anyone -- and the historically defensible names are easy to produce -- is a hallucination.",
+      "independent_citations": [],
+      "notes": "The first artist-axis refusal, and the strongest resolved-but-unsourced case in the whole corpus. Stevie Wonder is the single most-cited influence in artifact v0.5.0: thirteen other nodes trace to him -- Adam Levine, Cassiano, Christophe Mae, Dwele, Justin Bieber, Kimbra, Maroon 5, Meghan Trainor, Prince, Raul Midon, Red Hot Chili Peppers, Srbuk and Toshinobu Kubota. The system therefore uses him as grounding thirteen times and must still decline to say where he came from. This is the sharpest available demonstration that resolution and narratability are different properties, and it is a harder refusal than case 005 because a model that has read the internet has abundant plausible material to offer here. Companion to case 010 on the genre axis."
+    },
+    {
+      "case_id": "gold_v0_1_010",
+      "query": "Where did techno come from?",
+      "shape": "origins",
+      "difficulty": "refusal",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "techno",
+        "node_id": "Q170611"
+      },
+      "expected_refusal": true,
+      "expected_path": [
+        "Q170611"
+      ],
+      "expected_claims": [],
+      "expected_behavior": "The node RESOLVES and has zero sourced parent edges. The correct output states that this graph has no sourced account of the origins of techno. The Belleville Three, Kraftwerk and Detroit are all outside what this corpus can support and must not be narrated.",
+      "independent_citations": [],
+      "notes": "The second genre refusal, and it is not hypothetical: this exact gap is why the first live end-to-end Bedrock run on 2026-08-12 had to be retargeted off Detroit techno onto acid jazz. That refusal was discovered by accident during a smoke test; this case makes it deliberate and measured. Five nodes descend from techno -- Afro tech, kuduro, tech house, tech trance and toytown techno -- so, as with case 009, the graph can walk downstream from a node whose own origins it cannot state. Note kuduro among them: one of the nineteen non-Western nodes in the corpus with any parent at all hangs off a parent the system must refuse to explain, which is the corpus skew showing up as a structural fact rather than a disclaimer."
+    },
+    {
+      "case_id": "gold_v0_1_011",
+      "query": "Where did cachaca come from?",
+      "shape": "origins",
+      "difficulty": "rich",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "region": "Paraguay",
+      "expected_resolution": {
+        "name": "cachaca",
+        "node_id": "Q5957561"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q5957561",
+        "Q115625176",
+        "Q5612172",
+        "Q6826021",
+        "Q7692752"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q5957561",
+          "predicate": "influenced_by",
+          "object_id": "Q115625176",
+          "subject_label": "cachaca",
+          "object_label": "Colombian cumbia",
+          "wikidata_statement": "Q5957561 P737 Q115625176",
+          "supporting_prose": "Cachaca or kchaka, or kachaka is a musical genre that originated in Paraguay in the late 1970s and early 1980s. It is descended from Colombian cumbia, Mexican cumbia, grupera music, and Tecnocumbia.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Cachaca_(musical_genre), lead, read 2026-08-14",
+          "independent_citations": [
+            "Alvarez Saenz, Felix, Franciscano rape: viaje a la utopia franciscana en las selvas del Paraguay, Arandura Editorial, Asuncion, 2006, p. 110 (located via es.wikipedia.org/wiki/Cachaca_(genero_musical), where it is attached to this derivation sentence; the English article cites the same work on the etymology instead)"
+          ]
+        },
+        {
+          "subject_id": "Q5957561",
+          "predicate": "influenced_by",
+          "object_id": "Q5612172",
+          "subject_label": "cachaca",
+          "object_label": "grupera",
+          "wikidata_statement": "Q5957561 P737 Q5612172",
+          "supporting_prose": "Cachaca or kchaka, or kachaka is a musical genre that originated in Paraguay in the late 1970s and early 1980s. It is descended from Colombian cumbia, Mexican cumbia, grupera music, and Tecnocumbia.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Cachaca_(musical_genre), lead, read 2026-08-14",
+          "independent_citations": [
+            "Alvarez Saenz, Felix, Franciscano rape: viaje a la utopia franciscana en las selvas del Paraguay, Arandura Editorial, Asuncion, 2006, p. 110 (located via es.wikipedia.org/wiki/Cachaca_(genero_musical), where it is attached to this derivation sentence; the English article cites the same work on the etymology instead)"
+          ]
+        },
+        {
+          "subject_id": "Q5957561",
+          "predicate": "influenced_by",
+          "object_id": "Q6826021",
+          "subject_label": "cachaca",
+          "object_label": "Mexican cumbia",
+          "wikidata_statement": "Q5957561 P737 Q6826021",
+          "supporting_prose": "Cachaca or kchaka, or kachaka is a musical genre that originated in Paraguay in the late 1970s and early 1980s. It is descended from Colombian cumbia, Mexican cumbia, grupera music, and Tecnocumbia.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Cachaca_(musical_genre), lead, read 2026-08-14",
+          "independent_citations": [
+            "Alvarez Saenz, Felix, Franciscano rape: viaje a la utopia franciscana en las selvas del Paraguay, Arandura Editorial, Asuncion, 2006, p. 110 (located via es.wikipedia.org/wiki/Cachaca_(genero_musical), where it is attached to this derivation sentence; the English article cites the same work on the etymology instead)"
+          ]
+        },
+        {
+          "subject_id": "Q5957561",
+          "predicate": "influenced_by",
+          "object_id": "Q7692752",
+          "subject_label": "cachaca",
+          "object_label": "tecnocumbia",
+          "wikidata_statement": "Q5957561 P737 Q7692752",
+          "supporting_prose": "Cachaca or kchaka, or kachaka is a musical genre that originated in Paraguay in the late 1970s and early 1980s. It is descended from Colombian cumbia, Mexican cumbia, grupera music, and Tecnocumbia.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Cachaca_(musical_genre), lead, read 2026-08-14",
+          "independent_citations": [
+            "Alvarez Saenz, Felix, Franciscano rape: viaje a la utopia franciscana en las selvas del Paraguay, Arandura Editorial, Asuncion, 2006, p. 110 (located via es.wikipedia.org/wiki/Cachaca_(genero_musical), where it is attached to this derivation sentence; the English article cites the same work on the etymology instead)"
+          ]
+        }
+      ],
+      "notes": "The cleanest derivation sentence in the whole gold set -- 'It is descended from' names all four parents explicitly, with no taxonomy to disentangle and no direction to check. It is also the case that broke the assumption that English Wikipedia is where citations live. The English article carries 14 references and attaches none of them to this sentence; the Spanish article attaches three, one of which is a published book. The book is the same Alvarez Saenz work the English article cites -- for the etymology. Same source, same encyclopedia, different sentence, and only one of the two placements supports the edge this corpus ingested. docs/graph-semantics.md already named non-English Wikipedia as the real lever on coverage; this case is the first measurement behind that claim rather than an assertion of it."
+    },
+    {
+      "case_id": "gold_v0_1_012",
+      "query": "Where did kuduro come from?",
+      "shape": "origins",
+      "difficulty": "middle",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "region": "Angola",
+      "expected_resolution": {
+        "name": "kuduro",
+        "node_id": "Q1191544"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1191544",
+        "Q1051735",
+        "Q170611",
+        "Q227045"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1191544",
+          "predicate": "influenced_by",
+          "object_id": "Q1051735",
+          "subject_label": "kuduro",
+          "object_label": "soca music",
+          "wikidata_statement": "Q1191544 P737 Q1051735",
+          "supporting_prose": "Producers sampled traditional carnival music like soca and zouk beton (\"hard\" zouk) from the Caribbean to Angola, house and techno playing from Europe.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Kuduro, lead, read 2026-08-14",
+          "independent_citations": [
+            "Sheridan, Garth, \"Fruity Batidas: The Technologies and Aesthetics of Kuduro\", Dancecult, vol. 6 no. 1, 2014, pp. 83-96, ISSN 1947-5403, doi:10.12801/1947-5403.2014.06.01.05 (located via es.wikipedia.org/wiki/Kuduro, where it is attached to this derivation sentence; the English article leaves the sentence uncited)"
+          ]
+        },
+        {
+          "subject_id": "Q1191544",
+          "predicate": "influenced_by",
+          "object_id": "Q170611",
+          "subject_label": "kuduro",
+          "object_label": "techno",
+          "wikidata_statement": "Q1191544 P737 Q170611",
+          "supporting_prose": "Producers sampled traditional carnival music like soca and zouk beton (\"hard\" zouk) from the Caribbean to Angola, house and techno playing from Europe.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Kuduro, lead, read 2026-08-14",
+          "independent_citations": [
+            "Sheridan, Garth, \"Fruity Batidas: The Technologies and Aesthetics of Kuduro\", Dancecult, vol. 6 no. 1, 2014, pp. 83-96, ISSN 1947-5403, doi:10.12801/1947-5403.2014.06.01.05 (located via es.wikipedia.org/wiki/Kuduro, where it is attached to this derivation sentence; the English article leaves the sentence uncited)"
+          ]
+        },
+        {
+          "subject_id": "Q1191544",
+          "predicate": "influenced_by",
+          "object_id": "Q227045",
+          "subject_label": "kuduro",
+          "object_label": "zouk",
+          "wikidata_statement": "Q1191544 P737 Q227045",
+          "supporting_prose": "Producers sampled traditional carnival music like soca and zouk beton (\"hard\" zouk) from the Caribbean to Angola, house and techno playing from Europe.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Kuduro, lead, read 2026-08-14",
+          "independent_citations": [
+            "Sheridan, Garth, \"Fruity Batidas: The Technologies and Aesthetics of Kuduro\", Dancecult, vol. 6 no. 1, 2014, pp. 83-96, ISSN 1947-5403, doi:10.12801/1947-5403.2014.06.01.05 (located via es.wikipedia.org/wiki/Kuduro, where it is attached to this derivation sentence; the English article leaves the sentence uncited)"
+          ]
+        }
+      ],
+      "notes": "Carries the strongest citation in the gold set: a peer-reviewed journal article with a DOI, in Dancecult, cited by the Spanish Wikipedia directly on the sentence this corpus matched. The English article leaves that sentence bare and its one nearby reference supports a different and oppositely-directed claim -- European producers mixing kuduro WITH house and techno, rather than kuduro descending from them. A citation pass that read only English would either have missed the source entirely or attached the wrong one. Structurally this case pairs with case 010: kuduro claims techno as a parent, and techno is a node whose own origins the system must refuse to state. The graph can therefore say where kuduro came from and must decline to continue one step further back, which is what a provenance guarantee looks like when it runs out of corpus rather than out of confidence."
+    },
+    {
+      "case_id": "gold_v0_1_013",
+      "query": "Where did bossa nova come from?",
+      "shape": "origins",
+      "difficulty": "trivial",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "region": "Brazil",
+      "expected_resolution": {
+        "name": "bossa nova",
+        "node_id": "Q486263"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q486263",
+        "Q8341"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q486263",
+          "predicate": "influenced_by",
+          "object_id": "Q8341",
+          "subject_label": "bossa nova",
+          "object_label": "jazz",
+          "wikidata_statement": "Q486263 P737 Q8341",
+          "supporting_prose": "Nevertheless, bossa nova was influenced by jazz, both in the harmonies used and also by the instrumentation of songs, and today many bossa nova songs are considered jazz standards.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Bossa_nova, read 2026-08-14",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Bossa_nova -- the sentence carries no inline reference. The adjacent sfn refs (Lopes & Simas 2015 p. 48; Garcia 2019) support the DISCONFIRMING half of the passage, the parallel-evolution argument, not the influence claim.",
+              "pt.wikipedia.org/wiki/Bossa_nova (61k chars) -- its jazz references support a song becoming a jazz standard, not jazz influencing bossa nova."
+            ],
+            "finding": "No independent published work could be located that is cited for this specific claim, in either English or Portuguese. The edge remains fully traceable -- Wikidata statement, article revision, and a named sentence -- but it has no second opinion."
+          }
+        }
+      ],
+      "notes": "The only HAND-verified non-Western edge in the corpus, and one of very few HAND cases available at all -- only 16 nodes corpus-wide can produce one. It is also the most interesting sentence in the gold set, because the article argues against itself: the preceding sentence says the complex chords were NOT derived from jazz and calls it 'a case of parallel evolution of styles rather than a simple transference from jazz to bossa nova', and only then concedes 'Nevertheless, bossa nova was influenced by jazz.' Both halves are the article's own position. The hand verification quoted the concession, which is the right reading -- but a system that summarised this passage without the qualifier would report a cleaner history than the source supports. This is as close as a one-source-per-edge corpus can get to a contested claim, and it is not close: per decision A1, contested is unbuildable here and is not being smuggled in through the notes field."
+    },
+    {
+      "case_id": "gold_v0_1_014",
+      "query": "Where did Manila sound come from?",
+      "shape": "origins",
+      "difficulty": "middle",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "region": "Philippines",
+      "expected_resolution": {
+        "name": "Manila sound",
+        "node_id": "Q6749708"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q6749708",
+        "Q164444",
+        "Q217191",
+        "Q58339"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q6749708",
+          "predicate": "influenced_by",
+          "object_id": "Q164444",
+          "subject_label": "Manila sound",
+          "object_label": "funk",
+          "wikidata_statement": "Q6749708 P737 Q164444",
+          "supporting_prose": "Manila sound is styled as catchy and melodic, with smooth, lightly orchestrated, accessible folk/soft rock, sometimes fused with funk, country, light jazz and disco.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Manila_sound, Characteristics, read 2026-08-14",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Manila_sound -- 3 references in the entire article, none on this sentence; the Characteristics section carries both {{Citation needed|date=May 2026}} and {{more citations needed}}.",
+              "tl.wikipedia.org/wiki/Manila_sound (20k chars) -- cites the same philstar.com piece the English article uses, and not for this claim."
+            ],
+            "finding": "No independent published work could be located for this claim in English or Tagalog. The article's own Characteristics section is tagged as needing citations, so this is a gap Wikipedia itself has already flagged."
+          }
+        },
+        {
+          "subject_id": "Q6749708",
+          "predicate": "influenced_by",
+          "object_id": "Q217191",
+          "subject_label": "Manila sound",
+          "object_label": "soft rock",
+          "wikidata_statement": "Q6749708 P737 Q217191",
+          "supporting_prose": "Manila sound is styled as catchy and melodic, with smooth, lightly orchestrated, accessible folk/soft rock, sometimes fused with funk, country, light jazz and disco.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Manila_sound, Characteristics, read 2026-08-14",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Manila_sound -- 3 references in the entire article, none on this sentence; the Characteristics section carries both {{Citation needed|date=May 2026}} and {{more citations needed}}.",
+              "tl.wikipedia.org/wiki/Manila_sound (20k chars) -- cites the same philstar.com piece the English article uses, and not for this claim."
+            ],
+            "finding": "No independent published work could be located for this claim in English or Tagalog. The article's own Characteristics section is tagged as needing citations, so this is a gap Wikipedia itself has already flagged."
+          }
+        },
+        {
+          "subject_id": "Q6749708",
+          "predicate": "influenced_by",
+          "object_id": "Q58339",
+          "subject_label": "Manila sound",
+          "object_label": "disco",
+          "wikidata_statement": "Q6749708 P737 Q58339",
+          "supporting_prose": "Manila sound is styled as catchy and melodic, with smooth, lightly orchestrated, accessible folk/soft rock, sometimes fused with funk, country, light jazz and disco.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Manila_sound, Characteristics, read 2026-08-14",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Manila_sound -- 3 references in the entire article, none on this sentence; the Characteristics section carries both {{Citation needed|date=May 2026}} and {{more citations needed}}.",
+              "tl.wikipedia.org/wiki/Manila_sound (20k chars) -- cites the same philstar.com piece the English article uses, and not for this claim."
+            ],
+            "finding": "No independent published work could be located for this claim in English or Tagalog. The article's own Characteristics section is tagged as needing citations, so this is a gap Wikipedia itself has already flagged."
+          }
+        }
+      ],
+      "notes": "Three claims, all flagged source_uncited, and the case is here rather than dropped because dropping it is the failure mode this project exists to avoid. The alternative to a flagged non-Western case is not a cleaner gold set; it is a gold set that reaches 100% independent citation by excluding the Philippines, and then reports that 100% as a property of the system rather than of the exclusion. The article carries a second honesty problem worth recording: it says Manila sound 'should therefore be best regarded as a period in Philippine popular music rather than as a single musical style'. The corpus holds it as a genre node with three parents. The source doubts the node is the kind of thing the schema says it is, which no field in the artifact can currently express."
+    },
+    {
+      "case_id": "gold_v0_1_015",
+      "query": "Who influenced John Lydon?",
+      "shape": "origins",
+      "difficulty": "trivial",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "John Lydon",
+        "node_id": "Q106662"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q106662",
+        "Q332032"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q106662",
+          "predicate": "influenced_by",
+          "object_id": "Q332032",
+          "subject_label": "John Lydon",
+          "object_label": "Alice Cooper",
+          "wikidata_statement": "Q106662 P737 Q332032",
+          "supporting_prose": "As a teenager, he listened to rock bands like Hawkwind, Captain Beefheart, Alice Cooper, and the Stooges - bands his mother also used to like, which somewhat embarrassed him - as well as more mainstream acts such as David Bowie, T. Rex, Slade and Gary Glitter.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/John_Lydon, Early life, read 2026-08-14",
+          "independent_citations": [
+            "Lydon, John, with Keith and Kent Zimmerman, Rotten: No Irish, No Blacks, No Dogs, 1993, pp. 26, 33, 60"
+          ]
+        }
+      ],
+      "notes": "The deliberate EXPOSURE_AUTO case, and it is the schema's own worked example made measurable. graph/schema.py's VERIFICATION_EXPOSURE_AUTO docstring illustrates the tier with the phrase 'as a teenager he listened to Alice Cooper', and this is that edge, with that sentence, in the corpus. Until now the tier's definition lived only in a comment. What the case is for: EXPOSURE_AUTO records formative exposure rather than an assertion of influence, its measured recall is 20 percent, and the standing rule is that grounded must never quietly come to rest on a listening habit. So this case must be narrated as what it is. A system that renders it as 'Alice Cooper influenced John Lydon' has upgraded the evidence tier without saying so, and the whole corpus contains 57 edges at this tier waiting to be upgraded the same way. Note the citation is Lydon's own memoir -- self-reported, published, checkable, and not independent of its subject, which is a different weakness from the one flagged on cases 013 and 014 and is recorded here rather than in a field, because no metric currently reads it."
+    },
+    {
+      "case_id": "gold_v0_1_016",
+      "query": "How does heavy metal connect back to the blues?",
+      "shape": "path",
+      "difficulty": "trivial",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "heavy metal music",
+        "node_id": "Q38848"
+      },
+      "expected_terminus": {
+        "name": "blues",
+        "node_id": "Q9759"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q38848",
+        "Q193355",
+        "Q9759"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q38848",
+          "predicate": "influenced_by",
+          "object_id": "Q193355",
+          "subject_label": "heavy metal music",
+          "object_label": "blues rock",
+          "wikidata_statement": "Q38848 P737 Q193355",
+          "supporting_prose": "With roots in blues rock, psychedelic rock and acid rock, heavy metal bands developed a thick, monumental sound characterized by distorted guitars, extended guitar solos, emphatic beats and loudness.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Heavy_metal_music, lead, read 2026-08-14",
+          "independent_citations": [
+            "Larson, Tom, History of Rock and Roll, Kendall/Hunt Publishing, 2004, pp. 183-187, ISBN 978-0-7872-9969-9"
+          ]
+        },
+        {
+          "subject_id": "Q193355",
+          "predicate": "influenced_by",
+          "object_id": "Q9759",
+          "subject_label": "blues rock",
+          "object_label": "blues",
+          "wikidata_statement": "Q193355 P737 Q9759",
+          "supporting_prose": "Blues rock is a fusion genre and form of rock and blues music that relies on the chords/scales and instrumental improvisation of blues.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Blues_rock, read 2026-08-02",
+          "independent_citations": [
+            "\"Blues-Rock Music Style Overview\", AllMusic"
+          ]
+        }
+      ],
+      "notes": "The first path case in the set, and the only chain in the corpus whose every edge is HAND verified. It is docs/SPEC.md's own signature query, which until now was validated only as two separate origins facts. Three things make it the right case to open the shape with. It is short, so a failure is unambiguous. Its second edge is gold case 001, so the path case and the origins case must agree or one of them is wrong. And it terminates at blues -- gold case 005's refusal -- so the correct behaviour is to walk two sourced hops and then stop, because the corpus has no sourced account of where the blues came from. A traversal that continues past blues is not going deeper, it is leaving the evidence."
+    },
+    {
+      "case_id": "gold_v0_1_017",
+      "query": "How is Shibuya-kei connected to jazz?",
+      "shape": "path",
+      "difficulty": "middle",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "region": "Japan",
+      "expected_resolution": {
+        "name": "Shibuya-kei",
+        "node_id": "Q1207347"
+      },
+      "expected_terminus": {
+        "name": "jazz",
+        "node_id": "Q8341"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1207347",
+        "Q486263",
+        "Q8341"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1207347",
+          "predicate": "influenced_by",
+          "object_id": "Q486263",
+          "subject_label": "Shibuya-kei",
+          "object_label": "bossa nova",
+          "wikidata_statement": "Q1207347 P737 Q486263",
+          "supporting_prose": "Red Bull Music Academy contributor Barry Walters described Shibuya-kei as \"an omnivorous fusion of vanguard pop, jazz, lounge, bossa nova, ye-ye, Brill Building girl groups, and West Coast harmony acts\".",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Shibuya-kei, read 2026-08-14",
+          "independent_citations": [
+            "Walters, Barry, \"Pizzicato Five\", Red Bull Music Academy, November 2014"
+          ]
+        },
+        {
+          "subject_id": "Q486263",
+          "predicate": "influenced_by",
+          "object_id": "Q8341",
+          "subject_label": "bossa nova",
+          "object_label": "jazz",
+          "wikidata_statement": "Q486263 P737 Q8341",
+          "supporting_prose": "Nevertheless, bossa nova was influenced by jazz, both in the harmonies used and also by the instrumentation of songs, and today many bossa nova songs are considered jazz standards.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Bossa_nova, read 2026-08-14",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Bossa_nova -- no inline reference on this sentence; the adjacent sfn refs support the parallel-evolution counterargument instead.",
+              "pt.wikipedia.org/wiki/Bossa_nova -- its jazz references cover a song entering the jazz repertory, not jazz influencing bossa nova."
+            ],
+            "finding": "Same claim as case 013 and the same finding. Repeated here rather than cross-referenced so a reader of this case is not required to have read that one."
+          }
+        }
+      ],
+      "notes": "A three-continent chain in two hops -- Japan to Brazil to the United States -- which is the thesis of this project stated as a traversal rather than as copy: genres look like separate things and underneath they are one connected organism. It is also the case where the verification tiers are most visibly unequal. The first edge is PROSE_AUTO, the weak tier that structurally cannot tell assertion from mention, and it rests on a critic's list of ingredients. The second is HAND, and its source argues with itself. A narrative that renders these two steps in the same voice is claiming a uniformity of evidence that does not exist, which is what per-claim verification is in the schema to prevent. Its second edge is gold case 013, so the same disagreement recorded there applies here."
+    },
+    {
+      "case_id": "gold_v0_1_018",
+      "query": "How does Famous Oberogo connect to Fred Astaire?",
+      "shape": "path",
+      "difficulty": "middle",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Famous Oberogo",
+        "node_id": "Q110929442"
+      },
+      "expected_terminus": {
+        "name": "Fred Astaire",
+        "node_id": "Q100937"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q110929442",
+        "Q243639",
+        "Q2831",
+        "Q100937"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q110929442",
+          "predicate": "influenced_by",
+          "object_id": "Q243639",
+          "subject_label": "Famous Oberogo",
+          "object_label": "Jason Derulo",
+          "wikidata_statement": "Q110929442 P737 Q243639",
+          "supporting_prose": "It has also been influenced by soul and funk, his main inspirations are Jason Derulo, Bruno Mars, Pharrell Williams and Loic Nottet.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Famous_Oberogo, read 2026-08-14",
+          "independent_citations": [
+            "\"Famous wants Sarau after winning 'Operacion Triunfo'\", La Vanguardia, October 21, 2019 (es)",
+            "Perez, Laura, \"Famous se 'reinicia' en el Benidorm Fest tras su 'complicada salida' de OT\", Vertele / elDiario.es, January 3, 2023 (es)"
+          ]
+        },
+        {
+          "subject_id": "Q243639",
+          "predicate": "influenced_by",
+          "object_id": "Q2831",
+          "subject_label": "Jason Derulo",
+          "object_label": "Michael Jackson",
+          "wikidata_statement": "Q243639 P737 Q2831",
+          "supporting_prose": "He has predominantly named Michael Jackson as his inspiration.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Jason_Derulo, read 2026-08-14",
+          "independent_citations": [
+            "\"Jason Derulo Channels Michael Jackson in Musical Tribute\", Yahoo!, July 2016",
+            "\"Influences for Jason Derulo\", MTV"
+          ]
+        },
+        {
+          "subject_id": "Q2831",
+          "predicate": "influenced_by",
+          "object_id": "Q100937",
+          "subject_label": "Michael Jackson",
+          "object_label": "Fred Astaire",
+          "wikidata_statement": "Q2831 P737 Q100937",
+          "supporting_prose": "Jackson was influenced by musicians including James Brown, Little Richard, Jackie Wilson, Diana Ross, Fred Astaire, Sammy Davis Jr., Gene Kelly, and David Ruffin.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Michael_Jackson, Influences section, read 2026-08-14",
+          "independent_citations": [
+            "Tucker, Ken, \"Summer Reading; Firing Your Father Isn't Easy\", The New York Times, June 5, 1988, p. 751"
+          ]
+        }
+      ],
+      "notes": "Replaced the originally chosen Yoohei Kawakami chain, which ran through The Rolling Stones -> Robert Johnson -- an edge whose only matched sentence is a track listing noting that one album includes a cover of 'Love in Vain'. Covering a song is not an influence claim, and a gold case is not the place to legitimise an edge the evidence does not carry. That is the second confirmed ASSERTS_AUTO false positive found on 2026-08-14, after Deep Purple -> Led Zeppelin, and both are consistent with the filter's measured 97 percent precision rather than evidence against it. This replacement is clean at every hop. It also inherits case 006's problem across three of them: Wikipedia's sentence calls Fred Astaire a musician and the influence is choreographic, so a narration of this path has three chances to compound an overstatement it did not originate."
+    },
+    {
+      "case_id": "gold_v0_1_019",
+      "query": "How does Chappell Roan connect back to Woody Guthrie?",
+      "shape": "path",
+      "difficulty": "rich",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Chappell Roan",
+        "node_id": "Q110281146"
+      },
+      "expected_terminus": {
+        "name": "Woody Guthrie",
+        "node_id": "Q4061"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q110281146",
+        "Q19848",
+        "Q1299",
+        "Q392",
+        "Q4061"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q110281146",
+          "predicate": "influenced_by",
+          "object_id": "Q19848",
+          "subject_label": "Chappell Roan",
+          "object_label": "Lady Gaga",
+          "wikidata_statement": "Q110281146 P737 Q19848",
+          "supporting_prose": "She has also cited Lady Gaga and Nicki Minaj as inspiration for her attitude towards making people feel confident with her music.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Chappell_Roan, read 2026-08-14",
+          "independent_citations": [
+            "Levine, Nick, \"Chappell Roan is becoming the queer pop icon of her dreams\", NME, June 21, 2023",
+            "\"A Chat with: Chappell Roan\", Anchr Magazine, 2018"
+          ]
+        },
+        {
+          "subject_id": "Q19848",
+          "predicate": "influenced_by",
+          "object_id": "Q1299",
+          "subject_label": "Lady Gaga",
+          "object_label": "The Beatles",
+          "wikidata_statement": "Q19848 P737 Q1299",
+          "supporting_prose": "Gaga grew up listening to artists such as Michael Jackson, the Beatles, Stevie Wonder, Queen, Bruce Springsteen, Pink Floyd, Led Zeppelin, Whitney Houston, Elton John, Prince, En Vogue, TLC, Christina Aguilera, Janet Jackson, and Blondie, who have all influenced her music.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Lady_Gaga, read 2026-08-14",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Lady_Gaga -- the sentence names fifteen artists and closes 'who have all influenced her music', but Wikipedia footnotes them INDIVIDUALLY and the Beatles is one of the ones it does not footnote. Michael Jackson, Whitney Houston, Prince, Christina Aguilera, Janet Jackson and Blondie each carry their own reference; the Beatles carries none."
+            ],
+            "finding": "The governing sentence is sourced in pieces and this piece is not one of them. Notable because it is the first flagged claim that is NOT non-Western -- uncited claims track Wikipedia's sourcing habits, not a region, though they concentrate where coverage is thin."
+          }
+        },
+        {
+          "subject_id": "Q1299",
+          "predicate": "influenced_by",
+          "object_id": "Q392",
+          "subject_label": "The Beatles",
+          "object_label": "Bob Dylan",
+          "wikidata_statement": "Q1299 P737 Q392",
+          "supporting_prose": "The Beatles continued to absorb influences long after their initial success, often finding new musical and lyrical avenues by listening to their contemporaries, including Bob Dylan, Smokey Robinson and the Miracles, the Who, Frank Zappa, the Lovin' Spoonful, the Byrds and the Beach Boys, whose 1966 album Pet Sounds amazed and inspired McCartney.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/The_Beatles, Musical style, read 2026-08-14",
+          "independent_citations": [
+            "\"Yeah! Yeah! Yeah!\", The Guardian, February 1, 2004"
+          ]
+        },
+        {
+          "subject_id": "Q392",
+          "predicate": "influenced_by",
+          "object_id": "Q4061",
+          "subject_label": "Bob Dylan",
+          "object_label": "Woody Guthrie",
+          "wikidata_statement": "Q392 P737 Q4061",
+          "supporting_prose": "In January 1961, he traveled to New York City to perform and to visit his musical idol Woody Guthrie at Greystone Park Psychiatric Hospital in New Jersey.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Bob_Dylan, read 2026-08-14",
+          "independent_citations": [
+            "Sounes, Howard, Down The Highway: The Life Of Bob Dylan, Grove Press, 2001, ISBN 978-0-8021-1686-4, p. 72",
+            "Dylan, Bob, Chronicles: Volume One, 2004, p. 98"
+          ]
+        }
+      ],
+      "notes": "Four hops from a 2024 pop star to a Dust Bowl folk singer, and the case where the chain is weakest at its head rather than its tail. The Chappell Roan edge cites Lady Gaga as inspiration for an ATTITUDE towards making an audience feel confident, not for music, and the Lady Gaga edge is the first flagged uncited claim in the set that is not non-Western -- Wikipedia footnotes that fifteen-artist sentence one artist at a time and simply does not footnote the Beatles. Both remain real influence language and both are in the corpus, so both are ground truth here. Recorded because it corrects something stated earlier the same day: uncited claims track Wikipedia's sourcing habits rather than a region. They concentrate where coverage is thin, which is not the same as being confined there."
+    },
+    {
+      "case_id": "gold_v0_1_020",
+      "query": "How does femtanyl connect back to Woody Guthrie?",
+      "shape": "path",
+      "difficulty": "rich",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "femtanyl",
+        "node_id": "Q131318965"
+      },
+      "expected_terminus": {
+        "name": "Woody Guthrie",
+        "node_id": "Q4061"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q131318965",
+        "Q11647",
+        "Q125603",
+        "Q483407",
+        "Q1299",
+        "Q392",
+        "Q4061"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q131318965",
+          "predicate": "influenced_by",
+          "object_id": "Q11647",
+          "subject_label": "femtanyl",
+          "object_label": "Nine Inch Nails",
+          "wikidata_statement": "Q131318965 P737 Q11647",
+          "supporting_prose": "They take inspiration from a wide variety of sources including groups like Nine Inch Nails, Throbbing Gristle, the Prodigy, and Drain Gang, as well as modern electronic dance music and pop music.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Femtanyl, read 2026-08-14",
+          "independent_citations": [
+            "Bain, Katie, \"Genre Now: How Destin Conrad, Jensen McRae, Yami Safdie & More Are Re-Thinking Classic Sounds for the Future\", Billboard, January 26, 2026"
+          ]
+        },
+        {
+          "subject_id": "Q11647",
+          "predicate": "influenced_by",
+          "object_id": "Q125603",
+          "subject_label": "Nine Inch Nails",
+          "object_label": "The Clash",
+          "wikidata_statement": "Q11647 P737 Q125603",
+          "supporting_prose": "Upon forming Nine Inch Nails, Reznor stated that he was initially influenced most by the Clash, even outright trying to imitate them.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Nine_Inch_Nails, read 2026-08-14",
+          "independent_citations": [
+            "\"Nine Inch Nails' Trent Reznor Looks Back on 'Pretty Hate Machine' 30 Years Later\", Spin, November 2019"
+          ]
+        },
+        {
+          "subject_id": "Q125603",
+          "predicate": "influenced_by",
+          "object_id": "Q483407",
+          "subject_label": "The Clash",
+          "object_label": "Ramones",
+          "wikidata_statement": "Q125603 P737 Q483407",
+          "supporting_prose": "Hours after their debut, the Clash, most of the Sex Pistols and much of London's \"inner circle\" of punks attended a performance by New York City's leading punk rock band the Ramones at Dingwalls; according to Strummer: \"It can't be stressed how great the first Ramones album was to the scene ... It was the first word of Punk, a fantastic record\".",
+          "supporting_prose_source": "en.wikipedia.org/wiki/The_Clash, read 2026-08-14",
+          "independent_citations": [
+            "The Clash, The Clash: Strummer, Jones, Simonon, Headon, Atlantic Books, London, 2008, ISBN 978-1-84354-788-4, p. 61"
+          ]
+        },
+        {
+          "subject_id": "Q483407",
+          "predicate": "influenced_by",
+          "object_id": "Q1299",
+          "subject_label": "Ramones",
+          "object_label": "The Beatles",
+          "wikidata_statement": "Q483407 P737 Q1299",
+          "supporting_prose": "The Ramones' loud, fast, straightforward musical style was influenced by pop music that the band members grew up listening to in the 1950s and 1960s, including classic rock groups such as Buddy Holly and the Crickets, the Beach Boys, the Who, the Beatles, the Kinks, Led Zeppelin, the Rolling Stones, the Doors and Creedence Clearwater Revival; bubblegum acts like the 1910 Fruitgum Company and Ohio Express; and girl groups such as the Ronettes and the Shangri-Las.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Ramones, read 2026-08-14",
+          "independent_citations": [
+            "Millard, Andre, The Electric Guitar: A History of an American Icon, Johns Hopkins University Press, 2004, p. 206, ISBN 0-8018-7862-4"
+          ]
+        },
+        {
+          "subject_id": "Q1299",
+          "predicate": "influenced_by",
+          "object_id": "Q392",
+          "subject_label": "The Beatles",
+          "object_label": "Bob Dylan",
+          "wikidata_statement": "Q1299 P737 Q392",
+          "supporting_prose": "The Beatles continued to absorb influences long after their initial success, often finding new musical and lyrical avenues by listening to their contemporaries, including Bob Dylan, Smokey Robinson and the Miracles, the Who, Frank Zappa, the Lovin' Spoonful, the Byrds and the Beach Boys, whose 1966 album Pet Sounds amazed and inspired McCartney.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/The_Beatles, Musical style, read 2026-08-14",
+          "independent_citations": [
+            "\"Yeah! Yeah! Yeah!\", The Guardian, February 1, 2004"
+          ]
+        },
+        {
+          "subject_id": "Q392",
+          "predicate": "influenced_by",
+          "object_id": "Q4061",
+          "subject_label": "Bob Dylan",
+          "object_label": "Woody Guthrie",
+          "wikidata_statement": "Q392 P737 Q4061",
+          "supporting_prose": "In January 1961, he traveled to New York City to perform and to visit his musical idol Woody Guthrie at Greystone Park Psychiatric Hospital in New Jersey.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Bob_Dylan, read 2026-08-14",
+          "independent_citations": [
+            "Sounes, Howard, Down The Highway: The Life Of Bob Dylan, Grove Press, 2001, ISBN 978-0-8021-1686-4, p. 72",
+            "Dylan, Bob, Chronicles: Volume One, 2004, p. 98"
+          ]
+        }
+      ],
+      "notes": "The deepest chain artifact v0.5.0 holds: six hops, 2024 hyperpop to Woody Guthrie, and the case traversal_recall exists to measure. It is also the case that most rewards reading past the first matched sentence. Three of its six edges look like false positives on a quick scan and are not: The Beatles -> Bob Dylan appears to rest on Dylan introducing them to cannabis until the seventh sentence turns out to be a real assertion, and Ramones -> The Beatles appears to rest on Paul McCartney's stage name until the third sentence does the same. The one that stays weak is The Clash -> Ramones, where the evidence is the Clash attending a Ramones show and Strummer praising the album's effect on the SCENE rather than on his own band. It is kept because that is genuinely what the corpus holds and it is genuinely influence language, but it is the softest link in the longest chain, which is worth knowing before this case is used to demonstrate depth."
+    },
+    {
+      "case_id": "gold_v0_1_021",
+      "query": "What came out of hip-hop?",
+      "shape": "descendants",
+      "difficulty": "rich",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "hip-hop",
+        "node_id": "Q11401"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q11401",
+        "Q205560",
+        "Q221772",
+        "Q2256407",
+        "Q6956465",
+        "Q7196456",
+        "Q7410145"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q205560",
+          "predicate": "influenced_by",
+          "object_id": "Q11401",
+          "subject_label": "trip hop",
+          "object_label": "hip-hop",
+          "wikidata_statement": "Q205560 P737 Q11401",
+          "supporting_prose": "Trip hop is a music genre defined as a psychedelic fusion of hip-hop and electronica with slow tempos and an atmospheric sound.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Trip_hop, read 2026-08-02",
+          "independent_citations": [
+            "Mitchell, Global Noise: Rap and Hip Hop Outside the USA, Wesleyan University Press, 2002, ISBN 978-0-8195-6502-0"
+          ]
+        },
+        {
+          "subject_id": "Q221772",
+          "predicate": "influenced_by",
+          "object_id": "Q11401",
+          "subject_label": "acid jazz",
+          "object_label": "hip-hop",
+          "wikidata_statement": "Q221772 P737 Q11401",
+          "supporting_prose": "Acid jazz (also known as club jazz, psychedelic jazz, or groove jazz) is a music genre that combines elements of funk, soul, and hip hop.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Acid_jazz, read 2026-08-02",
+          "independent_citations": [
+            "\"Acid Jazz Music Genre Overview\", AllMusic",
+            "Adams, The New Grove Dictionary of Jazz, Grove's Dictionaries, 2002, ISBN 978-1-56159-284-5"
+          ]
+        },
+        {
+          "subject_id": "Q2256407",
+          "predicate": "influenced_by",
+          "object_id": "Q11401",
+          "subject_label": "hip-hop soul",
+          "object_label": "hip-hop",
+          "wikidata_statement": "Q2256407 P737 Q11401",
+          "supporting_prose": "Hip-hop soul is a subgenre of contemporary R&B music, most popular during the early and mid 1990s, which fuses R&B or soul singing with hip-hop musical production.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Hip-hop_soul, read 2026-08-14",
+          "independent_citations": [
+            "Donaldson, Melvin Burke, Hip Hop in American Cinema, Peter Lang",
+            "Price, Emmett G. (ed.), Encyclopedia of African American Music, ABC-CLIO"
+          ]
+        },
+        {
+          "subject_id": "Q6956465",
+          "predicate": "influenced_by",
+          "object_id": "Q11401",
+          "subject_label": "Na mele paleoleo",
+          "object_label": "hip-hop",
+          "wikidata_statement": "Q6956465 P737 Q11401",
+          "supporting_prose": "Na mele paleoleo (\"song that speaks loudly and angrily\") is a Hawaiian hip hop genre that fuses rap with lyrics in the Hawaiian language, Hawaiian Pidgin, or both.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Na_mele_paleoleo, read 2026-08-14",
+          "independent_citations": [
+            "Ho'opi'i, Ku'ualoha, \"Na mele paleoleo: Hawaiian hip hop, poetry, and politics\", The Contemporary Pacific, vol. 22 no. 2, 2010, pp. 281-311, doi:10.1353/cp.2010.0020",
+            "Osumare, Halifu, The Africanist Aesthetic in Global Hip-Hop: Power Moves, Palgrave Macmillan, 2007, chapter \"Hip-Hop Culture in Hawai'i\", p. 143, ISBN 978-1-137-05964-2"
+          ]
+        },
+        {
+          "subject_id": "Q7196456",
+          "predicate": "influenced_by",
+          "object_id": "Q11401",
+          "subject_label": "Pinoy hip hop",
+          "object_label": "hip-hop",
+          "wikidata_statement": "Q7196456 P737 Q11401",
+          "supporting_prose": "Hip hop practices reached the Philippines in the early 1980s through U.S. media and returning migrants.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Pinoy_hip-hop, read 2026-08-14",
+          "independent_citations": [
+            "Goldsmith, Melissa Ursula Dawn and Fonseca, Anthony J., Hip Hop Around the World: An Encyclopedia, ABC-CLIO, 2019, ISBN 9780313357596",
+            "\"Filipino Hip-Hop\", National Geographic Society, October 29, 2010"
+          ]
+        },
+        {
+          "subject_id": "Q7410145",
+          "predicate": "influenced_by",
+          "object_id": "Q11401",
+          "subject_label": "sampledelia",
+          "object_label": "hip-hop",
+          "wikidata_statement": "Q7410145 P737 Q11401",
+          "supporting_prose": "However, he states that the beginning of the sampledelic era was marked by the acquisition of cheaper samplers such as the E-mu Emulator and Ensoniq Mirage by rap producers.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Sampledelia, read 2026-08-14",
+          "independent_citations": [
+            "Demers, Joanna Teresa, Steal This Music: How Intellectual Property Law Affects Musical Creativity, University of Georgia Press, 2006, pp. 98-99"
+          ]
+        }
+      ],
+      "notes": "The first descendants case, and the sharpest direction test in the set. hip-hop has SIX children and ZERO parents, so 'where did hip-hop come from?' must refuse while this query answers with six sourced claims -- the same node, the same rows, read the other way. That distinction is not academic: on 2026-08-14 the origins direction was silently assumed in three separate places (tests/test_gold_set.py, eval/heldout.py's checker, and eval/heldout_draw.py), and in none of them did it raise. It answered the wrong question and passed. Two of the six children are non-Western -- Na mele paleoleo (Hawaii) and Pinoy hip hop (Philippines) -- and both carry better citations than the anglophone ones, including a peer-reviewed article with a DOI. That is the reverse of the pattern found earlier the same night and worth holding next to it: non-Western coverage is thin, but where it exists it is not automatically worse sourced. hip-hop is also an OBJECT in gold cases 002 and 003, so the same node appears as a citation twice and as a subject here."
+    },
+    {
+      "case_id": "gold_v0_1_022",
+      "query": "What came out of shoegaze?",
+      "shape": "descendants",
+      "difficulty": "middle",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "shoegaze",
+        "node_id": "Q272167"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q272167",
+        "Q16855754",
+        "Q209137",
+        "Q41343"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q16855754",
+          "predicate": "influenced_by",
+          "object_id": "Q272167",
+          "subject_label": "blackgaze",
+          "object_label": "shoegaze",
+          "wikidata_statement": "Q16855754 P737 Q272167",
+          "supporting_prose": "Blackgaze is a fusion genre combining elements of black metal and shoegaze.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Blackgaze, read 2026-08-14",
+          "independent_citations": [
+            "Walschots, Natalie Zina, \"The Translator: Blackgaze\", Exclaim!, February 26, 2014",
+            "\"Blackgaze: meet the bands taking black metal out of the shadows\", The Guardian, October 5, 2015"
+          ]
+        },
+        {
+          "subject_id": "Q209137",
+          "predicate": "influenced_by",
+          "object_id": "Q272167",
+          "subject_label": "post-rock",
+          "object_label": "shoegaze",
+          "wikidata_statement": "Q209137 P737 Q272167",
+          "supporting_prose": "Kane, many of which began in post-punk and shoegaze roots and variously explored the aforementioned influences.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Post-rock, read 2026-08-14",
+          "independent_citations": [
+            "Reynolds, Simon, \"Heavy Metal\", Frieze, issue 111, November 1, 2007",
+            "\"NME Reviews: Plastic Box\", NME, January 11, 1999"
+          ]
+        },
+        {
+          "subject_id": "Q41343",
+          "predicate": "influenced_by",
+          "object_id": "Q272167",
+          "subject_label": "post-metal",
+          "object_label": "shoegaze",
+          "wikidata_statement": "Q41343 P737 Q272167",
+          "supporting_prose": "As black metal \"spread beyond Scandinavia to infect the global underground\", it joined shoegaze as a major factor in the evolution of post-metal.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Post-metal, read 2026-08-14",
+          "independent_citations": [
+            "Wiederhorn, Jon, \"A Brief History of Post-Metal\", Bandcamp Daily, August 4, 2016"
+          ]
+        }
+      ],
+      "notes": "Contains the corpus's documented mutual-influence cycle. graph/memory.py's path() docstring records it explicitly -- post-rock and shoegaze each cite the other under P737 -- and notes that the graph is therefore NOT a DAG and must never be treated as one. This case asserts one half: post-rock influenced_by shoegaze. The other half is equally real and equally in the corpus. Nothing else in the gold set exercises that, and a traversal that assumes acyclicity will either loop here or silently drop an edge. Kept deliberately as a single half rather than paired with a post-rock case, because the point is that BOTH are true simultaneously, not that one is."
+    },
+    {
+      "case_id": "gold_v0_1_023",
+      "query": "What came out of reggae?",
+      "shape": "descendants",
+      "difficulty": "middle",
+      "authored_at": "2026-08-14",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "reggae",
+        "node_id": "Q9794"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q9794",
+        "Q18393891",
+        "Q6918602",
+        "Q6956465"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q18393891",
+          "predicate": "influenced_by",
+          "object_id": "Q9794",
+          "subject_label": "reggaestep",
+          "object_label": "reggae",
+          "wikidata_statement": "Q18393891 P737 Q9794",
+          "supporting_prose": "Reggaestep (portmanteau of reggae and dubstep) is a fusion genre of reggae music and dubstep that gained popularity online in the early 2010s, particularly on SoundCloud.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Reggaestep, read 2026-08-14",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Reggaestep -- a 2,668-character stub whose only reference on this sentence is a SoundCloud GROUP PAGE titled 'Reggae Influenced Dubstep'. A user-created playlist group is not a published work and is not treated as one here."
+            ],
+            "finding": "The article has no independent source for its own definition. Flagged rather than cited to the SoundCloud link, because citing it would technically satisfy the test while meaning nothing."
+          }
+        },
+        {
+          "subject_id": "Q6918602",
+          "predicate": "influenced_by",
+          "object_id": "Q9794",
+          "subject_label": "motswako",
+          "object_label": "reggae",
+          "wikidata_statement": "Q6918602 P737 Q9794",
+          "supporting_prose": "The musical characteristics of motswako typically encompass smooth yet laid-back rap delivery, a consistent beat, occasionally employing a four-on-the-floor rhythm and incorporating reggae-influenced Afro-centric or drum and bass beats.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Motswako, read 2026-08-14",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Motswako -- the Characteristics sentence carries no inline reference; a full scan of the article found no reference attached to any sentence linking motswako to reggae."
+            ],
+            "finding": "Botswana/South African genre, and the same pattern the non-Western slot hit on 2026-08-14: the claim is real and in the corpus, and Wikipedia sources it to nothing."
+          }
+        },
+        {
+          "subject_id": "Q6956465",
+          "predicate": "influenced_by",
+          "object_id": "Q9794",
+          "subject_label": "Na mele paleoleo",
+          "object_label": "reggae",
+          "wikidata_statement": "Q6956465 P737 Q9794",
+          "supporting_prose": "Sudden Rush's blend of rap, reggae, and Hawaiian chanting, especially the rapid-fire kepakepa style, helped define the genre.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Na_mele_paleoleo, read 2026-08-14",
+          "independent_citations": [
+            "Akindes, Fay Yokomizo, \"Sudden Rush: 'Na Mele Paleoleo' (Hawaiian Rap) as Liberatory Discourse\", Discourse, vol. 23 no. 1, 2001, pp. 82-98, doi:10.1353/dis.2001.0001"
+          ]
+        }
+      ],
+      "notes": "The most globally distributed case in the set: Jamaica to Botswana, Hawaii, and an internet-native fusion genre. Two of the three claims are flagged uncited, which makes this the worst-sourced case here and the reason it is included rather than replaced. Both flags name what was searched. The reggaestep one is the more instructive: its only available reference is a SoundCloud group page, and citing that would have passed the test while conveying nothing -- the failure mode the flag exists to make impossible. Na mele paleoleo appears in this case AND in case 021, descending from both reggae and hip-hop, which is what a graph looks like when a genre has two parents on different continents."
+    },
+    {
+      "case_id": "gold_v0_1_024",
+      "query": "What came out of Etta James?",
+      "shape": "descendants",
+      "difficulty": "middle",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Etta James",
+        "node_id": "Q182725"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q182725",
+        "Q213736",
+        "Q23905341",
+        "Q59314138",
+        "Q90757946"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q213736",
+          "predicate": "influenced_by",
+          "object_id": "Q182725",
+          "subject_label": "Bridgit Mendler",
+          "object_label": "Etta James",
+          "wikidata_statement": "Q213736 P737 Q182725",
+          "supporting_prose": "Also to Trudon, Mendler cited Etta James, Elvis Presley, B. B. King, Ella Fitzgerald and Billie Holiday, and talked about these artists: \"I love that they have soul in their voices.\"",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Bridgit_Mendler, read 2026-08-14",
+          "independent_citations": [
+            "Trudon, Taylor, \"Bridgit Mendler On 'Good Luck Charlie,' Music, And The Craziest Thing A Fan Has Asked Her\", The Huffington Post, June 20, 2009"
+          ]
+        },
+        {
+          "subject_id": "Q23905341",
+          "predicate": "influenced_by",
+          "object_id": "Q182725",
+          "subject_label": "Liniker",
+          "object_label": "Etta James",
+          "wikidata_statement": "Q23905341 P737 Q182725",
+          "supporting_prose": "Liniker lists as her main musical influences Clube do Balanco, Cartola, Elza Soares, Etta James, Nina Simone, Caetano Veloso, Gilberto Gil, Gal Costa, Tulipa Ruiz, Tassia Reis as well as members of her own family.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Liniker, read 2026-08-14",
+          "independent_citations": [
+            "Moraes, Camila, \"Liniker: 'Sou negro, pobre e gay e tenho potencia tambem'\", El Pais, November 13, 2015 (pt)"
+          ]
+        },
+        {
+          "subject_id": "Q59314138",
+          "predicate": "influenced_by",
+          "object_id": "Q182725",
+          "subject_label": "Srbuk",
+          "object_label": "Etta James",
+          "wikidata_statement": "Q59314138 P737 Q182725",
+          "supporting_prose": "Her influences include Aretha Franklin, Etta James, Ella Fitzgerald, Stevie Wonder, Ray Charles and Michael Jackson.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Srbuk, read 2026-08-14",
+          "independent_citations": [
+            "\"Srbuk\", Eurovision.tv, 2019",
+            "Bravo.am, November 7, 2020 (hy)"
+          ]
+        },
+        {
+          "subject_id": "Q90757946",
+          "predicate": "influenced_by",
+          "object_id": "Q182725",
+          "subject_label": "Sofia Coll",
+          "object_label": "Etta James",
+          "wikidata_statement": "Q90757946 P737 Q182725",
+          "supporting_prose": "Coll cites Beyonce, Masego, Jorja Smith, Mahalia, Teyana Taylor, Christina Aguilera, Etta James and James Brown as influences.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Sofia_Coll, read 2026-08-14",
+          "independent_citations": [
+            "Ramon, Pilar, \"Estrenamos 'Tu Mente y Yo Corazon', el nuevo videoclip de Sofia Coll\", Vein.es, 2023 (es)"
+          ]
+        }
+      ],
+      "notes": "Replaced Lady Gaga, chosen first, whose Rina Sawayama edge rests on Sawayama covering 'Dance in the Dark' and appearing on Gaga's remix album -- a cover and a collaboration, not an influence claim. That is the THIRD confirmed ASSERTS_AUTO false positive found on 2026-08-14 and the three are one species, not three flukes: the filter fires when subject and object co-occur in a sentence about a cover, a collaboration, or a shared bill. Deep Purple / Led Zeppelin was a shared billing, Rolling Stones / Robert Johnson was a cover, Sawayama / Lady Gaga was both. The Velvet Underground was checked as the next alternative and has the same defect on its David Bowie edge. Etta James is clean at all four, and is the widest-spread case in the set: the United States, Brazil, Armenia and Spain descend from one American blues singer, sourced in English, Portuguese, Armenian and Spanish."
+    },
+    {
+      "case_id": "gold_v0_1_025",
+      "query": "Who influenced Fela Kuti?",
+      "shape": "origins",
+      "difficulty": "trivial",
+      "authored_at": "2026-08-14",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Fela Kuti",
+        "node_id": "Q313868"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q313868",
+        "Q97365499"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q313868",
+          "predicate": "influenced_by",
+          "object_id": "Q97365499",
+          "subject_label": "Fela Kuti",
+          "object_label": "Sandra Izsadore",
+          "wikidata_statement": "Q313868 P737 Q97365499",
+          "supporting_prose": "While there, he discovered the Black Power movement through Sandra Smith (now known as Sandra Izsadore or Sandra Akanke Isidore), a partisan of the Black Panther Party.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Fela_Kuti, read 2026-08-14",
+          "independent_citations": [
+            "Olatunji, Michael, \"Yabis: A Phenomenon in the Contemporary Nigerian Music\", The Journal of Pan African Studies, vol. 1, 2007, pp. 26-46"
+          ]
+        }
+      ],
+      "notes": "The final case, and the second deliberate EXPOSURE_AUTO. The tier records formative exposure rather than an assertion of influence -- its measured recall is 20 percent and the standing rule is that grounded must never quietly come to rest on a listening habit. This case is here because it is the strongest counterexample to reading the tier as 'weak evidence of a weak influence'. Sandra Izsadore introduced Fela Kuti to the Black Power movement, and that encounter is widely credited with reorienting his politics and his music toward what became Afrobeat. The influence is enormous; the SENTENCE is a discovery, not a claim of musical influence, so the filter tiered it as exposure. Both readings are correct and they are about different things. A system narrating this edge must say what the source says -- he discovered a movement through a person -- rather than upgrading it to 'Sandra Izsadore influenced Fela Kuti's music', which the corpus does not support and which 57 other EXPOSURE_AUTO edges are waiting to be upgraded the same way."
     }
   ]
 }

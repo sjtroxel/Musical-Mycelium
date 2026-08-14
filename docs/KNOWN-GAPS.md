@@ -4,13 +4,16 @@ Written 2026-08-12, at the phase 3 release step. Required by
 `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §5.1, which asks that the tag ship with the open items
 named and the residual gaps stated plainly.
 
-**Verified state at the time of writing:** `make check` green — 640 passed, 7 `costs_money` tests
-deselected, mypy clean, root 15/18, terraform valid. Working tree clean at `700bad3`. Every claim below
-was re-derived against the repo rather than copied from the previous handoff.
+**Updated 2026-08-14** when the gold set was completed. Every claim below was re-derived against the repo
+rather than copied forward.
+
+**Verified state:** `make check` green — 851 passed, 1 skipped, 7 `costs_money` tests deselected, mypy
+clean, root 15/18, terraform valid. **The single skip is the held-out seal, and it is skipping because
+that set does not exist yet** — see Part 1. A skip there is an open item, never a pass.
 
 **Bedrock is not a blocker.** Access was restored 2026-08-11 after a twelve-day account-level quota fault.
-Nothing here is waiting on AWS. What remains is unrun work, one hand-authored dataset, and a small number
-of standing facts about the corpus.
+Nothing here is waiting on AWS. What remains is unrun work, one undrawn dataset, and a small number of
+standing facts about the corpus.
 
 ---
 
@@ -27,10 +30,11 @@ The item is open and its two halves are open for different reasons. They do not 
   `eval/datasets/baseline_v0_3_0_local.json` is scripted. Two live anecdotes exist
   (`test_an_unresolvable_name_is_refused_rather_than_invented`, and the gate test beside it) but an
   anecdote is not a rate. Closing this is a wiring change plus one billable run.
-- [ ] **Traversal recall against a real model.** Weaker than unrun: it has **never been scored on any run,
-  scripted or live.** `traversal_recall` and `traversal_precision` exist in `eval/metrics.py` and their
-  only callers in the entire repo are `tests/test_metrics.py`. They need expected paths, which live in the
-  gold set, which holds **5 cases**. This half is blocked behind the gold set below, not behind Bedrock.
+- [ ] **Traversal recall against a real model.** It has **never been scored on a real run**, and until
+  2026-08-12 it had never been scored on any run at all — its only callers were `tests/test_metrics.py`,
+  because the gold schema had no field it could read. `expected_path` fixed that, and the gold set now
+  holds **25 cases including 5 multi-hop path cases**, so the metric has real chains to walk. What remains
+  is the live half: **this is now blocked behind Bedrock only, not behind the gold set.**
 
 ### DoD #12 — token cost to CloudWatch
 
@@ -100,12 +104,26 @@ narrower than the sentence sounds, and the narrowness is the gap.
 
 ### The precondition that gates phase 4
 
-- [ ] **The gold set holds 5 cases of a planned 20–30, and the sealed held-out 10 does not exist.**
-  `eval/datasets/gold_v0_1.json`. Both must be hand-authored **while no model output exists**; once step 8
-  runs against a real model that property is destroyed permanently and cannot be recovered. This gates
-  DoD #11's traversal-recall half and the whole of phase 4. It is not delegable, and there is no schedule
-  pressure on it — a set labelled badly is worse than a set labelled late, because every correctness
-  number the project ever reports inherits its errors.
+- [x] **The gold set is complete: 25 cases, 67 claims. Done 2026-08-14.** `eval/datasets/gold_v0_1.json`.
+  16 origins, 5 path, 4 descendants; 10 genre and 10 artist; 3 refusals; all four verification tiers
+  exercised. 8 of the 67 claims carry no independent citation and say so explicitly via `citation_status`,
+  with the sources searched recorded per claim — see the standing limit on that below.
+
+- [ ] **The sealed held-out 10 does not exist.** `eval/datasets/heldout_v1.json.enc` has never been
+  written, and `make heldout-key` has not been run. A **skipped**
+  `test_the_committed_sealed_set_matches_its_manifest` is what that looks like in CI; it is not a passing
+  state. It is drawn rather than hand-authored — `make heldout-draw SEED=... OUT=...`, then
+  `make heldout-seal` — because the set's job is detecting overfitting to the gold set, and a curated
+  held-out set inherits the same blind spots the gold set already has. **The seed is the mechanism: it is
+  the author's, and it must never be committed, pasted into an agent session, or left in shared shell
+  history.** This is the last item gating phase 4.
+
+- [ ] **The "authored while no model output exists" property is now weaker than the phrase suggests.**
+  It was true by construction until 2026-08-12, when the loop first ran end to end against a real model.
+  The exposure is narrow — that run's subject was `acid jazz`, gold case 002, authored ten days earlier —
+  but the gold set is now clean **by procedure**, not by construction, and the held-out draw will be too.
+  Recorded in the dataset's own `provenance.honest_limits` rather than only here. Step 8, the full
+  evaluated run, still has not happened.
 
 ---
 
@@ -138,6 +156,35 @@ material may slide from "traceable" to "correct."
 **The corpus skews Western, anglophone and recent, by construction.** It is reported as a computed number
 rather than a disclaimer. Concentration is not absence: the corpus spans 500 CE to the present across 29
 places, and 43 of its genres name no US or UK origin at all.
+
+**The skew compounds across three layers, and authoring the gold set on 2026-08-14 measured the other
+two.** The non-Western slice is the least covered — 15 nodes with any parent, not the 19 an earlier count
+claimed, which had included France, Germany, Finland and Sweden. It is also the **least verified**: every
+non-Western node except `bossa nova` sits at `PROSE_AUTO`, the tier that structurally cannot tell an
+assertion from a mention. And it is the **least citable**: Wikipedia frequently leaves the sentence these
+edges rest on unsourced. Only the first layer was previously written down.
+
+**8 of the gold set's 67 claims carry no independent citation, and say so.** Not silence — an explicit
+`citation_status` naming the sources searched and what was found. The alternative was worse in both
+directions: attaching an article's general reference list would pass the test while hiding the weakness,
+and dropping the cases would buy a 100% citation rate by excluding the global south and then report that
+rate as a property of the system. **Read the flag as "this edge is as traceable as any other and has no
+second opinion", not as "unsourced"** — provenance is intact; what is missing is the second, *
+disconfirming* layer. `tests/test_gold_set.py` locks the count, because an escape hatch that costs
+nothing to widen becomes the standard. **Searching other languages before flagging is required, not
+optional: it rescued two of four candidate claims, and `kuduro`'s Spanish citation — a peer-reviewed
+Dancecult article with a DOI — is the strongest in the entire set.**
+
+**The `ASSERTS_AUTO` filter has one characterised failure mode.** It fires when subject and object
+co-occur in a sentence about a **cover, a collaboration, or a shared bill**. Four confirmed instances,
+all found while authoring gold cases on 2026-08-14: `Deep Purple → Led Zeppelin` (shared billing),
+`The Rolling Stones → Robert Johnson` (a cover in a track listing), `Rina Sawayama → Lady Gaga` (a cover
+and a remix credit), `The Velvet Underground → David Bowie` (both). This is consistent with the filter's
+measured 97% precision — roughly 23 such edges are expected across 760 — so it is the filter working as
+documented, not breaking. It is recorded because a gold case must claim its subject's neighbours
+*exactly*, so each one silently disqualifies that node as a gold subject. **Related method note: judge an
+edge on all of its matched sentences, not the first two.** `The Beatles → Bob Dylan` looks like it rests
+on Dylan introducing them to cannabis until sentence seven turns out to be a real assertion.
 
 **Genres are thin.** The best-connected genre nodes top out at four outgoing edges; artists reach 25.
 `techno` (`Q170611`) has **zero** edges, so "Where did Detroit techno come from?" correctly refuses. Pick
