@@ -4,12 +4,12 @@ Written 2026-08-12, at the phase 3 release step. Required by
 `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §5.1, which asks that the tag ship with the open items
 named and the residual gaps stated plainly.
 
-**Updated 2026-08-14** when the gold set was completed. Every claim below was re-derived against the repo
-rather than copied forward.
+**Updated 2026-08-14** when the gold set was completed and again when the held-out 10 was drawn and
+sealed. Every claim below was re-derived against the repo rather than copied forward.
 
-**Verified state:** `make check` green — 851 passed, 1 skipped, 7 `costs_money` tests deselected, mypy
-clean, root 15/18, terraform valid. **The single skip is the held-out seal, and it is skipping because
-that set does not exist yet** — see Part 1. A skip there is an open item, never a pass.
+**Verified state:** `make check` green — 852 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
+`test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
 **Bedrock is not a blocker.** Access was restored 2026-08-11 after a twelve-day account-level quota fault.
 Nothing here is waiting on AWS. What remains is unrun work, one undrawn dataset, and a small number of
@@ -109,19 +109,23 @@ narrower than the sentence sounds, and the narrowness is the gap.
   exercised. 8 of the 67 claims carry no independent citation and say so explicitly via `citation_status`,
   with the sources searched recorded per claim — see the standing limit on that below.
 
-- [ ] **The sealed held-out 10 does not exist.** `eval/datasets/heldout_v1.json.enc` has never been
-  written, and `make heldout-key` has not been run. A **skipped**
-  `test_the_committed_sealed_set_matches_its_manifest` is what that looks like in CI; it is not a passing
-  state. It is drawn rather than hand-authored — `make heldout-draw SEED=... OUT=...`, then
-  `make heldout-seal` — because the set's job is detecting overfitting to the gold set, and a curated
-  held-out set inherits the same blind spots the gold set already has. **The seed is the mechanism: it is
-  the author's, and it must never be committed, pasted into an agent session, or left in shared shell
-  history.** This is the last item gating phase 4.
+- [x] **The sealed held-out 10 is drawn and sealed. Done 2026-08-14.**
+  `eval/datasets/heldout_v1.json.enc` plus its public manifest are committed; the key lives outside the
+  repo and the plaintext was shredded. Manifest: 10 cases, pinned to artifact `0.5.0`, shapes
+  `{descendants: 2, origins: 6, path: 2}`, `refusal_count: 2`. The six origins are 4 drawn from the
+  origins stratum plus the 2 refusal cases, which are origins-shaped questions whose correct answer is a
+  refusal — refusal is a stratum and an `expected_refusal` flag, not a shape. It was drawn rather than
+  hand-authored because the set's job is detecting overfitting to the gold set, and a curated held-out set
+  inherits the same blind spots the gold set already has. **The seed is the mechanism: it is the author's
+  alone, was never committed, pasted into an agent session, or left in shell history, and without it the
+  draw cannot be reproduced.** This was the last item gating phase 4.
 
 - [ ] **The "authored while no model output exists" property is now weaker than the phrase suggests.**
   It was true by construction until 2026-08-12, when the loop first ran end to end against a real model.
   The exposure is narrow — that run's subject was `acid jazz`, gold case 002, authored ten days earlier —
-  but the gold set is now clean **by procedure**, not by construction, and the held-out draw will be too.
+  but the gold set is now clean **by procedure**, not by construction. The held-out set is the narrower
+  case: it was drawn 2026-08-14 with every field read out of the pinned artifact and no authored
+  judgement anywhere in it, so it has no contamination surface of this kind to begin with.
   Recorded in the dataset's own `provenance.honest_limits` rather than only here. Step 8, the full
   evaluated run, still has not happened.
 

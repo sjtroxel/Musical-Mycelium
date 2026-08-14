@@ -1,0 +1,15 @@
+{
+  "dataset": "heldout_v1",
+  "sealed_at": "2026-08-14",
+  "cipher": "aes-256-cbc pbkdf2 sha256 600000",
+  "artifact_version_pin": "0.5.0",
+  "case_count": 10,
+  "refusal_count": 2,
+  "shapes": {
+    "descendants": 2,
+    "origins": 6,
+    "path": 2
+  },
+  "sha256_ciphertext": "007ef6b9e41f8b153c7af17417eeeb0b9a7e11b3130a738c4fee87d5667e5309",
+  "sha256_plaintext": "fa25beeec8ff1608bf5b058e579e51be3d8c8734fdeda2ca917933872da7c9e5"
+}
