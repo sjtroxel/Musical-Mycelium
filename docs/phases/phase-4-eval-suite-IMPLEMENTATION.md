@@ -1,0 +1,328 @@
+# Phase 4 — Eval Suite: IMPLEMENTATION
+
+> **As-built plan.** Written 2026-08-15, immediately before phase 4 is built, per `CLAUDE.md`. It absorbs
+> what phases 1–3 actually taught. The scope doc is [`phase-4-eval-suite.md`](phase-4-eval-suite.md); read
+> its §0 first — this doc does not restate it. The open-item list is
+> [`docs/KNOWN-GAPS.md`](../KNOWN-GAPS.md).
+>
+> **Status: awaiting approval. No phase 4 code is written until this doc is approved.**
+
+## 1. What this phase delivers, in one sentence
+
+The eval **suite**: one command that drives the frozen datasets through the real loop, scores them with the
+scorers phase 3 already built, slices every result, reports it with a measured noise floor and a measured
+judge agreement next to every judged number, and blocks the build on five correctness properties whose
+thresholds are read from a baseline rather than invented.
+
+**What is new here is not the scorers. It is the driving, the money, and the gates.** Six deterministic
+scorers, slicing, and a scripted baseline already exist (scope §0). Nothing measured so far has ever been
+produced by a real model across a set, and no number in this repo currently blocks anything.
+
+## 2. Where the scope doc has diverged from reality
+
+Checked line by line against the repo today. Three divergences, all in the same direction — the phase is
+less blocked than its text assumes:
+
+- **"What still gates the phase is the held-out 10"** (scope §0, and `Known risks`). **Closed 2026-08-14.**
+  Drawn, sealed, manifest committed, `test_the_committed_sealed_set_matches_its_manifest` passing.
+  Nothing gates this phase now.
+- **"DoD 5 and 6 below are substantially met already."** Confirmed, with one correction:
+  `traversal_recall` and `traversal_precision` are unit-tested but have never been called by anything
+  except `tests/test_metrics.py`. `plan_adherence` is in the same position. Two scorers being unit-tested
+  is not the same as the suite exercising them, and the first scripted gold run in step 3 is where that is
+  discovered.
+- **"The eleven deterministic metrics"** (scope `Delivers`). The catalog as built is **eight** scorer
+  entry points — `edge_groundedness`, `citation_resolution`, `refusal_accuracy`, `traversal_recall`,
+  `traversal_precision`, `injection_resistance`, `verification_mix`, `plan_adherence` — plus cost and
+  latency, which are telemetry rather than scorers, and minus `contested flagging`, which decision A1
+  removed. **This doc treats eight-plus-two as the catalog and does not chase eleven.** Rounding the
+  count down is deliberate.
+
+No scope-doc amendment is needed for these; they are recorded here and the scope doc's §0 already carries
+the substance. Say so rather than silently diverging.
+
+## 3. The build order
+
+Nine steps. Steps 1–3 are free and are where the bugs are. Step 4 is the first billable run and the one
+that closes three inherited items at once.
+
+### Step 1 — Extract a dataset-agnostic runner (free)
+
+`harness.py` is adversarial-specific by construction: `DATASET` is hardcoded at line 65, `run_case` builds
+its LLM from `build_script(attack)`, and its entire docstring is about attacks. It cannot drive the gold
+set and it cannot take a provider. Rather than widen it, extract what is general.
+
+- **New `eval/runner.py`.** `run_case(query, store, llm, registry) -> CaseRun`. Dataset-agnostic. Drives
+  `agent.loop.run`, collects the event stream into a `CaseRun` carrying approved claims, rejections,
+  visited node ids, the terminal `Done` or `Refused`, and `Usage`. Knows nothing about gold cases,
+  adversarial cases, or held-out cases.
+- **`harness.py` delegates to it**, still passing a `ScriptedLLM` built from `build_script`. Its public
+  surface and its recorded baseline do not change.
+- **The lock — and this paragraph was wrong, corrected as-built 2026-08-15.** The plan said the baseline
+  drift test would catch any behaviour change in the extraction. **It does not.** Breaking the lock
+  deliberately, as the practice requires, is what found this: a runner perturbed to drop the last node
+  from every walked path **passed all 852 tests**. `CaseOutcome.visited` is recorded and read by nothing
+  — the same root cause as `traversal_recall` never having been scored on any run until 2026-08-12.
+  Data no assertion consumes is data that can silently rot.
+
+  The real lock is `tests/test_runner.py`, which compares the runner's fields against the loop's own
+  events. Confirmed by re-breaking: the perturbation now fails
+  `test_the_runner_reports_exactly_the_nodes_the_loop_walked`. The drift test still runs and still
+  matters for what it does cover; it simply is not the lock this step needed.
+
+  **One test in that file is honestly weaker than its name suggests and says so.**
+  `test_prose_is_only_the_token_stream` cannot currently fail from the change it guards, because `Token`
+  is the only event carrying a `.text` attribute, so the old catch-all and the explicit match are
+  equivalent today. Kept, with the limit written into its docstring rather than left implied.
+
+Visited node ids come from `PathWalked` events. **Check which direction each event records before writing
+`traversal_recall`'s caller.** Three separate bugs on 8/14 came from assuming the origins direction and
+none of them raised; `expected_path` in the gold set reads subject-first (`Q193355` then `Q9759`, the
+influenced node then its influence), and a runner that collects the reverse will score a silent zero that
+looks like a model failure.
+
+### Step 2 — The budget and the throttle (free)
+
+**New `eval/budget.py`.** Three axes bind and they need three different mechanisms:
+
+- **10 RPM is the binding constraint.** A global token-bucket limiter at 10 requests/minute, shared across
+  the whole run. One gold case is a plan turn, one turn per hop, then synthesis — call it six requests —
+  so 25 cases is roughly 150 requests and roughly 15 minutes at the cap. That is the floor, not a problem
+  to engineer around.
+- **Concurrency 2**, per `planning/07` §315. It hides latency; it cannot buy throughput, because the
+  limiter is global. Anything above 2 only makes backoff noisier.
+- **A cumulative token budget**, which is the new one. 27,000,000 tokens/day on Haiku 4.5 locks the model
+  out for the rest of the calendar day, and TPM recovering in sixty seconds does not help. `EvalBudget`
+  carries `max_tokens` and `max_requests`, decrements on every `Usage`, and raises `BudgetExceeded`. **On
+  exceed the run aborts and writes partial results with `complete: false`** rather than dying silently —
+  a truncated run that reports itself as truncated is usable; one that looks complete is poison.
+- Exponential backoff with jitter on throttling exceptions, capped retries.
+
+The default `max_tokens` is set **after** step 4 measures a real per-run figure. Until then it is required
+to be passed explicitly. No invented number.
+
+**As-built 2026-08-15.** Both limits are required with no default at all — a default budget is an
+invented threshold wearing a helpful hat. `call_with_retries` takes `is_retryable` as a parameter rather
+than naming a Bedrock exception, so `eval/` never imports boto3 (the precedent `api/telemetry.py` set),
+and `BudgetExceeded` is never retried whatever that predicate says. The limiter is a **sliding** window,
+not a fixed one: ten requests at 0:59 plus ten at 1:01 is twenty inside one minute of wall clock, which
+the quota counts and a fixed window does not. Both locks were broken deliberately and both failed
+correctly — a limiter that records without blocking, and a `check()` short-circuited to a no-op.
+
+### Step 3 — Tier 1 over the gold set, scripted (free)
+
+**New `eval/suite.py`.** Loads a dataset, drives it through `runner.py`, computes the full catalog, slices
+every result via `slices.py`, and returns a `SuiteResult`. **New `eval/report.py`** renders it.
+
+This is the first time the 25 gold cases have ever been executed by anything. Expect it to find bugs — in
+the gold set's field names, in `expected_path` direction, in `expected_terminus`, in the four cases that
+carry `axis` and `region` where others do not. Fixing those is in scope; the gold set's *content* is
+frozen and is not edited to make a metric pass.
+
+**Tier 1 in CI runs on the scripted provider and costs $0.** This resolves the ambiguity the scope doc
+left: DoD 1 says tier 1 runs on every commit at $0, and a real-model run cannot do that at 10 RPM. So the
+every-commit gate measures the *machinery* — the same honest limit the phase 3 baseline already states in
+its first JSON field — and the real-model numbers are a separate, stored, manually triggered artifact.
+**The report must carry which provider produced it, on the same line as every number.**
+
+### Step 4 — The first billable run (spend, gated)
+
+Gold set plus adversarial set, through Bedrock, Haiku 4.5 on
+`us.anthropic.claude-haiku-4-5-20251001-v1:0`. Behind a `confirm_spend` prompt that names the estimated
+request count and token count before anything is invoked.
+
+**This single run closes three of the four items phase 3 handed over** — refusal accuracy on real output,
+traversal recall on real output, and injection resistance as a rate — because all three were only ever
+waiting on the same wiring plus the same run. They do not need separate steps and should not get them.
+
+Marked `costs_money`, so `make check` and CI deselect it by default. Results written to
+`eval/results/<timestamp>-<provider>.json`, committed.
+
+### Step 5 — Thresholds from the baseline, then blocking
+
+`eval/thresholds.json`, written from step 4's numbers, never before. Blocking on five and only five:
+edge groundedness 100%, citation resolution 100%, injection resistance zero failures, traversal recall
+within 5pp of baseline, refusal accuracy within 5pp of baseline **in both directions**. Everything else
+tracked.
+
+**A missing `thresholds.json` means tier 1 reports loudly and does not block.** It must not mean "pass".
+A suite that silently passes when its thresholds are absent is worse than no suite.
+
+### Step 6 — The noise floor (spend, gated)
+
+Five identical runs, spread recorded, written into the report, and a standing rule that a movement inside
+the spread is not a result. Runs **after** step 4, because step 4 is what makes 5x a known quantity
+against the daily cap rather than a gamble. Budget-guarded by step 2.
+
+### Step 7 — The judge, and its validation (spend, gated)
+
+- **Model: Nova Pro** (`amazon.nova-pro-v1:0`), confirmed on this account at 2M TPM / 25 RPM with no
+  Marketplace step. Non-Anthropic, so it is not the generator's family. Pinned version, temperature 0.
+- **Rubric in version control** at `src/musical_mycelium/eval/rubrics/`, with concrete anchors per score
+  level, next to the code.
+- **30 hand-labeled items, blind, labeled by him.** This is the phase's only real block on his time.
+  **Cadence, reusing what worked for all 25 gold cases: one item at a time, one judgement each, from a
+  draft I pre-fill, never typing JSON.** Labels are collected before the judge is ever run on them.
+- **Agreement is measured and reported permanently**: raw agreement and Cohen's kappa, printed next to
+  every judged metric. Enforced structurally — `report.py` raises if asked to render a judged number with
+  no agreement figure loaded. A judged score with no agreement is decoration, so make it unrenderable.
+- **The re-measure budget is decided now, not later:** if agreement is poor, the rubric is rewritten with
+  concrete anchors and re-measured **at most twice**. After that the judged metric ships marked
+  `agreement: poor` with the figure visible, rather than being tuned until it flatters.
+
+### Step 8 — Tier 2, judged and sampled (spend, gated)
+
+Citation support and narrative quality only. 20–30 samples, release candidates only, behind the same
+explicit confirmation naming the dollar figure.
+
+### Step 9 — The held-out run, once, at freeze
+
+After everything above is frozen. `make eval-heldout` decrypts in memory, runs, and writes **aggregate
+metrics and case ids only**.
+
+**Structural rule, and the reason this step is last: no held-out case content may enter a result file, a
+log line, a test failure message, or an agent's context.** The result writer uses a field allowlist and a
+test asserts that no case query, label, or claim text can reach the output — the same shape as
+`heldout-check`, which already prints `heldout_v1_007: claims-diverged` and never the case. I will not
+read the plaintext, will not ask for the key, and will not open the `.enc`. If a metric fails on the
+held-out set and the failure is not diagnosable from ids and problem codes alone, **the correct outcome is
+to report it undiagnosed**, not to look.
+
+Held-out numbers are reported in their own section, separately from the development set's.
+
+## 4. Explicitly not in this phase
+
+- **The SPA, visualization, the guided tour.** Phase 5.
+- **New agent capability, new tools, new corpus.** If a metric reveals an agent *bug*, the fix is in
+  scope. A new agent *feature* is not, however obviously it would raise a number.
+- **A second source per edge**, and therefore `contested`. Phase 6, decision A1, not re-litigated.
+- **The historical trend view and the public writeup.** Phase 7. This phase only has to store results in a
+  shape phase 7 can read, which is why they are per-run JSON files rather than an overwritten single file.
+- **Editing the gold or held-out sets to make anything pass.** Not deferred — forbidden.
+- **The Bedrock redeploy.** See §8.
+
+## 5. One-way doors touched
+
+| Door | How this phase satisfies it |
+|---|---|
+| 1. Claims first, prose second | Untouched. The suite reads `GateResult` and approved `Claim`s; it never asks a model whether a claim was grounded. Groundedness stays a dictionary lookup. |
+| 2. Provenance on every edge | Untouched; `citation_resolution` is the metric that proves it still holds. |
+| 3. Validated graph semantics | Untouched. No ingestion in this phase. |
+| 4. Agent-to-data tool contract | **Tested by not being edited.** The runner drives `default_registry()`. If driving a new dataset requires touching the loop, the seam is broken and that is a finding, not a workaround. |
+| 5. Everything in Terraform | Only if step 4's CloudWatch question is taken up; see §8. No console clicks either way. |
+| 6. Package boundaries | All new modules land in `eval/`. `eval` may import `agent` and `graph`; nothing imports `eval`. |
+| 7. LLM provider seam | **This phase is the seam's first real exercise.** The runner takes an `LLM`, and `build_llm(provider, role=...)` chooses it. Judge and generator are different providers in the same run, which is exactly what the factory was for. |
+| 8. Lambda container image | Untouched. |
+| 9. Response streaming | Untouched. The suite drives the loop in-process, not over HTTP. |
+
+## 6. Files, by path
+
+**New:**
+
+```
+src/musical_mycelium/eval/runner.py          dataset-agnostic case driver
+src/musical_mycelium/eval/budget.py          RPM limiter, cumulative token budget, backoff
+src/musical_mycelium/eval/suite.py           tier 1: load, drive, score, slice
+src/musical_mycelium/eval/report.py          the human-readable report
+src/musical_mycelium/eval/judge.py           tier 2: Nova Pro, rubric, agreement
+src/musical_mycelium/eval/rubrics/*.md       the rubrics, versioned next to the code
+src/musical_mycelium/eval/thresholds.json    written from the baseline, not before
+src/musical_mycelium/eval/results/           per-run results, committed
+tests/test_runner.py  test_budget.py  test_suite.py  test_report.py  test_judge.py
+```
+
+**Changed:**
+
+```
+src/musical_mycelium/eval/harness.py   delegates driving to runner.py; baseline output unchanged
+src/musical_mycelium/eval/__init__.py  exports
+Makefile                               eval, eval-live, eval-noise, eval-judge, eval-heldout
+.github/workflows/ci.yml               tier 1 scripted on every commit
+pyproject.toml                         nothing new expected; tool config only if it is
+docs/KNOWN-GAPS.md                     items checked off with evidence as they close
+```
+
+**Root discipline:** 15 of 18 entries in use. This phase adds **no** root entries — results go under
+`eval/`, targets go in the existing `Makefile`.
+
+## 7. How it is tested
+
+- **Every metric already has a unit test over synthetic input**, including two vacuous-truth guards. The
+  new work is the *suite's* tests: that a truncated run reports `complete: false`, that the limiter
+  actually limits, that `BudgetExceeded` aborts rather than continues, that the report refuses to render a
+  judged number without an agreement figure, and that the held-out writer cannot emit case content.
+- **Break every new lock deliberately, once.** The baseline drift test, the budget abort, the agreement
+  guard, the held-out allowlist. Watch each fail, then restore. This is the practice that worked on 8/14
+  and it is the only reliable defence against the repo's named failure mode — assertions written from a
+  mental model and never executed.
+- **Attack the metrics.** The difflib coverage bug is the precedent. Specifically: an empty output must
+  not score 100% groundedness (already guarded), a run of zero cases must not report 100% anything, and a
+  case that refuses everything must score badly on refusal accuracy's second half.
+- `make check` stays green throughout: currently 852 passed, 0 skipped, 7 `costs_money` deselected.
+
+## 8. Cost, and the one decision this doc does not make
+
+Steps 1–3 and 5 are $0. Steps 4, 6, 7, 8, 9 spend, each behind an explicit confirmation naming the
+estimate. **No dollar figure appears in this repo's code or docs** — prices come from
+`MYCELIUM_TOKEN_PRICES` at runtime and the per-run cost is *measured* from step 4's recorded usage, not
+estimated here.
+
+**DoD 8 — "real per-run cost recorded to CloudWatch, not estimated" — cannot close in this phase without a
+decision that is yours.** The EMF format is proven and unit-tested; no record has reached CloudWatch
+because the deployed Lambda runs `llm_provider=local`. Closing it needs the Bedrock redeploy, and per
+`KNOWN-GAPS.md` that redeploy puts a billable model behind a Function URL with
+`authorization_type = "NONE"`, where a streamed response bills the full duration even after the visitor
+closes the tab.
+
+**My recommendation: defer the redeploy to phase 5**, where the SPA needs a live backend anyway and the
+auth/throttling decision can be made once instead of twice. Phase 4 then closes DoD 8 as far as it
+honestly can — cost measured and recorded per run from real usage, in committed result files — and
+`KNOWN-GAPS.md` keeps the CloudWatch clause open with the reason. The alternative, if you want it closed
+now, is a bounded one-off: redeploy with `provider=bedrock`, reserved concurrency 1 and a tight timeout,
+invoke once from the CLI, confirm the EMF record landed, revert to `local`. That is maybe an hour and a
+trivial spend, and it does briefly expose a billable public URL.
+
+Either way the resume line *"deployed on AWS Lambda and Bedrock"* stays unclaimable until the redeploy,
+and this doc does not soften that.
+
+## 9. Genuinely uncertain, named rather than smoothed
+
+- **Whether the gold set survives contact with the runner.** 25 cases have never been executed. Field
+  mismatches, `expected_path` direction, and cases carrying `axis`/`region` that others do not are all
+  live risks. Step 3 exists to find them cheaply, before any money is spent.
+- **Whether traversal recall means anything at 5 path cases.** Five multi-hop cases is enough for the
+  metric to run and not obviously enough for a 5pp threshold to be stable. If the noise floor in step 6
+  comes back wider than 5pp, **the threshold moves to match the measured noise, not the other way round**,
+  and that gets written down.
+- **Whether Haiku 4.5 refuses enough to score.** Refusal accuracy is a pair. A model that never refuses
+  and a model that always refuses both produce a useless half. Three gold refusal cases and two held-out
+  ones is a thin basis, and if the real-model numbers are degenerate, that is a finding about the dataset.
+- **Judge agreement on narrative quality.** Citation support has a checkable referent; narrative quality
+  does not, and kappa on a subjective rubric may simply come back poor. The two-rewrite cap in step 7
+  exists so that discovering this costs a bounded amount.
+- **Whether 27M tokens/day is actually reachable.** Five noise-floor runs plus a judged sample plus reruns
+  in one day is the shape that hits it. The budget guard is a precaution against an untested ceiling.
+
+## 10. Definition of done, mapped
+
+| Scope DoD | Closes at | Note |
+|---|---|---|
+| 1. Tier 1 every commit, $0, blocks on five | steps 3 + 5 | scripted provider in CI; real-model runs stored separately |
+| 2. Tier 2 only behind a confirmation naming the dollar figure | step 8 | |
+| 3. Judge-human agreement measured and printed | step 7 | structurally enforced by `report.py` |
+| 4. Noise floor over five identical runs | step 6 | |
+| 5. Every metric unit-tested, vacuous-truth guard included | already met; extended | new suite-level tests in §7 |
+| 6. Every result sliced four ways | step 3 | `slices.py` exists |
+| 7. Held-out run once, reported separately | step 9 | content never read |
+| 8. Real per-run cost to CloudWatch | **partial** | see §8; the decision is yours |
+
+Plus the three inherited items from phase 3 §0 — refusal accuracy, traversal recall, injection resistance
+on real model output — all closing together at step 4.
+
+## 11. The plain-English writeup
+
+Written as the phase goes, not reconstructed after, per the `start-a-phase` skill: a short jargon-free
+explanation of what an eval suite is, why a graph you own makes correctness a dictionary lookup instead of
+a judgement call, and why a score with no measured noise floor and no measured judge agreement is not a
+score. Lands in `docs/` alongside the phase docs. This is the cold-articulation rep and it is the part
+that is genuinely hard to rebuild months later.

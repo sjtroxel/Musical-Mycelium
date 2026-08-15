@@ -38,17 +38,10 @@ from typing import Any
 
 from musical_mycelium.agent.claims import Claim, Rejection
 from musical_mycelium.agent.llm import LLMResponse, ScriptedLLM, ToolUse, Usage
-from musical_mycelium.agent.loop import (
-    ClaimApproved,
-    ClaimRejected,
-    Done,
-    PathWalked,
-    Planned,
-    Refused,
-    run,
-)
+from musical_mycelium.agent.loop import Done
 from musical_mycelium.agent.plan import Plan
-from musical_mycelium.agent.tools import ToolRegistry, default_registry
+from musical_mycelium.agent.tools import ToolRegistry
+from musical_mycelium.eval import runner
 from musical_mycelium.eval.metrics import (
     InjectionResistance,
     RefusalAccuracy,
@@ -337,50 +330,34 @@ def run_case(
     store: GraphStore,
     registry: ToolRegistry | None = None,
 ) -> CaseOutcome:
-    """Drive one case through the real ``run()`` and collect what happened."""
-    llm = ScriptedLLM(build_script(attack))
-    tools = registry if registry is not None else default_registry(store)
+    """Drive one case through the real ``run()`` and collect what happened.
 
-    approved: list[Claim] = []
-    rejections: list[Rejection] = []
-    refused = False
-    plan = Plan()
-    done: Done | None = None
-    visited: tuple[str, ...] = ()
-    prose_parts: list[str] = []
-
-    for event in run(case.query, llm=llm, store=store, registry=tools):
-        match event:
-            case Planned():
-                plan = event.plan
-            case ClaimApproved():
-                approved.append(event.claim)
-            case ClaimRejected():
-                rejections.append(event.rejection)
-            case PathWalked():
-                visited = event.node_ids
-            case Refused():
-                refused = True
-            case Done():
-                done = event
-            case _:
-                if hasattr(event, "text"):
-                    prose_parts.append(event.text)
-
-    assert done is not None, f"{case.case_id}: the loop ended without a Done event"
+    The driving itself moved to ``eval/runner.py`` in phase 4 step 1, because three datasets and two
+    providers need it and this function could serve exactly one of each. What stays here is what is
+    genuinely adversarial: building the attack script, resolving the subject, and asking whether the
+    asserted premise ever reached the gate. **The recorded baseline is unchanged by that move and the
+    drift test is the lock** — if ``baseline_v0_3_0_local.json`` regenerates differently, the extraction
+    changed behaviour and is wrong.
+    """
+    case_run = runner.run_case(
+        case.query,
+        store=store,
+        llm=ScriptedLLM(build_script(attack)),
+        registry=registry,
+    )
 
     subject = store.get_node(case.resolution_node_id) if case.resolution_node_id else None
     premise_reached = _premise_reached_gate(attack, store)
 
     return CaseOutcome(
         case=case,
-        refused=refused,
-        approved=tuple(approved),
-        rejections=tuple(rejections),
-        plan=plan,
-        done=done,
-        visited=visited,
-        prose="".join(prose_parts),
+        refused=case_run.refused,
+        approved=case_run.approved,
+        rejections=case_run.rejections,
+        plan=case_run.plan,
+        done=case_run.done,
+        visited=case_run.visited,
+        prose=case_run.prose,
         subject=subject,
         premise_attempted=attack.premise is not None,
         premise_reached_gate=premise_reached,
