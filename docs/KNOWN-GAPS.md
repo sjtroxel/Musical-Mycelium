@@ -5,9 +5,10 @@ Written 2026-08-12, at the phase 3 release step. Required by
 named and the residual gaps stated plainly.
 
 **Updated 2026-08-14** when the gold set was completed and again when the held-out 10 was drawn and
-sealed. Every claim below was re-derived against the repo rather than copied forward.
+sealed, and **2026-08-16** at phase 4 step 3. Every claim below was re-derived against the repo rather
+than copied forward.
 
-**Verified state:** `make check` green — 852 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+**Verified state:** `make check` green — 909 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
@@ -25,16 +26,33 @@ Each of these can be finished. Mark `[x]` when it is, with the evidence.
 
 The item is open and its two halves are open for different reasons. They do not close together.
 
-- [ ] **Refusal accuracy against a real model.** Unrun, not unbuilt. `eval/harness.py:65` hardcodes
-  `DATASET` to the adversarial set and takes no provider argument, so every recorded number in
-  `eval/datasets/baseline_v0_3_0_local.json` is scripted. Two live anecdotes exist
+- [ ] **Refusal accuracy against a real model.** Unrun, not unbuilt. **The wiring closed 2026-08-16**
+  (phase 4 step 3): `eval/suite.py` takes an `llm_for` factory and is dataset- and provider-agnostic, so
+  the adversarial-only `DATASET` hardcode in `eval/harness.py:65` no longer constrains anything. Refusal
+  accuracy now scores 3/3 true and 0/22 false over the whole gold set — **scripted**, so it measures the
+  gate and the loop, not a model. Two live anecdotes exist
   (`test_an_unresolvable_name_is_refused_rather_than_invented`, and the gate test beside it) but an
-  anecdote is not a rate. Closing this is a wiring change plus one billable run.
+  anecdote is not a rate. **What remains is one billable run.**
 - [ ] **Traversal recall against a real model.** It has **never been scored on a real run**, and until
   2026-08-12 it had never been scored on any run at all — its only callers were `tests/test_metrics.py`,
   because the gold schema had no field it could read. `expected_path` fixed that, and the gold set now
   holds **25 cases including 5 multi-hop path cases**, so the metric has real chains to walk. What remains
   is the live half: **this is now blocked behind Bedrock only, not behind the gold set.**
+
+  **Sharpened 2026-08-16.** The metric now runs over all 25 gold cases and reads 100%, and that number is
+  worth nothing as a traversal result. `expected_path` is exactly the one-hop neighbourhood of the subject
+  on every case, so any trace that makes one correct tool call scores perfectly — the trace policy
+  provably cannot read the answer (`test_the_trace_policy_cannot_see_the_answer`), but non-circularity is
+  not sufficiency. `traversal_recall`, `traversal_precision` and `plan_adherence` are listed in
+  `suite.SCRIPT_DETERMINED` and `report.py` refuses to render a scripted result that has not declared
+  them. **Consequence for phase 4 step 5: the 5pp traversal threshold must be set from the step 4
+  real-model baseline and never from a scripted run.**
+
+  The metric is not useless meanwhile, and this is why it stays: a direction-inverted traversal still
+  scores **100% edge groundedness** — tools build proposals off the edge rather than off the argument, so
+  a backwards walk produces claims that are individually true about the wrong nodes — while recall drops
+  to 46.7%. Groundedness structurally cannot detect a direction inversion. Recall is the only metric in
+  the catalog that can, which matters given how often this repo has assumed the origins direction.
 
 ### DoD #12 — token cost to CloudWatch
 

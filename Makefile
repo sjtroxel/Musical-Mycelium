@@ -138,6 +138,17 @@ tf-destroy: ## Destroy the main root. Bootstrap is destroyed separately and AFTE
 ingest: ## Rebuild the pinned graph artifact from Wikidata (local only; requires --force to overwrite)
 	uv run python -m musical_mycelium.ingest.wikidata $(ARGS)
 
+# --- evaluation ---------------------------------------------------------------
+# Tier 1 over the gold set, driven by ScriptedLLM. Costs $0, needs no AWS, and runs on every commit.
+#
+# READ THE SCRIPT-DETERMINED MARKERS IN THE OUTPUT BEFORE QUOTING ANY NUMBER FROM IT. A scripted run
+# shows that the gate and the loop refuse unsupported claims; it does NOT show that a real model walks
+# the graph correctly. traversal_recall, traversal_precision and plan_adherence are decided by the trace
+# policy in eval/gold.py, not by a model. Real-model numbers are `eval-live`, which spends money.
+
+eval: ## Tier 1 over the gold set, scripted (free, no AWS)
+	uv run python -m musical_mycelium.eval.suite
+
 # --- the sealed held-out set -------------------------------------------------
 # .claude/rules/evals.md requires a held-out set "never looked at during development". The threat is the
 # coding agent, not the author: an agent greps, opens files to check a schema, and reads test failures,

@@ -125,6 +125,38 @@ every-commit gate measures the *machinery* — the same honest limit the phase 3
 its first JSON field — and the real-model numbers are a separate, stored, manually triggered artifact.
 **The report must carry which provider produced it, on the same line as every number.**
 
+**As-built 2026-08-16.** Four things worth recording, two of them corrections.
+
+- **The gold set survived contact intact.** All 25 cases executed on the first attempt: no field
+  mismatch, no `expected_path` direction bug, no `expected_terminus` problem, and the four cases carrying
+  `axis`/`region` where others do not caused nothing, because those fields are loaded as optional and
+  read by nothing yet. The predicted bug hunt found no bugs. 67 approved claims, 100% grounded, 100%
+  citation resolution, refusals 3/3 with zero false refusals.
+- **A fourth file was needed and the plan's file list was wrong.** `suite.py` is dataset-agnostic by
+  contract, so gold-specific loading and the trace policy cannot live in it — they are in a new
+  `eval/gold.py`, mirroring what `harness.py` already is for the adversarial 18. Recorded rather than
+  made silently.
+- **`traversal_recall` and `traversal_precision` are degenerate under scripting, and the reason is a real
+  finding about the gold set.** `expected_path` turns out to be exactly the one-hop neighbourhood of the
+  subject on all 25 cases, so a single correct tool call reaches all of it with zero off-path visits.
+  The trace policy is uniform and provably cannot read `expected_path` — `test_the_trace_policy_cannot_
+  see_the_answer` mutates the field and asserts the script does not move — but non-circularity is not
+  enough to make the number mean something. Both metrics, plus `plan_adherence`, are listed in
+  `suite.SCRIPT_DETERMINED`, and `report.py` **raises** rather than rendering a scripted result that has
+  not declared them. On a scripted run they are a corpus-drift canary, not a traversal result.
+  **This is why step 5's 5pp traversal threshold must come from step 4 and never from this run.**
+- **Recall stays in the catalog because of what it caught.** A direction-inverted traversal — every
+  `origins` case asking for descendants instead — still scores **100% edge groundedness**, because tools
+  build proposals off the edge rather than off the argument, so a backwards walk yields claims that are
+  individually true about the wrong nodes. Groundedness structurally cannot see a direction inversion.
+  Recall drops to 46.7% and false refusals go to 12. Given that "assuming the origins direction" is a
+  named recurring failure here — three instances on 2026-08-14, none of which raised — this is the first
+  metric in the repo pointed at it, and it is locked as a test.
+
+Three new locks were broken deliberately and watched to fail before being restored, per §7: the
+non-circularity mutation lock, `report.py`'s unmarked-scripted guard, and the budget's abort-not-skip
+behaviour. `make check` is 909 passed, 0 skipped, 7 `costs_money` deselected. Root unchanged at 15/18.
+
 ### Step 4 — The first billable run (spend, gated)
 
 Gold set plus adversarial set, through Bedrock, Haiku 4.5 on

@@ -52,6 +52,19 @@ jobs:
       - name: Tests
         run: uv run pytest -m "not integration and not costs_money"
 
+      # Tier 1 over the gold set, driven by ScriptedLLM against the pinned artifact. $0, no AWS, no
+      # credentials, and it runs on every commit as DoD 1 requires.
+      #
+      # It REPORTS rather than blocks, and that is phase 4 step 3 rather than an oversight: blocking
+      # arrives in step 5 from thresholds written out of step 4's real-model baseline, and
+      # .claude/rules/evals.md forbids inventing a threshold before a baseline exists. The assertions
+      # that DO block already ran in the test step above.
+      #
+      # The output marks traversal_recall, traversal_precision and plan_adherence SCRIPT-DETERMINED.
+      # Do not quote those from a CI log as agent behaviour; they are decided by eval/gold.py's trace.
+      - name: Tier 1 eval (scripted, free)
+        run: make eval
+
   root-hygiene:
     name: repo root cap
     runs-on: ubuntu-latest

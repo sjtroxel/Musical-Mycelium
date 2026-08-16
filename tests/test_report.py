@@ -1,0 +1,189 @@
+"""Report tests — the caveats are the feature, so the caveats are what get tested.
+
+A report is the last place a number is honest before it becomes a sentence someone repeats. Every test
+here is about something that must be impossible to omit, not about formatting.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+
+import pytest
+
+from musical_mycelium.agent.loop import STOP_MAX_TURNS
+from musical_mycelium.eval.report import UnmarkedScriptedResult, render
+from musical_mycelium.eval.suite import PROVIDER_SCRIPTED, SuiteResult, run_gold_suite
+from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+
+
+@pytest.fixture(scope="module")
+def store() -> InMemoryGraphStore:
+    return InMemoryGraphStore.from_directory(artifact_directory())
+
+
+@pytest.fixture(scope="module")
+def result(store: InMemoryGraphStore) -> SuiteResult:
+    return run_gold_suite(store)
+
+
+@pytest.fixture(scope="module")
+def text(result: SuiteResult) -> str:
+    return render(result)
+
+
+def _metric_lines(text: str) -> list[str]:
+    """The lines between ``metrics:`` and the blank line that ends the block."""
+    lines = text.splitlines()
+    start = lines.index("metrics:") + 1
+    end = next(i for i in range(start, len(lines)) if not lines[i].strip())
+    return lines[start:end]
+
+
+# --- the guard --------------------------------------------------------------------------------------
+
+
+def test_render_refuses_an_unmarked_scripted_result(result: SuiteResult) -> None:
+    """**The structural lock.** A scripted run whose script-determined metrics were not declared cannot
+    be rendered at all.
+
+    Deliberately over-strict. The failure it prevents is a future edit that adds a provider, forgets the
+    marking, and produces a report where ``traversal_recall: 100.0%`` reads as a traversal result. A
+    crash in CI is a much cheaper way to find that than a resume bullet.
+
+    Broken deliberately on 2026-08-16 by defaulting the marking inside ``render`` instead of raising —
+    the report came out clean and wrong, and this test failed.
+    """
+    unmarked = dataclasses.replace(result, script_determined=())
+    with pytest.raises(UnmarkedScriptedResult):
+        render(unmarked)
+
+
+def test_a_real_model_result_renders_without_any_marking(result: SuiteResult) -> None:
+    """The guard is about scripted runs specifically. A Bedrock result declares nothing script-determined
+    and must render — otherwise step 4 cannot report at all."""
+    live = dataclasses.replace(result, provider="bedrock", script_determined=())
+    text = render(live)
+    assert "SCRIPT-DETERMINED" not in text
+    assert "[bedrock]" in text
+
+
+# --- the provider travels with every number ----------------------------------------------------------
+
+
+def test_every_metric_line_names_its_provider(text: str, result: SuiteResult) -> None:
+    """On the line, not in a header the reader scrolls past. Appended to *every* line rather than to the
+    ones that seem to need it, because which lines need it is exactly the judgement that goes wrong."""
+    lines = _metric_lines(text)
+    assert lines
+    for line in lines:
+        assert f"[{result.provider}]" in line, f"no provider on: {line}"
+
+
+def test_the_slice_block_names_its_provider(text: str) -> None:
+    assert f"slices of cases_correct  [{PROVIDER_SCRIPTED}]" in text
+
+
+def test_script_determined_metrics_are_marked_and_the_others_are_not(
+    text: str, result: SuiteResult
+) -> None:
+    marked = {
+        line.split(":")[0].strip() for line in _metric_lines(text) if "SCRIPT-DETERMINED" in line
+    }
+    assert marked == set(result.script_determined)
+    assert "edge_groundedness" not in marked
+    assert "refusal_accuracy" not in marked
+
+
+def test_the_prose_caveat_names_the_same_metrics_as_the_markers(
+    text: str, result: SuiteResult
+) -> None:
+    """Two statements of the same fact drift. The prose block is generated from
+    ``script_determined`` rather than typed out, and this is what stops someone editing one and not the
+    other."""
+    assert "what a scripted run does and does not show:" in text
+    for metric in result.script_determined:
+        assert metric in text.split("DOES NOT")[1]
+
+
+# --- a partial or mispinned run says so, first --------------------------------------------------------
+
+
+def test_an_incomplete_run_warns_above_the_metrics(result: SuiteResult) -> None:
+    """Above, not below. A reader who has seen the headline has already formed the belief."""
+    partial = dataclasses.replace(
+        result, complete=False, aborted_reason="token budget exhausted after 2200 tokens"
+    )
+    text = render(partial)
+    assert text.index("INCOMPLETE") < text.index("metrics:")
+    assert "chosen by exhaustion" in text
+
+
+def test_a_pin_mismatch_warns_that_every_number_is_against_the_wrong_corpus(
+    result: SuiteResult,
+) -> None:
+    """Evals run against a pinned artifact version; a moved corpus silently invalidates every previous
+    benchmark. Silently is the word this warning exists to falsify."""
+    moved = dataclasses.replace(result, artifact_pin="0.4.0")
+    text = render(moved)
+    assert "WARNING" in text
+    assert text.index("WARNING") < text.index("metrics:")
+
+
+def test_a_clean_run_carries_no_warning(text: str) -> None:
+    assert "WARNING" not in text
+    assert "INCOMPLETE" not in text
+
+
+def test_truncated_traversals_are_named_not_counted(text: str, result: SuiteResult) -> None:
+    """Named, because "1 truncated" is not actionable and "gold_v0_1_001" is.
+
+    Faked at the one place the property reads from — ``Done.stop_reason`` — rather than by stubbing the
+    property, so the test exercises the real derivation. The naive policy truncates nothing, hence the
+    negative assertion on the real run.
+    """
+    assert result.truncated_runs == ()
+    assert "truncated traversals" not in text
+
+    first = result.results[0]
+    stalled = dataclasses.replace(
+        first,
+        run=dataclasses.replace(
+            first.run, done=dataclasses.replace(first.run.done, stop_reason=STOP_MAX_TURNS)
+        ),
+    )
+    faked = dataclasses.replace(result, results=(stalled, *result.results[1:]))
+    faked_text = render(faked)
+
+    assert faked.truncated_runs == (first.case.case_id,)
+    assert f"truncated traversals: {first.case.case_id}" in faked_text
+
+
+# --- rates render honestly ---------------------------------------------------------------------------
+
+
+def test_an_undefined_rate_renders_as_undefined_rather_than_zero(store: InMemoryGraphStore) -> None:
+    """``Rate.__str__`` refuses to print a percentage with no denominator, and the report routes every
+    rate through it so that stays true of all of them rather than of the ones that remembered."""
+    from musical_mycelium.eval.suite import run_suite
+
+    empty = run_suite(
+        [],
+        store=store,
+        llm_for=lambda case: pytest.fail("no case should be driven"),
+        dataset="empty",
+        dataset_version="0",
+        artifact_pin=store.artifact_version,
+    )
+    text = render(empty)
+    assert "undefined (0 of 0)" in text
+    assert "100.0%" not in text
+    assert "0.0%" not in text
+
+
+def test_the_header_names_the_dataset_the_model_and_both_artifact_versions(
+    text: str, result: SuiteResult
+) -> None:
+    assert result.dataset in text
+    assert result.model_id in text
+    assert result.artifact_version in text
+    assert f"pinned to {result.artifact_pin}" in text
