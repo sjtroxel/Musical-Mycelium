@@ -187,3 +187,17 @@ def test_the_header_names_the_dataset_the_model_and_both_artifact_versions(
     assert result.model_id in text
     assert result.artifact_version in text
     assert f"pinned to {result.artifact_pin}" in text
+
+
+def test_a_numeric_dataset_version_keeps_its_v_prefix(text: str) -> None:
+    assert "gold v0.1.0" in text
+
+
+def test_a_composite_dataset_label_is_not_given_a_fake_v_prefix(result: SuiteResult) -> None:
+    """The live run spans two datasets and says so. Prefixing that with ``v`` rendered as
+    ``live vgold+adversarial``, which reads as a typo — and a header that looks broken makes a
+    reader distrust the numbers under it."""
+    composite = dataclasses.replace(result, dataset="live", dataset_version="gold+adversarial")
+    header = render(composite).splitlines()[0]
+    assert "live gold+adversarial" in header
+    assert "vgold" not in header

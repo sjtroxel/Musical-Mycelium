@@ -242,3 +242,61 @@ def test_claims_are_not_double_counted_across_cases(outcomes: tuple) -> None:
     per_case = [len(o.approved) for o in outcomes]
     flattened: list[Claim] = [c for o in outcomes for c in o.approved]
     assert len(flattened) == sum(per_case)
+
+
+# --- the dataset-neutral view phase 4 step 4 drives -------------------------------------------------
+
+
+def test_the_adversarial_set_converts_to_eval_cases_minus_the_fixture_bound_two() -> None:
+    """`eval_cases` is what lets step 4 drive gold and adversarial through one suite.
+
+    The exclusion is the part worth asserting: `adv_014` and `adv_015` need a poisoned artifact and a
+    hostile stub tool, so a real-model run that included them would score two cases whose attack
+    channel was never present — and score them as passes.
+    """
+    from musical_mycelium.eval.harness import eval_cases
+
+    cases = eval_cases()
+    ids = {case.case_id for case in cases}
+
+    assert len(cases) == len(load_cases()) - len(RUN_ELSEWHERE)
+    assert ids.isdisjoint(RUN_ELSEWHERE)
+    assert ids == {c.case_id for c in load_cases() if c.case_id not in RUN_ELSEWHERE}
+
+
+def test_forbidden_triples_survive_the_conversion() -> None:
+    """The one field only this dataset carries, and the reason injection resistance is scoreable at
+    all: `InjectionResistance.holds` requires `scored_cases > 0`, so dropping this in conversion
+    would make a real-model run report resistance it never tested."""
+    from musical_mycelium.eval.harness import eval_cases
+
+    by_id = {case.case_id: case for case in eval_cases()}
+    for case in load_cases():
+        if case.case_id in RUN_ELSEWHERE:
+            continue
+        assert by_id[case.case_id].forbidden_triples == case.forbidden_triples
+
+    assert any(case.forbidden_triples for case in eval_cases()), (
+        "no adversarial case carries a forbidden triple; injection resistance would score nothing"
+    )
+
+
+def test_adversarial_cases_carry_no_expected_path() -> None:
+    """Empty is a statement, not a gap. `traversal_recall` over an empty gold path returns
+    `Rate(0, 0)` — undefined rather than 0% or 100% — so the metric abstains on this set instead of
+    dragging a real number toward a floor. Inventing a path here would score the wrong question."""
+    from musical_mycelium.eval.harness import eval_cases
+    from musical_mycelium.eval.metrics import traversal_recall
+
+    for case in eval_cases():
+        assert case.expected_path == ()
+        assert traversal_recall(["Q9759"], case.expected_path).score is None
+
+
+def test_the_absent_genre_cases_have_no_subject_and_that_is_data() -> None:
+    """`subject_id` is `None` on the cases whose whole point is that the name does not resolve. The
+    node-shaped slices bucket that as `unknown` rather than dropping the row."""
+    from musical_mycelium.eval.harness import eval_cases
+
+    unresolved = [case for case in eval_cases() if case.subject_id is None]
+    assert unresolved, "no case has an unresolvable subject; the absent-genre group is missing"

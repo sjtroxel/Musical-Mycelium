@@ -490,3 +490,31 @@ def test_a_plan_followed_exactly_adheres() -> None:
 
 def test_plan_adherence_renders_both_counts() -> None:
     assert str(plan_adherence(done(3, 5))) == "planned 3, executed 5 (+2)"
+
+
+def test_precision_is_undefined_when_no_gold_path_was_specified() -> None:
+    """**Found by the first real-model run, 2026-08-16.** The adversarial set carries no
+    ``expected_path`` — it tests refusal, not traversal — so every node those cases visited was
+    scored off-path against a gold set that does not exist.
+
+    Ten cases each reported a precise-looking 0.0, and micro-averaging dragged the headline from
+    100% to 81.9%: a model that never left the gold path on any gold case, reported as wandering
+    nearly a fifth of the time. The arithmetic was right; the question was wrong.
+    """
+    assert traversal_precision(["Q1", "Q2"], []).score is None
+    assert traversal_recall(["Q1", "Q2"], []).score is None, "recall already had this right"
+
+
+def test_precision_still_penalises_real_wandering() -> None:
+    """The fix must not turn precision into a metric that never fires. With a gold path present,
+    off-path visits still count against it."""
+    assert traversal_precision(["Q1", "Q2"], ["Q1"]).score == 0.5
+    assert traversal_precision(["Q1"], ["Q1"]).score == 1.0
+
+
+def test_an_empty_gold_path_contributes_nothing_to_a_micro_average() -> None:
+    """Why undefined rather than 1.0: an undefined rate has a zero denominator, so summing
+    numerators and denominators across cases makes these cases *abstain* instead of voting. Scoring
+    them 100% would have been just as wrong in the other direction."""
+    undefined = traversal_precision(["Q1", "Q2"], [])
+    assert (undefined.numerator, undefined.denominator) == (0, 0)

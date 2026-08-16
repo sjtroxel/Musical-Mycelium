@@ -6,13 +6,15 @@
       "Bash(git commit --amend*)",
       "Bash(terraform apply*)",
       "Bash(terraform destroy*)",
-      "Bash(aws *)"
+      "Bash(aws *)",
+      "Bash(make eval-live*)"
     ],
     "allow": [
       "Bash(make *)",
       "Bash(uv run pytest*)",
       "Bash(uv run ruff*)",
       "Bash(uv run mypy*)",
+      "Bash(uv run python*)",
       "Bash(uv sync*)",
       "Bash(uv lock*)",
       "Bash(git status*)",

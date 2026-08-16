@@ -69,5 +69,25 @@ build proposals from real edges whichever way the walk went. Groundedness struct
 direction inversion. Recall drops to 46.7% and catches it. That is the repo's named recurring failure
 mode finally having a metric pointed at it.
 
+**Extended 2026-08-16 (phase 4, step 4).** `safety.py` is the spend gate — a hard case cap, refusal
+when stdin is not a TTY, and a typed `yes`, ported from Patchwork's 2026-06-23 incident with no
+bypass of any kind. `live.py` is the billable run: `ThrottledLLM` paces at the **request** boundary
+(one case is five to seven requests, so a per-case limiter would let a single case burst past 10 RPM),
+and results are written per-run to `results/`.
+
+**The agent has now been measured against a real model across a whole dataset.** 41 cases, 183
+requests, ~$0.36, 17 minutes. Groundedness and citation resolution held at 100%, injection resistance
+scored 0 induced over 5 real cases, refusal accuracy came in at 15/16 true and 1/25 false, and
+traversal recall reached 93.5% **unmarked** — the first non-circular traversal figure this project has
+had, because `report.py` drops the script-determined marker when the provider is not scripted.
+
+Two things that matter more than the numbers. **`adv_008` failed with 100% groundedness**: asked about
+a genre the corpus does not carry, the model adopted a suggested substitute and narrated one perfectly
+grounded, perfectly cited claim about something nobody asked for. `harness.py` had called that
+unmeasurable under a script; it is measured now, and it is grounded-is-not-correct demonstrated rather
+than asserted. And **the run exposed a bug in `traversal_precision`** — an empty gold path scored 0%
+instead of undefined, so the adversarial set dragged a true 100% down to a reported 81.9%. Fixed;
+see that function's docstring.
+
 The judge, its human-agreement measurement, the noise floor, and the thresholds remain phase 4 steps 5-9.
 """

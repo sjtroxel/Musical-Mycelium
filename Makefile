@@ -149,6 +149,19 @@ ingest: ## Rebuild the pinned graph artifact from Wikidata (local only; requires
 eval: ## Tier 1 over the gold set, scripted (free, no AWS)
 	uv run python -m musical_mycelium.eval.suite
 
+# SPENDS MONEY. Gold + adversarial through Bedrock, behind confirm_spend.
+#
+# RUN THIS YOURSELF, IN YOUR OWN TERMINAL. It refuses to start without an interactive terminal --
+# that is layer 2 of the spend gate and it is deliberate, because the incident that produced
+# confirm_spend was a run that billed with nobody watching. There is no --yes flag.
+#
+# It asks ONCE, up front, then runs unattended for roughly 25-45 minutes at 10 RPM. Walk away after
+# you type yes. If it aborts on budget it still writes partial results marked complete: false.
+#
+# Prove the wiring first for a couple of cents:  make eval-live ARGS='--cases 1'
+eval-live: ## SPENDS MONEY. Tier 1 through Bedrock, behind an explicit confirmation
+	uv run python -m musical_mycelium.eval.live $(ARGS)
+
 # --- the sealed held-out set -------------------------------------------------
 # .claude/rules/evals.md requires a held-out set "never looked at during development". The threat is the
 # coding agent, not the author: an agent greps, opens files to check a schema, and reads test failures,

@@ -52,6 +52,7 @@ from musical_mycelium.eval.metrics import (
     verification_mix,
 )
 from musical_mycelium.eval.slices import SliceReport, slice_rates
+from musical_mycelium.eval.suite import EvalCase
 from musical_mycelium.graph.schema import Node
 from musical_mycelium.graph.store import GraphStore
 
@@ -229,6 +230,28 @@ class AdversarialCase:
     must_name_gap: bool
     resolution_node_id: str | None
 
+    def as_eval_case(self) -> EvalCase:
+        """The dataset-neutral view `suite.py` scores. The adversarial half of what `gold.py` does.
+
+        **`expected_path` is deliberately empty**, and that is a statement rather than a gap: this
+        set tests whether the gate refuses unsupported claims, not whether a traversal reaches the
+        right nodes. An empty gold path makes `traversal_recall` return `Rate(0, 0)` — which `Rate`
+        correctly reports as *undefined* rather than 0% or 100% — so the metric abstains on these
+        cases instead of dragging a real number toward a floor or a ceiling. Inventing an
+        `expected_path` here to make the metric report something would be scoring the wrong question.
+
+        `forbidden_triples` is the field that only this dataset carries, and it is what makes
+        `injection_resistance` scoreable at all: `InjectionResistance.holds` requires
+        `scored_cases > 0`, so a suite run over the gold set alone cannot claim resistance.
+        """
+        return EvalCase(
+            case_id=self.case_id,
+            query=self.query,
+            subject_id=self.resolution_node_id,
+            expected_refusal=self.expected_refusal,
+            forbidden_triples=self.forbidden_triples,
+        )
+
 
 def load_cases(path: Path = DATASET) -> tuple[AdversarialCase, ...]:
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -247,6 +270,20 @@ def load_cases(path: Path = DATASET) -> tuple[AdversarialCase, ...]:
             resolution_node_id=case["expected"]["resolution"].get("node_id"),
         )
         for case in payload["cases"]
+    )
+
+
+def eval_cases(path: Path = DATASET) -> tuple[EvalCase, ...]:
+    """The adversarial set in the suite's neutral shape, **minus the two fixture-bound cases.**
+
+    `adv_014` and `adv_015` need a poisoned artifact and a hostile stub tool respectively; both are
+    driven end to end by `tests/test_untrusted.py` instead. Excluding them here rather than letting
+    them run unfixtured keeps `RUN_ELSEWHERE` the single record of the exclusion — a real-model run
+    that silently included them would score two cases whose attack channel was never actually
+    present, and score them as passes.
+    """
+    return tuple(
+        case.as_eval_case() for case in load_cases(path) if case.case_id not in RUN_ELSEWHERE
     )
 
 

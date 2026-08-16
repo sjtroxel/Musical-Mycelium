@@ -43,7 +43,7 @@ def render(result: SuiteResult) -> str:
         )
 
     lines = [
-        f"{result.dataset} v{result.dataset_version} "
+        f"{result.dataset} {_version_label(result.dataset_version)} "
         f"-- {result.cases_run} cases, provider={result.provider}, model={result.model_id}",
         f"artifact {result.artifact_version} (dataset pinned to {result.artifact_pin})",
     ]
@@ -145,6 +145,17 @@ def _line(name: str, value: str, result: SuiteResult, marked: set[str]) -> str:
     if name in marked:
         suffix += "  SCRIPT-DETERMINED: decided by the trace, not the model"
     return f"  {name}: {value}{suffix}"
+
+
+def _version_label(version: str) -> str:
+    """``v0.1.0`` for a real version, and the string as-is for anything else.
+
+    The ``v`` prefix was unconditional until 2026-08-16, which rendered the live run's composite
+    label as ``live vgold+adversarial`` — it reads as a typo, and a header that looks broken makes a
+    reader distrust the numbers under it. A dataset name is not always a version: the live run spans
+    two datasets and says so, which is more useful than inventing a version number for the pair.
+    """
+    return f"v{version}" if version[:1].isdigit() else version
 
 
 def _rate(rate: Rate) -> str:

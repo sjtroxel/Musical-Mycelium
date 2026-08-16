@@ -265,9 +265,28 @@ def traversal_recall(visited: Iterable[str], gold: Iterable[str]) -> Rate:
 
 def traversal_precision(visited: Iterable[str], gold: Iterable[str]) -> Rate:
     """How much of what the traversal reached was on the gold path. Wandering costs tokens and dilutes
-    the claim set, so it is measured — but it is **not** a failure on its own, and no threshold is set."""
+    the claim set, so it is measured — but it is **not** a failure on its own, and no threshold is set.
+
+    **An empty gold path makes this undefined, not 0%.** Found by the first real-model run on
+    2026-08-16: the adversarial set carries no ``expected_path`` (it tests refusal, not traversal), so
+    every node those cases visited was scored as off-path against a gold set that does not exist. Ten
+    cases each reported a precise-looking ``0.0``, and because the aggregate is micro-averaged they
+    dragged the headline from 100% to 81.9% — a real model that never left the gold path on any gold
+    case, reported as wandering nearly a fifth of the time.
+
+    The arithmetic was right and the question was wrong: "what fraction of what you visited was
+    on-path" has no answer when no path was specified. ``traversal_recall`` already got this right by
+    accident of its denominator (``len(gold_set)`` is 0, so ``Rate`` reports undefined); precision's
+    denominator is ``len(visited_set)``, which is nonzero, so it had to be handled explicitly.
+
+    This is the difflib-coverage failure in miniature and the reason `.claude/rules/evals.md` says a
+    metric you have not tried to break is not a metric.
+    """
+    gold_set = set(gold)
+    if not gold_set:
+        return Rate(numerator=0, denominator=0)
     visited_set = set(visited)
-    return Rate(numerator=len(visited_set & set(gold)), denominator=len(visited_set))
+    return Rate(numerator=len(visited_set & gold_set), denominator=len(visited_set))
 
 
 # --- injection resistance --------------------------------------------------------------------------
