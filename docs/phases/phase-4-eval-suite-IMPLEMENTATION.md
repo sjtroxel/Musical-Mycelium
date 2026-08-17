@@ -302,6 +302,60 @@ Five identical runs, spread recorded, written into the report, and a standing ru
 the spread is not a result. Runs **after** step 4, because step 4 is what makes 5x a known quantity
 against the daily cap rather than a gamble. Budget-guarded by step 2.
 
+#### Step 6, as-built part 1 — the tooling, 2026-08-17 (free)
+
+The analysis half is built and tested; the runs are his to run. `make eval-noise` pools result files
+that `make eval-live` already wrote and reports two things, not one:
+
+1. **Spread per metric** — min, max, range, mean, sd across the pool, in percentage points for rates.
+2. **Membership churn** — which *cases* flipped. This is the half runs 1 and 2 actually taught, and an
+   aggregate-only floor would have missed it: both runs scored 39/41 and failed **different cases**, so
+   `cases_correct` had a spread of exactly zero while nearly 5% of the set changed its answer. A case
+   wrong in every run is a finding; a case wrong in some runs is a coin; one run cannot tell them apart.
+
+**A new field on every result file: `code_revision`.** `provenance.py` records the short git sha at
+write time, with `-dirty` for any modification including untracked files, and `unknown` when git cannot
+answer — it never raises, because no provenance failure is worth losing a billable run over. The reason
+is the 18pp `traversal_precision` gap between runs 1 and 2: **that gap was a metric fix landing between
+them, not the model**, and nothing in either file said so. Both declare the same dataset, model and
+artifact. `noise.py` now refuses to pool runs whose revisions disagree, and marks the floor
+**provisional** when a revision is `unknown` or dirty — two runs both labelled `24517e1-dirty` can have
+come from entirely different working trees, so a matching label is not an identity.
+
+Confirmed against the two real runs before writing this: pooled by hand they reproduce 6.5pp on
+`traversal_recall` and 6.25pp on the true-refusal rate, name `gold_v0_1_020` and `adv_018` as unstable
+and `adv_008` as the reproducible failure, and correctly report the 18.1pp precision gap as *something
+this floor cannot separate from noise* — because those two files predate `code_revision` and read
+`unknown`. That is the guard demonstrating itself on the exact case it was written for.
+
+**Four refusals, each broken deliberately and watched to fail before being restored:**
+
+- fewer than two runs — a single run's spread is 0.0 by arithmetic, and reporting it would read as
+  *"the suite is perfectly stable"*, which is the most expensive wrong answer this module could give;
+- runs disagreeing on dataset, version, provider, model, artifact, pin, code revision, or case set —
+  the `--cases 1` wiring file is the one most likely to be sitting in the directory when the newest-five
+  default picks a pool, and today it is;
+- an incomplete run — its cases were chosen by exhaustion, so its distance from a complete run is not
+  noise;
+- a tolerance from a provisional floor — `tolerance_for` raises rather than handing step 5 a number
+  that would go into `thresholds.json` and stay there.
+
+`tolerance_for` returns the **measured spread and nothing more**. No padding, no rounding to a friendlier
+figure. How much headroom a gate needs above the floor is a step 5 decision, written down with its
+reasoning, not a multiplier hidden in a helper.
+
+#### Step 6, part 2 — the runs he runs
+
+**Five runs, all five fresh, on a committed clean tree.** Not four plus the existing post-fix run:
+`20260816T091925Z` was written before `code_revision` existed, so it reads `unknown` and would make the
+whole floor provisional — one extra run buys a floor that can actually set a threshold, and it is the
+cheapest thing in this phase. The tooling has to be committed first for the same reason; a dirty tree
+records `-dirty` and is refused a tolerance.
+
+Then `make eval-noise --write` records `eval/noise_floor.json`, and **step 5 reads its tolerances rather
+than inheriting `07`'s 5pp placeholder.** On the evidence so far, 5pp is already known to be too tight
+for `traversal_recall` and the true-refusal rate.
+
 ### Step 7 — The judge, and its validation (spend, gated)
 
 - **Model: Nova Pro** (`amazon.nova-pro-v1:0`), confirmed on this account at 2M TPM / 25 RPM with no
@@ -372,11 +426,15 @@ src/musical_mycelium/eval/runner.py          dataset-agnostic case driver
 src/musical_mycelium/eval/budget.py          RPM limiter, cumulative token budget, backoff
 src/musical_mycelium/eval/suite.py           tier 1: load, drive, score, slice
 src/musical_mycelium/eval/report.py          the human-readable report
+src/musical_mycelium/eval/provenance.py      the git revision a result file was produced by
+src/musical_mycelium/eval/noise.py           step 6: spread and membership churn across N runs
+src/musical_mycelium/eval/noise_floor.json   written by `make eval-noise ARGS=--write`, 5 clean runs
 src/musical_mycelium/eval/judge.py           tier 2: Nova Pro, rubric, agreement
 src/musical_mycelium/eval/rubrics/*.md       the rubrics, versioned next to the code
 src/musical_mycelium/eval/thresholds.json    written from the baseline, not before
 src/musical_mycelium/eval/results/           per-run results, committed
-tests/test_runner.py  test_budget.py  test_suite.py  test_report.py  test_judge.py
+tests/test_runner.py  test_budget.py  test_suite.py  test_report.py  test_noise.py
+tests/test_judge.py
 ```
 
 **Changed:**
@@ -385,6 +443,7 @@ tests/test_runner.py  test_budget.py  test_suite.py  test_report.py  test_judge.
 src/musical_mycelium/eval/harness.py   delegates driving to runner.py; baseline output unchanged
 src/musical_mycelium/eval/__init__.py  exports
 Makefile                               eval, eval-live, eval-noise, eval-judge, eval-heldout
+src/musical_mycelium/eval/live.py      write_result records written_at and code_revision
 .github/workflows/ci.yml               tier 1 scripted on every commit
 pyproject.toml                         nothing new expected; tool config only if it is
 docs/KNOWN-GAPS.md                     items checked off with evidence as they close
@@ -406,7 +465,8 @@ docs/KNOWN-GAPS.md                     items checked off with evidence as they c
 - **Attack the metrics.** The difflib coverage bug is the precedent. Specifically: an empty output must
   not score 100% groundedness (already guarded), a run of zero cases must not report 100% anything, and a
   case that refuses everything must score badly on refusal accuracy's second half.
-- `make check` stays green throughout: currently 852 passed, 0 skipped, 7 `costs_money` deselected.
+- `make check` stays green throughout: **977 passed, 0 skipped, 7 `costs_money` deselected** as of
+  2026-08-17, up from 852 when this doc was written.
 
 ## 8. Cost, and the one decision this doc does not make
 

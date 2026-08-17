@@ -162,6 +162,20 @@ eval: ## Tier 1 over the gold set, scripted (free, no AWS)
 eval-live: ## SPENDS MONEY. Tier 1 through Bedrock, behind an explicit confirmation
 	uv run python -m musical_mycelium.eval.live $(ARGS)
 
+# FREE. Reads result files that eval-live already wrote and reports how much the suite moves against
+# itself. Phase 4 step 6, and it runs BEFORE step 5 sets thresholds -- two runs on 2026-08-16 differed
+# by 6.5pp on traversal_recall, which is wider than the 5pp gate step 5 was going to adopt.
+#
+# Defaults to the newest 5 *-bedrock.json. It REFUSES to pool runs that disagree on dataset, model,
+# artifact or the code revision that produced them, and names the offender rather than quietly
+# dropping it. Add --write to record the floor to eval/noise_floor.json.
+#
+#   make eval-noise                        the newest 5
+#   make eval-noise ARGS='--runs 3'        the newest 3, reported as PROVISIONAL
+#   make eval-noise ARGS='--write'         and record it
+eval-noise: ## FREE. The noise floor across recent live runs
+	uv run python -m musical_mycelium.eval.noise $(ARGS)
+
 # --- the sealed held-out set -------------------------------------------------
 # .claude/rules/evals.md requires a held-out set "never looked at during development". The threat is the
 # coding agent, not the author: an agent greps, opens files to check a schema, and reads test failures,

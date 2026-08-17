@@ -32,6 +32,7 @@ from typing import Any
 from musical_mycelium.agent.llm import DEFAULT_MAX_TOKENS, LLM, Usage, build_llm
 from musical_mycelium.eval import gold, harness
 from musical_mycelium.eval.budget import HAIKU_REQUESTS_PER_MINUTE, EvalBudget, RateLimiter
+from musical_mycelium.eval.provenance import code_revision
 from musical_mycelium.eval.report import render
 from musical_mycelium.eval.safety import (
     SpendCapExceeded,
@@ -153,11 +154,26 @@ def write_result(result: SuiteResult, *, directory: Path = RESULTS_DIR) -> Path:
     Phase 7 reads these to plot the trend, which is the whole reason they are not one rolling file:
     a single overwritten result has no history, and a benchmark with no history cannot show that a
     number moved.
+
+    **The file is `SuiteResult.to_json` plus two facts about the run rather than about the suite.**
+    `written_at` and `code_revision` are added here, not in `suite.py`, because a `SuiteResult` is a
+    scoring of a dataset and knows nothing about clocks or version control — threading git through
+    `run_suite` would put deployment concerns inside the provider-agnostic core.
+
+    `code_revision` exists because of 2026-08-16: two live runs twenty minutes apart differed by 18
+    points on `traversal_precision`, and the cause was a metric fix landing between them rather than
+    anything about the model. Nothing in either file said they must not be averaged together. See
+    `provenance.py`, and `noise.py`, which refuses to pool runs that disagree about it.
     """
     directory.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     path = directory / f"{stamp}-{result.provider}.json"
-    path.write_text(json.dumps(result.to_json(), indent=2) + "\n", encoding="utf-8")
+    payload = {
+        **result.to_json(),
+        "written_at": stamp,
+        "code_revision": code_revision(),
+    }
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return path
 
 

@@ -8,7 +8,9 @@ named and the residual gaps stated plainly.
 sealed, and **2026-08-16** at phase 4 steps 3 and 4. Every claim below was re-derived against the repo
 rather than copied forward.
 
-**Verified state:** `make check` green — 953 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+**Updated 2026-08-17** at phase 4 step 6, part 1.
+
+**Verified state:** `make check` green — 977 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
@@ -102,6 +104,28 @@ because both were only ever waiting on the same wiring plus the same billable ru
   a backwards walk produces claims that are individually true about the wrong nodes — while recall drops
   to 46.7%. Groundedness structurally cannot detect a direction inversion. Recall is the only metric in
   the catalog that can, which matters given how often this repo has assumed the origins direction.
+
+### The noise floor — measured before any threshold is set
+
+Phase 4 step 6, which now runs **before** step 5. Two live runs on 2026-08-16 disagreed by more than the
+gate step 5 was going to adopt, so the spread has to be measured before a threshold can be chosen.
+
+- [x] **The tooling exists and is tested. Done 2026-08-17.** `make eval-noise` pools result files and
+  reports spread per metric **and membership churn** — which cases flipped, which is the half a
+  stable-looking aggregate hides. `provenance.py` records a `code_revision` on every new result file, and
+  `noise.py` refuses to pool runs whose revisions disagree; the 18.1pp `traversal_precision` gap between
+  runs 1 and 2 was a metric fix landing between them, and nothing in either file said so. Four refusals,
+  each broken deliberately and watched to fail: under two runs, mismatched pooling fields, an incomplete
+  run, and a tolerance requested from a provisional floor.
+- [ ] **The five runs have not happened.** ~$0.36 and ~17 minutes each, human-run per
+  `.claude/rules/aws-and-cost.md`. **All five must be fresh, on a committed clean tree** — the two
+  existing full runs predate `code_revision` and read `unknown`, which makes any floor including them
+  provisional and unable to set a threshold.
+- [ ] **`eval/noise_floor.json` does not exist yet**, and until it does step 5 has nothing measured to
+  build on. What is already known from the two runs, and it is enough to say 5pp is too tight:
+  `traversal_recall` moved 6.5pp, the true-refusal rate 6.25pp, approved claims 69 to 79, and
+  `cases_correct` sat at 39/41 both times while two of the 41 cases changed their answer in opposite
+  directions.
 
 ### DoD #12 — token cost to CloudWatch
 
