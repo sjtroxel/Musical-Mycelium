@@ -298,6 +298,17 @@ def run_suite(
     **On ``BudgetExceeded`` the run stops and returns what it has, marked ``complete=False``.** It does
     not skip the case and continue: a run that drops the cases it could not afford reports a number
     computed over a subset chosen by exhaustion, and that subset is not random — it is the tail.
+
+    **The same is true of any provider failure, and that was a real loss before 2026-08-17.** Only
+    ``BudgetExceeded`` was caught here, so a ``ThrottlingException`` on case 41 of 41 propagated past
+    the writer and **destroyed forty completed cases** — no file, no recorded usage, seventeen minutes
+    and a real bill for nothing. A billable run's cases are expensive and non-reproducible; the one
+    thing this function must never do is throw them away. So every exception is treated the way the
+    budget already was: **stop, record why, return what exists.**
+
+    It still does not skip and continue, for the same reason it does not on a budget abort, and
+    ``noise.py`` already refuses to pool an incomplete run — so a partial result cannot quietly become
+    a sample in a noise floor. What it can do is tell you what the first forty cases did.
     """
     results: list[CaseResult] = []
     usage = Usage()
@@ -317,6 +328,16 @@ def run_suite(
         except BudgetExceeded as exceeded:
             complete = False
             aborted_reason = str(exceeded)
+            break
+        except Exception as failure:
+            # The case id matters more than the traceback here. A throttle at case 41 and a throttle
+            # at case 3 are different situations, and `aborted_reason` is the only place a reader of
+            # the result file can tell them apart.
+            complete = False
+            aborted_reason = (
+                f"{type(failure).__name__} on {case.case_id} "
+                f"(case {len(results) + 1} of {len(cases)}): {failure}"
+            )
             break
 
         case_usage = run.traversal_usage + run.synthesis_usage

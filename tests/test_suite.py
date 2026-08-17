@@ -264,6 +264,51 @@ def test_the_budget_aborts_and_the_partial_run_says_it_is_partial(
     assert 0 < result.cases_run < 25
 
 
+def test_a_provider_failure_keeps_the_cases_that_already_ran(store: InMemoryGraphStore) -> None:
+    """**The lock on what cost a real run on 2026-08-17.** A `ThrottlingException` on case 41 of 41
+    propagated past the writer and destroyed forty completed cases — no file, no recorded usage,
+    seventeen minutes and a real bill for nothing.
+
+    Only `BudgetExceeded` was caught. Every exception now aborts the same way the budget does: stop,
+    record why, return what exists. Billable cases are expensive and non-reproducible, and the one
+    thing `run_suite` must never do is throw them away.
+
+    Broken deliberately by narrowing the handler back to `BudgetExceeded`: the exception escaped
+    `run_suite` and this test failed with `ThrottlingLikeError` instead of an assertion.
+    """
+
+    class ThrottlingLikeError(RuntimeError):
+        """Stands in for `botocore.errorfactory.ThrottlingException`, which `eval/` must not import."""
+
+    gold_cases = gold.load_cases()
+    cases = gold.eval_cases(gold_cases)
+    by_id = {case.case_id: case for case in gold_cases}
+    fail_on = cases[2].case_id
+
+    def llm_for(case: EvalCase) -> LLM:
+        if case.case_id == fail_on:
+            raise ThrottlingLikeError("Too many requests, please wait before trying again")
+        return ScriptedLLM(gold.build_script(by_id[case.case_id]))
+
+    result = run_suite(
+        cases,
+        store=store,
+        llm_for=llm_for,
+        dataset="live",
+        dataset_version="gold",
+        artifact_pin=gold.dataset_version()[1],
+        provider="bedrock",
+    )
+
+    assert not result.complete
+    assert result.cases_run == 2, "the two cases that finished must survive the third one failing"
+    assert "ThrottlingLikeError" in result.aborted_reason
+    assert fail_on in result.aborted_reason, (
+        "which case died is the difference between case 3 and 41"
+    )
+    assert "case 3 of 25" in result.aborted_reason
+
+
 def test_an_exhausted_budget_stops_before_spending_more(store: InMemoryGraphStore) -> None:
     """``check`` runs before the call, so the recorded spend is what was billed rather than what was
     attempted. A budget with no room drives nothing at all."""

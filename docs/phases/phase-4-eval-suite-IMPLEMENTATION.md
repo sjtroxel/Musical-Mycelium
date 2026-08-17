@@ -283,8 +283,16 @@ not a follow-up that characterises one already chosen. At ~$0.36 and ~17 minutes
 under $2 and about an hour and a half — the cheapest part of this phase, and now the load-bearing one.
 The threshold that comes out the far side is measured rather than inherited from `07`'s placeholder.
 
-**`adv_008` failed in both runs.** That is the substitution failure, and it is reproducible rather than
-a fluke — the one result here that a single run was entitled to establish.
+**`adv_008` failed in both runs**, which read at the time as the one reproducible result here — the
+one thing a single run was entitled to establish.
+
+**Retracted 2026-08-17 by run 3, which is the noise floor's first real finding.** `adv_008` refused
+correctly on the third run. Three runs have now produced **three different failure sets** —
+`{gold_v0_1_020, adv_008}`, `{adv_008, adv_018}`, `{gold_v0_1_020}` — and **no case has been wrong in
+all three.** `adv_008` is 2 of 3, `gold_v0_1_020` is 2 of 3, `adv_018` is 1 of 3. There are currently
+**zero reproducible failures** in this dataset, and the run that looked like it had established one had
+established nothing. The substitution *failure mode* it exhibited is still real and still worth its
+paragraph; what is retracted is that a real model reliably falls for it.
 
 ### Step 5 — Thresholds from the baseline, then blocking
 
@@ -344,13 +352,51 @@ this floor cannot separate from noise* — because those two files predate `code
 figure. How much headroom a gate needs above the floor is a step 5 decision, written down with its
 reasoning, not a multiplier hidden in a helper.
 
+#### Step 6, part 1b — four defects the first pool attempt found, 2026-08-17
+
+The first attempt at the five runs got one run in and then found more than the floor was looking for.
+All four are fixed, each with a lock that was broken deliberately and watched to fail.
+
+1. **`run_suite` discarded completed cases on any provider failure.** A `ThrottlingException` on case
+   41 of 41 propagated past `write_result` and **destroyed forty finished cases** — no file, no
+   recorded usage, seventeen minutes and a real bill for nothing. Only `BudgetExceeded` was caught.
+   Every exception now aborts the way the budget already did: stop, record which case and how far in,
+   return what exists. It still does not skip and continue, and `noise.py` already refuses to pool an
+   incomplete run, so a partial result cannot become a sample.
+2. **The limiter paced at exactly the account quota.** `HAIKU_REQUESTS_PER_MINUTE` is 10 and the quota
+   is 10, so the only thing between a run and a throttle was AWS's accounting window agreeing with
+   ours. Three runs got away with it. New `EVAL_REQUESTS_PER_MINUTE = 9`. **The compounding half is
+   the real finding:** botocore's retries are invisible to `RateLimiter` — a throttled request is
+   retried up to eight times inside the client, each retry spends quota, and `ThrottledLLM.requests`
+   counts one. Once throttling starts, the true rate exceeds what the limiter believes and drives
+   more throttling. Headroom is what keeps that loop from being entered.
+3. **`code_revision` was read at write time, seventeen minutes after the code was loaded.** An edit
+   made while a run was in flight came within one commit of stamping a clean run `-dirty` and
+   disqualifying it from its own pool. `main` now snapshots the revision before the first billable
+   call and passes it in; `write_result` requires it rather than defaulting, because a default
+   restores the bug for whoever forgets.
+4. **A CI failure that was not a regression.** `test_the_wrong_key_cannot_open_it` asserted that
+   `decrypt` raises on a wrong key. AES-256-CBC is unauthenticated, so it only raises when the garbage
+   it produces carries invalid PKCS#7 padding — **measured 6 silent successes in 600 trials (~1%)**,
+   with `-salt` making every call a fresh draw. It passed thirty-odd CI runs and then failed one. The
+   test now asserts what `decrypt` guarantees (not the plaintext), and the strong property is locked
+   deterministically at `load_sealed`, where the manifest's `sha256_plaintext` is compared. Nothing
+   was re-sealed and the cipher did not change.
+
+Also closed, because it is what made a green local run mean nothing: **`make check` did not run
+`make eval` while its own comment claimed to be "everything CI runs."** It does now, and `make hooks`
+installs a git pre-commit hook that runs it — a git hook rather than a skill, because commits happen
+in a plain terminal with no agent in the loop.
+
 #### Step 6, part 2 — the runs he runs
 
-**Five runs, all five fresh, on a committed clean tree.** Not four plus the existing post-fix run:
-`20260816T091925Z` was written before `code_revision` existed, so it reads `unknown` and would make the
-whole floor provisional — one extra run buys a floor that can actually set a threshold, and it is the
-cheapest thing in this phase. The tooling has to be committed first for the same reason; a dirty tree
-records `-dirty` and is refused a tolerance.
+**Five runs, all five fresh, on a committed clean tree.** Not four plus an earlier one:
+`20260816T091925Z` predates `code_revision` and reads `unknown`, and `20260817T084047Z` — a good run,
+39 correct, and the one that retracted `adv_008` — predates the four fixes above. Both stay valid step
+4 data points and neither can be pooled with post-fix runs. That is the guard working, not a waste:
+pooling across the throttle fix is exactly the mistake `code_revision` exists to prevent. The tooling
+has to be committed first for the same reason; a dirty tree records `-dirty` and is refused a
+tolerance.
 
 Then `make eval-noise --write` records `eval/noise_floor.json`, and **step 5 reads its tolerances rather
 than inheriting `07`'s 5pp placeholder.** On the evidence so far, 5pp is already known to be too tight

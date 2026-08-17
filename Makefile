@@ -4,7 +4,8 @@
 .DEFAULT_GOAL := help
 .PHONY: help install fmt lint typecheck test cov check root-check clean dev ingest \
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
-        heldout-key heldout-seal heldout-verify heldout-check
+        heldout-key heldout-seal heldout-verify heldout-check \
+        eval eval-live eval-noise hooks hooks-uninstall
 
 UV := $(shell command -v uv 2>/dev/null)
 
@@ -60,7 +61,45 @@ root-check: ## Fail if the repo root has grown past its cap (see CLAUDE.md)
 		exit 1; \
 	fi
 
-check: lint typecheck test root-check tf-validate ## Everything CI runs
+# `eval` is in here as of 2026-08-17. It was NOT, while this line claimed to be "everything CI runs" --
+# CI's check job ends with `make eval` and `make check` did not, so a change that broke the scripted
+# tier 1 run passed locally and failed on push. That is a real divergence and it is what makes a
+# pre-commit hook worth installing: the hook is only useful if green locally means green in CI.
+check: lint typecheck test root-check tf-validate eval ## Everything CI runs
+
+# --- git hooks ---------------------------------------------------------------
+# Automates the thing that otherwise depends on remembering: run the checks before the commit, not
+# after the push. Deliberately a GIT hook rather than a Claude Code hook or a skill -- commits are
+# human-run here, often in a plain terminal with no agent involved, and a guard that only fires when
+# an assistant is in the loop is not a guard.
+#
+# Skip it once when you mean to:  git commit --no-verify
+# Remove it:                     make hooks-uninstall
+
+HOOK_MARKER := installed by make hooks
+
+hooks: ## Install a git pre-commit hook that runs `make check`
+	@if [ -e .git/hooks/pre-commit ] && ! grep -q '$(HOOK_MARKER)' .git/hooks/pre-commit; then \
+		echo "refusing to overwrite an existing .git/hooks/pre-commit that this target did not write."; \
+		echo "inspect it, then move it aside if you want ours."; \
+		exit 1; \
+	fi
+	@printf '%s\n' \
+		'#!/bin/sh' \
+		'# $(HOOK_MARKER) -- runs the same checks CI runs.' \
+		'# Skip once: git commit --no-verify' \
+		'echo "pre-commit: make check (skip with --no-verify)"' \
+		'exec make check' > .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "installed .git/hooks/pre-commit -> make check"
+
+hooks-uninstall: ## Remove the pre-commit hook this repo installed
+	@if [ -e .git/hooks/pre-commit ] && ! grep -q '$(HOOK_MARKER)' .git/hooks/pre-commit; then \
+		echo "leaving .git/hooks/pre-commit alone: this target did not write it."; \
+		exit 1; \
+	fi
+	@rm -f .git/hooks/pre-commit
+	@echo "removed .git/hooks/pre-commit"
 
 # --- deployment --------------------------------------------------------------
 # These wrap the flags so nobody has to remember them. Two of them are not style preferences:

@@ -14,9 +14,17 @@ that takes an unexplained hour. So the division is: **botocore handles throttlin
 stays available for the judge in step 7, which talks to a different model on a different quota.
 
 **The rate limiter has to sit at the request boundary, not the case boundary.** One case is five to
-seven requests, so a limiter acquired once per case would let a single case burst past 10 RPM on its
-own. `ThrottledLLM` therefore wraps the `LLM` seam itself — every `converse` and every `stream`
+seven requests, so a limiter acquired once per case would let a single case burst past the ceiling on
+its own. `ThrottledLLM` therefore wraps the `LLM` seam itself — every `converse` and every `stream`
 passes through `acquire()`, and neither the loop nor the suite learns that throttling exists.
+
+**Amended 2026-08-17: pacing at the quota was not pacing.** A run died of `ThrottlingException` on
+case 41 of 41 with adaptive retries already exhausted, after three runs at exactly 10 RPM had got
+away with it. The division of labour above is still right, but it had a hole: botocore's retries are
+invisible to `RateLimiter`, so once throttling starts the real request rate exceeds what the limiter
+believes and drives more throttling. Eval runs therefore pace at `EVAL_REQUESTS_PER_MINUTE`, which is
+the quota **minus headroom for the retries the limiter cannot see**. `budget.py` carries the full
+reasoning.
 """
 
 from __future__ import annotations
@@ -31,7 +39,7 @@ from typing import Any
 
 from musical_mycelium.agent.llm import DEFAULT_MAX_TOKENS, LLM, Usage, build_llm
 from musical_mycelium.eval import gold, harness
-from musical_mycelium.eval.budget import HAIKU_REQUESTS_PER_MINUTE, EvalBudget, RateLimiter
+from musical_mycelium.eval.budget import EVAL_REQUESTS_PER_MINUTE, EvalBudget, RateLimiter
 from musical_mycelium.eval.provenance import code_revision
 from musical_mycelium.eval.report import render
 from musical_mycelium.eval.safety import (
@@ -148,7 +156,7 @@ def budget_for(estimate: SpendEstimate) -> EvalBudget:
     )
 
 
-def write_result(result: SuiteResult, *, directory: Path = RESULTS_DIR) -> Path:
+def write_result(result: SuiteResult, *, revision: str, directory: Path = RESULTS_DIR) -> Path:
     """Write one run to `results/<timestamp>-<provider>.json`. Per-run files, never overwritten.
 
     Phase 7 reads these to plot the trend, which is the whole reason they are not one rolling file:
@@ -164,6 +172,13 @@ def write_result(result: SuiteResult, *, directory: Path = RESULTS_DIR) -> Path:
     points on `traversal_precision`, and the cause was a metric fix landing between them rather than
     anything about the model. Nothing in either file said they must not be averaged together. See
     `provenance.py`, and `noise.py`, which refuses to pool runs that disagree about it.
+
+    **`revision` is passed in rather than read here, and that is the whole point.** This function runs
+    seventeen minutes after the code it is describing was loaded. Calling `code_revision()` at write
+    time asks *"what does the tree look like now"* when the question is *"what ran"* — and on
+    2026-08-17 an edit made while a run was in flight was one commit away from stamping a clean run
+    `-dirty` and making it unpoolable. `main` snapshots the revision before the first billable call.
+    Required rather than defaulted, because a default would restore the bug for whoever forgets.
     """
     directory.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -171,7 +186,7 @@ def write_result(result: SuiteResult, *, directory: Path = RESULTS_DIR) -> Path:
     payload = {
         **result.to_json(),
         "written_at": stamp,
-        "code_revision": code_revision(),
+        "code_revision": revision,
     }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return path
@@ -182,7 +197,7 @@ def run_live(
     store: GraphStore | None = None,
     cases: Sequence[EvalCase] | None = None,
     provider: str = "bedrock",
-    requests_per_minute: int = HAIKU_REQUESTS_PER_MINUTE,
+    requests_per_minute: int = EVAL_REQUESTS_PER_MINUTE,
     llm_factory: Callable[[], LLM] | None = None,
     limiter: RateLimiter | None = None,
     progress: Callable[[str], None] | None = None,
@@ -251,6 +266,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     model_id = build_llm("bedrock").model_id
     label = f"{len(selected)} cases, tier 1, real model"
 
+    # Snapshotted HERE, before the first billable call, because this is when the code that is about to
+    # run was loaded. Reading it seventeen minutes later in `write_result` answers a different
+    # question, and on 2026-08-17 an edit made mid-run came within one commit of stamping a clean run
+    # `-dirty` and disqualifying it from its own pool.
+    revision = code_revision()
+
     # Declining is an ordinary outcome and must not look like a crash. A traceback here would read
     # as "the tool is broken" when what actually happened is "the guard did its job" — and the
     # unattended branch is the one an agent or a CI job hits, where a stack trace is pure noise.
@@ -269,7 +290,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print("\nconfirmed; running. This is unattended from here.\n", flush=True)
     result = run_live(cases=selected, progress=lambda line: print(line, flush=True))
 
-    path = write_result(result)
+    path = write_result(result, revision=revision)
     print()
     print(render(result))
     print(f"\nwritten to {path}")

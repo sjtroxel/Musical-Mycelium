@@ -89,11 +89,85 @@ def test_the_ciphertext_does_not_contain_the_plaintext(key: Path) -> None:
     assert b"SECRET" not in heldout.encrypt(payload, key)
 
 
-def test_the_wrong_key_cannot_open_it(tmp_path: Path, key: Path) -> None:
+def test_the_wrong_key_does_not_return_the_plaintext(tmp_path: Path, key: Path) -> None:
+    """What `decrypt` actually guarantees, stated without a probability in it.
+
+    **This test used to assert `pytest.raises(SealError)` and was flaky at roughly 1%.** AES-256-CBC is
+    unauthenticated, so a wrong key does not fail cryptographically — it fails only when the garbage it
+    produces happens to carry invalid PKCS#7 padding. Measured 6 silent successes in 600 trials on
+    2026-08-17, and `-salt` makes every call a fresh draw. It passed thirty-odd CI runs and then failed
+    one, which is exactly the shape of a rare-random flake being mistaken for a regression.
+
+    The real guarantee is weaker and holds every time: whatever comes back, it is **not the plaintext.**
+    The strong property is asserted one level up, where it is deterministic — see
+    `test_a_wrong_key_is_caught_by_the_manifests_plaintext_hash`.
+    """
     other = tmp_path / "other.key"
     other.write_bytes(b"a different key entirely\n")
+    plaintext = b'{"cases": []}'
+    sealed = heldout.encrypt(plaintext, key)
+
+    try:
+        opened = heldout.decrypt(sealed, other)
+    except heldout.SealError:
+        return  # The common case: invalid padding, openssl exits non-zero. Also correct.
+    assert opened != plaintext
+
+
+def test_a_wrong_key_is_caught_by_the_manifests_plaintext_hash(
+    tmp_path: Path, key: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """**The deterministic lock, and where the security claim actually lives.**
+
+    `load_sealed` compares `sha256_hex(plaintext)` against the manifest's `sha256_plaintext`, so a
+    wrong key is caught by arithmetic rather than by luck. That is why the manifest carries a plaintext
+    hash, and it is the reason the flaky assertion above could be weakened without weakening the seal.
+
+    Broken deliberately by dropping the hash comparison from `load_sealed`: the wrong key then returned
+    garbage that failed later as a `JSONDecodeError`, which is not a `SealError` and reads to a caller
+    as a corrupt file rather than a wrong key.
+
+    **Two assertions, because one of them cannot be made specific and the other must be.** Asking for
+    `match="plaintext hash"` on the wrong-key call would re-introduce the flake with its sign flipped:
+    a wrong key usually trips openssl's padding check *first*, raising a `SealError` about openssl. So
+    the wrong-key case asserts only the type, and a second case drives the hash comparison directly by
+    corrupting the manifest under the *right* key — which reaches that line every time.
+    """
+    other = tmp_path / "other.key"
+    other.write_bytes(b"a different key entirely\n")
+    plaintext = b'{"cases": [{"case_id": "synthetic_001"}]}'
+    sealed = tmp_path / "sealed.enc"
+    ciphertext = heldout.encrypt(plaintext, key)
+    sealed.write_bytes(ciphertext)
+
+    manifest = tmp_path / "manifest.json"
+
+    def write_manifest(plaintext_hash: str) -> None:
+        manifest.write_text(
+            json.dumps(
+                {
+                    "sha256_ciphertext": heldout.sha256_hex(ciphertext),
+                    "sha256_plaintext": plaintext_hash,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(heldout, "SEALED_PATH", sealed)
+    monkeypatch.setattr(heldout, "MANIFEST_PATH", manifest)
+
+    # The right key opens it, which is what makes the failures below meaningful rather than vacuous.
+    write_manifest(heldout.sha256_hex(plaintext))
+    assert heldout.load_sealed(key)["cases"][0]["case_id"] == "synthetic_001"
+
+    # A wrong key never yields the set. Which of the two guards stops it is not deterministic.
     with pytest.raises(heldout.SealError):
-        heldout.decrypt(heldout.encrypt(b'{"cases": []}', key), other)
+        heldout.load_sealed(other)
+
+    # The hash comparison itself, reached every time: right key, manifest that disagrees.
+    write_manifest("0" * 64)
+    with pytest.raises(heldout.SealError, match="plaintext hash"):
+        heldout.load_sealed(key)
 
 
 def test_encrypting_twice_gives_different_ciphertext(key: Path) -> None:

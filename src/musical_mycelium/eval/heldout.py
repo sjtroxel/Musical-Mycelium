@@ -136,7 +136,23 @@ def encrypt(plaintext: bytes, key_path: Path) -> bytes:
 
 
 def decrypt(ciphertext: bytes, key_path: Path) -> bytes:
-    """Decrypt in memory. The caller gets bytes, not a path, so nothing lands on disk."""
+    """Decrypt in memory. The caller gets bytes, not a path, so nothing lands on disk.
+
+    **This function cannot reliably detect a wrong key, and that is a property of the cipher rather
+    than an oversight.** AES-256-CBC is unauthenticated: a wrong key produces garbage, and openssl
+    only reports failure when that garbage happens to carry invalid PKCS#7 padding. Measured
+    2026-08-17 over 600 trials against a single-block payload: **the wrong key opened it with no error
+    6 times, about 1%** (the padding-luck floor is ~0.4%; the draw was on the high side). With
+    ``-salt`` on, every call is a fresh draw.
+
+    A test asserting *"the wrong key raises"* at this level is therefore flaky by construction, and
+    one was — `test_the_wrong_key_cannot_open_it` failed CI once at that rate after passing thirty-odd
+    times. **Do not re-add that assertion here.**
+
+    Wrong-key detection lives in :func:`load_sealed`, which compares the decrypted bytes against the
+    manifest's ``sha256_plaintext`` and raises. That check is deterministic, and it is why the manifest
+    carries a plaintext hash at all.
+    """
     if not key_path.exists():
         raise SealError(f"no key at {key_path}")
     return _openssl([*_cipher_args(key_path), "-d"], ciphertext)

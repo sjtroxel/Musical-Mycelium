@@ -42,6 +42,7 @@ from typing import TextIO
 
 from musical_mycelium.agent.llm import Usage
 from musical_mycelium.api.telemetry import Price, load_prices
+from musical_mycelium.eval.budget import EVAL_REQUESTS_PER_MINUTE
 
 #: What must be typed. **Not** `y` — a single keystroke is the one most likely to be hit by reflex
 #: or left in a terminal's scrollback, and the whole point of this gate is that approving costs a
@@ -132,7 +133,8 @@ class SpendEstimate:
         lines += [
             "",
             "These are ESTIMATES. Actual usage is measured from the run and recorded afterwards.",
-            f"At 10 requests/minute this run takes roughly {max(1, round(self.requests / 10))}"
+            f"At {EVAL_REQUESTS_PER_MINUTE} requests/minute this run takes roughly "
+            f"{max(1, round(self.requests / EVAL_REQUESTS_PER_MINUTE))}"
             " minutes and cannot be paused.",
         ]
         return "\n".join(lines)

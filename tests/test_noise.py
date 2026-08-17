@@ -343,9 +343,10 @@ def test_a_stable_aggregate_hiding_a_changed_membership_is_surfaced(tmp_path: Pa
 
 
 def test_a_reproducible_failure_is_distinguished_from_a_coin(tmp_path: Path) -> None:
-    """`adv_008` failed in both live runs; `gold_v0_1_020` failed in one. The first is a finding a
-    single run was entitled to establish and the second is not, and nothing but repetition can tell
-    them apart."""
+    """The distinction this module exists to draw, and the live runs have not yet produced an example
+    of the first kind: after three runs `adv_008` is 2 of 3, `gold_v0_1_020` is 2 of 3, `adv_018` is 1
+    of 3, and **no case has been wrong in all three.** Two runs made `adv_008` look reproducible and it
+    was not. Nothing but repetition can tell a finding from a coin."""
     runs = five(
         tmp_path,
         [

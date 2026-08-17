@@ -12,6 +12,8 @@ import pytest
 
 from musical_mycelium.agent.llm import Usage
 from musical_mycelium.eval.budget import (
+    EVAL_REQUESTS_PER_MINUTE,
+    HAIKU_REQUESTS_PER_MINUTE,
     BudgetExceeded,
     EvalBudget,
     RateLimiter,
@@ -209,3 +211,35 @@ def _raise(error: Exception):  # type: ignore[no-untyped-def]
         raise error
 
     return call
+
+
+# --- pacing leaves room for retries the limiter cannot see -----------------------------------------
+
+
+def test_eval_pacing_stays_below_the_account_quota() -> None:
+    """**The lock the 2026-08-17 fix did not have until this test existed.**
+
+    Setting `EVAL_REQUESTS_PER_MINUTE` back to 10 broke nothing, which is how a fix gets quietly
+    reverted as a "simplification" — two constants with the same value look redundant. They are not:
+    one is *what the account allows* and the other is *what a long run should ask for*, and the gap
+    between them is deliberate.
+
+    The gap exists because botocore retries a throttled request up to eight times inside the client,
+    each retry is another request against the quota, and `ThrottledLLM.requests` counts one. The
+    limiter cannot see those retries, so it has to leave room for them. A run at exactly 10 died of
+    `ThrottlingException` on case 41 of 41 after three runs had got away with it.
+    """
+    assert EVAL_REQUESTS_PER_MINUTE < HAIKU_REQUESTS_PER_MINUTE, (
+        "eval runs must pace below the account quota, not at it: the limiter cannot see botocore's "
+        "retries, and a throttle costs the entire run"
+    )
+
+
+def test_the_live_runner_defaults_to_the_eval_pace() -> None:
+    """The constant is only worth having if the billable path actually uses it."""
+    import inspect
+
+    from musical_mycelium.eval.live import run_live
+
+    default = inspect.signature(run_live).parameters["requests_per_minute"].default
+    assert default == EVAL_REQUESTS_PER_MINUTE

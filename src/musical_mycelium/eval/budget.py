@@ -37,6 +37,25 @@ from musical_mycelium.agent.llm import Usage
 HAIKU_REQUESTS_PER_MINUTE = 10
 HAIKU_TOKENS_PER_DAY = 27_000_000
 
+#: What a long unattended run should actually pace at: **the quota minus headroom, not the quota.**
+#:
+#: Established 2026-08-17 by a run that died of `ThrottlingException` on case 41 of 41, with adaptive
+#: retries already enabled and `max_attempts: 8` already exhausted — a sustained throttle, not a blip.
+#: Three earlier runs at exactly 10 had survived, which is the tell: pacing *at* the ceiling means the
+#: only thing between a run and a throttle is that AWS's accounting window happens to agree with ours
+#: about which requests fall inside the last sixty seconds. It does not have to.
+#:
+#: **The compounding half, and it is the part that turns a blip into a death.** botocore's retries are
+#: invisible to `RateLimiter`. A throttled request is retried up to eight times inside the client, each
+#: retry is another request against the account quota, and `ThrottledLLM.requests` still counts one. So
+#: the instant throttling begins, the real rate exceeds what the limiter believes and drives further
+#: throttling. Headroom is what keeps that loop from being entered at all — the limiter cannot see the
+#: retries, so it has to leave room for them.
+#:
+#: One request per minute of headroom costs a 41-case run about two minutes. A throttle costs the whole
+#: run.
+EVAL_REQUESTS_PER_MINUTE = 9
+
 #: Concurrency for a fan-out run. `planning/07` §315, now a measured requirement rather than a precaution.
 MAX_CONCURRENCY = 2
 

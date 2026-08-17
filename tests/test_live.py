@@ -165,7 +165,7 @@ def test_a_result_is_written_per_run_and_names_its_provider(
         provider="scripted",
         llm_factory=lambda: ScriptedLLM(gold.build_script(case)),
     )
-    path = write_result(result, directory=tmp_path)
+    path = write_result(result, revision="abc1234", directory=tmp_path)
 
     assert path.exists()
     assert path.name.endswith("-scripted.json")
@@ -187,9 +187,9 @@ def test_two_runs_do_not_overwrite_each_other(store: InMemoryGraphStore, tmp_pat
             llm_factory=lambda: ScriptedLLM(gold.build_script(case)),
         )
 
-    first = write_result(once(), directory=tmp_path)
+    first = write_result(once(), revision="abc1234", directory=tmp_path)
     first.rename(first.with_name("20260101T000000Z-scripted.json"))
-    second = write_result(once(), directory=tmp_path)
+    second = write_result(once(), revision="abc1234", directory=tmp_path)
 
     assert len({p.name for p in tmp_path.iterdir()}) == 2
     assert second.exists()
@@ -227,3 +227,26 @@ def test_progress_names_each_case_as_it_starts(store: InMemoryGraphStore) -> Non
         )
     for case in cases:
         assert any(case.case_id in line for line in lines)
+
+
+def test_the_written_revision_is_the_one_passed_not_the_tree_now(
+    store: InMemoryGraphStore, tmp_path: Any
+) -> None:
+    """**The lock on the 2026-08-17 near-miss.** `write_result` runs seventeen minutes after the code it
+    describes was loaded, so it must record the revision it was *given*, never re-read the tree.
+
+    An edit made while a run was in flight came within one commit of stamping a clean run `-dirty`,
+    which its own pooling guard would then have refused. Broken deliberately by restoring
+    `code_revision()` inside `write_result`: this test failed with the live tree's sha.
+    """
+    case = gold.load_cases()[0]
+    result = run_live(
+        store=store,
+        cases=[case.as_eval_case()],
+        provider="scripted",
+        llm_factory=lambda: ScriptedLLM(gold.build_script(case)),
+    )
+    path = write_result(result, revision="deadbee", directory=tmp_path)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["code_revision"] == "deadbee"

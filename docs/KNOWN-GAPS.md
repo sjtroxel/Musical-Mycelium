@@ -37,9 +37,17 @@ because both were only ever waiting on the same wiring plus the same billable ru
 
 - [x] **Refusal accuracy against a real model. CLOSED 2026-08-16** by two live runs — 41 cases
   (25 gold + 16 adversarial) through Haiku 4.5, ~185 requests, ~290k tokens, ~17 minutes, ~$0.36 each.
-  **Run 1: 15/16 true, 1/25 false. Run 2: 14/16 true, 0/25 false.** It is a rate now, not an anecdote
-  — and **quote it as a range, never as a point**: the two runs differ by 6.3pp on identical inputs.
-  See the variance note under traversal recall; it governs how any of these numbers may be used.
+  **Run 1: 15/16 true, 1/25 false. Run 2: 14/16 true, 0/25 false. Run 3 (2026-08-17): 16/16 true,
+  1/25 false.** It is a rate now, not an anecdote — and **quote it as a range, never as a point.**
+  Three runs on identical inputs span **87.5% to 100% true refusal, a 12.5pp spread**, which is wider
+  than the two-run figure of 6.3pp this line carried until run 3 landed. See the variance note under
+  traversal recall; it governs how any of these numbers may be used.
+
+  **The denominator is the other half of that story and it is not noise.** There are 16 refusal cases,
+  so **one case flipping is 6.25pp** and nothing smaller is possible. A "within 5pp" gate on refusal
+  accuracy is arithmetically unsatisfiable on this dataset — it cannot be tripped by less than one
+  case, and one case already exceeds it. Step 5 must express this threshold **in cases, not in
+  percentage points.** `07`'s 5pp placeholder was never dimensionally sensible here.
 
   Both misses are worth more than the rate. **`adv_008` is the one that matters**: asked "Where did
   metal come from?", where no node has the label `metal`, the model adopted one of `resolve_node`'s
@@ -67,8 +75,10 @@ because both were only ever waiting on the same wiring plus the same billable ru
 
   **Consequence, and it overrides the phase plan: the noise floor (step 6) must be measured *before*
   thresholds are set (step 5), not after.** A "within 5pp of baseline" gate derived from one run would
-  sit inside the observed spread and fire on chance alone. `adv_008` failed in both runs and is the one
-  finding a single run was entitled to establish.
+  sit inside the observed spread and fire on chance alone. `adv_008` failed in both runs, which looked like the
+  one finding a single run was entitled to establish — **and run 3 on 2026-08-17 retracted even that.**
+  It refused correctly the third time. Three runs, three different failure sets, **zero cases wrong in
+  all three.**
 
   **Traversal precision was reported as 81.9% in that run and the real figure is 100%.** That is a bug
   the run found in the metric itself: the adversarial set carries no `expected_path`, so
@@ -118,9 +128,17 @@ gate step 5 was going to adopt, so the spread has to be measured before a thresh
   each broken deliberately and watched to fail: under two runs, mismatched pooling fields, an incomplete
   run, and a tolerance requested from a provisional floor.
 - [ ] **The five runs have not happened.** ~$0.36 and ~17 minutes each, human-run per
-  `.claude/rules/aws-and-cost.md`. **All five must be fresh, on a committed clean tree** — the two
-  existing full runs predate `code_revision` and read `unknown`, which makes any floor including them
-  provisional and unable to set a threshold.
+  `.claude/rules/aws-and-cost.md`. **All five must be fresh, on a committed clean tree** — the earlier
+  full runs either predate `code_revision` (reading `unknown`) or predate the 2026-08-17 fixes below,
+  and none of them can be pooled with post-fix runs.
+- [x] **Four defects found by the first attempt at the pool, all fixed 2026-08-17**, each with a lock
+  broken deliberately and watched to fail. A throttle on case 41 of 41 destroyed forty completed cases
+  because `run_suite` caught only `BudgetExceeded`; the limiter paced at exactly the 10 RPM quota with
+  no headroom for the retries botocore performs invisibly to it; `code_revision` was read at write
+  time rather than run start, which nearly mis-stamped a clean run; and the CI failure that surfaced
+  alongside was a 1%-probability PKCS#7 padding artifact in an unauthenticated cipher, not a
+  regression. `make check` also did not run `make eval` while claiming to be everything CI runs.
+  Detail in `docs/phases/phase-4-eval-suite-IMPLEMENTATION.md`, step 6 part 1b.
 - [ ] **`eval/noise_floor.json` does not exist yet**, and until it does step 5 has nothing measured to
   build on. What is already known from the two runs, and it is enough to say 5pp is too tight:
   `traversal_recall` moved 6.5pp, the true-refusal rate 6.25pp, approved claims 69 to 79, and
