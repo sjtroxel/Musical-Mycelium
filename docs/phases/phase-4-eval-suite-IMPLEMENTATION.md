@@ -388,6 +388,35 @@ Also closed, because it is what made a green local run mean nothing: **`make che
 installs a git pre-commit hook that runs it — a git hook rather than a skill, because commits happen
 in a plain terminal with no agent in the loop.
 
+#### Step 6, as-built — the floor, 2026-08-17
+
+Five runs at `f84453a`, ~$1.80, recorded in `eval/noise_floor.json`. Run over about 2.5 hours rather
+than back to back, so the floor measures run-to-run variance **including intraday drift** — stated
+rather than hidden, and arguably the more representative quantity. `cases_correct` went 38, 38, 39,
+40, 39: the upward look after four runs was chance, which is the whole argument for five.
+
+**Three metrics measured a true zero and are safe to block on:** edge groundedness (100% x5),
+citation resolution (100% x5), injection induced (0 x5). Those are the gate and the corpus, not the
+model, and they have not moved in any live run ever recorded.
+
+**Two cannot be expressed as percentages at all, and this is step 5's real finding:**
+
+- **Refusal accuracy moves 6.25pp per case on a 16-case denominator.** Observed spread 12.5pp, which
+  is two cases. A "within 5pp" gate is arithmetically unsatisfiable — the smallest possible movement
+  already exceeds it. Threshold goes in **cases**.
+- **Traversal recall is bistable on a single case.** It read 86/92 in all five runs, and that 0.0pp is
+  an artifact rather than stability: `gold_v0_1_020` has a 7-node expected path, contributes 1 of 7
+  when it fails, and 92 - 86 is exactly 6. It failed 5 of 5 here and succeeded on 8/16, when recall
+  read 100%. **The honest floor is bimodal at 6.5pp.** A gate written off the measured 0.0pp fires the
+  first time that one case succeeds. Threshold is a **per-case regression check**, not an aggregate
+  band.
+
+**Membership churn is the finding no aggregate shows.** Every run scored 38-40 of 41 while the
+failing set changed underneath: `gold_v0_1_020` wrong 5 of 5 (and 6 of 7 across every live run ever),
+`adv_008` correct 2 of 5, `adv_009`, `adv_012` and `adv_018` correct 4 of 5 each. One reproducible
+failure, four coins. Two runs made `adv_008` look like the reproducible one; five runs say it is the
+least stable case in the set.
+
 #### Step 6, part 2 — the runs he runs
 
 **Five runs, all five fresh, on a committed clean tree.** Not four plus an earlier one:

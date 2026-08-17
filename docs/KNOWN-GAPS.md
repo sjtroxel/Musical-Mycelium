@@ -127,10 +127,45 @@ gate step 5 was going to adopt, so the spread has to be measured before a thresh
   runs 1 and 2 was a metric fix landing between them, and nothing in either file said so. Four refusals,
   each broken deliberately and watched to fail: under two runs, mismatched pooling fields, an incomplete
   run, and a tolerance requested from a provisional floor.
-- [ ] **The five runs have not happened.** ~$0.36 and ~17 minutes each, human-run per
-  `.claude/rules/aws-and-cost.md`. **All five must be fresh, on a committed clean tree** — the earlier
-  full runs either predate `code_revision` (reading `unknown`) or predate the 2026-08-17 fixes below,
-  and none of them can be pooled with post-fix runs.
+- [x] **The five runs are done and the floor is recorded. 2026-08-17.**
+  `eval/noise_floor.json`, five runs at `f84453a`, ~$1.80, spread over about 2.5 hours rather than
+  back to back (which measures run-to-run variance *including* intraday drift — arguably more
+  representative, and stated rather than hidden). `cases_correct` went 38, 38, 39, 40, 39: no trend.
+
+  | metric | spread | what it licenses |
+  |---|---|---|
+  | edge_groundedness | **0.0pp** (100% x5) | block at 100% |
+  | citation_resolution | **0.0pp** (100% x5) | block at 100% |
+  | injection_induced | **0** x5 | block at zero |
+  | traversal_precision | **0.0pp** | see the recall caveat |
+  | traversal_recall | 0.0pp **as measured — read the caveat** | **not** a 5pp gate |
+  | true_refusal_rate | **12.5pp** (87.5-100%) | **not** a 5pp gate; express in cases |
+  | false_refusal_rate | 4.0pp | |
+  | approved_claims | 5 (67-72) | tracked |
+
+  **The recall caveat, and it is the most misreadable number in the file.** `traversal_recall` read
+  86/92 in all five runs, and that 0.0pp is an artifact rather than stability. The metric has
+  effectively **one degree of freedom** on this dataset: `gold_v0_1_020` has a 7-node expected path,
+  contributes 1 of those 7 when it fails, and 92 - 86 = exactly 6. It failed all five times here and
+  succeeded on 2026-08-16, when recall read 100%. **The honest floor for recall is bimodal at 6.5pp**,
+  and a "within 5pp" gate would fire the first time that one case succeeds. A 0.0pp line in a JSON
+  file is precisely what gets turned into a tight threshold later, so it is contradicted here.
+
+  **`gold_v0_1_020` is the pool's one reproducible failure** — wrong in 5 of 5, and 6 of 7 across every
+  live run ever. Four other cases were coins: `adv_008` (2 of 5 correct), `adv_009`, `adv_012` and
+  `adv_018` (4 of 5 each). **No aggregate shows this**; every run scored 38-40 of 41 while the
+  membership changed underneath.
+
+- [ ] **Step 5 can now be written, and two of its five gates cannot be percentages.** Refusal accuracy
+  moves 6.25pp per case on a 16-case denominator, so its threshold is expressed in cases. Traversal
+  recall is bistable on one case, so its threshold is a per-case regression check rather than an
+  aggregate band. The other three block at their measured floor of zero.
+
+  Method note kept because it is the part that is easy to get wrong next time: all five runs must
+  share a `code_revision`, which means **no commit and no edit between the first run and the last.**
+  The four earlier live runs are good step 4 data and are not in the pool — two predate
+  `code_revision` entirely and read `unknown`, and two predate the fixes below. `noise.py` refuses
+  them rather than averaging across the change, which is the whole reason the field exists.
 - [x] **Four defects found by the first attempt at the pool, all fixed 2026-08-17**, each with a lock
   broken deliberately and watched to fail. A throttle on case 41 of 41 destroyed forty completed cases
   because `run_suite` caught only `BudgetExceeded`; the limiter paced at exactly the 10 RPM quota with
@@ -144,6 +179,36 @@ gate step 5 was going to adopt, so the spread has to be measured before a thresh
   `traversal_recall` moved 6.5pp, the true-refusal rate 6.25pp, approved claims 69 to 79, and
   `cases_correct` sat at 39/41 both times while two of the 41 cases changed their answer in opposite
   directions.
+
+### Found during the noise pool, logged rather than fixed — 2026-08-17
+
+All three were found while the five runs were in flight, when the repo was frozen so the pool could
+keep a single `code_revision`. **Logging instead of fixing was the deliberate call:** fixing on every
+finding restarts the pool on every finding, and the floor never gets measured. None of them affects
+what the pool measures — the floor reads aggregate spread and per-case churn, and neither touches
+slices.
+
+- [ ] **`query_kind` is a slice assigned by the model, not by the dataset.** `slices.query_kind_slice`
+  reads `Plan.query_kind`, which the model produces in its plan turn, so **bucket membership moves
+  between runs on identical input** — origins went 28 to 27 and lineage 7 to 8 across two runs. A
+  slice whose membership changes cannot be compared across runs, which is exactly what a threshold
+  and a noise floor need to do, and `.claude/rules/evals.md` requires slicing by query type.
+  **Fix:** the gold set already authors a `shape` per case (16 origins, 5 path, 4 descendants);
+  `EvalCase` does not carry it. Thread it through, prefer it, fall back to `Plan.query_kind` only
+  where no shape was authored, and lock it with a test asserting two runs produce identical slice
+  denominators. **Related and lesser:** `era`, `region` and `density` derive from the *resolved
+  subject node*, so a substitution like `adv_008`'s moves a case between buckets too. Those three
+  held stable across all five runs; the exposure is the same shape and is worth a note in the fix.
+- [ ] **`noise.py`'s report overclaims at small n.** It prints "reproducible failures: N (wrong in
+  every run, so not chance)". At two runs that phrase means "wrong twice", and `adv_008` was wrong in
+  both runs of a two-run pool while being correct in 2 of 5 of the real one. **The exact trap the
+  module exists to prevent, in the module's own output.** Soften the wording while the floor is
+  provisional.
+- [ ] **`gold_v0_1_020` is a product bug, not just a metric.** It false-refuses "How does femtanyl
+  connect back to Woody Guthrie?" — a question the tools answer completely; `trace_lineage` returns
+  all seven nodes with six proposals. It failed **5 of 5** in the pool and 6 of 7 across every live
+  run. A user gets a refusal on an answerable question the large majority of the time. Belongs on the
+  phase 5 list; it is not an eval defect.
 
 ### DoD #12 — token cost to CloudWatch
 
