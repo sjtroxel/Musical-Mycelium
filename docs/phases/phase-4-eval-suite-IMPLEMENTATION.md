@@ -304,6 +304,66 @@ tracked.
 **A missing `thresholds.json` means tier 1 reports loudly and does not block.** It must not mean "pass".
 A suite that silently passes when its thresholds are absent is worse than no suite.
 
+#### Step 5, as-built — 2026-08-18 (free)
+
+Written after step 6, from `eval/noise_floor.json` at `f84453a`, and **two of the five gates changed
+shape** because a percentage could not express them. The paragraph above is the plan; this is what the
+measurement permitted.
+
+**Three gates measured a true zero and block at the value itself.** Edge groundedness 100%, citation
+resolution 100%, injection induced 0 — each unmoved in all five runs and in every live run ever
+recorded. These are properties of the gate and the corpus, not of the model, so a tolerance would be
+headroom against nothing.
+
+**Refusal accuracy blocks in cases, not percentage points.** The denominators are 16 refusal cases and
+25 answer cases, so the smallest possible movement is 6.25pp and a "within 5pp" band is arithmetically
+unsatisfiable — it cannot be tripped by less than one case and one case already exceeds it. Observed:
+true refusals 15, 14, 15, 16, 15 of 16; false refusals 2, 1, 1, 1, 1 of 25.
+
+Gates set at **one case of slack below the worst observed** — true refusals >= 13 of 16, false refusals
+<= 3 of 25 — decided by sjtroxel on 2026-08-18. The reasoning, recorded because a bare number invites
+being tightened later by someone who does not know what it cost: `adv_008`, `adv_009`, `adv_012` and
+`adv_018` are measured coins, so a gate at the worst observed value sits exactly on a value one of five
+runs already produced and would fire on chance within a handful of runs. `.claude/rules/evals.md` is
+explicit that a suite which blocks on everything gets disabled within two weeks, and a gate that fires
+on chance is that failure arriving by a different road. One case of slack still catches a real two-case
+regression, which is the smallest regression worth a build failure here.
+
+**Traversal recall blocks per case, not on an aggregate band** — and the per-case data made this gate
+narrower and stronger than the plan imagined. The aggregate read 86/92 in all five runs and that 0.0pp
+is an artifact: `gold_v0_1_020` has a 7-node expected path, contributes 1 of 7 when it fails, and
+92 - 86 is exactly 6. A band written off the measured 0.0pp fires the first time that one case
+succeeds, which is the wrong direction to fail in.
+
+Splitting the 41 cases by per-case recall across the pool resolves it completely:
+
+- **24 gold cases reached their full expected path in all five runs.** These are the gated set. Any one
+  of them scoring below 1.0 is a blocking regression.
+- **16 cases carry no `expected_path`** and have no traversal to measure. Not gated, and not counted as
+  passes either — an undefined rate is undefined, the same rule `Rate` already enforces.
+- **`gold_v0_1_020` scored an identical 1/7 in all five runs.** Tracked as a known reproducible failure
+  with its baseline recorded, never blocking. It is a product bug — it false-refuses a question the
+  tools fully answer — and gating on it would block every build until the bug is fixed while telling
+  nobody anything new.
+
+**Traversal has zero unstable cases.** All four coins churn on refusal, not on traversal, so the
+per-case gate has no chance component to absorb and needs no slack. That is why it can be set at
+exactly 1.0 while refusal accuracy cannot be set at its worst observed value.
+
+**The catch that nearly shipped: thresholds derived from a live run cannot gate a scripted run.**
+`make eval` is scripted, and `SCRIPT_DETERMINED` already names `traversal_recall`,
+`traversal_precision` and `plan_adherence` as decided by the trace policy rather than by a model.
+Blocking a scripted run on a live-derived traversal number would be exactly the category error
+`report.py`'s rule 2 exists to prevent, and it would read as a real gate in CI. So `thresholds.json`
+declares the provider it was measured on, and a gate whose metric is script-determined for the result
+being evaluated renders **`NOT APPLICABLE -- script-determined`**. Not applicable is a third state; it
+is never counted as a pass, and the summary line reports gated, failed and inapplicable separately so
+a fully-inapplicable run cannot read as green.
+
+**`make eval` exits non-zero on a blocking failure as of this step.** A missing `thresholds.json` still
+exits 0 with a loud `NOT GATED` banner, per the rule above — absent thresholds are not a failure, but
+they are also not a pass, and the banner says which.
+
 ### Step 6 — The noise floor (spend, gated)
 
 Five identical runs, spread recorded, written into the report, and a standing rule that a movement inside

@@ -468,21 +468,29 @@ def run_gold_suite(
 def main() -> int:
     """``make eval`` — the scripted tier 1 run, printed. $0, no AWS, no credentials.
 
-    **Exit code 0 even on a bad number, and that is not laziness.** Step 5 is what introduces blocking,
-    from thresholds written out of step 4's real-model baseline; until that file exists there is nothing
-    to block *on*, and `.claude/rules/evals.md` is explicit that thresholds are not invented before a
-    baseline. What this does instead is report loudly. A non-zero exit here would either be arbitrary or
-    would quietly become the threshold nobody chose.
+    **This blocks as of phase 4 step 5.** It did not before, and the reason it did not is worth keeping:
+    thresholds are not invented before a baseline exists, so until `eval/thresholds.json` was written
+    from a measured noise floor there was nothing to block *on* and a non-zero exit would either have
+    been arbitrary or would have quietly become the threshold nobody chose.
+
+    What it can block on for free is narrower than the five correctness properties, and the report says
+    so rather than rounding it off: traversal recall is ``SCRIPT_DETERMINED`` here and the gold-only run
+    plants no injections, so both render ``N/A``. Three gates are real — groundedness, citation
+    resolution and refusal accuracy are decided by the deterministic gate against the pinned artifact,
+    not by the script. A missing threshold file still exits 0 behind a ``NOT GATED`` banner.
 
     The two conditions that *are* structural rather than numeric — an artifact that does not match the
     dataset's pin, and an incomplete run — are surfaced by ``render`` at the top of the report.
     """
     from musical_mycelium.eval.report import render
+    from musical_mycelium.eval.thresholds import gate
     from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 
     store = InMemoryGraphStore.from_directory(artifact_directory())
-    print(render(run_gold_suite(store)))
-    return 0
+    result = run_gold_suite(store)
+    outcome = gate(result)
+    print(render(result, outcome))
+    return outcome.exit_code
 
 
 if __name__ == "__main__":

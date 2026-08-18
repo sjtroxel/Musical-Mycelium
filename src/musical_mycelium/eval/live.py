@@ -50,6 +50,7 @@ from musical_mycelium.eval.safety import (
     confirm_spend,
 )
 from musical_mycelium.eval.suite import EvalCase, SuiteResult, run_suite
+from musical_mycelium.eval.thresholds import gate
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.store import GraphStore
 
@@ -291,14 +292,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = run_live(cases=selected, progress=lambda line: print(line, flush=True))
 
     path = write_result(result, revision=revision)
+    outcome = gate(result)
     print()
-    print(render(result))
+    print(render(result, outcome))
     print(f"\nwritten to {path}")
     if not result.complete:
         print(
             "\nRUN WAS INCOMPLETE — see aborted_reason above. Partial results were still written."
         )
-    return 0
+    # The result file is written **before** the gate is consulted and is kept either way. A blocking
+    # failure is the most expensive data this project produces — seventeen minutes and a real bill —
+    # and discarding it to signal failure would repeat the step 6 defect that destroyed forty finished
+    # cases. The exit code carries the verdict; the file carries the evidence.
+    return outcome.exit_code
 
 
 if __name__ == "__main__":

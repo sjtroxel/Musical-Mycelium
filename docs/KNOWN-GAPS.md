@@ -8,9 +8,10 @@ named and the residual gaps stated plainly.
 sealed, and **2026-08-16** at phase 4 steps 3 and 4. Every claim below was re-derived against the repo
 rather than copied forward.
 
-**Updated 2026-08-17** at phase 4 step 6, part 1.
+**Updated 2026-08-17** at phase 4 step 6, part 1, and **2026-08-18** at step 5 — thresholds are written
+and `make eval` blocks.
 
-**Verified state:** `make check` green — 977 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+**Verified state:** `make check` green — 1008 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
@@ -48,6 +49,7 @@ because both were only ever waiting on the same wiring plus the same billable ru
   accuracy is arithmetically unsatisfiable on this dataset — it cannot be tripped by less than one
   case, and one case already exceeds it. Step 5 must express this threshold **in cases, not in
   percentage points.** `07`'s 5pp placeholder was never dimensionally sensible here.
+  **Satisfied 2026-08-18** — the gate is `true >= 13 of 16, false <= 3 of 25`.
 
   Both misses are worth more than the rate. **`adv_008` is the one that matters**: asked "Where did
   metal come from?", where no node has the label `metal`, the model adopted one of `resolve_node`'s
@@ -107,7 +109,9 @@ because both were only ever waiting on the same wiring plus the same billable ru
   not sufficiency. `traversal_recall`, `traversal_precision` and `plan_adherence` are listed in
   `suite.SCRIPT_DETERMINED` and `report.py` refuses to render a scripted result that has not declared
   them. **Consequence for phase 4 step 5: the 5pp traversal threshold must be set from the step 4
-  real-model baseline and never from a scripted run.**
+  real-model baseline and never from a scripted run.** **Satisfied 2026-08-18**, and more strictly than
+  this asked: there is no aggregate traversal band at all, and a scripted run renders the gate `N/A`
+  rather than evaluating it.
 
   The metric is not useless meanwhile, and this is why it stays: a direction-inverted traversal still
   scores **100% edge groundedness** — tools build proposals off the edge rather than off the argument, so
@@ -156,10 +160,26 @@ gate step 5 was going to adopt, so the spread has to be measured before a thresh
   `adv_018` (4 of 5 each). **No aggregate shows this**; every run scored 38-40 of 41 while the
   membership changed underneath.
 
-- [ ] **Step 5 can now be written, and two of its five gates cannot be percentages.** Refusal accuracy
-  moves 6.25pp per case on a 16-case denominator, so its threshold is expressed in cases. Traversal
-  recall is bistable on one case, so its threshold is a per-case regression check rather than an
-  aggregate band. The other three block at their measured floor of zero.
+- [x] **Step 5 is DONE — 2026-08-18. `eval/thresholds.json` is written and `make eval` blocks.** Two of
+  the five gates could not be percentages and are not. Refusal accuracy moves 6.25pp per case on a
+  16-case denominator, so it is expressed **in cases**: true refusals >= 13 of 16, false refusals <= 3
+  of 25, one case of slack below the worst observed because four adversarial cases are measured coins
+  and a gate at the worst observed value would fire on chance. Traversal recall is bistable on one
+  case, so it is a **per-case** check over the 24 gold cases that reached their full expected path in
+  all five baseline runs. The other three block at their measured floor of zero.
+
+  **What the free every-commit run can actually gate is three of the five, not five.** Traversal is
+  `SCRIPT_DETERMINED` on a scripted run and the gold-only run plants no injections, so both render
+  `N/A` — a third state that is never counted as a pass and is reported separately from passes, so a
+  run where nothing could be checked cannot read as green. The other two gates need a live run and
+  therefore money. This narrows DoD #1 and is the honest reading of it.
+
+  Two guards worth knowing about before touching this. **A subset run is not gated at all** —
+  `make eval-live ARGS='--cases 1'` is `complete=True`, so without that guard the traversal gate would
+  fail it for 23 absent baseline cases and the cheapest sanity check in the project would exit
+  non-zero looking like a regression. And **thresholds are keyed on dataset *and* provider**, because
+  the live set has 16 refusal cases and the scripted one has 3; a count gate crossing that boundary
+  compares two different questions.
 
   Method note kept because it is the part that is easy to get wrong next time: all five runs must
   share a `code_revision`, which means **no commit and no edit between the first run and the last.**
@@ -174,11 +194,10 @@ gate step 5 was going to adopt, so the spread has to be measured before a thresh
   alongside was a 1%-probability PKCS#7 padding artifact in an unauthenticated cipher, not a
   regression. `make check` also did not run `make eval` while claiming to be everything CI runs.
   Detail in `docs/phases/phase-4-eval-suite-IMPLEMENTATION.md`, step 6 part 1b.
-- [ ] **`eval/noise_floor.json` does not exist yet**, and until it does step 5 has nothing measured to
-  build on. What is already known from the two runs, and it is enough to say 5pp is too tight:
-  `traversal_recall` moved 6.5pp, the true-refusal rate 6.25pp, approved claims 69 to 79, and
-  `cases_correct` sat at 39/41 both times while two of the 41 cases changed their answer in opposite
-  directions.
+- [x] **`eval/noise_floor.json` EXISTS — five runs at `f84453a`, recorded 2026-08-17.** This item read
+  "does not exist yet" until 2026-08-18; it was stale from the moment the pool was written and is
+  corrected here rather than deleted, because a checklist that quietly loses its wrong entries stops
+  being evidence of anything. Step 5 read it and is now closed above.
 
 ### Found during the noise pool, logged rather than fixed — 2026-08-17
 
@@ -384,9 +403,11 @@ first impression.
 daily cap does not. Phase 4's eval throttling needs a cumulative-token budget, not only per-request
 backoff.
 
-**No thresholds and no judge exist, deliberately.** Phase 3 records baselines; phase 4 sets gates. Per
-`.claude/rules/evals.md`, thresholds invented before a baseline exists are worthless, and an LLM-judge
-score with no measured human agreement is decoration.
+**No judge exists, deliberately** — an LLM-judge score with no measured human agreement is decoration,
+and validating one is step 7. **Thresholds now DO exist**: `eval/thresholds.json`, written 2026-08-18
+from the measured noise floor and never before it, per `.claude/rules/evals.md`. The rule they were
+held back for still governs anything added to them — a bound invented ahead of a baseline is worthless,
+so a sixth gate is a decision that needs its own measurement, not a tweak.
 
 ---
 

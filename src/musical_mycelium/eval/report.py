@@ -24,6 +24,7 @@ from __future__ import annotations
 from musical_mycelium.eval.metrics import Rate
 from musical_mycelium.eval.slices import SliceReport
 from musical_mycelium.eval.suite import PROVIDER_SCRIPTED, SuiteResult
+from musical_mycelium.eval.thresholds import GateOutcome
 
 
 class UnmarkedScriptedResult(RuntimeError):
@@ -34,8 +35,13 @@ class UnmarkedScriptedResult(RuntimeError):
     """
 
 
-def render(result: SuiteResult) -> str:
-    """The whole report as text. Raises ``UnmarkedScriptedResult`` on an unmarked scripted run."""
+def render(result: SuiteResult, gates: GateOutcome | None = None) -> str:
+    """The whole report as text. Raises ``UnmarkedScriptedResult`` on an unmarked scripted run.
+
+    ``gates`` is optional so that every existing caller keeps rendering the same metrics block, and is
+    rendered **last** for the opposite reason ``complete: false`` is rendered first: a verdict is only
+    readable once the reader has the numbers it was reached from.
+    """
     if result.provider == PROVIDER_SCRIPTED and not result.script_determined:
         raise UnmarkedScriptedResult(
             "a scripted run must declare its script-determined metrics before it can be rendered; "
@@ -69,6 +75,10 @@ def render(result: SuiteResult) -> str:
     if result.script_determined:
         lines.append("")
         lines.extend(_script_determined_note(result))
+
+    if gates is not None:
+        lines.append("")
+        lines.extend(gates.lines)
 
     return "\n".join(lines)
 
