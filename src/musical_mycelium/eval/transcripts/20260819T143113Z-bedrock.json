@@ -1,0 +1,30 @@
+{
+  "dataset": "live",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.5.0",
+  "code_revision": "db80585",
+  "written_at": "20260819T143113Z",
+  "cases": [
+    {
+      "case_id": "gold_v0_1_001",
+      "query": "Where did blues rock come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Blues rock came out of blues. Blues rock emerged from blues.",
+      "claims": [
+        {
+          "subject": "blues rock",
+          "predicate": "influenced_by",
+          "object": "blues",
+          "subject_id": "Q193355",
+          "object_id": "Q9759",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q193355-032451F3-5016-4EA4-8E60-41EF70E3A812"
+          ],
+          "verification": "HAND"
+        }
+      ]
+    }
+  ]
+}

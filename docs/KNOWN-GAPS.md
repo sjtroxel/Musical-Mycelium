@@ -213,23 +213,82 @@ the resumability contract, the blindness rule — is in
   7b** — in particular what `citation_support` actually asks, which is not what `07` §4.4 imagined and
   could not be: the source's content is unreachable from a system that never queries Wikidata live, so
   the judged question is whether the *prose* stayed inside the approved claim set.
-- [ ] **7b — the 30 labels (his time, three sittings of ten, resumable).** One item at a time, one
-  judgement each, from a pre-filled draft; labels written after each item so a dead session loses
-  nothing; the harness reports where it is on resume.
-- [ ] **7c — the judge run and the agreement figure (spend, gated).** One live run to produce the pool
-  (~$0.36 at step 4's measured rate), then the judge pass over the labeled items, then agreement
-  recorded and rendered.
+- [ ] **7b — the 30 labels (his time, three sittings of ten, resumable). IN PROGRESS: 10 of 30 labeled,
+  2026-08-19.** One item at a time, one judgement each; labels written after each item so a dead session
+  loses nothing; `make eval-label ARGS='status'` reports where it is on resume. **The cadence in use is
+  not the one the phase doc anticipated** — he reads each item rendered in the session rather than in his
+  own terminal, and supplies both judgements himself. **No score is pre-filled for him**, deliberately: a
+  pre-filled judgement would make his labels partly the assistant's, and the agreement figure would then
+  partly measure Claude-against-Nova rather than human-against-judge, undetectably after the fact. The
+  original "from a draft I pre-fill" wording was written for the gold set, where the drafts were
+  *lookups* he verified; here the draft would be the judgement itself, which is the thing being measured.
+- [ ] **7c — the judge run and the agreement figure (spend, gated).** The pool run is DONE (see below);
+  what remains is the judge pass over the labeled items, then agreement recorded and rendered.
 
-**The pool does not exist yet, and this is the finding that forced the split.** `runner.py` holds `prose`
-on `CaseRun` and `score_case` drops it; `per_case` in all nine committed result files carries counts only.
-Citation support and narrative quality both need the narrative text, and it has to come from a real-model
-run — judging scripted prose is the same category error step 5 caught with `SCRIPT_DETERMINED`, and
-`build_pool` now refuses a scripted transcript outright. `eval-live` writes a transcript as of
-2026-08-19, so **the next live run produces the pool's first half automatically**.
+**The pool EXISTS as of 2026-08-19.** `judge_pool_v1.json`, 30 items, seed `20260819`, built from two
+live runs at `db80585` — `20260819T145442Z` ($0.3595) and `20260819T152512Z` ($0.3774), both 5/5 gates
+passing, 25 eligible items each. 26 distinct cases, 4 appearing twice, 25 gold and 5 adversarial. The
+1-case smoke run from the same day is deliberately excluded so `gold_v0_1_001` is not double-weighted.
+
+**Measured, and it corrects an estimate that was in this repo:** a full 41-case live run costs
+**$0.357–$0.380, mean $0.366** across eight recorded runs. The spend-gate estimator quotes roughly
+$0.80 — about 2.2x high, because it assumes ~14,000 input and ~1,100 output tokens per case against a
+measured ~6,700 and ~440. Erring high is correct for a spend gate; the figure is not a cost estimate.
 
 **Two live runs are needed for a 30-item pool.** 41 cases minus 16 correctly-refused leaves roughly 25
 answered, so one run cannot fill 30. `build_pool` takes every case once before taking any case twice and
 refuses to build short unless explicitly told to.
+
+### Found during hand-labeling, logged rather than fixed — 2026-08-19
+
+Found by him while labeling the first 10 pool items. **Logging rather than fixing is the deliberate call,
+and it is the same reasoning as the noise-pool section below:** changing synthesis now would change the
+agent underneath the pool being labeled and invalidate every label already recorded. These are synthesis
+defects, and none of them is a *gate* defect — the claims underneath every one of them are real, cited,
+and correctly directed.
+
+**The headline, and it is the strongest argument this project has for why tier 2 exists:** roughly
+**9 of the 30 pool items are structurally broken**, and **every one of them scored 100% on
+`edge_groundedness` and `citation_resolution`, with most counted correct by `cases_correct`.** The
+deterministic suite is blind to all of it by construction. That is not a flaw in the suite — it measures
+whether claims are grounded, and they are — but the blind spot is much larger than "we should also track
+narrative quality" implied.
+
+Structural counts over the 30 pool items: 8 where the focus claim's subject or object never appears in
+the prose at all, 4 with a token repeated four or more times, 9 hitting either.
+
+- [ ] **Synthesis emits the wrong side of the claim row.** `judge_pool_v1_003` was asked "what came out
+  of hip-hop?", was handed six distinct genres each `-influenced_by-> hip-hop`, and wrote "Hip-hop came
+  out of hip-hop, hip-hop, hip-hop, hip-hop, hip-hop, and hip-hop." It printed the object six times
+  instead of the six subjects, and inverted the question's direction. Labeled UNSUPPORTED / 1.
+- [ ] **Artist subjects are treated as genres.** `judge_pool_v1_001` refused "Who influenced Fela Kuti?"
+  on the stated grounds that "Fela Kuti is an artist, not a genre" and that the instruction asked for a
+  genre's origins — the question plainly asks for a person. `judge_pool_v1_002` answered an artist
+  question correctly and then wrote "these three influences shaped **the genre's** development." Two
+  distinct failures from one cause: the synthesis prompt appears to assume a genre subject.
+- [ ] **The synthesis prompt leaks into the answer.** Five of the 30 items open by talking about the
+  request rather than answering it — "I can't complete this task as requested", "I cannot write two
+  sentences naming every influence", "which you've asked me not to do". The user asked about music and
+  received a complaint about task framing.
+- [ ] **"Came out of" is used for every influence edge, including artist-to-artist.** He flagged this on
+  four separate items. For genres it reads as idiom; for people ("John Lydon came out of Alice Cooper")
+  it reads as descent, which is a stronger claim than `influenced_by` carries. He ruled it SUPPORTED
+  each time on the grounds that no reasonable reader infers literal parentage, and lodged the cost in
+  `narrative_quality` instead — but it is the single most repeated wording defect in the pool.
+- [ ] **Chronology is substituted for influence.** `judge_pool_v1_009` declined to trace a three-hop
+  lineage and offered "Fred Astaire came first chronologically, followed by Michael Jackson, then Jason
+  Derulo" instead. Temporal precedence is not influence. Labeled SUPPORTED / 2 on the reading that a
+  reader takes the ordering as the chain.
+
+**These labels stay valid after the fix.** The 30 labels exist to validate *the judge*, not the agent —
+they are the judge's exam paper, and a pool of uniformly good answers would produce a degenerate
+agreement figure with no score variance. When synthesis is fixed, the agreement number survives; only
+the judged score averages go stale.
+
+**A corpus item to hand-check, not a synthesis defect:** `gold_v0_1_011` has cachaça
+`-influenced_by->` Colombian cumbia, grupera, Mexican cumbia and tecnocumbia. Cachaça is better known
+as a Brazilian spirit than a genre. Out of scope for the rubric, which explicitly does not ask whether
+Wikidata is right; in scope for `graph-semantics.md`.
 
 ### Found during the noise pool, logged rather than fixed — 2026-08-17
 

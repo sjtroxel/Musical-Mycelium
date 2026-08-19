@@ -1,0 +1,76 @@
+{
+  "pool": "judge_pool_v1",
+  "pool_sha256": "1071371ea0a850cc7550ee78ce2ac0cfa8266eedb6b0278c0c379a51414865e1",
+  "labels": [
+    {
+      "item_id": "judge_pool_v1_001",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "note": "refuses; never states the claim",
+      "labeled_at": "20260819T154612Z"
+    },
+    {
+      "item_id": "judge_pool_v1_002",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "note": "reader works for it; calls artist a genre",
+      "labeled_at": "20260819T160132Z"
+    },
+    {
+      "item_id": "judge_pool_v1_003",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "note": "gibberish; repeats hip-hop six times",
+      "labeled_at": "20260819T160351Z"
+    },
+    {
+      "item_id": "judge_pool_v1_004",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "plain, complete, reads as a chain",
+      "labeled_at": "20260819T160752Z"
+    },
+    {
+      "item_id": "judge_pool_v1_005",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "short, clear, correct",
+      "labeled_at": "20260819T160921Z"
+    },
+    {
+      "item_id": "judge_pool_v1_006",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "clear; two-genre fusion stated plainly",
+      "labeled_at": "20260819T161202Z"
+    },
+    {
+      "item_id": "judge_pool_v1_007",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "clear three-genre fusion",
+      "labeled_at": "20260819T161258Z"
+    },
+    {
+      "item_id": "judge_pool_v1_008",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "correctly rejects false premise; states true direction",
+      "labeled_at": "20260819T161516Z"
+    },
+    {
+      "item_id": "judge_pool_v1_009",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 2,
+      "note": "chronology stands in for influence; partial answer",
+      "labeled_at": "20260819T163018Z"
+    },
+    {
+      "item_id": "judge_pool_v1_010",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "minimal but correct",
+      "labeled_at": "20260819T163206Z"
+    }
+  ]
+}
