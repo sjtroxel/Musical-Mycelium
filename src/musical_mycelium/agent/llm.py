@@ -53,6 +53,22 @@ DEFAULT_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 #: accumulated context — so the tool loop is where the cheap model earns its keep.
 SYNTHESIS_MODEL_ENV = "MYCELIUM_SYNTHESIS_MODEL_ID"
 
+#: The judge, and it is a **different family on purpose**. ``.claude/rules/evals.md``: *"The judge must
+#: be validated and must not be the generator's family."* Nova Pro is non-Anthropic, is provisioned on
+#: this account at 2M TPM / 25 RPM, and needs no Marketplace step. Confirmed 2026-08-11.
+#:
+#: Unlike ``synthesis``, this role does **not** fall back to ``DEFAULT_MODEL_ID``. A judge silently
+#: inheriting the generator's model is the one misconfiguration that produces a plausible-looking number
+#: with self-preference baked in, and nothing downstream could detect it — so the fallback that would be
+#: convenient here is the fallback that must not exist. See ``model_id_for``.
+JUDGE_MODEL_ENV = "MYCELIUM_JUDGE_MODEL_ID"
+DEFAULT_JUDGE_MODEL_ID = "amazon.nova-pro-v1:0"
+
+#: Temperature 0 for judging, per ``07``'s judge spec. A judged score already carries the uncertainty of
+#: a rubric applied by a model; sampling adds a second source of disagreement that would be indexed as
+#: judge-human disagreement and could not be separated from it afterwards.
+JUDGE_TEMPERATURE = 0.0
+
 DEFAULT_REGION = "us-east-1"
 DEFAULT_MAX_TOKENS = 1024
 
@@ -159,10 +175,25 @@ class BedrockLLM:
         *,
         region: str = DEFAULT_REGION,
         client: Any = None,
+        temperature: float | None = None,
     ) -> None:
+        """``temperature`` is a **constructor** argument, not a per-call one, and that is deliberate.
+
+        The judge needs temperature 0 — a scoring model that samples is a scoring model whose
+        disagreement with a human is partly its own noise. Putting it on ``converse`` would mean widening
+        the ``LLM`` protocol, which is invariant 7's seam and is deliberately the smallest surface the
+        loop needs. A model whose determinism is a property of *that model's role* is better expressed
+        where the role is configured, so ``build_llm(role=ROLE_JUDGE)`` sets it once and nothing
+        downstream has to remember to pass it.
+
+        ``None`` means "send no ``temperature`` field at all", which is not the same as sending the
+        provider's default: the two can differ per model and only one of them is a claim this code is
+        entitled to make.
+        """
         self._model_id = model_id or os.environ.get(DEFAULT_MODEL_ENV, DEFAULT_MODEL_ID)
         self._region = region
         self._client = client
+        self._temperature = temperature
 
     @property
     def model_id(self) -> str:
@@ -205,18 +236,30 @@ class BedrockLLM:
         tool_config: dict[str, Any] | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
     ) -> LLMResponse:
-        request: dict[str, Any] = {
-            "modelId": self._model_id,
-            "messages": messages,
-            "inferenceConfig": {"maxTokens": max_tokens},
-        }
-        if system:
-            request["system"] = [{"text": system}]
+        request = self._request(messages, system=system, max_tokens=max_tokens)
         if tool_config:
             request["toolConfig"] = tool_config
 
         response = self.client.converse(**request)
         return _parse_converse(response)
+
+    def _request(
+        self, messages: list[dict[str, Any]], *, system: str | None, max_tokens: int
+    ) -> dict[str, Any]:
+        """The request body both call shapes share. One builder so ``temperature`` cannot reach one and
+        miss the other — a judge that is deterministic when it scores and not when it explains itself is
+        the sort of half-applied setting nobody notices until the numbers will not reproduce."""
+        inference: dict[str, Any] = {"maxTokens": max_tokens}
+        if self._temperature is not None:
+            inference["temperature"] = self._temperature
+        request: dict[str, Any] = {
+            "modelId": self._model_id,
+            "messages": messages,
+            "inferenceConfig": inference,
+        }
+        if system:
+            request["system"] = [{"text": system}]
+        return request
 
     def stream(
         self,
@@ -233,13 +276,7 @@ class BedrockLLM:
         half-streamed — which also means a wrong shape here would never have raised, and cost tracking
         would have read zero forever. It does not.
         """
-        request: dict[str, Any] = {
-            "modelId": self._model_id,
-            "messages": messages,
-            "inferenceConfig": {"maxTokens": max_tokens},
-        }
-        if system:
-            request["system"] = [{"text": system}]
+        request = self._request(messages, system=system, max_tokens=max_tokens)
 
         usage = Usage()
         response = self.client.converse_stream(**request)
@@ -708,19 +745,32 @@ def _rough_tokens(messages: list[dict[str, Any]]) -> int:
 #: is one short call over an already-approved claim set, which is where a stronger one is affordable.
 ROLE_TRAVERSAL = "traversal"
 ROLE_SYNTHESIS = "synthesis"
+ROLE_JUDGE = "judge"
 
-#: Which env var names the model for each role. ``synthesis`` falls back to the traversal model when
-#: ``MYCELIUM_SYNTHESIS_MODEL_ID`` is unset, so **one configured model still runs the whole product** —
-#: the split is an optimisation to switch on, never a second thing you are obliged to configure before
-#: anything works.
+#: Which env var names the model for each role, and **what each role falls back to**. ``synthesis``
+#: falls back to the traversal model when ``MYCELIUM_SYNTHESIS_MODEL_ID`` is unset, so **one configured
+#: model still runs the whole product** — the split is an optimisation to switch on, never a second
+#: thing you are obliged to configure before anything works.
+#:
+#: ``judge`` is the exception and the reason this table carries a per-role default at all. Its fallback
+#: is Nova Pro, never the traversal model: the shared fallback would let an unset env var quietly point
+#: the judge at the generator's own family, which is the one failure that produces a number nobody
+#: downstream can tell is contaminated.
 _ROLE_MODEL_ENV = {
     ROLE_TRAVERSAL: (DEFAULT_MODEL_ENV,),
     ROLE_SYNTHESIS: (SYNTHESIS_MODEL_ENV, DEFAULT_MODEL_ENV),
+    ROLE_JUDGE: (JUDGE_MODEL_ENV,),
+}
+
+_ROLE_DEFAULT_MODEL = {
+    ROLE_TRAVERSAL: DEFAULT_MODEL_ID,
+    ROLE_SYNTHESIS: DEFAULT_MODEL_ID,
+    ROLE_JUDGE: DEFAULT_JUDGE_MODEL_ID,
 }
 
 
 def model_id_for(role: str) -> str:
-    """The configured model id for one role, or the documented default.
+    """The configured model id for one role, or that role's documented default.
 
     **No model is chosen here and none is chosen in this phase.** Which model, and US-vs-Global
     inference profile, cannot be settled until a ``converse`` call succeeds — see §10 of the phase 3
@@ -732,7 +782,7 @@ def model_id_for(role: str) -> str:
         configured = os.environ.get(name)
         if configured:
             return configured
-    return DEFAULT_MODEL_ID
+    return _ROLE_DEFAULT_MODEL[role]
 
 
 def build_llm(provider: str | None = None, *, role: str = ROLE_TRAVERSAL, **kwargs: Any) -> LLM:
@@ -750,6 +800,10 @@ def build_llm(provider: str | None = None, *, role: str = ROLE_TRAVERSAL, **kwar
 
     if provider == "bedrock":
         kwargs.setdefault("model_id", model_id_for(role))
+        if role == ROLE_JUDGE:
+            # Determinism is a property of the judging role, not of the caller's discipline. A caller
+            # may still pass its own value; what it cannot do is forget to.
+            kwargs.setdefault("temperature", JUDGE_TEMPERATURE)
         return BedrockLLM(**kwargs)
     if provider == "local":
         return LocalLLM(**kwargs)

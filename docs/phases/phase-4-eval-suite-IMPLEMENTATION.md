@@ -507,6 +507,116 @@ for `traversal_recall` and the true-refusal rate.
   concrete anchors and re-measured **at most twice**. After that the judged metric ships marked
   `agreement: poor` with the figure visible, rather than being tuned until it flatters.
 
+#### Step 7 splits into 7a / 7b / 7c — decided 2026-08-19
+
+Step 7 is the only step in this phase that cannot be finished in one sitting, because 30 hand labels is
+his time and not mine. It is therefore split into three parts that are **started and finished in
+different sessions**, possibly days apart. Any agent picking this up mid-flight reads this section first.
+
+**The finding that forced the split: there is nothing to label yet.** `runner.py` holds `prose` on
+`CaseRun`, but `score_case` drops it and `per_case` in all nine committed result files carries counts
+only. Citation support and narrative quality both need the narrative text. So the labeling pool does not
+exist and has to be produced — and it has to come from a **real-model** run, because judging scripted
+prose would be the same category error step 5 caught with `SCRIPT_DETERMINED`.
+
+- **7a — the machinery (free, $0, one session).** Prose persistence into a transcript file, the rubric at
+  `eval/rubrics/` with concrete anchors per level, the judge module on Nova Pro through the existing LLM
+  seam, the agreement math (raw agreement and Cohen's kappa), the `report.py` guard that refuses to
+  render a judged number with no agreement loaded, and the labeling harness. Tests for all of it, and
+  every new lock broken deliberately before it is trusted.
+- **7b — the 30 labels (his time, resumable across sittings).** Expected shape is **three sittings of
+  ten**, not one of thirty. See the cadence contract below; it is a requirement on 7a's harness, not a
+  hope.
+- **7c — the judge run and the agreement number (spend, gated).** One live run to produce the pool
+  (~$0.36 at step 4's measured rate) — which in practice happens at the *start* of 7b, since there is
+  nothing to label without it — then the judge pass over the 30 labeled items on Nova Pro, then agreement
+  computed, recorded, and rendered. Behind the usual confirmation naming the estimate.
+
+**The cadence contract for 7b, and it is binding on the harness built in 7a:**
+
+- **One item at a time, one judgement each, from a draft I pre-fill. He never types JSON and never types
+  a QID.** This is the cadence that carried all 25 gold cases on 2026-08-14 and it is the only reason
+  30 items is tractable.
+- **Labels are written after each item, not at the end of the sitting.** A session that dies at item 7
+  loses nothing. The label file is append-only.
+- **The harness names where it is** — "18 of 30 labeled, next is `judge_pool_019`" — so a session
+  starting cold does not have to reconstruct progress from a diff. Resuming is a command, not an
+  archaeology exercise.
+- **Ten is a sitting, not a target.** Stopping at 4 or going to 14 must both be ordinary.
+- **Blindness is structural.** Labels are collected before the judge is ever run on the pool, and a test
+  asserts that no judge score can be present in the label file. A human label written next to a machine
+  score is not an independent label, and there is no way to detect it after the fact.
+
+#### Step 7a, as-built — the machinery, 2026-08-19 (free)
+
+`make check` is 1085 pass, 0 skip, 7 deselected. Every new lock below was broken deliberately, watched
+to fail, and restored — the practice from 2026-08-14, and it caught nothing new this time, which is
+worth recording precisely because a night where it catches nothing is the only evidence that the ones
+it does catch are real.
+
+**What `citation_support` actually asks, and it is not what `07` §4.4 imagined.** §4.4 asks whether the
+cited source *supports* the claim. That question is unanswerable in this system and the reason is
+structural: the agent never queries Wikidata live, the judge has no more access to a statement's content
+than the agent does, and fetching it would mean judging against a source the pinned artifact does not
+contain. So the judged question is the one that *is* answerable and is also the one this project should
+be asking: **does the prose assert exactly the claim it was built from, and nothing the claim set does
+not carry?** Levels `SUPPORTED / OVERSTATED / UNSUPPORTED`.
+
+That is not a weaker question. The gate already guarantees every claim is a real edge with real sources;
+nothing guaranteed the *prose* stayed inside the claim set, and the characteristic failure of a language
+model writing from an approved list is not inventing an edge — the gate makes that impossible — but
+decorating one with a decade, a city, or a mechanism no claim carries. **Every deterministic metric in
+the catalog scores that answer perfectly.** This is the only place in the suite where "did the prose
+overstate the evidence" is asked at all. The rubric states both the question and the three things it
+explicitly does not ask, so the divergence from `07` is visible where the scoring happens.
+
+**One item is one answer plus one focus claim, and it carries two judgements.** Citation support is a
+per-claim question (`07` §4.4 samples claims) and narrative quality is a per-answer one; pooling them
+separately would have meant 60 items. Reading the answer is what costs time, not answering two questions
+about it, so one screen carries both and each metric gets its own n=30 — which is exactly what §6 asks
+for.
+
+**A 30-item pool needs two live runs, and that is arithmetic rather than a preference.** 41 cases, 16 of
+them refusal cases that refuse correctly, leaves roughly 25 answered per run. `build_pool` takes every
+case once before it takes any case twice, so two runs give 30 items with maximum case diversity, and it
+**refuses to build short** unless told to — a smaller n travels with every judged number permanently and
+should be a decision, not a side effect.
+
+**A scripted transcript is refused as a pool source.** `ScriptedLLM` synthesises the fixed string
+`A grounded answer.`, so a pool built from one would have a human and a model scoring narrative quality
+on a stub and produce an agreement figure that is real, reproducible, and about nothing. Same family of
+error as gating a scripted run on a live-derived traversal number.
+
+**Prose persistence is a separate file from the result file.** Three reasons in the module docstring; the
+first is the one that governs: **the held-out set must never have a transcript**, and `guard_dataset`
+refuses any dataset name containing `heldout` at all three doors — build, write, and load. A result file
+carries aggregate metrics and case ids, and a case id is not content. Prose is.
+
+**Judge hygiene is two locks, not one.** `agent/llm.py` gives `ROLE_JUDGE` its own default (Nova Pro)
+rather than the shared fallback to the traversal model, so an unset `MYCELIUM_JUDGE_MODEL_ID` cannot
+point the judge at Haiku; and `judge.guard_model` compares **vendors**, so a deliberate override to any
+Anthropic model is refused too. Family, not model — next year's model names are not knowable today.
+Temperature 0 is set at the seam by role, not by each caller, and `BedrockLLM` sends no temperature at
+all unless one is configured.
+
+**Blindness is enforced as an ordering.** The label file has a field allowlist that `load_labels` raises
+on, the labels are bound to the pool by SHA-256 so a rebuilt pool is a loud failure rather than a quiet
+re-pairing, and `run_judge` refuses to run until every item is labeled. And `report.render_judged`
+raises when either agreement figure has n=0 — rule 2's shape applied to the judge, because decoration is
+quotable and a crash is not. An *undefined kappa* is a different thing and still renders: a degenerate
+label set has a real raw agreement and an honestly undefined chance correction.
+
+**Agreement is raw agreement plus Cohen's kappa**, unweighted for the three support levels and
+quadratically weighted for 1-5 quality, with exact and within-one both reported. The trap the tests
+pin: **weighted kappa's scale must be the declared one, not the observed one.** A run using only 1s and
+4s has an observed scale where those are adjacent, and the quadratic weight then forgives a three-point
+miss as if it were one point. Measured 0.20 declared versus 0.56 observed-only on the same labels.
+
+Files: `eval/transcripts.py`, `eval/labelling.py`, `eval/agreement.py`, `eval/judge.py`,
+`eval/rubrics/{citation_support,narrative_quality}.md`, `render_judged` in `eval/report.py`,
+`ROLE_JUDGE` in `agent/llm.py`, `JUDGE_REQUESTS_PER_MINUTE` in `eval/budget.py`, `make eval-label` and
+`make eval-judge`, and four new test files.
+
 ### Step 8 — Tier 2, judged and sampled (spend, gated)
 
 Citation support and narrative quality only. 20–30 samples, release candidates only, behind the same

@@ -15,12 +15,17 @@ qualifier six weeks later:
 3. **A partial run says so first.** ``complete: false`` is rendered above the metrics rather than below,
    because a reader who has already seen the headline has already formed the belief.
 
-The same guard shape is owed to the judge in step 7 — ``report.py`` raises if asked to render a judged
-number with no agreement figure loaded. This module is where that will live, and rule 2 is its precedent.
+4. **A judged number is unrenderable without its agreement figure.** ``render_judged`` raises when the
+   run it is given has no measured judge-human agreement. This is rule 2's shape applied to step 7, and
+   `.claude/rules/evals.md` states the reason outright: *"An LLM-judge score with no measured agreement
+   is decoration."* The point of making it raise rather than printing a blank is that decoration is
+   quotable and a crash is not.
 """
 
 from __future__ import annotations
 
+from musical_mycelium.eval.agreement import NoAgreementMeasured
+from musical_mycelium.eval.judge import JudgeRun
 from musical_mycelium.eval.metrics import Rate
 from musical_mycelium.eval.slices import SliceReport
 from musical_mycelium.eval.suite import PROVIDER_SCRIPTED, SuiteResult
@@ -80,6 +85,48 @@ def render(result: SuiteResult, gates: GateOutcome | None = None) -> str:
         lines.append("")
         lines.extend(gates.lines)
 
+    return "\n".join(lines)
+
+
+def render_judged(run: JudgeRun) -> str:
+    """The judged block. **Raises ``NoAgreementMeasured`` when either agreement figure has no items.**
+
+    Both figures are checked, not one. Citation support and narrative quality are measured over the same
+    pool but not necessarily over the same items -- an item can lose one pairing and keep the other --
+    and a block that printed one validated number beside one unvalidated one would be worse than
+    printing neither, because the validated half lends its credibility to the other.
+
+    An **undefined kappa is not the same thing** and does not raise. A degenerate label set (every item
+    scored the same) has a real, reportable raw agreement and an honestly undefined chance correction;
+    refusing to render that would be refusing to report a measurement that was actually taken.
+    """
+    for figure in (run.support_agreement, run.quality_agreement):
+        if not figure.measured:
+            raise NoAgreementMeasured(
+                f"{figure.metric} has no measured judge-human agreement (n=0), so no judged number "
+                "from this run may be rendered. A judged score with no agreement is decoration; see "
+                ".claude/rules/evals.md."
+            )
+
+    supported, scored = run.supported_rate
+    quality = f"{run.mean_quality:.2f}" if run.mean_quality is not None else "undefined (0 items)"
+    lines = [
+        f"judged: {run.pool} -- {len(run.judgements)} items, judge={run.model_id}",
+        f"  code revision {run.code_revision}, judged at {run.judged_at}",
+        "",
+        "  judged metrics  [TRACKED, never blocking]",
+        f"    citation_support: {supported}/{scored} SUPPORTED",
+        f"    narrative_quality: mean {quality} of 5",
+        "",
+        "  judge-human agreement, measured, reported here permanently:",
+    ]
+    lines.extend(run.support_agreement.render())
+    lines.extend(run.quality_agreement.render())
+    lines.append("")
+    lines.append(
+        "  Read every judged number above together with the agreement figures under it. A judged "
+        "score quoted alone is not a claim this project makes."
+    )
     return "\n".join(lines)
 
 

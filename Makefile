@@ -5,7 +5,7 @@
 .PHONY: help install fmt lint typecheck test cov check root-check clean dev ingest \
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
         heldout-key heldout-seal heldout-verify heldout-check \
-        eval eval-live eval-noise hooks hooks-uninstall
+        eval eval-live eval-noise eval-label eval-judge hooks hooks-uninstall
 
 UV := $(shell command -v uv 2>/dev/null)
 
@@ -214,6 +214,28 @@ eval-live: ## SPENDS MONEY. Tier 1 through Bedrock, behind an explicit confirmat
 #   make eval-noise ARGS='--write'         and record it
 eval-noise: ## FREE. The noise floor across recent live runs
 	uv run python -m musical_mycelium.eval.noise $(ARGS)
+
+# FREE. The hand-labeling flow for the judge pool -- phase 4 step 7b, and the one piece of this phase
+# that is your time rather than a machine's.
+#
+# ONE ITEM AT A TIME, and it is resumable. Every `record` writes immediately, so stopping after four
+# items costs nothing and picking it up next week costs nothing. Ten is a sitting, not a target.
+#
+#   make eval-label ARGS='build --transcript src/musical_mycelium/eval/transcripts/A.json \
+#                               --transcript .../B.json'     sample 30 items (needs ~2 live runs)
+#   make eval-label ARGS='status'                            how many done, which is next
+#   make eval-label ARGS='next'                              show the next unlabeled item
+#   make eval-label ARGS='record judge_pool_v1_007 SUPPORTED 4 --note "..."'
+eval-label: ## FREE. Hand-label the judge pool, one item at a time
+	uv run python -m musical_mycelium.eval.labelling $(ARGS)
+
+# SPENDS MONEY. Nova Pro scores the same pool you labeled, then agreement is measured and printed.
+#
+# It refuses to start on an unlabeled pool, refuses a judge model from the generator's family, and
+# refuses labels whose digest no longer matches the pool -- all three BEFORE the spend prompt, so a
+# misconfigured judge never costs anything. Thirty items is one request each: small.
+eval-judge: ## SPENDS MONEY. Run the validated judge over the labeled pool
+	uv run python -m musical_mycelium.eval.judge $(ARGS)
 
 # --- the sealed held-out set -------------------------------------------------
 # .claude/rules/evals.md requires a held-out set "never looked at during development". The threat is the

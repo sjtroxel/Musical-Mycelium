@@ -9,7 +9,7 @@ sealed, and **2026-08-16** at phase 4 steps 3 and 4. Every claim below was re-de
 rather than copied forward.
 
 **Updated 2026-08-17** at phase 4 step 6, part 1, and **2026-08-18** at step 5 — thresholds are written
-and `make eval` blocks.
+and `make eval` blocks. **Updated 2026-08-19** when step 7 was split into 7a / 7b / 7c.
 
 **Verified state:** `make check` green — 1008 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
@@ -198,6 +198,38 @@ gate step 5 was going to adopt, so the spread has to be measured before a thresh
   "does not exist yet" until 2026-08-18; it was stale from the moment the pool was written and is
   corrected here rather than deleted, because a checklist that quietly loses its wrong entries stops
   being evidence of anything. Step 5 read it and is now closed above.
+
+### Step 7 — the judge, split into 7a / 7b / 7c on 2026-08-19
+
+Step 7 is the only step in phase 4 that cannot finish in one sitting, because 30 hand labels is his time.
+It is split so it can be picked up cold in a later session. The binding detail — the labeling cadence,
+the resumability contract, the blindness rule — is in
+`docs/phases/phase-4-eval-suite-IMPLEMENTATION.md`, step 7, and is not restated here.
+
+- [x] **7a — the machinery ($0). DONE 2026-08-19.** `eval/transcripts.py`, `eval/labelling.py`,
+  `eval/agreement.py`, `eval/judge.py`, both rubrics, `render_judged`, `ROLE_JUDGE`, `make eval-label`
+  and `make eval-judge`. `make check` 1085 pass, 0 skip, 7 deselected. Every new lock broken
+  deliberately and watched to fail. **Read the "Step 7a, as-built" section of the phase doc before
+  7b** — in particular what `citation_support` actually asks, which is not what `07` §4.4 imagined and
+  could not be: the source's content is unreachable from a system that never queries Wikidata live, so
+  the judged question is whether the *prose* stayed inside the approved claim set.
+- [ ] **7b — the 30 labels (his time, three sittings of ten, resumable).** One item at a time, one
+  judgement each, from a pre-filled draft; labels written after each item so a dead session loses
+  nothing; the harness reports where it is on resume.
+- [ ] **7c — the judge run and the agreement figure (spend, gated).** One live run to produce the pool
+  (~$0.36 at step 4's measured rate), then the judge pass over the labeled items, then agreement
+  recorded and rendered.
+
+**The pool does not exist yet, and this is the finding that forced the split.** `runner.py` holds `prose`
+on `CaseRun` and `score_case` drops it; `per_case` in all nine committed result files carries counts only.
+Citation support and narrative quality both need the narrative text, and it has to come from a real-model
+run — judging scripted prose is the same category error step 5 caught with `SCRIPT_DETERMINED`, and
+`build_pool` now refuses a scripted transcript outright. `eval-live` writes a transcript as of
+2026-08-19, so **the next live run produces the pool's first half automatically**.
+
+**Two live runs are needed for a 30-item pool.** 41 cases minus 16 correctly-refused leaves roughly 25
+answered, so one run cannot fill 30. `build_pool` takes every case once before taking any case twice and
+refuses to build short unless explicitly told to.
 
 ### Found during the noise pool, logged rather than fixed — 2026-08-17
 

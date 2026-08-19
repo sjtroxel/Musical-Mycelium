@@ -38,7 +38,7 @@ from pathlib import Path
 from typing import Any
 
 from musical_mycelium.agent.llm import DEFAULT_MAX_TOKENS, LLM, Usage, build_llm
-from musical_mycelium.eval import gold, harness
+from musical_mycelium.eval import gold, harness, transcripts
 from musical_mycelium.eval.budget import EVAL_REQUESTS_PER_MINUTE, EvalBudget, RateLimiter
 from musical_mycelium.eval.provenance import code_revision
 from musical_mycelium.eval.report import render
@@ -289,13 +289,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
     print("\nconfirmed; running. This is unattended from here.\n", flush=True)
-    result = run_live(cases=selected, progress=lambda line: print(line, flush=True))
+    # The store is built here rather than inside `run_live` so the transcript can be written from the
+    # same artifact the run scored against. A second `from_directory` call would load the same pin
+    # today and would stop doing so the moment anything reads a version from the environment.
+    graph = InMemoryGraphStore.from_directory(artifact_directory())
+    result = run_live(cases=selected, store=graph, progress=lambda line: print(line, flush=True))
 
     path = write_result(result, revision=revision)
+    # Written **after** the result file, so a failure here cannot cost the run its scores. Prose is the
+    # judge's raw material (step 7) and it was being dropped entirely until 2026-08-19; a transcript
+    # that fails to write is a pool that has to be re-run, which is money, but a result that fails to
+    # write is seventeen minutes and a bill for nothing.
+    transcript_path = transcripts.write(transcripts.build(result, graph, revision=revision))
     outcome = gate(result)
     print()
     print(render(result, outcome))
     print(f"\nwritten to {path}")
+    print(f"transcript written to {transcript_path}")
     if not result.complete:
         print(
             "\nRUN WAS INCOMPLETE — see aborted_reason above. Partial results were still written."

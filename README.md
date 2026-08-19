@@ -19,7 +19,7 @@ complete and not yet deployed. Every open item is enumerated in
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 640 tests, plus 7 that spend real money and are deselected by default.
+generated. 1085 tests, plus 7 that spend real money and are deselected by default.
 
 **The corpus is artifact v0.5.0: 973 nodes, 950 edges** across two axes — genre-to-genre and
 artist-to-artist, both from Wikidata P737 only. Every edge carries how strongly it was checked: 22 read

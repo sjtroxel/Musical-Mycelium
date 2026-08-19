@@ -56,6 +56,16 @@ HAIKU_TOKENS_PER_DAY = 27_000_000
 #: run.
 EVAL_REQUESTS_PER_MINUTE = 9
 
+#: Nova Pro, the judge, on this account: 2M TPM / 25 RPM, confirmed 2026-08-11. A different model on a
+#: different quota, which is exactly the case `HAIKU_REQUESTS_PER_MINUTE`'s comment says must pass its
+#: own numbers rather than inherit these.
+NOVA_REQUESTS_PER_MINUTE = 25
+
+#: The judge's pacing, with the same headroom rule the 2026-08-17 throttle established: pace below the
+#: quota, not at it, because botocore's retries are invisible to the limiter. Five requests of headroom
+#: on a thirty-item run costs well under a minute; a sustained throttle costs the run.
+JUDGE_REQUESTS_PER_MINUTE = 20
+
 #: Concurrency for a fan-out run. `planning/07` §315, now a measured requirement rather than a precaution.
 MAX_CONCURRENCY = 2
 

@@ -10,8 +10,12 @@ import dataclasses
 
 import pytest
 
+from musical_mycelium.agent.llm import Usage
 from musical_mycelium.agent.loop import STOP_MAX_TURNS
-from musical_mycelium.eval.report import UnmarkedScriptedResult, render
+from musical_mycelium.eval.agreement import Agreement, NoAgreementMeasured, categorical, ordinal
+from musical_mycelium.eval.judge import Judgement, JudgeRun
+from musical_mycelium.eval.labelling import QUALITY_LEVELS, SUPPORT_LEVELS
+from musical_mycelium.eval.report import UnmarkedScriptedResult, render, render_judged
 from musical_mycelium.eval.suite import PROVIDER_SCRIPTED, SuiteResult, run_gold_suite
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 
@@ -201,3 +205,87 @@ def test_a_composite_dataset_label_is_not_given_a_fake_v_prefix(result: SuiteRes
     header = render(composite).splitlines()[0]
     assert "live gold+adversarial" in header
     assert "vgold" not in header
+
+
+# --- the judged block, and its agreement figure -------------------------------------------------------
+
+
+def _judge_run(
+    support: Agreement, quality: Agreement, judgements: tuple[Judgement, ...] = ()
+) -> JudgeRun:
+    return JudgeRun(
+        pool="judge_pool_v1",
+        model_id="amazon.nova-pro-v1:0",
+        judged_at="20260819T000000Z",
+        code_revision="abc1234",
+        judgements=judgements,
+        usage=Usage(input_tokens=1, output_tokens=1),
+        support_agreement=support,
+        quality_agreement=quality,
+    )
+
+
+def test_render_judged_refuses_a_judged_number_with_no_agreement() -> None:
+    """**The step 7 guard, and rule 2's shape applied to the judge.** `.claude/rules/evals.md`: *"An
+    LLM-judge score with no measured agreement is decoration."*
+
+    Raising rather than printing a blank is the whole point — decoration is quotable and a crash is not.
+
+    Broken deliberately on 2026-08-19 by rendering the block whenever agreement was merely *present*
+    rather than measured: an `Agreement` with n=0 printed `exact undefined (0 of 0)` under a clean-looking
+    mean quality score, and this test failed.
+    """
+    nothing = categorical("citation_support", [], [], levels=SUPPORT_LEVELS)
+    real = ordinal("narrative_quality", [4], [4], levels=QUALITY_LEVELS)
+    with pytest.raises(NoAgreementMeasured, match="citation_support"):
+        render_judged(_judge_run(nothing, real))
+
+
+def test_both_agreement_figures_are_checked_not_one() -> None:
+    """A block printing one validated number beside one unvalidated one is worse than printing neither:
+    the validated half lends its credibility to the other."""
+    real = categorical("citation_support", ["SUPPORTED"], ["SUPPORTED"], levels=SUPPORT_LEVELS)
+    nothing = ordinal("narrative_quality", [], [], levels=QUALITY_LEVELS)
+    with pytest.raises(NoAgreementMeasured, match="narrative_quality"):
+        render_judged(_judge_run(real, nothing))
+
+
+def test_an_undefined_kappa_still_renders() -> None:
+    """A degenerate label set has a real raw agreement and an honestly undefined chance correction.
+    Refusing to render that would be refusing to report a measurement that was actually taken — which is
+    a different thing from having taken none."""
+    degenerate = categorical(
+        "citation_support", ["SUPPORTED"] * 4, ["SUPPORTED"] * 4, levels=SUPPORT_LEVELS
+    )
+    quality = ordinal("narrative_quality", [4, 5], [4, 4], levels=QUALITY_LEVELS)
+    text = render_judged(_judge_run(degenerate, quality))
+    assert "undefined" in text
+    assert "single category" in text
+
+
+def test_the_judged_block_puts_agreement_next_to_every_number() -> None:
+    """ "Next to" is structural here rather than a habit: the numbers and their agreement figures come
+    out of the same object, so a caller cannot render one without the other."""
+    support = categorical(
+        "citation_support",
+        ["SUPPORTED", "OVERSTATED"],
+        ["SUPPORTED", "SUPPORTED"],
+        levels=SUPPORT_LEVELS,
+    )
+    quality = ordinal("narrative_quality", [4, 2], [4, 3], levels=QUALITY_LEVELS)
+    text = render_judged(
+        _judge_run(
+            support,
+            quality,
+            judgements=(
+                Judgement("judge_pool_v1_001", "SUPPORTED", 4, ""),
+                Judgement("judge_pool_v1_002", "SUPPORTED", 3, ""),
+            ),
+        )
+    )
+    assert "citation_support: 2/2 SUPPORTED" in text
+    assert "narrative_quality: mean 3.50 of 5" in text
+    assert "judge-human agreement" in text
+    assert "n=2" in text
+    assert "TRACKED, never blocking" in text
+    assert "amazon.nova-pro-v1:0" in text
