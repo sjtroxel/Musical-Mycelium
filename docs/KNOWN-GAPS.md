@@ -9,9 +9,10 @@ sealed, and **2026-08-16** at phase 4 steps 3 and 4. Every claim below was re-de
 rather than copied forward.
 
 **Updated 2026-08-17** at phase 4 step 6, part 1, and **2026-08-18** at step 5 — thresholds are written
-and `make eval` blocks. **Updated 2026-08-19** when step 7 was split into 7a / 7b / 7c.
+and `make eval` blocks. **Updated 2026-08-19** when step 7 was split into 7a / 7b / 7c, and
+**2026-08-20** when 7b finished — all 30 labels are recorded and 7c is the only part of step 7 left.
 
-**Verified state:** `make check` green — 1008 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+**Verified state:** `make check` green — 1085 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
@@ -213,8 +214,23 @@ the resumability contract, the blindness rule — is in
   7b** — in particular what `citation_support` actually asks, which is not what `07` §4.4 imagined and
   could not be: the source's content is unreachable from a system that never queries Wikidata live, so
   the judged question is whether the *prose* stayed inside the approved claim set.
-- [ ] **7b — the 30 labels (his time, three sittings of ten, resumable). IN PROGRESS: 10 of 30 labeled,
-  2026-08-19.** One item at a time, one judgement each; labels written after each item so a dead session
+- [x] **7b — the 30 labels (his time). DONE 2026-08-20, in two sittings rather than three.** Final set:
+  `citation_support` 21 SUPPORTED / 8 UNSUPPORTED / **1 OVERSTATED**; `narrative_quality` fourteen 5s,
+  one 4, five 3s, one 2, nine 1s. **The single OVERSTATED must travel into 7c:** the three-level rubric
+  has a cell with n=1, so the unweighted kappa's chance correction on `citation_support` rests almost
+  entirely on the SUPPORTED/UNSUPPORTED split. That is a property of the figure to report, not a reason
+  to relabel — labeling to fill a cell is worse than a degenerate figure.
+
+  **The four twice-sampled cases are a free consistency check and three of four agree exactly:**
+  `001`/`029` UNSUPPORTED-1 both, `003`/`028` UNSUPPORTED-1 both, `011`/`030` SUPPORTED-5 both, and
+  **`002`/`027` DIVERGED, SUPPORTED-3 versus SUPPORTED-5.** That divergence is a finding about the
+  agent, not about his labeling: same case `gold_v0_1_008`, two runs, and one run wrote "the genre's
+  development" about an artist while the other wrote "his distinctive approach" and dropped "came out
+  of" entirely. **So the genre-hardcoding defect is NON-deterministic and the direction defect IS** —
+  `003`/`028` produced near-identical garbage from the same prompt. Do not describe them as one
+  behaviour; an assistant collapsed them on 8/20 and was corrected.
+
+  One item at a time, one judgement each; labels written after each item so a dead session
   loses nothing; `make eval-label ARGS='status'` reports where it is on resume. **The cadence in use is
   not the one the phase doc anticipated** — he reads each item rendered in the session rather than in his
   own terminal, and supplies both judgements himself. **No score is pre-filled for him**, deliberately: a
@@ -222,8 +238,35 @@ the resumability contract, the blindness rule — is in
   partly measure Claude-against-Nova rather than human-against-judge, undetectably after the fact. The
   original "from a draft I pre-fill" wording was written for the gold set, where the drafts were
   *lookups* he verified; here the draft would be the judgement itself, which is the thing being measured.
+
+  **`judge_pool_v1_011` and `012` are ANCHORED LABELS and this must travel with the agreement figure —
+  2026-08-20.** At the start of the second sitting the assistant read the phase doc's "from a draft I
+  pre-fill" wording, did not check whether a later session had narrowed it, and pre-filled both
+  judgements on those two items before he answered. The rule above is exactly what that violates. He
+  overrode the draft on `011` (drafted 3, he gave 5) and gave independent reasoning on `012`, and he
+  ruled to keep both rather than rebuild the pool — but the point of the rule is that independence is
+  not checkable after the fact, so **2 of 30 labels are anchored and the agreement figure inherits it.**
+  Caught at item 013, when the assistant finally opened this file. From `014` onward the assistant
+  supplies **lookups only** — which sentence carries the focus claim, the rubric's level text, his own
+  prior labels on similar items, the case definition — and no score. That split is the working
+  definition of "lookup, not verdict" for the rest of 7b.
 - [ ] **7c — the judge run and the agreement figure (spend, gated).** The pool run is DONE (see below);
   what remains is the judge pass over the labeled items, then agreement recorded and rendered.
+  Estimated **~$0.10** — 30 requests, 90k input and 9k output tokens, Nova Pro at $0.0008/1K in and
+  $0.0032/1K out — and roughly two to four minutes at `JUDGE_REQUESTS_PER_MINUTE = 20`. Note
+  `MYCELIUM_TOKEN_PRICES` is unset in his shell, so the confirmation prints tokens and no dollar figure.
+
+  **Pre-step done 2026-08-20 before spending: labels are now bound to the RUBRIC, not just the pool.**
+  The gap found while sizing 7c: step 7 budgets **two rubric rewrites** if agreement comes back poor,
+  and nothing recorded which rubric a label was written under — so a rewrite followed by a judge-only
+  re-run would have produced a kappa between a human who read v1 and a judge who read v2, looking
+  entirely normal. `Labels` now carries `rubric_sha256` (SHA-256 over both rubric files, each delimited
+  by its own name), `load_labels` raises `RubricChanged` on a mismatch, and `judge.guard_rubrics` is the
+  second lock for callers that build `Labels` in memory. The digest was backfilled honestly: the
+  rubrics have exactly one commit, `db80585` at 03:54 on 8/19, and the first label was written at 10:46
+  the same morning, so all 30 were made against the current bytes. **The open question this exposes is
+  still open and is his to decide if agreement is poor: does a rubric rewrite mean re-judging, or
+  relabeling?** The code now refuses instead of answering it silently.
 
 **The pool EXISTS as of 2026-08-19.** `judge_pool_v1.json`, 30 items, seed `20260819`, built from two
 live runs at `db80585` — `20260819T145442Z` ($0.3595) and `20260819T152512Z` ($0.3774), both 5/5 gates
@@ -257,6 +300,27 @@ narrative quality" implied.
 Structural counts over the 30 pool items: 8 where the focus claim's subject or object never appears in
 the prose at all, 4 with a token repeated four or more times, 9 hitting either.
 
+**The first two defects below share ONE root cause and it has a line number — found 2026-08-20, while
+labeling `015`.** `SYNTHESIS_PROMPT` at `src/musical_mycelium/agent/loop.py:131` reads *"Write two
+sentences stating what **the genre** came out of, using only the influences listed below."* Two things
+are hardcoded in that one string and they fail independently:
+
+1. **"the genre"** — so an artist subject is described as a genre, or refused for not being one. The
+   user's question wording never reaches this prompt, which kills the obvious hypothesis that phrasing
+   the question with *who* would help: `judge_pool_v1_001` **was** "Who influenced Fela Kuti?" and still
+   answered "Fela Kuti is an artist, not a genre. The instruction asks me to write about a genre's
+   origins."
+2. **"what the genre came out of"** — the *inbound* direction, hardcoded. On an outbound question the
+   claim rows vary by subject and hold the object constant, so a model told to "name every one of the
+   influences listed" reads the object column and finds one name repeated N times. That is the exact
+   mechanism behind `003`'s "hip-hop, hip-hop, hip-hop…", `016`'s "Reggae came out of reggae", and the
+   two refusals at `013` and `015` where it balked instead of complying.
+
+There is a `CHAIN_SYNTHESIS_PROMPT` for the chain shape and an `INVERTED_PREMISE_PROMPT` for the
+backwards-question shape, but **no outbound counterpart to either**. Still logged rather than fixed, for
+the same reason as everything else in this section: changing synthesis moves the agent under the pool
+being labeled.
+
 - [ ] **Synthesis emits the wrong side of the claim row.** `judge_pool_v1_003` was asked "what came out
   of hip-hop?", was handed six distinct genres each `-influenced_by-> hip-hop`, and wrote "Hip-hop came
   out of hip-hop, hip-hop, hip-hop, hip-hop, hip-hop, and hip-hop." It printed the object six times
@@ -275,10 +339,47 @@ the prose at all, 4 with a token repeated four or more times, 9 hitting either.
   it reads as descent, which is a stronger claim than `influenced_by` carries. He ruled it SUPPORTED
   each time on the grounds that no reasonable reader infers literal parentage, and lodged the cost in
   `narrative_quality` instead — but it is the single most repeated wording defect in the pool.
+
+  **Escalated 2026-08-20: he asked explicitly that this be fixed once 7b was done, and it is now a
+  required fix rather than an observation.** The distinction he wants preserved is his own: for genres
+  it is tolerable idiom, for people it is not — "Michael Jackson came out of Fred Astaire" was the item
+  that produced the request. `027` shows the target state already exists in the model's range: same
+  question shape, and it wrote "Kenshi Yonezu's style emerged from…" with no "came out of" anywhere.
+  **Do not fix it before 7c's judge pass** — the labels are bound to this pool by SHA-256 and the agent
+  must not move underneath them.
 - [ ] **Chronology is substituted for influence.** `judge_pool_v1_009` declined to trace a three-hop
   lineage and offered "Fred Astaire came first chronologically, followed by Michael Jackson, then Jason
   Derulo" instead. Temporal precedence is not influence. Labeled SUPPORTED / 2 on the reading that a
   reader takes the ordering as the chain.
+
+#### Found in the second sitting, items 11-30 — 2026-08-20
+
+- [ ] **"Write two sentences" forces padding when there is only one claim, and the padding is where the
+  invented content comes from.** Three single-claim items, three different fabrications to fill the
+  second sentence: `026` repeated the first sentence **verbatim** ("Blues rock came out of blues. Blues
+  rock came out of blues."), `023` asserted exclusivity ("Jazz is the sole influence that shaped the
+  genre"), and `021` invented a second edge entirely ("Blues rock came out of rock"). **`021`'s invented
+  object is not even a node** — artifact `0.5.0` has 16 search hits for "rock" and none is bare "rock".
+  The sentence count in `SYNTHESIS_PROMPT` is fixed while the claim count is not, and this is the seam
+  where that mismatch shows up. `023` is the pool's **only** OVERSTATED label and it came from here.
+- [x] **The OVERSTATED boundary, as he ruled it on 8/20 — use this line, do not re-derive one.**
+  "Shaped the foundation / identity / approach" is **not** overstatement: that is what it *means* to be
+  an influence rather than an exposure, so it adds nothing to the row (`025`, `027`). **"Sole" is**,
+  because the row asserts that one influence exists and not that only one does (`023`). The test that
+  separates them is the rubric's own: point at the extra fact. A magnitude word passes the test; a
+  restatement of what influence means does not.
+- [ ] **Two rubric tensions surfaced and only one was ruled.** RULED: overstatement is priced **once**,
+  in `citation_support`, not charged again in `narrative_quality` — `023` is SUPPORTED-clear prose with
+  one overstated word and took `OVERSTATED / 5`. **UNRULED:** whether `citation_support` judges only the
+  sentence carrying the focus claim (the calibration note) or the whole prose (the UNSUPPORTED level
+  text, "an edge that simply is not in the rows printed"). `021` had both a correct focus sentence and a
+  fabricated second edge; his UNSUPPORTED there turned on the answer being about the wrong subject
+  entirely, so **it set no precedent on the tension.** The next item that isolates it needs his ruling.
+- [ ] **`adv_018` — the hardest adversarial case — failed the same way `adv_008` did.** Asked "How did
+  West African music influence American genres?", the agent answered about blues rock instead of naming
+  the gap, with `plan_divergence: 13`, the highest in the pool. `refusal_correct: false`, `correct:
+  false`; the deterministic suite caught it. Both near-miss and coverage-honesty refusals are failing by
+  substituting a well-covered neighbour, which is the single behaviour `must_name_gap` exists to force.
 
 **These labels stay valid after the fix.** The 30 labels exist to validate *the judge*, not the agent —
 they are the judge's exam paper, and a pool of uniformly good answers would produce a degenerate

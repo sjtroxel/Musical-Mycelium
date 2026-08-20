@@ -50,13 +50,17 @@ from musical_mycelium.eval.labelling import (
     LABELS_PATH,
     POOL_PATH,
     QUALITY_LEVELS,
+    RUBRIC_NAMES,
+    RUBRICS_DIR,
     SUPPORT_LEVELS,
     Labels,
     Pool,
     PoolItem,
+    RubricChanged,
     claim_lines,
     load_labels,
     load_pool,
+    rubric_digest,
 )
 from musical_mycelium.eval.provenance import code_revision
 from musical_mycelium.eval.safety import (
@@ -67,7 +71,6 @@ from musical_mycelium.eval.safety import (
     confirm_spend,
 )
 
-RUBRICS_DIR = Path(__file__).parent / "rubrics"
 RESULTS_DIR = Path(__file__).parent / "results"
 
 #: Region prefixes on a cross-region inference profile. Stripped before the vendor is read, so
@@ -183,6 +186,30 @@ def load_rubric(name: str, *, directory: Path = RUBRICS_DIR) -> str:
     if not path.exists():
         raise FileNotFoundError(f"no rubric at {path}")
     return path.read_text(encoding="utf-8")
+
+
+def guard_rubrics(labels: Labels) -> None:
+    """Refuse to judge under rubrics the human labels were not written against.
+
+    The third lock, and the one that guards the *re-measure* path specifically. Step 7 budgets two
+    rubric rewrites for a poor agreement figure; without this, a rewrite silently produces a kappa
+    comparing a human who read v1 against a judge who read v2. `PoolChanged` protects the items and
+    this protects the instructions -- an agreement number needs both to mean anything.
+
+    An empty `rubric_sha256` is a label file written before this was recorded, and is accepted: the
+    labels predate the field, not a rewrite. That branch stops applying the first time the file is
+    written again.
+    """
+    if not labels.rubric_sha256:
+        return
+    current = rubric_digest()
+    if labels.rubric_sha256 != current:
+        raise RubricChanged(
+            f"the labels were written against rubric digest {labels.rubric_sha256[:12]} and the "
+            f"rubrics on disk hash to {current[:12]}. Judging now would measure agreement between a "
+            "human given one set of instructions and a model given another. Restore the rubrics, or "
+            "re-label under the new ones."
+        )
 
 
 def vendor_of(model_id: str) -> str:
@@ -339,6 +366,9 @@ def run_judge(
             "that ordering is the only thing that makes them blind."
         )
 
+    if rubrics is None:
+        guard_rubrics(labels)
+
     guard_model(llm.model_id)
     say = progress if progress is not None else (lambda line: None)
     pacer = (
@@ -346,14 +376,10 @@ def run_judge(
         if limiter is not None
         else RateLimiter(requests_per_minute=JUDGE_REQUESTS_PER_MINUTE)
     )
-    texts = (
-        list(rubrics)
-        if rubrics is not None
-        else [
-            load_rubric("citation_support"),
-            load_rubric("narrative_quality"),
-        ]
-    )
+    #: `RUBRIC_NAMES` order, not a second hand-written list: the digest that `guard_rubrics` just
+    #: checked is computed in that order, and two orderings drifting apart would mean the guard is
+    #: hashing one thing while the judge reads another.
+    texts = list(rubrics) if rubrics is not None else [load_rubric(n) for n in RUBRIC_NAMES]
 
     judgements: list[Judgement] = []
     usage = Usage()
@@ -398,15 +424,21 @@ def estimate_for(pool: Pool, model_id: str) -> SpendEstimate:
 def main(argv: Sequence[str] | None = None) -> int:
     """`make eval-judge`. Spends money. Confirms once, then runs unattended.
 
-    The three refusals that come before the prompt are the point of the ordering: an unlabeled pool, a
-    same-family judge model, and a pool whose digest no longer matches the labels all stop the run
-    **before** `confirm_spend` is reached, so a misconfigured judge never gets as far as costing
-    anything.
+    The four refusals that come before the prompt are the point of the ordering: an unlabeled pool, a
+    pool whose digest no longer matches the labels, **rubrics the labels were not written against**,
+    and a same-family judge model all stop the run **before** `confirm_spend` is reached, so a
+    misconfigured judge never gets as far as costing anything.
     """
     _ = list(sys.argv[1:] if argv is None else argv)
 
     pool = load_pool(POOL_PATH)
-    labels = load_labels(LABELS_PATH, pool_path=POOL_PATH, pool=pool)
+    try:
+        labels = load_labels(LABELS_PATH, pool_path=POOL_PATH, pool=pool)
+    except RubricChanged as refusal:
+        # `load_labels` reaches this first, so `guard_rubrics` below never sees a tampered rubric on
+        # the CLI path. It stays anyway: it is the lock for callers that build `Labels` in memory.
+        print(f"not started: {refusal}", file=sys.stderr)
+        return 2
     unlabeled = [item.item_id for item in pool.items if item.item_id not in labels.by_item]
     if unlabeled:
         print(
@@ -414,6 +446,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"(next is {unlabeled[0]}). Run make eval-label ARGS='next' first.",
             file=sys.stderr,
         )
+        return 2
+
+    try:
+        guard_rubrics(labels)
+    except RubricChanged as refusal:
+        print(f"not started: {refusal}", file=sys.stderr)
         return 2
 
     model_id = model_id_for(ROLE_JUDGE)

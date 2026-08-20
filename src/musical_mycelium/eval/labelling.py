@@ -51,6 +51,15 @@ DATASETS_DIR = Path(__file__).parent / "datasets"
 POOL_PATH = DATASETS_DIR / "judge_pool_v1.json"
 LABELS_PATH = DATASETS_DIR / "judge_labels_v1.json"
 
+#: Where the rubrics live. Declared here rather than in `judge.py` because the *labels* are the thing
+#: bound to a rubric version, and `judge.py` already imports this module -- the other direction would
+#: be a cycle.
+RUBRICS_DIR = Path(__file__).parent / "rubrics"
+
+#: Both rubrics, in the order they are hashed and the order they are handed to the judge. The order is
+#: load-bearing for the digest: a different order is a different hash for identical instructions.
+RUBRIC_NAMES = ("citation_support", "narrative_quality")
+
 POOL_NAME = "judge_pool_v1"
 
 #: 30, from `07` §6 and `.claude/rules/evals.md`. Not a round number chosen for feel: it is the n that
@@ -90,6 +99,20 @@ class PoolChanged(RuntimeError):
 
 class ForbiddenLabelField(RuntimeError):
     """A label record carried a field outside the allowlist. See `LABEL_FIELDS`."""
+
+
+class RubricChanged(RuntimeError):
+    """The labels were written against different rubric text than the one now on disk.
+
+    Raised rather than reconciled, for the same reason as `PoolChanged` and one more. Agreement is a
+    number about **two raters given the same instructions**. If a rubric is rewritten and only the
+    judge re-reads it, the human labels were made under the old wording and the machine's under the
+    new one, and the resulting kappa silently measures raters who were asked different questions.
+
+    This is not hypothetical: `docs/phases/phase-4-eval-suite-IMPLEMENTATION.md` step 7 budgets **two**
+    rubric rewrites for the case where agreement comes back poor. Nothing recorded which rubric a label
+    was written under until 2026-08-20, so that budgeted path had no way to notice.
+    """
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,6 +219,10 @@ class Labels:
     pool: str
     pool_sha256: str
     records: tuple[Label, ...]
+    #: SHA-256 over both rubric files. What binds a label set to the *instructions* it was written
+    #: under, as `pool_sha256` binds it to the items. Empty only for a label file written before
+    #: 2026-08-20, which is a state that exists exactly once and is backfilled on the next write.
+    rubric_sha256: str = ""
 
     @property
     def by_item(self) -> dict[str, Label]:
@@ -208,6 +235,7 @@ class Labels:
         return {
             "pool": self.pool,
             "pool_sha256": self.pool_sha256,
+            "rubric_sha256": self.rubric_sha256,
             "labels": [record.to_json() for record in self.records],
         }
 
@@ -215,6 +243,29 @@ class Labels:
 def digest(path: Path) -> str:
     """SHA-256 of the pool file's bytes. What binds a label set to the exact items it was written for."""
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def rubric_digest(*, directory: Path | None = None, names: Sequence[str] = RUBRIC_NAMES) -> str:
+    """SHA-256 over every rubric's bytes, in `RUBRIC_NAMES` order.
+
+    One digest for both files rather than one each: a judgement is made against the pair, and a label
+    set written under one pair cannot be partially valid under another. The name is hashed alongside
+    the bytes so that swapping two rubrics' contents is a different digest, not the same one.
+
+    `directory` defaults to `None` and resolves to the module global at **call** time rather than
+    binding it in the signature, so a test can redirect it. A default argument would capture the path
+    once at import and quietly ignore every override.
+    """
+    root = directory if directory is not None else RUBRICS_DIR
+    running = hashlib.sha256()
+    for name in names:
+        path = root / f"{name}.md"
+        if not path.exists():
+            raise FileNotFoundError(f"no rubric at {path}")
+        running.update(name.encode("utf-8"))
+        running.update(b"\0")
+        running.update(path.read_bytes())
+    return running.hexdigest()
 
 
 def eligible_items(transcript: RunTranscript) -> list[tuple[str, transcripts.CaseTranscript]]:
@@ -380,10 +431,21 @@ def load_labels(
     """
     resolved = pool if pool is not None else load_pool(pool_path)
     current = digest(pool_path)
+    current_rubric = rubric_digest()
     if not path.exists():
-        return Labels(pool=resolved.name, pool_sha256=current, records=())
+        return Labels(
+            pool=resolved.name, pool_sha256=current, records=(), rubric_sha256=current_rubric
+        )
 
     payload = json.loads(path.read_text(encoding="utf-8"))
+    recorded_rubric = str(payload.get("rubric_sha256", ""))
+    if recorded_rubric and recorded_rubric != current_rubric:
+        raise RubricChanged(
+            f"{path} was written against rubric digest {recorded_rubric[:12]} and the rubrics on disk "
+            f"hash to {current_rubric[:12]}. Agreement compares two raters given the same "
+            "instructions; re-judging under rewritten rubrics against labels made under the old ones "
+            "produces a number that looks normal and means nothing. Restore the rubrics or re-label."
+        )
     recorded = str(payload.get("pool_sha256", ""))
     if recorded != current:
         raise PoolChanged(
@@ -411,7 +473,13 @@ def load_labels(
             )
         )
     return Labels(
-        pool=payload.get("pool", resolved.name), pool_sha256=current, records=tuple(records)
+        pool=payload.get("pool", resolved.name),
+        pool_sha256=current,
+        records=tuple(records),
+        #: A legacy file with no recorded digest adopts the current one. That is honest only because
+        #: the mismatch branch above has already run: an absent digest cannot disagree with anything,
+        #: and the very next write pins it.
+        rubric_sha256=recorded_rubric or current_rubric,
     )
 
 
@@ -458,7 +526,10 @@ def record_label(
         labeled_at=datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ"),
     )
     updated = Labels(
-        pool=labels.pool, pool_sha256=labels.pool_sha256, records=(*labels.records, label)
+        pool=labels.pool,
+        pool_sha256=labels.pool_sha256,
+        records=(*labels.records, label),
+        rubric_sha256=labels.rubric_sha256,
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(updated.to_json(), indent=2) + "\n", encoding="utf-8")

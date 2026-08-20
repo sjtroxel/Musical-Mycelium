@@ -14,13 +14,16 @@ from pathlib import Path
 
 import pytest
 
+from musical_mycelium.eval import labelling
 from musical_mycelium.eval.labelling import (
     QUALITY_LEVELS,
+    RUBRIC_NAMES,
     SUPPORT_LEVELS,
     ForbiddenLabelField,
     Pool,
     PoolChanged,
     PoolError,
+    RubricChanged,
     build_pool,
     load_labels,
     load_pool,
@@ -246,6 +249,91 @@ def test_labels_are_refused_when_the_pool_has_been_rebuilt(
 
     with pytest.raises(PoolChanged):
         load_labels(labels, pool_path=pool_on_disk)
+
+
+def test_labels_are_refused_when_a_rubric_has_been_rewritten(
+    pool_on_disk: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`PoolChanged` protects the items; this protects the instructions.
+
+    Agreement is a number about two raters answering the same question. Step 7 budgets two rubric
+    rewrites for a poor agreement figure, so the path where a rubric moves under an existing label set
+    is planned for, not hypothetical — and re-judging under v2 against labels written under v1 produces
+    a kappa that looks entirely normal.
+    """
+    rubrics = tmp_path / "rubrics"
+    rubrics.mkdir()
+    for name in RUBRIC_NAMES:
+        (rubrics / f"{name}.md").write_text(f"# {name}\noriginal\n", encoding="utf-8")
+    monkeypatch.setattr(labelling, "RUBRICS_DIR", rubrics)
+
+    labels = tmp_path / "labels.json"
+    record_label(
+        "judge_pool_v1_001",
+        citation_support="SUPPORTED",
+        narrative_quality=4,
+        path=labels,
+        pool_path=pool_on_disk,
+    )
+    assert json.loads(labels.read_text(encoding="utf-8"))["rubric_sha256"]
+
+    (rubrics / f"{RUBRIC_NAMES[1]}.md").write_text(
+        f"# {RUBRIC_NAMES[1]}\nrewritten\n", encoding="utf-8"
+    )
+
+    with pytest.raises(RubricChanged):
+        load_labels(labels, pool_path=pool_on_disk)
+
+
+def test_the_rubric_digest_is_not_ambiguous_about_where_one_rubric_ends(tmp_path: Path) -> None:
+    """Two different rubric pairs whose bytes concatenate identically must not share a digest.
+
+    This is the property the name-and-NUL separator actually buys, and it is **not** the same as
+    "a swap changes the hash" — plain concatenation already catches a swap, because the order of the
+    two byte strings differs. What plain concatenation does not catch is a moved boundary: ("A", "BC")
+    and ("AB", "C") both stream as `ABC`. Delimiting each rubric with its own name makes the boundary
+    explicit, so instructions that differ cannot hash the same.
+
+    Written after the first version of this test passed with the separator deleted, which is the whole
+    reason locks get broken before they are trusted.
+    """
+    first, second = RUBRIC_NAMES
+
+    def digest_of(one: str, two: str) -> str:
+        directory = tmp_path / f"rubrics-{one}-{two}"
+        directory.mkdir()
+        (directory / f"{first}.md").write_text(one, encoding="utf-8")
+        (directory / f"{second}.md").write_text(two, encoding="utf-8")
+        return labelling.rubric_digest(directory=directory)
+
+    assert digest_of("A", "BC") != digest_of("AB", "C")
+
+
+def test_the_rubric_digest_is_stable_and_order_sensitive(tmp_path: Path) -> None:
+    """Identical bytes hash identically; exchanging the two rubrics' contents does not."""
+    first, second = RUBRIC_NAMES
+
+    def digest_of(name: str, one: str, two: str) -> str:
+        directory = tmp_path / name
+        directory.mkdir()
+        (directory / f"{first}.md").write_text(one, encoding="utf-8")
+        (directory / f"{second}.md").write_text(two, encoding="utf-8")
+        return labelling.rubric_digest(directory=directory)
+
+    original = digest_of("original", "A\n", "B\n")
+    assert digest_of("same", "A\n", "B\n") == original
+    assert digest_of("swapped", "B\n", "A\n") != original
+
+
+def test_a_missing_rubric_is_an_error_not_an_empty_digest(tmp_path: Path) -> None:
+    """A deleted rubric must not silently hash to "the other one". That would make a label set look
+    bound to instructions that no longer exist."""
+    rubrics = tmp_path / "rubrics"
+    rubrics.mkdir()
+    (rubrics / f"{RUBRIC_NAMES[0]}.md").write_text("A\n", encoding="utf-8")
+
+    with pytest.raises(FileNotFoundError):
+        labelling.rubric_digest(directory=rubrics)
 
 
 # --- not losing his work ----------------------------------------------------------------------------

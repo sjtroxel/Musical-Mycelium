@@ -8,6 +8,7 @@ request itself is step 7c and costs money.
 from __future__ import annotations
 
 from collections.abc import Generator
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +33,7 @@ from musical_mycelium.eval.judge import (
     UnparseableJudgement,
     build_prompt,
     guard_model,
+    guard_rubrics,
     load_rubric,
     measure_agreement,
     parse_judgement,
@@ -41,6 +43,7 @@ from musical_mycelium.eval.judge import (
 from musical_mycelium.eval.labelling import (
     Labels,
     Pool,
+    RubricChanged,
     build_pool,
     load_labels,
     load_pool,
@@ -363,3 +366,44 @@ def test_a_run_with_a_same_family_judge_is_refused_before_any_request(
     with pytest.raises(SelfPreferenceRefused):
         run_judge(pool, labels, llm=llm, revision="r", limiter=_fast_limiter())
     assert llm.prompts == []
+
+
+def test_a_run_under_rewritten_rubrics_is_refused_before_any_request(
+    labeled: tuple[Pool, Labels, Path],
+) -> None:
+    """Agreement compares two raters answering the same question, so the *instructions* are bound to
+    the labels exactly as the items are.
+
+    Step 7 budgets two rubric rewrites for a poor agreement figure. Without this the budgeted path
+    silently produces a kappa between a human who read v1 and a judge who read v2 — a number that looks
+    entirely normal and measures nothing.
+    """
+    pool, labels, _ = labeled
+    stale = replace(labels, rubric_sha256="0" * 64)
+    llm = FakeJudgeLLM(["{}"])
+    with pytest.raises(RubricChanged, match="instructions"):
+        run_judge(pool, stale, llm=llm, revision="r", limiter=_fast_limiter())
+    assert llm.prompts == []
+
+
+def test_explicit_rubrics_bypass_the_binding_because_the_caller_supplied_them(
+    labeled: tuple[Pool, Labels, Path],
+) -> None:
+    """`guard_rubrics` checks the rubrics **on disk**, so it is meaningless when the caller passes
+    rubric text directly — as the round-trip tests here do. Skipping the check in that case is
+    deliberate; asserting it keeps the exemption visible rather than incidental."""
+    pool, labels, _ = labeled
+    stale = replace(labels, rubric_sha256="0" * 64)
+    llm = FakeJudgeLLM(['{"citation_support": "SUPPORTED", "narrative_quality": 4}'] * 3)
+    run = run_judge(pool, stale, llm=llm, revision="r", rubrics=["a", "b"], limiter=_fast_limiter())
+    assert len(run.judgements) == 3
+
+
+def test_a_label_set_predating_the_rubric_binding_is_accepted(
+    labeled: tuple[Pool, Labels, Path],
+) -> None:
+    """An empty digest is a label file written before 2026-08-20, not a rewrite. It is accepted, and
+    the next write pins it — the alternative is refusing to judge the one label set the project
+    actually has."""
+    _, labels, _ = labeled
+    guard_rubrics(replace(labels, rubric_sha256=""))

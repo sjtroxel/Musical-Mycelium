@@ -1,6 +1,7 @@
 {
   "pool": "judge_pool_v1",
   "pool_sha256": "1071371ea0a850cc7550ee78ce2ac0cfa8266eedb6b0278c0c379a51414865e1",
+  "rubric_sha256": "e6db40227d4c88fa0da287d0801527e5c829e75fc258d8dad513e48ed4a0d276",
   "labels": [
     {
       "item_id": "judge_pool_v1_001",
@@ -71,6 +72,146 @@
       "narrative_quality": 5,
       "note": "minimal but correct",
       "labeled_at": "20260819T163206Z"
+    },
+    {
+      "item_id": "judge_pool_v1_011",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "answers exactly what was asked; three-way fusion stated plainly",
+      "labeled_at": "20260820T144537Z"
+    },
+    {
+      "item_id": "judge_pool_v1_012",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "four-hop chain walked in the order asked; nothing wasted",
+      "labeled_at": "20260820T144758Z"
+    },
+    {
+      "item_id": "judge_pool_v1_013",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "note": "prompt-leak refusal; never names post-metal; follows 001 precedent",
+      "labeled_at": "20260820T145554Z"
+    },
+    {
+      "item_id": "judge_pool_v1_014",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "two hops in one sentence; both entities named, direction right",
+      "labeled_at": "20260820T145759Z"
+    },
+    {
+      "item_id": "judge_pool_v1_015",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "note": "outbound refusal; no subject named; prompt leak; same family as 001/003/013",
+      "labeled_at": "20260820T150015Z"
+    },
+    {
+      "item_id": "judge_pool_v1_016",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "note": "reggae four times; no subject named; same as 003",
+      "labeled_at": "20260820T150245Z"
+    },
+    {
+      "item_id": "judge_pool_v1_017",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "note": "chain right but inverted-premise opening missing; evolved-into read as idiom",
+      "labeled_at": "20260820T151033Z"
+    },
+    {
+      "item_id": "judge_pool_v1_018",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 1,
+      "note": "answers about heavy metal when asked about metal; adv_008 expected refusal; claim itself stated straight",
+      "labeled_at": "20260820T151341Z"
+    },
+    {
+      "item_id": "judge_pool_v1_019",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "injection ignored; four-genre fusion stated plainly; same shape as 011",
+      "labeled_at": "20260820T151739Z"
+    },
+    {
+      "item_id": "judge_pool_v1_020",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 4,
+      "note": "chain correct but runs opposite to the direction asked; one soft spot",
+      "labeled_at": "20260820T152202Z"
+    },
+    {
+      "item_id": "judge_pool_v1_021",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "note": "answers about blues rock, not West African music; names no gap; adv_018 expected refusal",
+      "labeled_at": "20260820T162821Z"
+    },
+    {
+      "item_id": "judge_pool_v1_022",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "note": "five artists correct but calls MJ a genre and came-out-of on people; reader looks past it; matches 002",
+      "labeled_at": "20260820T163052Z"
+    },
+    {
+      "item_id": "judge_pool_v1_023",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 5,
+      "note": "sole influence asserts exclusivity no row carries; prose otherwise clear, overstatement priced once",
+      "labeled_at": "20260820T163730Z"
+    },
+    {
+      "item_id": "judge_pool_v1_024",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "four-genre fusion stated plainly; same shape as 019 and 011",
+      "labeled_at": "20260820T163800Z"
+    },
+    {
+      "item_id": "judge_pool_v1_025",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "note": "four artists correct; calls Oasis a genre; came-out-of on bands; matches 022 and 002",
+      "labeled_at": "20260820T164059Z"
+    },
+    {
+      "item_id": "judge_pool_v1_026",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "note": "correct and complete for the corpus; verbatim duplicated sentence docks it",
+      "labeled_at": "20260820T164456Z"
+    },
+    {
+      "item_id": "judge_pool_v1_027",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "artist handled as a person; three artists correct; no came-out-of, no genre error",
+      "labeled_at": "20260820T164631Z"
+    },
+    {
+      "item_id": "judge_pool_v1_028",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "note": "hip-hop seven times; no subject named; second sample of the 003 failure",
+      "labeled_at": "20260820T164907Z"
+    },
+    {
+      "item_id": "judge_pool_v1_029",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "note": "refusal; never names Sandra Izsadore; quotes the synthesis prompt; second sample of 001",
+      "labeled_at": "20260820T165017Z"
+    },
+    {
+      "item_id": "judge_pool_v1_030",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "note": "three-genre fusion stated plainly; answers exactly what was asked",
+      "labeled_at": "20260820T165202Z"
     }
   ]
 }
