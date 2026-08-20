@@ -53,9 +53,18 @@ data/
 *.parquet
 *.sqlite3
 
-# Eval run output — reproducible by re-running the suite
-**/eval/results/
+# Eval run output — reproducible by re-running the suite.
+# NOTE the trailing `/*` rather than `/`: git cannot re-include a file whose parent DIRECTORY is
+# excluded, so ignoring the directory itself would make the negation below silently inert.
+**/eval/results/*
 eval-results/
+
+# EXCEPT judged runs, which are not reproducible by re-running. A judge pass costs money, is the only
+# place a measured judge-human agreement figure exists, and re-running it produces a different file
+# rather than the same one. `.claude/rules/evals.md` requires that agreement be "reported permanently
+# next to every judged metric" — a number quoted in a doc whose evidence lives on one laptop does not
+# satisfy that, and this repo's whole claim is that provenance is structural. Added 2026-08-20.
+!**/eval/results/*-judge.json
 
 # AWS SAM / build litter
 .aws-sam/

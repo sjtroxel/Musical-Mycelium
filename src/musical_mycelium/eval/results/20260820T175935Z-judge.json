@@ -1,0 +1,216 @@
+{
+  "pool": "judge_pool_v1",
+  "model_id": "amazon.nova-pro-v1:0",
+  "judged_at": "20260820T175935Z",
+  "code_revision": "6cba963",
+  "mean_narrative_quality": 3.0,
+  "citation_support_supported": 14,
+  "citation_support_scored": 30,
+  "agreement": {
+    "citation_support": {
+      "metric": "citation_support",
+      "n": 30,
+      "exact": 0.7,
+      "kappa": 0.4807692307692307,
+      "kappa_kind": "cohen",
+      "undefined_reason": "",
+      "within_one": null
+    },
+    "narrative_quality": {
+      "metric": "narrative_quality",
+      "n": 30,
+      "exact": 0.6333333333333333,
+      "kappa": 0.6624999999999999,
+      "kappa_kind": "quadratic-weighted",
+      "undefined_reason": "",
+      "within_one": 0.7666666666666667
+    }
+  },
+  "usage": {
+    "input_tokens": 63550,
+    "output_tokens": 1681,
+    "total_tokens": 65231
+  },
+  "judgements": [
+    {
+      "item_id": "judge_pool_v1_001",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not assert the claim it was built from and does not answer the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_002",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates by claiming these influences shaped the genre's development, which is not supported by the claims. The narrative quality is a 3 because it answers the question but includes unnecessary and unsupported information."
+    },
+    {
+      "item_id": "judge_pool_v1_003",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not accurately reflect the approved claims and fails to answer the question coherently."
+    },
+    {
+      "item_id": "judge_pool_v1_004",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 2,
+      "rationale": "The answer incorrectly states that cacha\u00e7a came out of the mentioned genres, which is not supported by the claims. The narrative partially answers the question but introduces incorrect information."
+    },
+    {
+      "item_id": "judge_pool_v1_005",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is concise, clear, and directly answers the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_006",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly asserts the claim it was built from, with no additional facts or overstated elements, and it clearly and concisely answers the question without any flaws."
+    },
+    {
+      "item_id": "judge_pool_v1_007",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is clear, concise, and fully addresses the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_008",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer correctly reverses the direction of influence and is clear, concise, and directly addresses the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_009",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influence chain but is structured as a list of edges rather than a coherent narrative, and includes unnecessary hedging."
+    },
+    {
+      "item_id": "judge_pool_v1_010",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer is supported by the provided claim and directly answers the question, though it lacks depth and context, making it a bit simplistic."
+    },
+    {
+      "item_id": "judge_pool_v1_011",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 4,
+      "rationale": "The answer correctly identifies the genres that influenced the Manila sound, and the prose is clear and coherent, though it could be slightly more concise."
+    },
+    {
+      "item_id": "judge_pool_v1_012",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer correctly traces the lineage from Woody Guthrie to Chappell Roan using the provided claims, and it is coherent, concise, and directly answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "judge_pool_v1_013",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not assert the claim it was built from, and it does not answer the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_014",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is concise, coherent, and directly answers the question without unnecessary information."
+    },
+    {
+      "item_id": "judge_pool_v1_015",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not assert the claim it was built from and does not answer the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_016",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not correctly assert the claim it was built from, and it does not answer the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_017",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 2,
+      "rationale": "The answer reverses the direction of influence and does not directly address the question asked, only partially answering it."
+    },
+    {
+      "item_id": "judge_pool_v1_018",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 4,
+      "rationale": "The answer directly addresses the question and is coherent, though it could be slightly more concise and avoid restating the question."
+    },
+    {
+      "item_id": "judge_pool_v1_019",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not address the question asked and includes an incorrect claim about jazz influencing punk rock, which is not supported by the approved claims."
+    },
+    {
+      "item_id": "judge_pool_v1_020",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 4,
+      "rationale": "The answer correctly traces the lineage from blues to heavy metal through blues rock, with minor room for improvement in narrative flow and hedging."
+    },
+    {
+      "item_id": "judge_pool_v1_021",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer is supported by the provided claim, but it is stated as an unordered list of edges and does not form a coherent narrative chain."
+    },
+    {
+      "item_id": "judge_pool_v1_022",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influences on Michael Jackson but adds the uncited claim that these influences 'shaped the genre that became Michael Jackson', which is an overstatement. The narrative quality is a 3 because while it answers the question, it includes unnecessary and potentially misleading information."
+    },
+    {
+      "item_id": "judge_pool_v1_023",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claim by asserting that jazz is the sole influence on bossa nova, which is not supported by the provided claim. The narrative quality is a 3 because it answers the question but with unnecessary definitiveness and lacks smooth transitions or appropriate hedging."
+    },
+    {
+      "item_id": "judge_pool_v1_024",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influences of acid jazz but overstates by suggesting a combination of these influences created the genre, which is not specified in the claims. The narrative quality is a 3 because it answers the question but includes some throat-clearing and could be more concise."
+    },
+    {
+      "item_id": "judge_pool_v1_025",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influences on Oasis but adds uncited details about shaping the genre's foundation and musical identity, which overstates the claims. The narrative is coherent but includes unnecessary elements that detract from its quality."
+    },
+    {
+      "item_id": "judge_pool_v1_026",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the origin of blues rock from blues, which is supported by the provided claim. However, the narrative quality is slightly diminished due to the repetition of the same sentence, which makes the answer less polished and slightly cumbersome to read."
+    },
+    {
+      "item_id": "judge_pool_v1_027",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 4,
+      "rationale": "The answer overstates by asserting that these influences 'shaped his distinctive approach to music,' which is not directly supported by the claims. However, it is coherent, answers the question, and is readable, meriting a narrative quality score of 4."
+    },
+    {
+      "item_id": "judge_pool_v1_028",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not correctly assert the claim it was built from and fails to answer the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_029",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not address the influences on Fela Kuti as an artist, which is what the question asked, and instead discusses a different topic (Afrobeat genre), making it off-subject and incoherent with the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_030",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer is directly supported by the claims and provides a clear, concise, and well-structured response to the question."
+    }
+  ]
+}

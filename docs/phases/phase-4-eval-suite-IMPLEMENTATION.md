@@ -617,6 +617,36 @@ Files: `eval/transcripts.py`, `eval/labelling.py`, `eval/agreement.py`, `eval/ju
 `ROLE_JUDGE` in `agent/llm.py`, `JUDGE_REQUESTS_PER_MINUTE` in `eval/budget.py`, `make eval-label` and
 `make eval-judge`, and four new test files.
 
+#### Step 7b and 7c, as-built — the labels and the first agreement figure, 2026-08-20
+
+**7b took two sittings, not three.** Final labels: `citation_support` 21 SUPPORTED / 8 UNSUPPORTED /
+1 OVERSTATED; `narrative_quality` fourteen 5s, one 4, five 3s, one 2, nine 1s.
+
+**7c, first run: $0.0562, Nova Pro, 30 items, revision `6cba963`.** `citation_support` exact 70.0%,
+**kappa 0.48**; `narrative_quality` exact 63.3%, **kappa 0.66** quadratically weighted, within-one
+76.7%. The full per-item disagreement analysis is in `docs/KNOWN-GAPS.md` and is not restated here.
+
+**Four things this step taught that the plan did not anticipate:**
+
+1. **The cadence in this doc was wrong for 7b and a later session had already corrected it.** "From a
+   draft I pre-fill" was written for the gold set, where the drafts were *lookups he verified*. Here
+   the draft would be the judgement — the thing being measured. KNOWN-GAPS narrowed it to **no
+   pre-filled scores**; an assistant read this doc, not that one, and anchored two labels before the
+   correction landed. **When this doc and KNOWN-GAPS disagree, KNOWN-GAPS is newer and governs.**
+2. **Nothing bound the labels to the rubric, and this doc's own rewrite budget is what made that
+   dangerous.** Two rewrites are budgeted for poor agreement; without a binding, a rewrite plus a
+   judge-only re-run yields a kappa between a human who read v1 and a judge who read v2, looking
+   entirely normal. `Labels.rubric_sha256` now closes it, and the open question it exposes — does a
+   rewrite mean re-judging or relabeling — is his to answer, not the code's to answer silently.
+3. **The judged half needed a prompt-injection defence and only a live run revealed it.** The pool
+   contains the adversarial set, and `build_prompt` passed a planted injection into the judge under
+   `QUESTION ASKED`. The judge mis-attributed the injected text to the answer. **The agent resisted the
+   same injection cleanly** — the judge was the weaker half, and no amount of desk review had found it.
+4. **The rewrite budget should not be spent on the first poor-looking figure.** Anchors derived from
+   his labels, re-scored against those same labels, fit the rubric to the validation set. A clean
+   rewrite needs a fresh pool and a fresh 30. **An honest 0.48 with a written diagnosis beats a fitted
+   0.7**, and both rewrites stay available.
+
 ### Step 8 — Tier 2, judged and sampled (spend, gated)
 
 Citation support and narrative quality only. 20–30 samples, release candidates only, behind the same

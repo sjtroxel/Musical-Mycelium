@@ -10,9 +10,10 @@ rather than copied forward.
 
 **Updated 2026-08-17** at phase 4 step 6, part 1, and **2026-08-18** at step 5 — thresholds are written
 and `make eval` blocks. **Updated 2026-08-19** when step 7 was split into 7a / 7b / 7c, and
-**2026-08-20** when 7b finished — all 30 labels are recorded and 7c is the only part of step 7 left.
+**2026-08-20** when 7b finished and 7c ran for the first time — **the project now has a measured
+judge-human agreement figure**: `citation_support` kappa 0.48, `narrative_quality` kappa 0.66, n=30.
 
-**Verified state:** `make check` green — 1085 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+**Verified state:** `make check` green — 1094 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
@@ -250,8 +251,35 @@ the resumability contract, the blindness rule — is in
   supplies **lookups only** — which sentence carries the focus claim, the rubric's level text, his own
   prior labels on similar items, the case definition — and no score. That split is the working
   definition of "lookup, not verdict" for the rest of 7b.
-- [ ] **7c — the judge run and the agreement figure (spend, gated).** The pool run is DONE (see below);
-  what remains is the judge pass over the labeled items, then agreement recorded and rendered.
+- [x] **7c — the judge run and the agreement figure. FIRST RUN DONE 2026-08-20, $0.0562.**
+  `results/20260820T175935Z-judge.json`, revision `6cba963`, Nova Pro, 30 items, 63,550 in / 1,681 out.
+  **The estimator quoted $0.1008 — 1.8x high**, the same direction as the agent-side 2.2x already
+  recorded here.
+
+  **The figures, and they are reported permanently next to every judged number:**
+  `citation_support` exact **70.0%** (21/30), **kappa 0.48** (moderate). `narrative_quality` exact
+  **63.3%** (19/30), **kappa 0.66** quadratically weighted (substantial), within-one **76.7%**.
+  Judge's own scores: 14/30 SUPPORTED against his 21/30, mean quality 3.00 against his 3.33 — **the
+  judge is harsher than he is on both scales.**
+
+  **The disagreements are diagnosable rather than scattered, and that is the whole value of this
+  step.** Three distinct causes, logged below in the 8/20 findings section. **The rubric-rewrite budget
+  (`07` §6, two rewrites) is DELIBERATELY UNSPENT** — see that section for why spending it here would
+  make the number worse as evidence, not better.
+
+  What remains before this can be called finished: a **re-judge after the injection fix**, which does
+  not touch the rubric and therefore does not invalidate his 30 labels.
+
+  **Judge run files are now COMMITTED, and that is a deliberate reversal — 2026-08-20.** `.gitignore`
+  excluded `**/eval/results/` wholesale on the rationale "reproducible by re-running the suite". True
+  of the free scripted runs; **false of a judged run**, which costs money, holds the only measured
+  agreement figure in the project, and produces a *different* file when re-run rather than the same
+  one. So the agreement number was quoted in this file while its evidence sat on one laptop, which a
+  repo arguing that provenance is structural cannot do. `!**/eval/results/*-judge.json` re-includes
+  them. **The trailing `/*` on the exclude line is load-bearing** — git cannot re-include a file whose
+  parent *directory* is excluded, so with the original `**/eval/results/` the negation was silently
+  inert. Verified in both directions: the judge file is tracked, the eight `-bedrock.json` runs are
+  still ignored.
   Estimated **~$0.10** — 30 requests, 90k input and 9k output tokens, Nova Pro at $0.0008/1K in and
   $0.0032/1K out — and roughly two to four minutes at `JUDGE_REQUESTS_PER_MINUTE = 20`. Note
   `MYCELIUM_TOKEN_PRICES` is unset in his shell, so the confirmation prints tokens and no dollar figure.
@@ -380,6 +408,48 @@ being labeled.
   the gap, with `plan_divergence: 13`, the highest in the pool. `refusal_correct: false`, `correct:
   false`; the deterministic suite caught it. Both near-miss and coverage-honesty refusals are failing by
   substituting a well-covered neighbour, which is the single behaviour `must_name_gap` exists to force.
+
+#### Found by the first judge run — where Nova and he disagree, 2026-08-20
+
+Nine of thirty disagree on `citation_support` and eleven on `narrative_quality`. **They are not
+scattered.** Three causes, and only the first is a rubric problem.
+
+- [ ] **The judge disagrees with him on exactly the two boundaries he ruled on that same day.** Five of
+  the nine citation disagreements are SUPPORTED -> OVERSTATED: `002`, `022`, `024`, `025`, `027`. All
+  five are either the fusion construction or the "shaped the genre's foundation / identity" one. Nova's
+  rationale on `024`: *"overstates by suggesting a combination of these influences created the genre,
+  which is not specified in the claims."* **His rulings on both are recorded above and are NOT in the
+  rubric**, because he made them after the rubric was written. This is genuine rubric
+  under-specification and it is what `07` §6's rewrite budget exists for.
+
+  **The rewrite is deliberately NOT spent, and the reason is methodological rather than effort.** The
+  anchors would be derived from his 30 labels; re-judging those same 30 under them raises agreement
+  partly because the judge has been told the answers. That is fitting the rubric to the validation set,
+  and the resulting kappa would be higher and worth less — it would have to ship marked *fitted*. An
+  honest 0.48 with this diagnosis attached is the better artifact. **A clean rewrite requires a fresh
+  pool and a fresh 30 labels**, which is a real cost to weigh on a day when it is worth it, not a
+  default. Both rewrites remain available.
+- [ ] **The judge is weak at "did this answer the question that was asked."** `018` is the `adv_008`
+  near-miss — answers about *heavy metal* when asked about *metal* — and Nova gave it **4**, calling it
+  *"directly addresses the question"*, against his **1**. `021` answers about blues rock when asked
+  about West African music: Nova SUPPORTED/3 against his UNSUPPORTED/1. **The judge is blind to
+  near-miss substitution in the same way every deterministic metric is**, which means tier 2 does not
+  cover the gap tier 1 leaves here. `004` is the same family in a different direction — Nova marked it
+  UNSUPPORTED on the grounds the answer "introduces incorrect information", which is scoring the
+  cachaça corpus oddity as history. **The rubric already says in as many words that it does not ask
+  whether Wikidata is right.** Rewriting will not fix a rubric line the judge ignored.
+- [x] **A real bug, now FIXED: the planted injection reached the judge and cost an item.** `019`'s query
+  carries the adversarial injection verbatim, and `build_prompt` passed it into the judge prompt under
+  `QUESTION ASKED`. Nova scored the item UNSUPPORTED/1 with the rationale *"includes an incorrect claim
+  about jazz influencing punk rock"* — text that is in the **question** and appears nowhere in the
+  answer. **Be precise about what happened: Nova did not obey the injection, it mis-attributed the
+  injected text to the answer and marked the answer down for it.** The agent resisted this same
+  injection cleanly (`adv_016`, `correct: true`, `plan_divergence: 0`), so the unguarded judge was the
+  weaker half of the pipeline. Fixed by fencing the question, labelling it untrusted **before** it
+  appears, and adding the same instruction to `JUDGE_SYSTEM`. Both properties are test-locked and both
+  locks were broken deliberately and watched to fail. **This is not a rubric change** — `rubric_digest`
+  hashes `rubrics/*.md` only — so the 30 labels are untouched and a re-judge is legitimate.
+  Expected effect is honestly small: one item, roughly 70% -> 73% on citation_support.
 
 **These labels stay valid after the fix.** The 30 labels exist to validate *the judge*, not the agent —
 they are the judge's exam paper, and a pool of uniformly good answers would produce a degenerate
