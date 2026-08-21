@@ -182,11 +182,16 @@ def test_no_prompt_names_a_tool(store: InMemoryGraphStore) -> None:
     is held to the same rule and ``test_plan.py`` asserts the rendered result names them all.
     """
     prompts = {
-        "SYSTEM_PROMPT": agent_loop.SYSTEM_PROMPT,
-        "SYNTHESIS_PROMPT": agent_loop.SYNTHESIS_PROMPT,
-        "CHAIN_SYNTHESIS_PROMPT": agent_loop.CHAIN_SYNTHESIS_PROMPT,
-        "PLANNING_PROMPT_TEMPLATE": PLANNING_PROMPT_TEMPLATE,
+        name: value
+        for name, value in vars(agent_loop).items()
+        if name.endswith(("_PROMPT", "_TEMPLATE")) and isinstance(value, str)
     }
+    prompts["PLANNING_PROMPT_TEMPLATE"] = PLANNING_PROMPT_TEMPLATE
+    # Discovered rather than listed, 2026-08-21, for the same reason the tool names below are read off
+    # the registry: a prompt added later should be covered the day it is added. The hand-written list
+    # this replaced named two of the three synthesis prompts, and the descendants prompt added that day
+    # would have been born uncovered.
+    assert len(prompts) >= 5, f"prompt discovery found only {sorted(prompts)}; the filter is wrong"
     for name in default_registry(store).names:
         for prompt_name, prompt in prompts.items():
             assert name not in prompt, f"{prompt_name} hard-codes {name}"
@@ -857,6 +862,190 @@ def test_the_chain_prompt_keeps_the_chain_in_order() -> None:
     prompt = str(llm.requests[-1]["messages"])
     assert "Chain: " in prompt
     assert prompt.index("heavy metal music") < prompt.index("blues rock") < prompt.index('"blues"')
+
+
+# --- the three answer shapes, and the axis they are told on ---------------------------------------
+#
+# Everything in this block is phase 4 step 7's synthesis findings, turned into locks. The claims under
+# every one of these defects were real, cited and correctly directed, so `edge_groundedness` and
+# `citation_resolution` read 100% throughout and `cases_correct` counted most of them right. Only the
+# prose was wrong, which is why a deterministic suite could not see any of it.
+
+
+def _fan_in() -> ApprovedClaimSet:
+    """ "What came out of the blues?" — distinct subjects, one shared object. The shape that had no
+    representation at all until 2026-08-21."""
+    return ApprovedClaimSet(
+        claims=(
+            Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),
+            Claim(HEAVY_METAL, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
+        ),
+        labels={BLUES_ROCK: "blues rock", HEAVY_METAL: "heavy metal music", BLUES: "blues"},
+        kinds=dict.fromkeys((BLUES_ROCK, HEAVY_METAL, BLUES), NODE_KIND_GENRE),
+    )
+
+
+def test_a_fan_in_claim_set_is_the_descendants_shape_not_a_headless_origins_one() -> None:
+    """`judge_pool_v1_003`, at the level of the data rather than the prose.
+
+    ``subject_id`` returning ``None`` means *not this shape*, and it used to be read as *no subject*:
+    ``label_of(subject_id or "")`` rendered a blank subject, and the influences column — which on a
+    fan-in holds the same node once per claim — became "hip-hop, hip-hop, hip-hop".
+    """
+    claim_set = _fan_in()
+    assert claim_set.subject_id is None, "a fan-in has no single subject and must not claim one"
+    assert claim_set.object_id == BLUES
+
+
+def test_the_descendants_prompt_states_the_direction_and_does_not_repeat_the_shared_node() -> None:
+    """The prose-side lock on the same defect. The listed names are the *subjects*; the shared object
+    appears as the thing they came out of, once."""
+    llm = ScriptedLLM([LLMResponse(text="prose")])
+    list(synthesize(_fan_in(), llm))
+    prompt = synthesis_prompt(llm)
+
+    assert "blues rock" in prompt and "heavy metal music" in prompt
+    assert prompt.count('"blues"') == 0, (
+        "the shared object must not be listed as its own descendant"
+    )
+    assert "did not come out of" in prompt, "the direction is stated, not left to be inferred"
+
+
+def test_a_single_claim_is_read_as_origins_rather_than_descendants() -> None:
+    """One claim is genuinely both shapes. Origins is the tie-break because "X came out of Y" answers
+    either question, and reading it as a fan-in would produce prose about the wrong subject."""
+    claim_set = ApprovedClaimSet(
+        claims=(Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),),
+        labels={BLUES_ROCK: "blues rock", BLUES: "blues"},
+    )
+    assert claim_set.subject_id == BLUES_ROCK
+    assert claim_set.object_id is None
+
+
+def test_synthesis_raises_on_a_claim_set_no_shape_describes() -> None:
+    """The branch that replaced ``subject_id or ""``.
+
+    Two claims sharing neither subject nor object are a set nobody has defined prose for. Raising is
+    the point: the old fallback narrated it as an origins query with a blank subject, and produced a
+    confidently wrong answer that every deterministic metric scored perfectly.
+    """
+    claim_set = ApprovedClaimSet(
+        claims=(
+            Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),
+            Claim(HEAVY_METAL, INFLUENCED_BY, ACID_JAZZ, ("stmt/2",), HAND),
+        ),
+    )
+    with pytest.raises(ValueError, match="neither a chain"):
+        list(synthesize(claim_set, ScriptedLLM([LLMResponse(text="prose")])))
+
+
+def test_an_artist_subject_is_never_called_a_genre() -> None:
+    """`judge_pool_v1_001`, which refused "Who influenced Fela Kuti?" on the stated grounds that "Fela
+    Kuti is an artist, not a genre" — because the prompt said so, twice: it asked what "the genre" came
+    out of, and it banned mentioning artists in an answer that could only be about one."""
+    claim_set = ApprovedClaimSet(
+        claims=(Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),),
+        labels={BLUES_ROCK: "Kate Bush", BLUES: "Peter Gabriel"},
+        kinds={BLUES_ROCK: NODE_KIND_ARTIST, BLUES: NODE_KIND_ARTIST},
+    )
+    llm = ScriptedLLM([LLMResponse(text="prose")])
+    list(synthesize(claim_set, llm))
+    prompt = synthesis_prompt(llm)
+
+    # "no genres" is *correct* here and stays: it is the off-axis ban. What must not appear is the
+    # subject being called one.
+    assert "Genre:" not in prompt, "the subject must not be presented as a genre"
+    assert "the genre" not in prompt, "the instruction must not describe the subject as a genre"
+    assert "no artists" not in prompt, "the ban must not forbid the answer's only possible subject"
+    assert "Artist: Kate Bush" in prompt
+
+
+def test_came_out_of_is_reserved_for_genres() -> None:
+    """His ruling, 2026-08-20: for genres it is tolerable idiom; for people it reads as descent, which
+    is a stronger claim than ``influenced_by`` carries. The artist rendering is the predicate's own
+    name, which is the one wording that structurally cannot overstate."""
+    artists = ApprovedClaimSet(
+        claims=(Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),),
+        labels={BLUES_ROCK: "Michael Jackson", BLUES: "Fred Astaire"},
+        kinds={BLUES_ROCK: NODE_KIND_ARTIST, BLUES: NODE_KIND_ARTIST},
+    )
+    llm = ScriptedLLM([LLMResponse(text="prose")])
+    list(synthesize(artists, llm))
+    assert "came out of" not in synthesis_prompt(llm)
+    assert "was influenced by" in synthesis_prompt(llm)
+
+    genres = ApprovedClaimSet(
+        claims=(Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),),
+        labels={BLUES_ROCK: "blues rock", BLUES: "blues"},
+        kinds={BLUES_ROCK: NODE_KIND_GENRE, BLUES: NODE_KIND_GENRE},
+    )
+    llm = ScriptedLLM([LLMResponse(text="prose")])
+    list(synthesize(genres, llm))
+    assert "came out of" in synthesis_prompt(llm)
+
+
+def test_an_unknown_axis_degrades_to_wording_true_on_either() -> None:
+    """No kinds, partial kinds and disagreeing kinds are all ``None``, and ``None`` must not become a
+    guess. The neutral verb is safe on both axes, so the fallback cannot overstate."""
+    for kinds in (
+        {},
+        {BLUES_ROCK: NODE_KIND_GENRE},
+        {BLUES_ROCK: NODE_KIND_GENRE, BLUES: NODE_KIND_ARTIST},
+    ):
+        claim_set = ApprovedClaimSet(
+            claims=(Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),),
+            labels={BLUES_ROCK: "blues rock", BLUES: "blues"},
+            kinds=kinds,
+        )
+        assert claim_set.axis is None, f"{kinds} should not resolve to an axis"
+        llm = ScriptedLLM([LLMResponse(text="prose")])
+        list(synthesize(claim_set, llm))
+        assert "was influenced by" in synthesis_prompt(llm)
+        assert "Subject: blues rock" in synthesis_prompt(llm)
+
+
+def test_the_sentence_count_follows_the_claim_count() -> None:
+    """Three single-claim pool items each invented something different to fill a second sentence they
+    were told to write: a verbatim repeat (`026`), an exclusivity the row does not carry (`023`), and
+    an edge that is not in the artifact at all (`021`). The padding instruction was the fabrication
+    instruction."""
+    one = ApprovedClaimSet(
+        claims=(Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),),
+        labels={BLUES_ROCK: "blues rock", BLUES: "blues"},
+        kinds={BLUES_ROCK: NODE_KIND_GENRE, BLUES: NODE_KIND_GENRE},
+    )
+    llm = ScriptedLLM([LLMResponse(text="prose")])
+    list(synthesize(one, llm))
+    assert "one sentence" in synthesis_prompt(llm)
+
+    # A fan-out answer is a list, so one sentence naming every name is its natural form and the count
+    # is a permission rather than a target. Measured, not designed: the first live run after the fix
+    # padded a four-claim fan-out with "Each of these artists was shaped by Etta James's legacy", and
+    # wrote one sentence for a six-claim fan-out that had been offered three.
+    llm = ScriptedLLM([LLMResponse(text="prose")])
+    list(synthesize(_fan_in(), llm))
+    assert "one or two sentences" in synthesis_prompt(llm)
+
+    chain = ApprovedClaimSet(
+        claims=(
+            Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
+            Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
+        ),
+        labels={HEAVY_METAL: "heavy metal music", BLUES_ROCK: "blues rock", BLUES: "blues"},
+        chain=(HEAVY_METAL, BLUES_ROCK, BLUES),
+    )
+    llm = ScriptedLLM([LLMResponse(text="prose")])
+    list(synthesize(chain, llm))
+    assert "two sentences" in synthesis_prompt(llm), "a chain is not a list and does need several"
+    assert "one or two" not in synthesis_prompt(llm)
+
+
+def test_kinds_cannot_smuggle_a_node_past_the_gate() -> None:
+    """``kinds`` is admitted under exactly the rule ``labels`` is admitted under, and is checked by the
+    same clause. Widening the seam without widening the check is how invariant 1 would be lost."""
+    claim = Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND)
+    with pytest.raises(ValueError, match="no approved claim mentions"):
+        ApprovedClaimSet(claims=(claim,), kinds={HEAVY_METAL: NODE_KIND_GENRE})
 
 
 def test_synthesis_prompt_contains_only_approved_claims(store: InMemoryGraphStore) -> None:

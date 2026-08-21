@@ -243,6 +243,33 @@ def run_live(
     return result
 
 
+class UnknownCase(ValueError):
+    """``--case-ids`` named a case the live set does not hold."""
+
+
+def select_cases(args: Sequence[str], available: tuple[EvalCase, ...]) -> tuple[EvalCase, ...]:
+    """Which cases this invocation runs. Pure, so the selection is testable without spending anything.
+
+    ``--case-ids`` wins over ``--cases`` when both are given: it is the more specific request, and
+    intersecting them would silently return fewer cases than either flag asked for.
+    """
+    args = list(args)
+    if "--case-ids" in args:
+        wanted = [c for c in args[args.index("--case-ids") + 1].split(",") if c]
+        by_id = {case.case_id: case for case in available}
+        missing = [case_id for case_id in wanted if case_id not in by_id]
+        if missing:
+            # Refused rather than skipped. A typo that quietly runs three cases instead of four is a
+            # run whose clean result means nothing, and nothing downstream would ever say so.
+            raise UnknownCase(
+                f"no such case(s): {', '.join(missing)}. The live set holds {len(by_id)} cases."
+            )
+        return tuple(by_id[case_id] for case_id in wanted)
+    if "--cases" in args:
+        return available[: int(args[args.index("--cases") + 1])]
+    return available
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """`make eval-live`. Confirms once, then runs unattended.
 
@@ -254,15 +281,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     `--cases N` runs a prefix of the set, for proving the wiring cheaply before committing to the
     full run. One case is a few cents and catches the failures that matter — a bad credential, a
     tool-turn shape the loop mishandles, a model that ignores the plan format.
+
+    `--case-ids a,b,c` runs exactly those cases, in the order given. Added 2026-08-21, when verifying
+    a synthesis fix meant reaching `gold_v0_1_021` and a prefix would have billed twenty cases to get
+    to it. **A prefix is the wrong selector for checking a behaviour**, because the case that exhibits
+    a behaviour is wherever the dataset happens to put it. Unknown ids are refused rather than
+    silently skipped: a typo that quietly runs three cases instead of four is a run whose absence of
+    failures means nothing.
+
+    Neither flag produces a gated run. That is not a special case here — the threshold check compares
+    against the 41-case baseline and declines to gate any subset, which is the same guard `--cases`
+    already relies on.
     """
     args = list(sys.argv[1:] if argv is None else argv)
-    limit: int | None = None
-    if "--cases" in args:
-        limit = int(args[args.index("--cases") + 1])
-
-    selected = live_cases()
-    if limit is not None:
-        selected = selected[:limit]
+    try:
+        selected = select_cases(args, live_cases())
+    except UnknownCase as refusal:
+        print(f"not started: {refusal}", file=sys.stderr)
+        return 2
 
     model_id = build_llm("bedrock").model_id
     label = f"{len(selected)} cases, tier 1, real model"

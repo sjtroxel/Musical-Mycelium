@@ -1,0 +1,180 @@
+{
+  "dataset": "live",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.5.0",
+  "code_revision": "137af13-dirty",
+  "written_at": "20260821T200047Z",
+  "cases": [
+    {
+      "case_id": "gold_v0_1_021",
+      "query": "What came out of hip-hop?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Trip hop, acid jazz, hip-hop soul, Na mele paleoleo, Pinoy hip hop, and sampledelia all came out of hip-hop.",
+      "claims": [
+        {
+          "subject": "trip hop",
+          "predicate": "influenced_by",
+          "object": "hip-hop",
+          "subject_id": "Q205560",
+          "object_id": "Q11401",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q205560-FE6F9F90-41DE-410D-B18C-2A1AC0431884"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "acid jazz",
+          "predicate": "influenced_by",
+          "object": "hip-hop",
+          "subject_id": "Q221772",
+          "object_id": "Q11401",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q221772-ccbc3469-47af-68c8-12bb-80777c53a297"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "hip-hop soul",
+          "predicate": "influenced_by",
+          "object": "hip-hop",
+          "subject_id": "Q2256407",
+          "object_id": "Q11401",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2256407-1d49d682-4875-e9f6-80bc-e1af74a58ed8"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "Na mele paleoleo",
+          "predicate": "influenced_by",
+          "object": "hip-hop",
+          "subject_id": "Q6956465",
+          "object_id": "Q11401",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q6956465-8d6af18e-4644-d80b-46e4-f90cd63964ec"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "Pinoy hip hop",
+          "predicate": "influenced_by",
+          "object": "hip-hop",
+          "subject_id": "Q7196456",
+          "object_id": "Q11401",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q7196456-d1a83c2c-4ccb-10d6-737c-7a607c7cd0bd"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "sampledelia",
+          "predicate": "influenced_by",
+          "object": "hip-hop",
+          "subject_id": "Q7410145",
+          "object_id": "Q11401",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q7410145-4625291a-4f21-34c4-e226-c5424e74a526"
+          ],
+          "verification": "PROSE_AUTO"
+        }
+      ]
+    },
+    {
+      "case_id": "gold_v0_1_024",
+      "query": "What came out of Etta James?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Bridgit Mendler, Liniker, Srbuk, and Sofia Coll were all influenced by Etta James. Each of these artists was shaped by Etta James's legacy.",
+      "claims": [
+        {
+          "subject": "Bridgit Mendler",
+          "predicate": "influenced_by",
+          "object": "Etta James",
+          "subject_id": "Q213736",
+          "object_id": "Q182725",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q213736-cbe83305-4094-08c6-a75e-ed2d21a97264"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Liniker",
+          "predicate": "influenced_by",
+          "object": "Etta James",
+          "subject_id": "Q23905341",
+          "object_id": "Q182725",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q23905341-12774d7f-4ab1-bc80-a80b-33a94bf57021"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Srbuk",
+          "predicate": "influenced_by",
+          "object": "Etta James",
+          "subject_id": "Q59314138",
+          "object_id": "Q182725",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q59314138-829264ad-4366-168f-8e5a-952d5e79b604"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Sofia Coll",
+          "predicate": "influenced_by",
+          "object": "Etta James",
+          "subject_id": "Q90757946",
+          "object_id": "Q182725",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q90757946-93386fad-4732-c00b-18d6-a16b84c876d1"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ]
+    },
+    {
+      "case_id": "gold_v0_1_018",
+      "query": "How does Famous Oberogo connect to Fred Astaire?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Famous Oberogo was influenced by Jason Derulo, who was influenced by Michael Jackson, who was influenced by Fred Astaire.",
+      "claims": [
+        {
+          "subject": "Famous Oberogo",
+          "predicate": "influenced_by",
+          "object": "Jason Derulo",
+          "subject_id": "Q110929442",
+          "object_id": "Q243639",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q110929442-39c920a0-4480-a8c8-f8be-6c567752f9ba"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Jason Derulo",
+          "predicate": "influenced_by",
+          "object": "Michael Jackson",
+          "subject_id": "Q243639",
+          "object_id": "Q2831",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q243639-e23061ac-4e0b-40dd-03d5-55fc01d37487"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Michael Jackson",
+          "predicate": "influenced_by",
+          "object": "Fred Astaire",
+          "subject_id": "Q2831",
+          "object_id": "Q100937",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2831-cea85ce3-4308-e0bc-d389-75ecf3fb6fdc"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ]
+    }
+  ]
+}

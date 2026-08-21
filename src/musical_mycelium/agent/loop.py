@@ -63,7 +63,11 @@ from musical_mycelium.agent.llm import (
 from musical_mycelium.agent.plan import Plan, parse_plan, planning_prompt
 from musical_mycelium.agent.tools import ToolRegistry
 from musical_mycelium.graph.memory import resolve_exact
-from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY
+from musical_mycelium.graph.schema import (
+    NODE_KIND_ARTIST,
+    NODE_KIND_GENRE,
+    PREDICATE_INFLUENCED_BY,
+)
 from musical_mycelium.graph.store import GraphStore
 
 #: Hard ceiling on model turns, **planning turn included**. It is a **cost control** as much as a safety
@@ -128,18 +132,47 @@ answering as though it were complete.
 You are not the final word: everything you say is checked against the graph before the user sees it, \
 and anything the graph does not support is discarded."""
 
-SYNTHESIS_PROMPT = """Write two sentences stating what the genre came out of, using only the influences \
-listed below. Name every one of them. Add nothing else: no dates, no places, no artists, no context \
-that is not in the list. Do not hedge and do not editorialise."""
+#: How an ``influenced_by`` edge is worded, by axis. **The distinction is not stylistic.** For a genre,
+#: "came out of" is idiom and reads as derivation; for a person it reads as descent, which is a stronger
+#: claim than the predicate carries — "Michael Jackson came out of Fred Astaire" states a parentage the
+#: edge does not. Ruled 2026-08-20 after it turned up on four separate pool items.
+GENRE_INFLUENCE_VERB = "came out of"
+
+#: The fallback, used whenever the claim set does not agree on a single axis. It is the predicate's own
+#: name, which makes it the one rendering that **structurally cannot overstate** — a useful property for
+#: a default, since a default is what runs when something upstream has gone unexpectedly.
+NEUTRAL_INFLUENCE_VERB = "was influenced by"
+
+#: The origins form: a fan-out from one subject to the influences behind it.
+#:
+#: **Both of this template's substitutions used to be hardcoded**, and each failed independently. It read
+#: "what **the genre** came out of", so an artist subject was described as a genre (`judge_pool_v1_002`)
+#: or refused outright for not being one (`001`, which answered "Fela Kuti is an artist, not a genre").
+#: That is the same defect `run_agent`'s refusal path fixed at v0.4.0 and this line was missed. The
+#: sentence count was fixed at two while the claim count is not, which is where the fabrications came
+#: from: told to write two sentences about one influence, the model repeated itself verbatim (`026`),
+#: asserted exclusivity the row does not carry (`023`), or invented a second edge (`021`).
+ORIGINS_SYNTHESIS_TEMPLATE = """Write {sentences} stating what {subject} {verb}, using only the \
+influences listed below. Name every one of them. {ban}"""
+
+#: The descendants form, and **it had no counterpart at all until 2026-08-21** — the shape was simply
+#: absent, and `synthesize` fell through to the origins branch with a subject of ``""``. Asked what came
+#: out of hip-hop and handed six genres that each came out of it, the agent wrote "Hip-hop came out of
+#: hip-hop, hip-hop, hip-hop, hip-hop, hip-hop, and hip-hop" (`judge_pool_v1_003`).
+#:
+#: The relationship is stated in the imperative rather than left implicit in a field name, because
+#: inverting it is the specific failure this template exists to prevent.
+DESCENDANTS_SYNTHESIS_TEMPLATE = """Every name listed below {verb} {subject}. Write {sentences} saying \
+so, naming every one of them and keeping that direction. Do not state it the other way round: \
+{subject} did not come out of them. {ban}"""
 
 #: The chain form. Same rules, different shape: a sequence to walk rather than a set to list. It is a
 #: separate constant rather than a branch inside one prompt because the failure modes differ — the risk
 #: here is the model reordering the chain or inverting a hop, which is the one error that turns a correct
 #: claim set into false music history.
-CHAIN_SYNTHESIS_PROMPT = """Write two or three sentences tracing the chain of influence below, in the \
-order given. Each genre listed came out of the one after it. Name every genre in the chain and keep them \
-in that order. Add nothing else: no dates, no places, no artists, no context that is not in the chain. \
-Do not hedge and do not editorialise."""
+CHAIN_SYNTHESIS_TEMPLATE = """Write {sentences} tracing the chain of influence below, in the order \
+given. Each name listed {verb} the one after it. Name every one of them and keep them in that order. \
+{ban}"""
 
 #: The one addition to a synthesis prompt, appended when the question had it backwards. It reads as an
 #: exception to the "add nothing else" rule above and is worded to say so, since it *is* one.
@@ -286,6 +319,15 @@ class ApprovedClaimSet:
 
     claims: tuple[Claim, ...]
     labels: Mapping[str, str] = field(default_factory=dict)
+    #: What axis each endpoint sits on, ``genre`` or ``artist``. Admitted here 2026-08-21 under exactly
+    #: the rule ``labels`` is admitted under, and checked by the same clause below: a kind may only be
+    #: supplied for a node an approved claim already mentions, so this cannot smuggle an edge, a node or
+    #: a fact past the gate. It says what a node *is*, never what it is connected to.
+    #:
+    #: It is here because synthesis has to choose a verb and a noun, and choosing them from nothing is
+    #: what produced an artist being told it was not a genre. Absent or disagreeing kinds degrade to
+    #: neutral wording rather than to a guess — see ``axis``.
+    kinds: Mapping[str, str] = field(default_factory=dict)
     #: Node ids descendant-first, when the approved claims form a chain the answer should be told as one.
     #: Empty for an origins query. **Every consecutive pair must itself be an approved claim** — checked
     #: below, because a chain is an ordering assertion about music history and an unchecked one could
@@ -309,6 +351,12 @@ class ApprovedClaimSet:
                 f"labels contain node(s) no approved claim mentions: {sorted(extra)}. "
                 f"Synthesis may only see the approved claim set."
             )
+        stray_kinds = set(self.kinds) - endpoints
+        if stray_kinds:
+            raise ValueError(
+                f"kinds contain node(s) no approved claim mentions: {sorted(stray_kinds)}. "
+                f"Synthesis may only see the approved claim set."
+            )
         if self.chain and not chain_is_approved(self.chain, self.claims):
             raise ValueError(
                 f"chain {list(self.chain)} contains a hop no approved claim supports. "
@@ -328,13 +376,48 @@ class ApprovedClaimSet:
 
     @property
     def subject_id(self) -> str | None:
-        """The genre being asked about. At v0.1 every claim shares one subject.
+        """The node being asked about, when every claim shares one subject — the origins shape.
 
         Unchanged by the chain, deliberately: a chain has no single subject, so this returns ``None``
         there — which is what ``synthesize`` branches on rather than inventing a head node.
+
+        **``None`` here does not mean "no subject"; it means "not this shape".** Until 2026-08-21
+        ``synthesize`` read it as the former and wrote ``label_of(self.subject_id or "")``, which turned
+        a descendants query into an origins query with a blank subject. See ``object_id``.
         """
         subjects = {c.subject_id for c in self.claims}
         return subjects.pop() if len(subjects) == 1 else None
+
+    @property
+    def object_id(self) -> str | None:
+        """The node being asked about, when every claim shares one *object* — the descendants shape.
+
+        The mirror of ``subject_id``, and the missing third shape. "What came out of hip-hop?" approves
+        claims whose subjects all differ and whose object is always hip-hop, which is precisely the
+        arrangement ``subject_id`` returns ``None`` for.
+
+        ``len(subjects) > 1`` is required rather than merely a shared object, so a single claim — where
+        both properties would otherwise answer — is read as origins. One claim genuinely is both shapes;
+        origins is the one whose prose ("X came out of Y") answers either question.
+        """
+        subjects = {c.subject_id for c in self.claims}
+        objects = {c.object_id for c in self.claims}
+        return objects.pop() if len(objects) == 1 and len(subjects) > 1 else None
+
+    @property
+    def axis(self) -> str | None:
+        """``genre``, ``artist``, or ``None`` when the endpoints do not agree on one.
+
+        ``None`` is the honest answer in three different situations — no kinds supplied, kinds supplied
+        for only some endpoints, and endpoints genuinely disagreeing — and all three want the same
+        behaviour from synthesis, which is to fall back to wording that is true on either axis rather
+        than to pick. A mixed set should not occur (the system prompt forbids cross-axis influence and
+        the gate enforces it), so reaching ``None`` that way means something upstream is wrong and
+        guessing would paper over it.
+        """
+        endpoints = {c.subject_id for c in self.claims} | {c.object_id for c in self.claims}
+        found = {self.kinds.get(node_id) for node_id in endpoints}
+        return found.pop() if len(found) == 1 and None not in found else None
 
     def label_of(self, node_id: str) -> str:
         return self.labels.get(node_id, node_id)
@@ -405,18 +488,99 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
             "synthesize() called with no approved claims; the caller must refuse instead"
         )
 
+    axis = claim_set.axis
+    verb = GENRE_INFLUENCE_VERB if axis == NODE_KIND_GENRE else NEUTRAL_INFLUENCE_VERB
+    ban = _embellishment_ban(axis)
+    noun = {NODE_KIND_GENRE: "Genre", NODE_KIND_ARTIST: "Artist"}.get(axis or "", "Subject")
+
     if claim_set.chain:
         labelled = [claim_set.label_of(node_id) for node_id in claim_set.chain]
-        prompt = f"{CHAIN_SYNTHESIS_PROMPT}{_reversal(claim_set)}\n\nChain: {dumps(labelled)}"
-    else:
-        subject = claim_set.label_of(claim_set.subject_id or "")
+        instruction = CHAIN_SYNTHESIS_TEMPLATE.format(
+            sentences=_sentences(len(labelled) - 1, listing=False), verb=verb, ban=ban
+        )
+        body = f"Chain: {dumps(labelled)}"
+    elif (subject_id := claim_set.subject_id) is not None:
+        instruction = ORIGINS_SYNTHESIS_TEMPLATE.format(
+            sentences=_sentences(len(claim_set.claims), listing=True),
+            subject=claim_set.label_of(subject_id),
+            verb=verb,
+            ban=ban,
+        )
         influences = [claim_set.label_of(c.object_id) for c in claim_set.claims]
-        prompt = (
-            f"{SYNTHESIS_PROMPT}{_reversal(claim_set)}"
-            f"\n\nGenre: {subject}\nDocumented influences: {dumps(influences)}"
+        body = (
+            f"{noun}: {claim_set.label_of(subject_id)}\nDocumented influences: {dumps(influences)}"
+        )
+    elif (object_id := claim_set.object_id) is not None:
+        instruction = DESCENDANTS_SYNTHESIS_TEMPLATE.format(
+            sentences=_sentences(len(claim_set.claims), listing=True),
+            subject=claim_set.label_of(object_id),
+            verb=verb,
+            ban=ban,
+        )
+        descendants = [claim_set.label_of(c.subject_id) for c in claim_set.claims]
+        # Not the verb: "Documented as came out of it" is what reusing it produces. The participle is
+        # per-axis for the same reason the verb is.
+        heading = {
+            NODE_KIND_GENRE: "Documented as coming out of it",
+            NODE_KIND_ARTIST: "Documented as influenced by them",
+        }.get(axis or "", "Documented as influenced by it")
+        body = f"{noun}: {claim_set.label_of(object_id)}\n{heading}: {dumps(descendants)}"
+    else:
+        # No shape describes this set, and there is no safe prose for a shape nobody has defined. The
+        # caller refuses, exactly as it does for an empty set above.
+        #
+        # **This branch is the whole bug.** It used to read `subject_id or ""`, which silently rendered
+        # an unrecognised shape as an origins query with a blank subject rather than saying so. Every
+        # metric scored the result perfectly: the claims underneath were real, cited and correctly
+        # directed, and only the prose was nonsense. Raising is what makes the failure findable.
+        raise ValueError(
+            f"synthesize() received {len(claim_set.claims)} approved claims that form neither a chain, "
+            f"a single-subject fan-out, nor a single-object fan-in; there is no shape to narrate."
         )
 
+    prompt = f"{instruction}{_reversal(claim_set)}\n\n{body}"
     return (yield from llm.stream([user_message(prompt)], max_tokens=200))
+
+
+def _sentences(claim_count: int, *, listing: bool) -> str:
+    """How many sentences to ask for, as a function of how much there is to say.
+
+    Fixed at "two sentences" until 2026-08-21, against a claim count that is not fixed. Three of the
+    judge pool's single-claim items each fabricated something different to fill the second sentence —
+    a verbatim repeat, an invented exclusivity, an invented edge — so the padding instruction was the
+    fabrication instruction.
+
+    ``listing`` distinguishes the two answer shapes, and the distinction was **measured rather than
+    designed**: the first live run after the fix asked for two sentences on a four-claim fan-out and
+    got a correct first sentence followed by "Each of these artists was shaped by Etta James's
+    legacy" — padding, from the same mechanism at a higher count. A fan-out answer *is* a list, so one
+    sentence naming every name is its natural form; the same run wrote exactly one sentence for a
+    six-claim fan-out despite being offered three. Only a chain genuinely needs several.
+
+    The bound stays a permission rather than a target — "one or two" — because an over-tight count is
+    the same defect in the other direction.
+    """
+    if claim_count <= 1:
+        return "one sentence"
+    if listing:
+        return "one or two sentences"
+    return "two sentences" if claim_count <= 4 else "two or three sentences"
+
+
+def _embellishment_ban(axis: str | None) -> str:
+    """The "add nothing else" clause, with the off-axis category named.
+
+    It read "no dates, no places, no artists" on every axis, which on an artist question forbids the
+    only thing the answer can be about. That is a contradiction the model has to resolve somehow, and
+    talking about the instruction instead of the music is one of the ways it resolved it.
+    """
+    off_axis = {NODE_KIND_GENRE: "no artists, ", NODE_KIND_ARTIST: "no genres, "}.get(
+        axis or "", ""
+    )
+    return (
+        f"Add nothing else: no dates, no places, {off_axis}no context that is not listed. "
+        f"Do not hedge, do not editorialise, and do not comment on these instructions."
+    )
 
 
 def _reversal(claim_set: ApprovedClaimSet) -> str:
@@ -584,12 +748,18 @@ def run(
         yield Refused(reason=reason, query=query)
         yield Token(text)
     else:
+        endpoints = [
+            node_id
+            for claim in decision.approved
+            for node_id in (claim.subject_id, claim.object_id)
+        ]
         claim_set = ApprovedClaimSet(
             claims=decision.approved,
-            labels={
-                node_id: labels.get(node_id, _label(store, node_id))
-                for claim in decision.approved
-                for node_id in (claim.subject_id, claim.object_id)
+            labels={node_id: labels.get(node_id, _label(store, node_id)) for node_id in endpoints},
+            kinds={
+                node_id: kind
+                for node_id in endpoints
+                if (kind := _kind(store, node_id)) is not None
             },
             chain=approved_chain,
             inverted_premise=inverted_premise,
@@ -669,3 +839,14 @@ def _inverted_premise(premise: ClaimProposal | None, decision: GateResult) -> tu
 def _label(store: GraphStore, node_id: str) -> str:
     node = store.get_node(node_id)
     return node.label if node else node_id
+
+
+def _kind(store: GraphStore, node_id: str) -> str | None:
+    """The node's axis, or ``None`` if the store does not know the node.
+
+    ``None`` rather than a default, for the reason ``Node.kind`` itself carries no default: a node that
+    quietly reads as the wrong axis is the conflation the field exists to prevent, and here it would
+    put "came out of" on a person. ``ApprovedClaimSet.axis`` degrades to neutral wording on any gap.
+    """
+    node = store.get_node(node_id)
+    return node.kind if node else None

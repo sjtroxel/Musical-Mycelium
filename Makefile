@@ -198,6 +198,8 @@ eval: ## Tier 1 over the gold set, scripted (free, no AWS)
 # you type yes. If it aborts on budget it still writes partial results marked complete: false.
 #
 # Prove the wiring first for a couple of cents:  make eval-live ARGS='--cases 1'
+# Check one behaviour, wherever its case sits:   make eval-live ARGS='--case-ids gold_v0_1_021'
+# Neither form is gated -- a subset is not a smaller version of the 41-case baseline.
 eval-live: ## SPENDS MONEY. Tier 1 through Bedrock, behind an explicit confirmation
 	uv run python -m musical_mycelium.eval.live $(ARGS)
 

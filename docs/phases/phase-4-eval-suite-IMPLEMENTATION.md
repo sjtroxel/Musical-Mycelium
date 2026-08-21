@@ -675,6 +675,32 @@ in `docs/KNOWN-GAPS.md` and are not restated here.** Three things this step taug
 runs and a provenance fix first (both logged in KNOWN-GAPS), and it measures a metric that never blocks.
 Three runs and a stated range is where this is being left.
 
+#### The synthesis fixes step 7 found — 2026-08-21 (free)
+
+In scope under §4: a metric revealing an agent *bug* makes the fix part of this phase. Six defects were
+logged during hand-labeling and deliberately not fixed while the pool was being labeled. **Full detail and
+the per-defect checkboxes are in `docs/KNOWN-GAPS.md`; not restated here.** What belongs in this document
+is what the step taught about the eval suite itself:
+
+1. **The prompt wording was the symptom; the missing shape was the cause.** `ApprovedClaimSet` modeled two
+   answer shapes — a fan-out from one subject, and a chain — and the gold set has **four descendants
+   cases**. `subject_id` returns `None` for a fan-in, meaning *not this shape*, and `synthesize` read it
+   as *no subject* through `subject_id or ""`. Four of the six logged defects were that one gap.
+2. **This is the third instance of the repo's named failure mode and the second of "assume the origins
+   direction."** A fallback answered a different question and never raised. It is worth noting *where* it
+   was caught: not by any deterministic metric — all of them scored the broken output perfectly, because
+   the claims underneath were real, cited and correctly directed — but by a human reading thirty answers.
+   **That is the argument for tier 2 stated as a measurement rather than a preference**, and it is the
+   most quotable thing this phase has produced.
+3. **The eval suite's blind spot has a shape, and it is "did this answer the question asked."** Both
+   halves miss it: every tier 1 metric by construction, and the judge empirically (`018`, `021`). Naming
+   it is not fixing it; it is a phase 6/7 question and it is now written down as one.
+
+Method note: nine tests, each locking a property rather than a phrasing, and **five mechanisms broken
+deliberately and watched to fail** before being restored. The `_fan_in` prompt was printed and read at
+each stage rather than reasoned about, which is what surfaced both the blank subject and, later, a
+grammar defect ("Documented as came out of it") that no assertion would have caught.
+
 ### Step 8 — Tier 2, judged and sampled (spend, gated)
 
 Citation support and narrative quality only. 20–30 samples, release candidates only, behind the same

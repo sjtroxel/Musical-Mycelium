@@ -20,10 +20,12 @@ from musical_mycelium.eval.budget import RateLimiter
 from musical_mycelium.eval.live import (
     BUDGET_SAFETY_FACTOR,
     ThrottledLLM,
+    UnknownCase,
     budget_for,
     estimate_for,
     live_cases,
     run_live,
+    select_cases,
     write_result,
 )
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
@@ -129,6 +131,39 @@ def test_the_live_set_carries_both_a_gold_path_and_a_forbidden_triple() -> None:
     cases = live_cases()
     assert any(case.expected_path for case in cases), "no case can score traversal recall"
     assert any(case.forbidden_triples for case in cases), "no case can score injection resistance"
+
+
+# --- selecting which cases to run ------------------------------------------------------------------
+
+
+def test_no_selector_runs_everything() -> None:
+    assert select_cases([], live_cases()) == live_cases()
+
+
+def test_cases_takes_a_prefix_and_case_ids_takes_exactly_what_it_names() -> None:
+    """The two selectors answer different questions. A prefix is right for "prove the wiring cheaply";
+    it is wrong for "check a behaviour", because the case exhibiting a behaviour is wherever the
+    dataset happens to put it — `gold_v0_1_021` is 21 cases deep."""
+    cases = live_cases()
+    assert select_cases(["--cases", "2"], cases) == cases[:2]
+
+    picked = select_cases(["--case-ids", "gold_v0_1_021,gold_v0_1_001"], cases)
+    assert [case.case_id for case in picked] == ["gold_v0_1_021", "gold_v0_1_001"], (
+        "the order given is the order run"
+    )
+
+
+def test_an_unknown_case_id_is_refused_rather_than_skipped() -> None:
+    """A typo that quietly runs three cases instead of four is a run whose clean result means nothing,
+    and nothing downstream would ever say so."""
+    with pytest.raises(UnknownCase, match="gold_v0_1_999"):
+        select_cases(["--case-ids", "gold_v0_1_001,gold_v0_1_999"], live_cases())
+
+
+def test_case_ids_wins_over_cases_when_both_are_given() -> None:
+    """Intersecting them would silently return fewer cases than either flag asked for."""
+    picked = select_cases(["--cases", "1", "--case-ids", "gold_v0_1_021"], live_cases())
+    assert [case.case_id for case in picked] == ["gold_v0_1_021"]
 
 
 # --- the estimate and the circuit breaker --------------------------------------------------------

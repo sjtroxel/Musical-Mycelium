@@ -21,7 +21,7 @@ The figures to quote are **ranges**: `citation_support` kappa **0.44–0.48**, `
 substantial — so the *sentence* the project reports is stable even though the digits are not. See the
 2026-08-21 findings section.
 
-**Verified state:** `make check` green — 1094 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+**Verified state:** `make check` green — 1107 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
@@ -359,20 +359,81 @@ backwards-question shape, but **no outbound counterpart to either**. Still logge
 the same reason as everything else in this section: changing synthesis moves the agent under the pool
 being labeled.
 
-- [ ] **Synthesis emits the wrong side of the claim row.** `judge_pool_v1_003` was asked "what came out
+**ALL FIXED 2026-08-21, and the root cause was one line deeper than this section had it.** The prompt
+wording was the symptom; the cause was that **`ApprovedClaimSet` had no representation for the
+descendants shape at all.** `subject_id` returns `None` when the claims do not share one subject —
+meaning *not this shape* — and `synthesize` read it as *no subject*, via
+`label_of(claim_set.subject_id or "")`. A fan-in was therefore rendered as an origins query with a
+**blank subject** and an influences column holding the same node once per claim, which is the exact
+mechanism behind "Hip-hop came out of hip-hop, hip-hop, hip-hop." Verified by executing it, not by
+reading it.
+
+That makes four of the six defects below one missing shape rather than four bugs. What landed:
+
+- **A third shape.** `object_id` mirrors `subject_id`; `synthesize` dispatches chain / fan-out / fan-in;
+  a set matching none of the three now **raises** instead of degrading. The `or ""` is gone. One claim
+  is read as origins deliberately — it is genuinely both shapes, and "X came out of Y" answers either.
+- **An axis.** `ApprovedClaimSet.kinds` carries `genre`/`artist` for claim endpoints, admitted under
+  exactly the rule `labels` is admitted under and checked by the same clause, so it cannot smuggle a
+  node past the gate. Absent, partial or disagreeing kinds resolve to `None` and degrade to
+  `was influenced by` — the predicate's own name, the one rendering that structurally cannot overstate.
+- **Axis-correct wording.** "Came out of" is now reserved for genres, per his 2026-08-20 ruling. The
+  off-axis ban is fixed too: it said "no artists" on every axis, which on an artist question forbids
+  the only thing the answer can be about.
+- **Sentence count follows claim count.** One claim asks for one sentence.
+
+Nine tests, each locking a property rather than a phrasing, **and all five underlying mechanisms broken
+deliberately and watched to fail before being restored.** `make check` 1103 pass, 0 skip, 7 deselected.
+
+**The frozen pool is untouched and the 30 labels stand** — the pool holds prose captured on 8/19, and
+nothing in `loop.py` can reach it. What goes stale is the judged *score* averages, which describe the
+pre-fix agent and must be labelled as such. The agreement figure survives, because it validates the
+judge rather than the agent.
+
+**Verified against a real model the same day, on the same case ids the pool used** — so this is a
+before/after, not an analogy. Four cases over two runs, ~$0.05 total, ungated by design (a subset is not
+a smaller version of the 41-case baseline).
+
+| case | 8/19, in the pool | 8/21, after the fix |
+|---|---|---|
+| `gold_v0_1_001` | "Blues rock came out of blues. Blues rock came out of blues." | "Blues rock came out of blues." |
+| `gold_v0_1_021` | "Hip-hop came out of hip-hop, hip-hop, hip-hop, hip-hop, hip-hop, and hip-hop." | "Trip hop, acid jazz, hip-hop soul, Na mele paleoleo, Pinoy hip hop, and sampledelia all came out of hip-hop." |
+| `gold_v0_1_018` | "I can't write this as requested... 'Famous Oberogo' is not a recognized genre... which you've asked me not to do." | "Famous Oberogo was influenced by Jason Derulo, who was influenced by Michael Jackson, who was influenced by Fred Astaire." |
+| `gold_v0_1_024` | not in the pool | "Bridgit Mendler, Liniker, Srbuk, and Sofia Coll were all influenced by Etta James." |
+
+`gold_v0_1_018` is the strongest of the four: its old answer failed **three** defects at once — the
+prompt leak, artist-treated-as-genre, and chronology substituted for influence — and all three are gone.
+No artist case says "came out of".
+
+**Round this down: one run per case is a sample, not a rate**, and the same model family was measured
+non-deterministic across identical judge runs the same morning. It is strong evidence the fixes work; it
+is not a measured rate, and the next full 41-case run is what would make it one.
+
+- [x] **One residual found BY that run and fixed the same day: the padding pressure had moved, not
+  gone.** `gold_v0_1_024` was asked for two sentences on a four-claim fan-out and wrote a correct first
+  sentence plus "Each of these artists was shaped by Etta James's legacy" — no overstatement by the
+  8/20 boundary, since "shaped by" is what influence means, but "legacy" is in no row and the sentence
+  exists only because it was requested. **A fan-out answer *is* a list**, so one sentence naming every
+  name is its natural form; the same run wrote exactly one sentence for a six-claim fan-out that had
+  been offered three. `_sentences` now takes `listing`, and a listing shape asks for "one or two" — a
+  permission rather than a target. Only a chain genuinely needs several. **Measured rather than
+  designed**, which is the point: the first version of this fix was reasoned about and the second was
+  read off a live run.
+
+- [x] **FIXED 2026-08-21. Synthesis emits the wrong side of the claim row.** `judge_pool_v1_003` was asked "what came out
   of hip-hop?", was handed six distinct genres each `-influenced_by-> hip-hop`, and wrote "Hip-hop came
   out of hip-hop, hip-hop, hip-hop, hip-hop, hip-hop, and hip-hop." It printed the object six times
   instead of the six subjects, and inverted the question's direction. Labeled UNSUPPORTED / 1.
-- [ ] **Artist subjects are treated as genres.** `judge_pool_v1_001` refused "Who influenced Fela Kuti?"
+- [x] **FIXED 2026-08-21. Artist subjects are treated as genres.** `judge_pool_v1_001` refused "Who influenced Fela Kuti?"
   on the stated grounds that "Fela Kuti is an artist, not a genre" and that the instruction asked for a
   genre's origins — the question plainly asks for a person. `judge_pool_v1_002` answered an artist
   question correctly and then wrote "these three influences shaped **the genre's** development." Two
   distinct failures from one cause: the synthesis prompt appears to assume a genre subject.
-- [ ] **The synthesis prompt leaks into the answer.** Five of the 30 items open by talking about the
+- [x] **FIXED 2026-08-21 (expected; unverified against a live model). The synthesis prompt leaks into the answer.** Five of the 30 items open by talking about the
   request rather than answering it — "I can't complete this task as requested", "I cannot write two
   sentences naming every influence", "which you've asked me not to do". The user asked about music and
   received a complaint about task framing.
-- [ ] **"Came out of" is used for every influence edge, including artist-to-artist.** He flagged this on
+- [x] **FIXED 2026-08-21. "Came out of" is used for every influence edge, including artist-to-artist.** He flagged this on
   four separate items. For genres it reads as idiom; for people ("John Lydon came out of Alice Cooper")
   it reads as descent, which is a stronger claim than `influenced_by` carries. He ruled it SUPPORTED
   each time on the grounds that no reasonable reader infers literal parentage, and lodged the cost in
@@ -392,7 +453,7 @@ being labeled.
 
 #### Found in the second sitting, items 11-30 — 2026-08-20
 
-- [ ] **"Write two sentences" forces padding when there is only one claim, and the padding is where the
+- [x] **FIXED 2026-08-21. "Write two sentences" forces padding when there is only one claim, and the padding is where the
   invented content comes from.** Three single-claim items, three different fabrications to fill the
   second sentence: `026` repeated the first sentence **verbatim** ("Blues rock came out of blues. Blues
   rock came out of blues."), `023` asserted exclusivity ("Jazz is the sole influence that shaped the
