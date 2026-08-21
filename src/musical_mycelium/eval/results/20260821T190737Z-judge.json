@@ -1,0 +1,216 @@
+{
+  "pool": "judge_pool_v1",
+  "model_id": "amazon.nova-pro-v1:0",
+  "judged_at": "20260821T190737Z",
+  "code_revision": "fd79865-dirty",
+  "mean_narrative_quality": 3.0,
+  "citation_support_supported": 11,
+  "citation_support_scored": 30,
+  "agreement": {
+    "citation_support": {
+      "metric": "citation_support",
+      "n": 30,
+      "exact": 0.6333333333333333,
+      "kappa": 0.4444444444444444,
+      "kappa_kind": "cohen",
+      "undefined_reason": "",
+      "within_one": null
+    },
+    "narrative_quality": {
+      "metric": "narrative_quality",
+      "n": 30,
+      "exact": 0.6,
+      "kappa": 0.6753246753246754,
+      "kappa_kind": "quadratic-weighted",
+      "undefined_reason": "",
+      "within_one": 0.7666666666666667
+    }
+  },
+  "usage": {
+    "input_tokens": 67030,
+    "output_tokens": 1941,
+    "total_tokens": 68971
+  },
+  "judgements": [
+    {
+      "item_id": "judge_pool_v1_001",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not assert the claim it was built from and instead refuses to complete the task, making it UNSUPPORTED for citation support and a 1 for narrative quality as it does not answer the question."
+    },
+    {
+      "item_id": "judge_pool_v1_002",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influences on Kenshi Yonezu but overstates by suggesting these influences shaped the genre's development, which is not supported by the claims. The narrative quality is a 3 because it answers the question but includes unnecessary and unsupported information."
+    },
+    {
+      "item_id": "judge_pool_v1_003",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not accurately reflect the provided claims and fails to answer the question coherently."
+    },
+    {
+      "item_id": "judge_pool_v1_004",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer incorrectly states that cacha\u00e7a came out of the mentioned genres, which is not supported by the provided claims. The claims only show influence, not origin. Additionally, the answer does not correctly address the question asked, which was about the origin of cacha\u00e7a, not its musical influences."
+    },
+    {
+      "item_id": "judge_pool_v1_005",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is concise, clear, and directly answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "judge_pool_v1_006",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claim by asserting that trip hop 'came out of' hip-hop and electronica, implying a direct lineage or creation, which is not supported by the provided claims. The narrative quality is a 3 because it answers the question but includes unnecessary restatement and lacks a clear chain of influence."
+    },
+    {
+      "item_id": "judge_pool_v1_007",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer correctly identifies the influences on kuduro as per the approved claims and is well-structured and coherent."
+    },
+    {
+      "item_id": "judge_pool_v1_008",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer correctly reverses the direction of influence as per the approved claim and provides a clear, concise response to the question."
+    },
+    {
+      "item_id": "judge_pool_v1_009",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly uses the provided claims but presents them in a list-like manner rather than a coherent narrative, and includes unnecessary throat-clearing."
+    },
+    {
+      "item_id": "judge_pool_v1_010",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer is supported by the provided claim, but it restates the question and lacks a clear narrative flow, resulting in a score of 3 for narrative quality."
+    },
+    {
+      "item_id": "judge_pool_v1_011",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 4,
+      "rationale": "The answer overstates the claim by asserting that the three genres 'combined to create' the Manila sound, which is not specified in the claims. However, the answer is coherent, answers the question, and is readable, scoring a 4 for narrative quality."
+    },
+    {
+      "item_id": "judge_pool_v1_012",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer correctly traces the influence chain from Woody Guthrie to Chappell Roan using the provided claims, and it is coherent, concise, and directly answers the question without unnecessary elements."
+    },
+    {
+      "item_id": "judge_pool_v1_013",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 2,
+      "rationale": "The answer does not assert the claim it was built from, and it partially answers the question by asking for clarification instead of providing a direct response."
+    },
+    {
+      "item_id": "judge_pool_v1_014",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly connects Shibuya-kei to jazz through bossa nova, which is supported by the provided claims, and it is concise and clear, fully answering the question without any unnecessary information."
+    },
+    {
+      "item_id": "judge_pool_v1_015",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not assert the claim it was built from, and it does not answer the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_016",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not assert the claim it was built from and provides no meaningful information about what came out of reggae."
+    },
+    {
+      "item_id": "judge_pool_v1_017",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claim by suggesting a direct evolution from blues to heavy metal, which is not supported by the provided claims. It answers the question but requires the reader to infer the connection, making it a level 3 for narrative quality."
+    },
+    {
+      "item_id": "judge_pool_v1_018",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 4,
+      "rationale": "The answer overstates the claim by asserting that blues rock is the sole documented influence on heavy metal music, which is not supported by the provided claim. However, the narrative quality is a 4 because it answers the question and is coherent, despite the overstatement."
+    },
+    {
+      "item_id": "judge_pool_v1_019",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influences on acid jazz as per the approved claims, but it restates the question and presents the information as a list rather than a coherent narrative, which slightly impedes readability and flow."
+    },
+    {
+      "item_id": "judge_pool_v1_020",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claims by suggesting a direct evolutionary path from blues to heavy metal through blues rock, which is not fully supported by the provided claims. The narrative quality is a 3 because it answers the question but presents the information in a somewhat list-like and redundant manner, lacking a clear, flowing narrative structure."
+    },
+    {
+      "item_id": "judge_pool_v1_021",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 2,
+      "rationale": "The answer overstates the claim by suggesting a direct lineage from blues rock to rock, which is not supported by the provided claim. It partially answers the question by mentioning blues rock's influence but does not address the broader question about West African music's influence on American genres."
+    },
+    {
+      "item_id": "judge_pool_v1_022",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claims by adding that these influences 'shaped the genre that became Michael Jackson,' which is not supported by the provided claims. The narrative quality is a 3 because while it answers the question, it includes unnecessary and unsupported elaboration."
+    },
+    {
+      "item_id": "judge_pool_v1_023",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claim by asserting that jazz is the sole influence on bossa nova, which is not supported by the provided claim. The narrative quality is a 3 because it answers the question but includes an unnecessary assertion that is not supported by the claim."
+    },
+    {
+      "item_id": "judge_pool_v1_024",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influences on acid jazz but adds the uncited claim that these influences 'combined to create the genre', which is not supported by the provided claims."
+    },
+    {
+      "item_id": "judge_pool_v1_025",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claims by adding that these influences shaped the genre's foundation and musical identity, which is not supported by the provided claims. The narrative quality is a 3 because it answers the question but includes unnecessary and unsupported details, making the reader do extra work to extract the correct information."
+    },
+    {
+      "item_id": "judge_pool_v1_026",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly asserts the influence of blues on blues rock, which is supported by the provided claim. However, the narrative quality is slightly diminished due to the repetition of the same statement without additional context or connective tissue, making it a level 3."
+    },
+    {
+      "item_id": "judge_pool_v1_027",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly states the influences on Kenshi Yonezu as per the approved claims, and it is well-structured, coherent, and directly answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "judge_pool_v1_028",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not correctly assert the claim it was built from, and it fails to answer the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_029",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 1,
+      "rationale": "The answer does not assert the claim it was built from and instead explains why it cannot be written as requested, making it irrelevant to the question asked."
+    },
+    {
+      "item_id": "judge_pool_v1_030",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer correctly identifies the genres that influenced the Manila sound, aligning with the provided claims, and presents the information in a clear, coherent manner that directly answers the question."
+    }
+  ]
+}

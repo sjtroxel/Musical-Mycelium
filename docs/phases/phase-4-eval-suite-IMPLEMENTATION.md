@@ -647,6 +647,34 @@ Files: `eval/transcripts.py`, `eval/labelling.py`, `eval/agreement.py`, `eval/ju
    rewrite needs a fresh pool and a fresh 30. **An honest 0.48 with a written diagnosis beats a fitted
    0.7**, and both rewrites stay available.
 
+#### Step 7c, runs 2 and 3 — the judge's own noise, 2026-08-21
+
+The re-judge after the injection fix was sized as a one-item confirmation. It returned a finding about
+the method instead, and a third run was added to isolate it. **Full numbers and the per-item movement are
+in `docs/KNOWN-GAPS.md` and are not restated here.** Three things this step taught:
+
+1. **The judge is not deterministic at temperature 0, and this is now measured.** Runs 2 and 3 were
+   produced from byte-identical prompts — `input_tokens` 67,030 in both, to the token — and disagreed on
+   3 of 30 `citation_support` judgements and 7 of 30 quality scores. `JUDGE_TEMPERATURE = 0.0` is set,
+   applied by role, and sent; it suppresses sampling and does not guarantee determinism on hosted
+   inference. **Consequence for anything this phase reports: a judged figure is a range, not a point** —
+   kappa 0.44–0.48 and 0.66–0.73 — and the qualitative band, which held across all three runs, is the
+   part that may be stated flatly.
+2. **A prompt change to a judge is a change to every item it scores.** The injection fix was written up
+   as affecting one item because one item carried the injection; it added the fence and a system-prompt
+   line to all thirty prompts and moved seven of them. This is obvious in retrospect and was in nobody's
+   estimate, including the one in this document.
+3. **This is the step 5/6 lesson recurring one layer up, and it should be read that way.** Step 6 had to
+   run before step 5 because a threshold set from one run sits inside the unmeasured spread. Step 7
+   produced an agreement figure from one run and the same trap was waiting: **the judge needed a noise
+   floor for the same reason the agent did, and nothing in the plan asked for one.** The general rule the
+   project keeps re-learning is that *any* number produced by a model needs its spread measured before it
+   is quoted, and that includes numbers produced by the thing measuring the model.
+
+**Deliberately not done, with the reason:** a five-run judge floor. It needs `noise.py` extended to judge
+runs and a provenance fix first (both logged in KNOWN-GAPS), and it measures a metric that never blocks.
+Three runs and a stated range is where this is being left.
+
 ### Step 8 — Tier 2, judged and sampled (spend, gated)
 
 Citation support and narrative quality only. 20–30 samples, release candidates only, behind the same

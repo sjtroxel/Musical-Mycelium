@@ -13,6 +13,14 @@ and `make eval` blocks. **Updated 2026-08-19** when step 7 was split into 7a / 7
 **2026-08-20** when 7b finished and 7c ran for the first time — **the project now has a measured
 judge-human agreement figure**: `citation_support` kappa 0.48, `narrative_quality` kappa 0.66, n=30.
 
+**Updated 2026-08-21** by two further judge runs. **The single-figure wording above is now the wrong
+shape and is kept only as the record of what run 1 said.** The judge is **not deterministic at
+temperature 0**, measured rather than assumed, so every judged number in this document is a sample.
+The figures to quote are **ranges**: `citation_support` kappa **0.44–0.48**, `narrative_quality` kappa
+**0.66–0.73**, n=30, three runs. Both stay inside the same qualitative band in every run — moderate and
+substantial — so the *sentence* the project reports is stable even though the digits are not. See the
+2026-08-21 findings section.
+
 **Verified state:** `make check` green — 1094 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
@@ -267,8 +275,10 @@ the resumability contract, the blindness rule — is in
   (`07` §6, two rewrites) is DELIBERATELY UNSPENT** — see that section for why spending it here would
   make the number worse as evidence, not better.
 
-  What remains before this can be called finished: a **re-judge after the injection fix**, which does
-  not touch the rubric and therefore does not invalidate his 30 labels.
+  **The re-judge is DONE — 2026-08-21, and it ran twice.** It does not touch the rubric, so the 30
+  labels stood. `results/20260821T185921Z-judge.json` at `fd79865` and
+  `results/20260821T190737Z-judge.json` at `fd79865-dirty`. **Neither the predicted direction nor the
+  predicted size was right**, and the reason is the finding: see the 2026-08-21 section below.
 
   **Judge run files are now COMMITTED, and that is a deliberate reversal — 2026-08-20.** `.gitignore`
   excluded `**/eval/results/` wholesale on the rationale "reproducible by re-running the suite". True
@@ -450,6 +460,77 @@ scattered.** Three causes, and only the first is a rubric problem.
   locks were broken deliberately and watched to fail. **This is not a rubric change** — `rubric_digest`
   hashes `rubrics/*.md` only — so the 30 labels are untouched and a re-judge is legitimate.
   Expected effect is honestly small: one item, roughly 70% -> 73% on citation_support.
+
+  **Measured 2026-08-21, and the prediction was wrong in both direction and size.** `019` itself
+  behaved exactly as designed — `UNSUPPORTED/1` with the rationale *"includes an incorrect claim about
+  jazz influencing punk rock"* became `SUPPORTED/3` reasoning about acid jazz, with no trace of the
+  injected text, and it held at `SUPPORTED/3` in both post-fix runs. **But `citation_support` went
+  DOWN, 70.0% -> 66.7%**, because seven items moved, not one. Two moved toward his labels (`019`,
+  `027`) and three moved away (`006`, `009`, `018`), netting -1. The fix added the fence and the
+  system-prompt line to **all thirty** prompts, not just the injected one (+3,480 input tokens,
+  ~116 per item), so it was never the one-item change it was written up as. **A prompt change to a
+  judge is a change to every item it scores** — the obvious sentence nobody wrote down beforehand.
+
+#### Found by the re-judge — the judge has its own noise floor, 2026-08-21
+
+The re-judge was sized as a one-item confirmation and returned a methodological finding instead. **Three
+judge runs now exist**, and the second and third were produced from **byte-identical prompts**:
+
+| run | revision | prompt | `citation_support` | `narrative_quality` | judge SUPPORTED | mean quality |
+|---|---|---|---|---|---|---|
+| 1, 08-20 | `6cba963` | pre-fix | 70.0%, kappa **0.48** | 63.3%, kappa **0.66** | 14/30 | 3.00 |
+| 2, 08-21 | `fd79865` | post-fix | 66.7%, kappa **0.47** | 66.7%, kappa **0.73** | 12/30 | 3.10 |
+| 3, 08-21 | `fd79865-dirty` | **identical to run 2** | 63.3%, kappa **0.44** | 60.0%, kappa **0.68** | 11/30 | 3.00 |
+
+- [x] **The judge is NOT deterministic at temperature 0. Measured, not inferred.** `JUDGE_TEMPERATURE
+  = 0.0` is set at `agent/llm.py:70`, is applied by role rather than by caller discipline
+  (`llm.py:803`), and is verifiably sent. Runs 2 and 3 still disagreed on **3 of 30**
+  `citation_support` judgements (`009`, `011`, `020`) and **7 of 30** `narrative_quality` scores;
+  **23 of 30 items were identical on both scales.**
+
+  **The proof that the inputs were identical is independent of any reasoning about the tree:
+  `input_tokens` is 67,030 in both runs**, to the token, while `output_tokens` differ (1,943 vs
+  1,941). Same prompt, different answer. Temperature 0 suppresses sampling; it is not a determinism
+  guarantee on hosted inference.
+
+  **What this costs and what it does not.** It does not fail a build: judged metrics are TRACKED,
+  never blocking, per `.claude/rules/evals.md`, and nothing in `eval/thresholds.json` reads one. It
+  does not invalidate the 30 labels, which validate the judge rather than the agent. What it costs is
+  the right to quote a judged number as a point: **kappa 0.44–0.48 and 0.66–0.73 are the figures, and
+  a movement inside those bands is not a result.** `narrative_quality`'s kappa apparently improving
+  0.66 -> 0.73 after the injection fix is exactly such a non-result, and would have been written up as
+  an improvement had run 3 not happened. Within-one agreement read **76.7% in both** runs 2 and 3,
+  which is the most stable number in the set.
+
+  **The separation this bought is worth stating**, because it is the reason two runs were better than
+  one: prompt-change movement (7/30 on `citation_support`) is **larger** than sampling movement
+  (3/30). The injection fix really did do most of the work between runs 1 and 2; the judge's own noise
+  is real, smaller, and now bounded.
+- [ ] **A judge run dirties the tree for the next judge run. Provenance defect, fixable, not yet
+  fixed.** Run 3 is stamped `fd79865-dirty` while its code was byte-identical to run 2's. The cause is
+  the deliberate 2026-08-20 `.gitignore` reversal: `!**/eval/results/*-judge.json` re-includes judge
+  results, so run 2's own output is an untracked file, `git status --porcelain` reports it, and
+  `provenance.py` counts untracked as dirty — correctly, by its own documented rule.
+
+  **This is a false dirty, and false-dirty is the direction that costs something here.** It blocks a
+  judge noise floor outright: `is_pinnable` rejects any `-dirty` revision and `noise.py` refuses to
+  pool runs whose revisions disagree, so `fd79865` and `fd79865-dirty` cannot be pooled even though
+  they are the same code. The workaround — commit between every run — is exactly the discipline
+  `code_revision` exists so nobody has to maintain.
+
+  **Fix:** exclude `eval/results/` from the cleanliness check. The directory contains no code, and
+  `code_revision` identifies code. Keep untracked-counts-as-dirty everywhere else; that rule is right
+  and its reasoning is in `provenance.py`'s own docstring. Lock it with a test that a stray result
+  file does not dirty the stamp **and** that a stray source file still does — break both deliberately.
+- [ ] **`noise.py` cannot see judge runs at all.** It globs `*-bedrock.json` (`noise.py:554`), and its
+  pooled fields are agent metrics. A five-run judge floor — which is what would turn the ranges above
+  into a recorded floor rather than an observed span — needs the pattern parameterised **and** a
+  judged-run scorer. `pattern` is already a keyword argument, so the glob is the small half.
+
+  **Not scheduled, and the reason is priority rather than difficulty.** It measures a metric that
+  never blocks, at ~$0.06 a run, while the synthesis defects below are making the agent emit
+  "Hip-hop came out of hip-hop, hip-hop, hip-hop." Three runs and a stated range is a defensible
+  place to leave this.
 
 **These labels stay valid after the fix.** The 30 labels exist to validate *the judge*, not the agent —
 they are the judge's exam paper, and a pool of uniformly good answers would produce a degenerate
