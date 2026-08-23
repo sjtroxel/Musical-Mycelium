@@ -18,6 +18,20 @@ as well as an edited one. The conservative reading is the useful one here, becau
 "dirty" is that a floor is marked provisional and re-run, while the cost of a false "clean" is a
 number nobody can ever check again.
 
+**With two exemptions, both of them directories a run writes its own output into.** Amended
+2026-08-23. A run writes a result file into ``eval/results/`` and a transcript into
+``eval/transcripts/``, so the *output* of run N made the tree untracked-dirty for run N+1 — run 3 of the
+judge was stamped ``fd79865-dirty`` while its code was byte-identical to run 2's. That is a **false**
+dirty, and false-dirty is the direction that costs something: ``is_pinnable`` rejects a dirty revision,
+``noise.py`` refuses to pool revisions that disagree, and ``tier2.sample_from`` refuses an unpinnable
+source outright — so two runs of identical code could not be pooled, and neither could be judged. The
+workaround — commit between every run — is precisely the discipline this module exists so nobody has to
+maintain.
+
+Both directories are named explicitly rather than covered by a wildcard over ``eval/``, and that is the
+whole design: they contain no code, and this function answers a question about code. Everywhere else,
+untracked still counts as dirty, and a line this function cannot parse counts as dirty too.
+
 **Never raises.** A result file that failed to record its revision is worth more than a run that
 crashed after spending money, so every failure path returns ``UNKNOWN`` and lets the consumer decide
 what an unknown revision is worth. ``noise.py`` decides it is worth *provisional*.
@@ -41,6 +55,48 @@ DIRTY_SUFFIX = "-dirty"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 Runner = Callable[[Sequence[str], Path], str | None]
+
+#: The path prefixes a modification does not dirty the stamp for, repo-relative and slash-separated.
+#: See the module docstring: these directories hold run output, and this module answers a question about
+#: code. Keep the list short; every entry needs its own argument for why nothing in it can change
+#: behaviour.
+EXEMPT_PREFIXES = (
+    "src/musical_mycelium/eval/results/",
+    "src/musical_mycelium/eval/transcripts/",
+)
+
+
+def _changed_paths(line: str) -> list[str]:
+    """The repo-relative path(s) one ``git status --porcelain`` line refers to.
+
+    Returns an empty list for a line this cannot read, and the caller treats that as dirty. Guessing
+    is the wrong instinct here: an unparsed line that is assumed to be exempt is a false *clean*, and
+    that is the direction with no recovery.
+    """
+    # `XY path`, `XY "quoted path"`, or `XY old -> new` for a rename. The status is two columns and
+    # a space, so anything shorter is not a status line at all.
+    if len(line) < 4 or line[2] != " ":
+        return []
+    rest = line[3:].strip()
+    if not rest:
+        return []
+    # A rename dirties on either side: moving a source file *into* the results directory is still a
+    # change to the code, and moving one out of it is too.
+    parts = rest.split(" -> ") if " -> " in rest else [rest]
+    return [part.strip().strip('"') for part in parts if part.strip()]
+
+
+def _is_dirty(status: str) -> bool:
+    """Whether a porcelain status describes a tree change that matters to the code identity."""
+    for raw in status.splitlines():
+        if not raw.strip():
+            continue
+        paths = _changed_paths(raw)
+        if not paths:
+            return True
+        if any(not path.startswith(EXEMPT_PREFIXES) for path in paths):
+            return True
+    return False
 
 
 def _run(command: Sequence[str], cwd: Path) -> str | None:
@@ -84,7 +140,7 @@ def code_revision(*, root: Path | None = None, run: Runner | None = None) -> str
         # HEAD resolved but the cleanliness question did not. Unknown-clean is the dangerous
         # answer, so this reports the revision it knows and assumes the worst about the tree.
         return revision + DIRTY_SUFFIX
-    if status.strip():
+    if _is_dirty(status):
         return revision + DIRTY_SUFFIX
     return revision
 

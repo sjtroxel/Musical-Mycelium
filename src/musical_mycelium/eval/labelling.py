@@ -285,6 +285,7 @@ def build_pool(
     seed: int = 20260819,
     allow_short: bool = False,
     allow_scripted: bool = False,
+    name: str = POOL_NAME,
 ) -> Pool:
     """Sample `size` items across one or more transcripts, deterministically.
 
@@ -302,6 +303,12 @@ def build_pool(
     answer.`, so a pool built from one would have a human and a model scoring narrative quality on a
     stub -- and the agreement figure would be real, reproducible, and about nothing. `allow_scripted`
     exists for the tests, which need a pool with no AWS and know what they are looking at.
+
+    `name` names the pool and prefixes its item ids. It exists because **step 8 samples a second,
+    unlabeled pool from a release candidate**, and that pool must not be able to collide with the
+    labeled validation pool: two pools sharing an id space is how a tier 2 judgement ends up paired
+    against a human label written about a different answer. The default is the validation pool, so
+    every existing caller is unchanged.
     """
     scripted = sorted({run.written_at for run in runs if run.provider == PROVIDER_SCRIPTED})
     if scripted and not allow_scripted:
@@ -350,7 +357,7 @@ def build_pool(
 
     items = tuple(
         PoolItem(
-            item_id=f"{POOL_NAME}_{index:03d}",
+            item_id=f"{name}_{index:03d}",
             case_id=case.case_id,
             source=source,
             query=case.query,
@@ -361,7 +368,7 @@ def build_pool(
         for index, (source, case) in enumerate(chosen, start=1)
     )
     return Pool(
-        name=POOL_NAME,
+        name=name,
         built_at=datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ"),
         seed=seed,
         target=size,

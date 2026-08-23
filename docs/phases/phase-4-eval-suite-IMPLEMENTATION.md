@@ -706,6 +706,94 @@ grammar defect ("Documented as came out of it") that no assertion would have cau
 Citation support and narrative quality only. 20–30 samples, release candidates only, behind the same
 explicit confirmation naming the dollar figure.
 
+#### Step 8, as-built part 1 — the machinery, 2026-08-23 (free)
+
+`src/musical_mycelium/eval/tier2.py`, `make eval-tier2`, 24 tests. **Free; the judged run itself is
+part 2 and spends.** The same judge, pointed at a different subject: `eval-judge` scores a pool a human
+already labeled and its number is about **the judge**; `eval-tier2` scores a sample of a release
+candidate and its number is about **the agent**.
+
+**The design problem, and it is the only interesting thing in this step.** Step 7 made "agreement is
+reported next to every judged number" structural by making it a required field on `JudgeRun` — the score
+and its validation are one object, so no caller can separate them. That trick does not survive the move
+to step 8, because **a release candidate has no human labels and must not get any**: the labels exist to
+validate the judge, and re-labeling every candidate would make having a judge pointless.
+
+So the figure is **inherited** rather than computed, and an inherited figure is exactly the kind that goes
+missing. `Validation` is therefore a required field on `Tier2Run`, read from the committed judge runs;
+`to_json` nests each metric *inside* the same object as its agreement rather than emitting two parallel
+blocks, because parallel blocks are what let a reader — or a future README — quote one without the other;
+and `render` refuses outright when either inherited figure is unmeasured, the same shape as
+`report.render_judged`.
+
+**Every judged number here is a range**, carrying the 2026-08-21 finding forward into code: the judge is
+not deterministic at temperature 0, so `Validation` reports low–high across the validation runs and bands
+*both ends*. When the two ends land in one Landis & Koch band the label is stated once and may be stated
+flatly; when they straddle a boundary both labels are printed rather than the flattering one. A single
+validation run cannot express a spread at all and is reported as one sample with the caveat attached.
+Run against the three committed judge runs it reproduces the recorded figures exactly — `citation_support`
+kappa 0.44–0.48 (moderate), `narrative_quality` 0.66–0.73 (substantial), n=30.
+
+**Six refusals, all before `confirm_spend`,** so a misconfigured tier 2 run costs nothing: no committed
+judge run to inherit from, judge runs that disagree with each other on model or pool, a rubric the labels
+were not written against (`guard_rubrics`, reused not reimplemented), a judge the agreement was not
+measured on, a same-family judge, and a source whose code revision is not pinnable. That last one is what
+"release candidates only" means in code: a score attributed to a `-dirty` tree names no particular code.
+
+**Method.** Six locks broken deliberately and watched to fail before being restored — the required
+`validation` field, the judge-model guard, the nesting in `to_json`, the sample pool's distinct name, the
+undefined-kappa handling, and the release-candidate check. The pool-name break is the one worth naming:
+`build_pool` hardcoded a single name and item-id prefix, so a tier 2 sample would have produced
+`judge_pool_v1_007` ids colliding with the human labels — a mis-pairing nothing downstream would have
+caught. `name` is now a parameter, defaulted to the validation pool so no existing caller changed.
+
+**Two defects fixed on the way through, both found rather than looked for:**
+
+1. **The false-dirty provenance defect** (logged 2026-08-21, in `KNOWN-GAPS.md`) is **fixed**.
+   `provenance.code_revision` now exempts `eval/results/` from the cleanliness check and nothing else.
+   It had to be fixed here rather than later: step 8's release-candidate guard rejects an unpinnable
+   revision, and a run stamped `-dirty` by its own predecessor's output would have failed that guard for
+   a reason that has nothing to do with the code. Locked in both directions — a stray result file does
+   not dirty the stamp, a stray *source* file still does — plus a rename, a lookalike path
+   (`results_backup/`), and an unparseable status line, which counts as dirty because guessing there
+   would be a false *clean*.
+2. **`make help` could not see its own new target.** The filter was `^[a-zA-Z_-]+:` — no digits in the
+   character class — so `eval-tier2` was a real, working, documented target that the command whose entire
+   job is discovery did not list. Nothing failed; it was simply invisible. Fixed, and locked with a test
+   that reads the pattern *out of the Makefile* and asserts it matches every `##`-documented target,
+   rather than restating the pattern in the test where the two could drift.
+
+`make check`: **1138 passed, 0 skipped**, 7 `costs_money` deselected.
+
+#### The 41-case verification run, 2026-08-23 (spend, ~292k tokens)
+
+Taken to turn the 8/21 synthesis evidence — four case ids — into a statement about the whole set.
+`20260823T231500Z`. All five gates passed; `cases_correct` 39/41, both failures already on the books
+(`gold_v0_1_020` reproducible, `adv_008` known-unstable). **Zero prompt-leak phrases, zero verbatim
+repetition, zero "came out of" on an artist edge, and all four fan-in cases naming distinct
+descendants.**
+
+**What this run is evidence of, and what it is not.** The deterministic metrics did not and could not
+confirm the synthesis fixes — that is step 7's most quotable finding, restated by this run: every tier 1
+number sat inside the floor both before the fixes and after, because the claims underneath were always
+real, cited and correctly directed. The confirmation came from reading the prose. The eval suite's blind
+spot is unchanged and still shaped like "did this answer the question asked."
+
+**Two limits, stated rather than smoothed.** The floor it is compared against was measured at `f84453a`
+and this run is `bb54263`, so the comparison is a sanity check and not a pooled measurement — `noise.py`
+would refuse to pool them, correctly. And the run is stamped **`bb54263-dirty`**: the tree was being
+edited when `main` snapshotted the revision, which is precisely the hazard `write_result`'s docstring
+documents. **The prose verification did not need a pinned revision and stands. A tier 2 release
+candidate does**, so part 2 needs either a clean re-run or an explicit `--allow-unpinnable` and a score
+that names no particular commit.
+
+**Process note worth keeping:** the parallelism that produced the dirty stamp — building while a
+billable run was in flight — was a bad trade and is not one to repeat. Free work during a live run has
+to happen outside the tree, or wait.
+
+**Part 2 is the judged run** and it needs a post-fix release candidate to sample from — judging output
+written before the 2026-08-21 synthesis fixes would measure answers already known to be broken.
+
 ### Step 9 — The held-out run, once, at freeze
 
 After everything above is frozen. `make eval-heldout` decrypts in memory, runs, and writes **aggregate

@@ -19,7 +19,7 @@ BOOTSTRAP := infra/terraform/bootstrap
 TF_MAIN   := infra/terraform/main
 
 help: ## List available targets
-	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
+	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[1m%-12s\033[0m %s\n", $$1, $$2}'
 
 install: ## Create the venv and install all dependencies (installs Python 3.13 if needed)
@@ -238,6 +238,26 @@ eval-label: ## FREE. Hand-label the judge pool, one item at a time
 # misconfigured judge never costs anything. Thirty items is one request each: small.
 eval-judge: ## SPENDS MONEY. Run the validated judge over the labeled pool
 	uv run python -m musical_mycelium.eval.judge $(ARGS)
+
+# SPENDS MONEY. Phase 4 step 8. The same judge, pointed at a SAMPLE OF A RELEASE CANDIDATE rather than
+# at the labeled pool -- so the number it produces is about the AGENT, where eval-judge's number is
+# about the JUDGE.
+#
+# There are no human labels here and there should not be: the labels validate the judge, and
+# re-labeling every candidate would make having a judge pointless. So the agreement figure is
+# INHERITED from the committed judge runs, as a range, and it is a required field on the result --
+# the score and the figure that says what it is worth cannot be separated.
+#
+# It refuses, all BEFORE the spend prompt, so a misconfigured run costs nothing: no committed judge
+# run to inherit from, judge runs that disagree with each other, a rubric the labels were not written
+# against, a judge the agreement was not measured on, a same-family judge, a source whose code
+# revision is dirty or unknown, or a transcript too thin to sample.
+#
+#   make eval-tier2                                          the newest transcript, 20 items
+#   make eval-tier2 ARGS='--size 25'                         a larger sample if the run supports it
+#   make eval-tier2 ARGS='--transcript src/.../transcripts/A.json'
+eval-tier2: ## SPENDS MONEY. Tier 2 judged over a release candidate (tracked, never blocking)
+	uv run python -m musical_mycelium.eval.tier2 $(ARGS)
 
 # --- the sealed held-out set -------------------------------------------------
 # .claude/rules/evals.md requires a held-out set "never looked at during development". The threat is the

@@ -21,7 +21,11 @@ The figures to quote are **ranges**: `citation_support` kappa **0.44–0.48**, `
 substantial — so the *sentence* the project reports is stable even though the digits are not. See the
 2026-08-21 findings section.
 
-**Verified state:** `make check` green — 1107 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+**Updated 2026-08-23** at phase 4 step 8, part 1: the tier 2 machinery is built and free, the judged run
+itself is not yet taken. Two defects were fixed on the way through — the false-dirty provenance defect
+below, and a `make help` filter that could not see a target with a digit in its name.
+
+**Verified state:** `make check` green — 1138 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
@@ -429,11 +433,16 @@ is not a measured rate, and the next full 41-case run is what would make it one.
   genre's origins — the question plainly asks for a person. `judge_pool_v1_002` answered an artist
   question correctly and then wrote "these three influences shaped **the genre's** development." Two
   distinct failures from one cause: the synthesis prompt appears to assume a genre subject.
-- [x] **FIXED 2026-08-21 (expected; unverified against a live model). The synthesis prompt leaks into the answer.** Five of the 30 items open by talking about the
+- [x] **FIXED 2026-08-21, and VERIFIED AGAINST A LIVE MODEL 2026-08-23** by the full 41-case run
+  `20260823T231500Z` — **zero** leak phrases across all 25 answered cases, where the pool had five in
+  thirty. The "unverified" qualifier this line carried until 8/23 is discharged. **The synthesis prompt
+  leaks into the answer.** Five of the 30 items open by talking about the
   request rather than answering it — "I can't complete this task as requested", "I cannot write two
   sentences naming every influence", "which you've asked me not to do". The user asked about music and
   received a complaint about task framing.
-- [x] **FIXED 2026-08-21. "Came out of" is used for every influence edge, including artist-to-artist.** He flagged this on
+- [x] **FIXED 2026-08-21, VERIFIED ACROSS THE SET 2026-08-23.** Eight artist-axis cases in run
+  `20260823T231500Z`, all reading "was influenced by", **zero** "came out of" on an artist edge.
+  **"Came out of" is used for every influence edge, including artist-to-artist.** He flagged this on
   four separate items. For genres it reads as idiom; for people ("John Lydon came out of Alice Cooper")
   it reads as descent, which is a stronger claim than `influenced_by` carries. He ruled it SUPPORTED
   each time on the grounds that no reasonable reader infers literal parentage, and lodged the cost in
@@ -446,14 +455,20 @@ is not a measured rate, and the next full 41-case run is what would make it one.
   question shape, and it wrote "Kenshi Yonezu's style emerged from…" with no "came out of" anywhere.
   **Do not fix it before 7c's judge pass** — the labels are bound to this pool by SHA-256 and the agent
   must not move underneath them.
-- [ ] **Chronology is substituted for influence.** `judge_pool_v1_009` declined to trace a three-hop
+- [ ] **Chronology is substituted for influence. DID NOT RECUR on 2026-08-23** — `gold_v0_1_018`, the
+  underlying case, traced the actual chain ("Famous Oberogo was influenced by Jason Derulo, who was
+  influenced by Michael Jackson, who was influenced by Fred Astaire"). **One run is not a rate and this
+  item stays open**; the defect was never shown to be deterministic, so a single clean observation is
+  not evidence it is gone. **Chronology is substituted for influence.** `judge_pool_v1_009` declined to trace a three-hop
   lineage and offered "Fred Astaire came first chronologically, followed by Michael Jackson, then Jason
   Derulo" instead. Temporal precedence is not influence. Labeled SUPPORTED / 2 on the reading that a
   reader takes the ordering as the chain.
 
 #### Found in the second sitting, items 11-30 — 2026-08-20
 
-- [x] **FIXED 2026-08-21. "Write two sentences" forces padding when there is only one claim, and the padding is where the
+- [x] **FIXED 2026-08-21, VERIFIED ACROSS THE SET 2026-08-23** — zero verbatim sentence repetition in
+  any of the 25 answered cases of run `20260823T231500Z`. **"Write two sentences" forces padding when
+  there is only one claim, and the padding is where the
   invented content comes from.** Three single-claim items, three different fabrications to fill the
   second sentence: `026` repeated the first sentence **verbatim** ("Blues rock came out of blues. Blues
   rock came out of blues."), `023` asserted exclusivity ("Jazz is the sole influence that shaped the
@@ -567,8 +582,11 @@ judge runs now exist**, and the second and third were produced from **byte-ident
   one: prompt-change movement (7/30 on `citation_support`) is **larger** than sampling movement
   (3/30). The injection fix really did do most of the work between runs 1 and 2; the judge's own noise
   is real, smaller, and now bounded.
-- [ ] **A judge run dirties the tree for the next judge run. Provenance defect, fixable, not yet
-  fixed.** Run 3 is stamped `fd79865-dirty` while its code was byte-identical to run 2's. The cause is
+- [x] **A judge run dirties the tree for the next judge run. Provenance defect. FIXED 2026-08-23**
+  at phase 4 step 8, because step 8's release-candidate guard rejects an unpinnable revision and a run
+  stamped `-dirty` by its own predecessor's output would have failed that guard for a reason that has
+  nothing to do with the code. Run 3 was stamped `fd79865-dirty` while its code was byte-identical to
+  run 2's. The cause is
   the deliberate 2026-08-20 `.gitignore` reversal: `!**/eval/results/*-judge.json` re-includes judge
   results, so run 2's own output is an untracked file, `git status --porcelain` reports it, and
   `provenance.py` counts untracked as dirty — correctly, by its own documented rule.
@@ -579,10 +597,18 @@ judge runs now exist**, and the second and third were produced from **byte-ident
   they are the same code. The workaround — commit between every run — is exactly the discipline
   `code_revision` exists so nobody has to maintain.
 
-  **Fix:** exclude `eval/results/` from the cleanliness check. The directory contains no code, and
-  `code_revision` identifies code. Keep untracked-counts-as-dirty everywhere else; that rule is right
-  and its reasoning is in `provenance.py`'s own docstring. Lock it with a test that a stray result
-  file does not dirty the stamp **and** that a stray source file still does — break both deliberately.
+  **Fix, as applied:** `provenance.code_revision` parses the porcelain status per line and exempts
+  `eval/results/` — that prefix and nothing else. The directory contains no code, and `code_revision`
+  identifies code. Untracked still counts as dirty everywhere else; that rule is right and its
+  reasoning is in `provenance.py`'s own docstring.
+
+  **Locked in both directions, and broken deliberately to check.** A stray result file does not dirty
+  the stamp; a stray *source* file still does; a modified source file beside an exempt one still does,
+  so one exempt line cannot launder the tree around it; a lookalike path (`results_backup/`) is not
+  exempt, which is exactly where prefix matching slips; a rename dirties on either side; and a status
+  line the parser cannot read counts as dirty, because guessing there would be a false *clean* and
+  there is no recovering from one of those. Widening the exemption to the whole `eval/` package was
+  tried on purpose and four tests failed.
 - [ ] **`noise.py` cannot see judge runs at all.** It globs `*-bedrock.json` (`noise.py:554`), and its
   pooled fields are agent metrics. A five-run judge floor — which is what would turn the ranges above
   into a recorded floor rather than an observed span — needs the pattern parameterised **and** a

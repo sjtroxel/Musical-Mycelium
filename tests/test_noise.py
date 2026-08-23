@@ -13,6 +13,7 @@ a real run cannot quietly change what these assert.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -421,3 +422,87 @@ def test_code_revision_never_raises_when_git_is_unavailable() -> None:
 def test_a_real_revision_is_pinnable() -> None:
     assert is_pinnable("24517e1")
     assert not is_pinnable("24517e1-dirty")
+
+
+# --- the results-directory exemption, added 2026-08-23 -------------------------------------------
+#
+# The defect this closes: a judge run writes its result file into `eval/results/`, `.gitignore`
+# re-includes judge results, and so run N's own output made the tree untracked-dirty for run N+1.
+# Run 3 was stamped `fd79865-dirty` over code byte-identical to run 2's, which `is_pinnable` then
+# refused and `noise.py` then refused to pool. Both directions are locked below, because an exemption
+# that is too wide is a false *clean* and there is no recovering from one of those after the fact.
+
+
+def _status(*lines: str) -> Callable[..., str | None]:
+    def fake(command: object, cwd: object) -> str | None:
+        if "rev-parse" in command:  # type: ignore[operator]
+            return "abc1234\n"
+        return "".join(line + "\n" for line in lines)
+
+    return fake
+
+
+def test_a_stray_result_file_does_not_dirty_the_stamp() -> None:
+    assert (
+        code_revision(
+            run=_status("?? src/musical_mycelium/eval/results/20260823T000000Z-judge.json")
+        )
+        == "abc1234"
+    )
+
+
+def test_a_stray_source_file_still_dirties_the_stamp() -> None:
+    """The other half. An exemption nobody tried to break is not an exemption, it is a hole."""
+    assert code_revision(run=_status("?? src/musical_mycelium/eval/tier2.py")) == "abc1234-dirty"
+
+
+def test_a_modified_source_file_dirties_even_beside_an_exempt_one() -> None:
+    """One exempt line must not launder the tree for the lines around it."""
+    fake = _status(
+        "?? src/musical_mycelium/eval/results/20260823T000000Z-judge.json",
+        " M src/musical_mycelium/eval/judge.py",
+    )
+    assert code_revision(run=fake) == "abc1234-dirty"
+
+
+def test_a_path_merely_resembling_the_results_directory_is_not_exempt() -> None:
+    """`results_backup/` is not `results/`, and prefix matching is exactly where that slips."""
+    assert (
+        code_revision(run=_status("?? src/musical_mycelium/eval/results_backup/x.json"))
+        == "abc1234-dirty"
+    )
+
+
+def test_a_rename_out_of_the_results_directory_dirties() -> None:
+    """A rename dirties on either side; only a line with every path exempt is clean."""
+    fake = _status("R  src/musical_mycelium/eval/results/a.json -> src/musical_mycelium/eval/a.py")
+    assert code_revision(run=fake) == "abc1234-dirty"
+
+
+def test_an_unreadable_status_line_counts_as_dirty() -> None:
+    """Guessing on a line this cannot parse would be a false clean, so it does not guess."""
+    assert code_revision(run=_status("garbage")) == "abc1234-dirty"
+
+
+def test_a_stray_transcript_does_not_dirty_the_stamp() -> None:
+    """The same defect one directory over, and the one that would have bitten run N+2: `eval/results/`
+    is gitignored but `eval/transcripts/` is tracked, so a live run's own transcript is an untracked
+    file the moment it is written."""
+    assert (
+        code_revision(
+            run=_status("?? src/musical_mycelium/eval/transcripts/20260823T231500Z-bedrock.json")
+        )
+        == "abc1234"
+    )
+
+
+def test_the_exemption_covers_run_output_only_and_not_the_eval_package() -> None:
+    """Named directories, not a wildcard over `eval/`. The package is almost entirely code."""
+    for path in (
+        "src/musical_mycelium/eval/tier2.py",
+        "src/musical_mycelium/eval/datasets/gold_v0_1.json",
+        "src/musical_mycelium/eval/rubrics/citation_support.md",
+        "src/musical_mycelium/eval/noise_floor.json",
+        "src/musical_mycelium/eval/thresholds.json",
+    ):
+        assert code_revision(run=_status(f" M {path}")) == "abc1234-dirty", path

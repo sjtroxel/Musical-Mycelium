@@ -53,6 +53,22 @@ _BANDS = (
 )
 
 
+def band(kappa: float | None) -> str:
+    """Landis & Koch's label for a kappa, or ``undefined`` for ``None``.
+
+    Public because **step 8 bands a range rather than a point** -- the judge is not deterministic at
+    temperature 0, measured over three runs on 2026-08-21 -- and a second copy of these thresholds
+    living in `tier2.py` is how the qualitative claim ("moderate") and the digits it is drawn from
+    drift apart without anyone noticing.
+    """
+    if kappa is None:
+        return "undefined"
+    for floor, label in _BANDS:
+        if kappa >= floor:
+            return label
+    return "none (worse than chance)"
+
+
 class NoAgreementMeasured(RuntimeError):
     """Agreement was asked for where none exists. Raised by `report.py` rather than rendered as blank."""
 
@@ -88,12 +104,7 @@ class Agreement:
 
     @property
     def strength(self) -> str:
-        if self.kappa is None:
-            return "undefined"
-        for floor, label in _BANDS:
-            if self.kappa >= floor:
-                return label
-        return "none (worse than chance)"
+        return band(self.kappa)
 
     def render(self) -> list[str]:
         kappa = (

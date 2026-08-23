@@ -8,6 +8,7 @@ is anything to test, and that is deliberate: they make CI real from the first co
 from __future__ import annotations
 
 import importlib
+import re
 from pathlib import Path
 
 import pytest
@@ -86,3 +87,29 @@ def test_nothing_outside_eval_imports_eval() -> None:
                 offenders.append(f"{path.relative_to(SRC)}:{lineno}")
 
     assert not offenders, f"production code must not import eval: {offenders}"
+
+
+# --- the Makefile is the interface, so its index has to be complete ------------------------------
+
+
+def test_every_documented_make_target_is_listed_by_make_help() -> None:
+    """`make help` filters targets with a regex, and a regex is a place a target can silently vanish.
+
+    Found 2026-08-23: the pattern was ``^[a-zA-Z_-]+:``, which has no digits in its character class,
+    so `eval-tier2` was a real, working, documented target that `make help` did not list. Nothing
+    failed -- the target simply could not be discovered by the command whose whole job is discovery.
+
+    This compares the two directly: every target line carrying a ``## `` comment must be matched by
+    the pattern `help` actually greps with, read out of the Makefile rather than restated here.
+    """
+    makefile = (Path(__file__).resolve().parents[1] / "Makefile").read_text(encoding="utf-8")
+
+    pattern = re.search(r"grep -hE '([^']+)'", makefile)
+    assert pattern is not None, "make help no longer greps for its target list"
+    help_filter = re.compile(pattern.group(1))
+
+    documented = re.findall(r"(?m)^([A-Za-z0-9_-]+):.*?## ", makefile)
+    assert len(documented) > 10, "the Makefile suddenly documents almost nothing; check the parse"
+
+    invisible = [name for name in documented if not help_filter.search(f"{name}: ## x")]
+    assert not invisible, f"documented but absent from make help: {invisible}"
