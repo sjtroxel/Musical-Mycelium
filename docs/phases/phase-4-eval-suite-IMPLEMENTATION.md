@@ -854,6 +854,52 @@ to report it undiagnosed**, not to look.
 
 Held-out numbers are reported in their own section, separately from the development set's.
 
+#### Step 9, as-built part 1 — the runner, 2026-08-24 (free)
+
+`src/musical_mycelium/eval/heldout_run.py` and `make eval-heldout`. Built **blind**: the `.enc` was never
+opened, the key was never requested, and the case schema was read off `heldout_draw.py`, which is
+committed and whose output is generated rather than authored.
+
+**Four locks, not one, because the four leak paths are different and a single guard would have to be
+right about all of them.** Each was verified by breaking it deliberately, watching the test fail, and
+restoring — the practice from 2026-08-14, and the only defence against this repo's named failure mode.
+
+| lock | closes | broken deliberately |
+|---|---|---|
+| `sanitise` strips `CaseError.message` | stdout **and** the file. `report.py:77` prints it verbatim, and it is `str(exception)` — a synthesis failure can quote a node label or a claim | 2 tests failed |
+| `redact` rebuilds the payload from positive allowlists | the file. Forward-looking: a `"query"` added to `per_case` for debugging never reaches disk | 3 tests failed |
+| `assert_writable` substring-checks the serialized payload against every case query | a route nobody thought of, including one introduced in a module this one does not import | 2 tests failed |
+| no transcript, locked structurally | `live.main` writes one after every run. A held-out transcript would be the whole set in plaintext, committed | 1 test failed |
+
+Plus the progress line: `run_live` prints `case.query[:60]`, which is correct there and a direct
+plaintext disclosure here. It prints the case id and nothing else.
+
+**`redact` fails closed and a test says so.** Dropping unknown keys silently would mean a metric added to
+`suite.py` vanishes from held-out results with nobody told, so
+`test_the_allowlist_covers_exactly_what_the_suite_emits` asserts the allowlist equals what `to_json`
+emits. Adding a field to the suite now breaks that test and forces the held-out decision to be made
+rather than defaulted into.
+
+**Slicing is a deliberate, bounded disclosure and the reasoning is in the module.** Four slice dimensions
+publish the set's coarse distribution across era, region and density buckets. `query_kind` is the
+manifest's `shapes` under another name and discloses nothing new; the other three are new. It is made
+anyway because the public manifest already publishes `shapes` and `refusal_count` on exactly this
+argument, and because DoD 6 requires it — an aggregate that looks healthy while the sparse slices fail is
+the default outcome without slicing, which is the question a held-out set exists to answer. No subject, no
+query, no edge, and no case-to-bucket mapping is disclosed.
+
+**Preflight before a cent is spent:** `verify_seal` (tamper check, no key), then `check_against_corpus`
+(ids and codes only). Any finding refuses the run rather than warning, because the one shot spent against
+a drifted corpus is spent. Re-sealing to make it pass is forbidden by `.claude/rules/heldout-set.md`.
+
+**Held-out numbers are reported, never gated.** `DATASET = "heldout"` matches no threshold set, and
+`thresholds.render_unmatched` already says the right thing: *"thresholds measured on one dataset do not
+transfer to another. This is not a pass."* A held-out set that gates is a held-out set being tuned on.
+
+`make check`: **1169 passed, 0 skipped, 7 `costs_money` deselected**, up from 1152.
+
+Remaining in step 9: he runs it once. Roughly ten cases at the measured per-case rate.
+
 ## 4. Explicitly not in this phase
 
 - **The SPA, visualization, the guided tour.** Phase 5.
@@ -892,11 +938,12 @@ src/musical_mycelium/eval/provenance.py      the git revision a result file was 
 src/musical_mycelium/eval/noise.py           step 6: spread and membership churn across N runs
 src/musical_mycelium/eval/noise_floor.json   written by `make eval-noise ARGS=--write`, 5 clean runs
 src/musical_mycelium/eval/judge.py           tier 2: Nova Pro, rubric, agreement
+src/musical_mycelium/eval/heldout_run.py     step 9: the sealed set, run once, four leak locks
 src/musical_mycelium/eval/rubrics/*.md       the rubrics, versioned next to the code
 src/musical_mycelium/eval/thresholds.json    written from the baseline, not before
 src/musical_mycelium/eval/results/           per-run results, committed
 tests/test_runner.py  test_budget.py  test_suite.py  test_report.py  test_noise.py
-tests/test_judge.py
+tests/test_judge.py   test_heldout_run.py
 ```
 
 **Changed:**
@@ -909,6 +956,7 @@ src/musical_mycelium/eval/live.py      write_result records written_at and code_
 .github/workflows/ci.yml               tier 1 scripted on every commit
 pyproject.toml                         nothing new expected; tool config only if it is
 docs/KNOWN-GAPS.md                     items checked off with evidence as they close
+docs/eval-suite-explained.md           the plain-English write-up (§11), written 2026-08-24
 ```
 
 **Root discipline:** 15 of 18 entries in use. This phase adds **no** root entries — results go under
@@ -983,7 +1031,7 @@ and this doc does not soften that.
 | 4. Noise floor over five identical runs | step 6 | |
 | 5. Every metric unit-tested, vacuous-truth guard included | already met; extended | new suite-level tests in §7 |
 | 6. Every result sliced four ways | step 3 | `slices.py` exists |
-| 7. Held-out run once, reported separately | step 9 | content never read |
+| 7. Held-out run once, reported separately | step 9 | runner built blind 2026-08-24; content never read |
 | 8. Real per-run cost to CloudWatch | **partial** | see §8; the decision is yours |
 
 Plus the three inherited items from phase 3 §0 — refusal accuracy, traversal recall, injection resistance

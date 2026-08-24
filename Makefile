@@ -4,8 +4,9 @@
 .DEFAULT_GOAL := help
 .PHONY: help install fmt lint typecheck test cov check root-check clean dev ingest \
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
-        heldout-key heldout-seal heldout-verify heldout-check \
-        eval eval-live eval-noise eval-label eval-judge hooks hooks-uninstall
+        heldout-key heldout-draw heldout-seal heldout-verify heldout-check \
+        eval eval-live eval-noise eval-label eval-judge eval-tier2 eval-heldout \
+        hooks hooks-uninstall
 
 UV := $(shell command -v uv 2>/dev/null)
 
@@ -299,6 +300,19 @@ heldout-verify: ## Check the sealed set against its manifest (no key, no decrypt
 # running it does not open the set.
 heldout-check: ## Validate the sealed set against the pinned corpus (needs the key)
 	uv run python -m musical_mycelium.eval.heldout --key "$(HELDOUT_KEY)" check
+
+# SPENDS MONEY, and it is the one run in this project that must never be repeated to get a better
+# number. Roughly ten cases at the measured per-case rate; the confirmation names the estimate.
+#
+# It decrypts in memory, verifies the seal, checks the set against the pinned corpus, refuses on any
+# finding, then runs. Output is aggregate metrics, slice rates and case ids -- NEVER case content, and
+# no transcript. src/musical_mycelium/eval/heldout_run.py holds the four locks and the reasoning;
+# tests/test_heldout_run.py breaks each of them deliberately.
+#
+# If a number here comes back bad and is not diagnosable from ids and error types alone, the correct
+# outcome is to report it undiagnosed. Opening the set to debug it is what the seal exists to prevent.
+eval-heldout: ## SPENDS MONEY. The sealed held-out set, run once, reported without being read
+	uv run python -m musical_mycelium.eval.heldout_run --key "$(HELDOUT_KEY)" $(ARGS)
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .mypy_cache .ruff_cache dist build .coverage

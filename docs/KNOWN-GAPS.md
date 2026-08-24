@@ -25,7 +25,10 @@ substantial — so the *sentence* the project reports is stable even though the 
 itself is not yet taken. Two defects were fixed on the way through — the false-dirty provenance defect
 below, and a `make help` filter that could not see a target with a digit in its name.
 
-**Verified state:** `make check` green — 1138 passed, **0 skipped**, 7 `costs_money` tests deselected, mypy
+**Updated 2026-08-24** at phase 4 step 8 (the first tier 2 run) and then at step 9, part 1 — the held-out
+runner is built, blind. See the two 2026-08-24 sections below.
+
+**Verified state:** `make check` green — **1169 passed, 0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
@@ -39,6 +42,42 @@ Nothing here is waiting on AWS. What remains is unrun work, one undrawn dataset,
 standing facts about the corpus.
 
 ---
+
+## Step 9, part 1 — the held-out runner, built blind — 2026-08-24
+
+`src/musical_mycelium/eval/heldout_run.py` and `make eval-heldout`. **The `.enc` was never opened, the key
+was never requested, and no case content entered any agent context.** The schema was read off
+`heldout_draw.py`, which is committed and whose output is generated rather than authored.
+
+- [x] **Four independent leak locks, each verified by breaking it.** The four paths out are different and
+  one guard would have to be right about all of them. `sanitise` strips `CaseError.message` — which is
+  `str(exception)` and which `report.py:77` prints verbatim to stdout. `redact` rebuilds the written
+  payload from positive allowlists at both per-row levels. `assert_writable` substring-checks the
+  serialized payload against every case query as a last resort. No transcript is written, and that
+  omission is locked structurally rather than left to whoever edits the module next. Broken deliberately
+  one at a time on 2026-08-24: 2, 3, 2 and 1 tests failed respectively, then passed on restore.
+
+- [x] **The allowlist fails closed, and a test makes that safe.** Silently dropping a key would mean a
+  metric added to `suite.py` vanishes from held-out results with nobody told.
+  `test_the_allowlist_covers_exactly_what_the_suite_emits` asserts the allowlist equals what `to_json`
+  emits, so a new suite field breaks the build and forces the held-out decision to be made.
+
+- [x] **Slicing is a deliberate, bounded disclosure.** The four slice dimensions publish the set's coarse
+  distribution across era, region and density buckets. `query_kind` is the manifest's `shapes` under
+  another name. The other three are new disclosure, made anyway because the public manifest already
+  publishes `shapes` and `refusal_count` on exactly this argument and because DoD 6 requires it. No
+  subject, query, edge, or case-to-bucket mapping is disclosed. **If this is judged too generous later,
+  removing `slices` from `HELDOUT_RESULT_KEYS` is a one-line change — but any run already written cannot
+  be un-published.**
+
+- [ ] **The run itself has not happened.** Ten cases at the measured per-case rate. Preflight verifies the
+  seal and checks the set against the pinned corpus first, and refuses on any finding rather than
+  warning — the one shot spent against a drifted corpus is spent. **If a number comes back bad and is not
+  diagnosable from ids and error types alone, the correct outcome is to report it undiagnosed.**
+
+- [x] **The plain-English write-up is written.** `docs/eval-suite-explained.md`, the phase 4 §11
+  deliverable. Covers what an eval suite is, why owning the graph makes correctness a lookup, why a score
+  with no noise floor is not a score, and why a judged score with no measured agreement is decoration.
 
 ## The first tier 2 run — 2026-08-24, step 8 closed
 
