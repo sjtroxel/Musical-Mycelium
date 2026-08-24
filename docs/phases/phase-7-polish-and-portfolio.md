@@ -22,6 +22,14 @@ this phase starts, the deployed URL and the published eval numbers already exist
 job in the job search. That ordering is written down so a bad week does not relitigate it, and it means v1.0
 can be reached calmly or not at all without the project having failed.
 
+> **Amended 2026-08-24, at the phase 4 close.** Half of that had happened by v0.4 and half had not. **The
+> eval numbers exist and are real** — 41 development cases against a live model, a measured noise floor, a
+> validated non-Anthropic judge, a sealed held-out set opened once at 10/10. **The deployed URL still runs
+> a template stub**, because the Bedrock redeploy was deferred to phase 5. So the sentence above describes
+> a state that phase 5 creates, not one this phase inherits automatically. If phase 5 ships the SPA without
+> the redeploy, then this phase starts with the resume line still unclaimable, and closing it outranks
+> everything in the list below.
+
 ## Delivers
 
 - **The guided tour — surface C.** "Take me from delta blues to Detroit techno." The agent plans a path

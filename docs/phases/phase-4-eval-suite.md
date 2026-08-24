@@ -4,8 +4,11 @@
 > phases 1–3 taught something different — it was written before any of this existed.
 >
 > **Amended 2026-08-12 at the phase 3 release step.** Phase 3 built more of this phase than the original
-> text assumes, and it hands over four open items with names. See §0. The IMPLEMENTATION doc is still
-> unwritten and is owed before any phase 4 code.
+> text assumes, and it hands over four open items with names. See §0.
+>
+> **PHASE COMPLETE 2026-08-24, tagged `v0.4.0`.** The IMPLEMENTATION doc was written 2026-08-15, approved,
+> and all 9 steps built. Two definition-of-done items below did not land exactly as written — see the note
+> under "Definition of done". The rest of this doc is left as it was.
 
 ## 0. What phase 3 handed over
 
@@ -149,6 +152,28 @@ the fix is in scope; a new agent *feature* is not. Historical trend view and the
 7. The held-out set is run **once**, after everything else is frozen, and its numbers are reported
    separately from the development set's.
 8. Real per-run cost is recorded to CloudWatch, not estimated.
+
+> **As built, 2026-08-24. Six of eight landed as written; two did not, and both are recorded rather than
+> rounded.**
+>
+> **#1 — "blocks the build on the five correctness properties" is not what shipped.** Five gates exist,
+> and the free every-commit run can only block on **three**. Traversal recall is script-determined on a
+> scripted run and injection resistance scores zero cases there — the planted injections live in the
+> adversarial set and the free run is gold-only. Both return `N/A`, which is never counted as a pass;
+> `render` reports gated, failed and inapplicable as three separate counts so an all-inapplicable run
+> cannot look green. **The other two gates need money.** This is a limit of a free deterministic tier,
+> not a defect, but the DoD as written overstates it. `eval/thresholds.py` is the authority.
+>
+> **#8 — closed as PARTIAL, deliberately.** Per-run cost is **measured** from real usage and recorded in
+> committed result files; it does **not** reach CloudWatch, because that needs a redeploy, and the
+> redeploy was deferred to phase 5 (`KNOWN-GAPS.md`). Phase 5 needs a live backend for the SPA anyway, so
+> the auth and throttling decision gets made once instead of twice, and no billable public URL is exposed
+> in the meantime. **The resume line "deployed on AWS Lambda and Bedrock" stays unclaimable until that
+> redeploy** — nothing about this partial close softens that.
+>
+> **#7 landed as written and is now governed by a rule.** The held-out set was run once, at the freeze,
+> and reported separately. `.claude/rules/heldout-set.md` records the run and forbids a second one at any
+> freeze where something was tuned in response to what the first said.
 
 ## Known risks
 

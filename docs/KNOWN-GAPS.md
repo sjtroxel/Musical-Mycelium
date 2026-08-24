@@ -30,8 +30,9 @@ built blind), then **step 9 part 2 — the held-out set has been run, once, and 
 DoD 7 closed; DoD 8 closed as partial with the Bedrock redeploy deferred to phase 5. See the 2026-08-24
 sections below, top-most first.
 
-**Verified state:** `make check` green — **1169 passed, 0 skipped**, 7 `costs_money` tests deselected, mypy
-clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
+**Verified state:** `make check` green — **1170 passed, 0 skipped**, 7 `costs_money` tests deselected, mypy
+clean, root 15/18, terraform valid. *(Count re-measured 2026-08-24 during the doc-currency pass; it read
+1169 here.)* The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
 **What changed on 2026-08-16, in one line:** the agent has now been measured against a real model across

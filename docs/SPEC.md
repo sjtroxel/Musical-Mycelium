@@ -155,13 +155,20 @@ One line, because a scope fence does more work than a feature list:
 opposite of this project: recommendation optimizes for what you will enjoy next, this optimizes for what
 can be sourced.
 
-## 4. The imagined user — OPEN
+## 4. The imagined user — OPEN, AND NOW DUE
 
 `planning/09` §2 question 4 asks who the non-recruiter user is: a music-curious adult, a student, or
 himself. Left open deliberately; it changes reading level and how much context each answer assumes, and it
 is a product-taste call. Answer before the SPA copy is written at v0.5. It does not block v0.1.
 
-## 5. Data contracts — OPEN
+> **2026-08-24: v0.5 is next.** This is the only genuinely open item in this document and it is now on
+> the critical path — phase 5's scope doc names it as due, and SPA copy cannot be written without it. It
+> is a taste call and it is his, not an agent's. Answer it in the phase 5 IMPLEMENTATION doc.
+
+## 5. Data contracts — SETTLED at v0.5.0
+
+*(Headed "OPEN" until 2026-08-24. It was not open: the schema landed in phase 2 and every field below is
+shipped and test-locked. The heading was the stale part, not the content.)*
 
 Owned by the v0.1 IMPLEMENTATION doc. Fixed already by `CLAUDE.md` invariants regardless of how the schema
 lands:
@@ -203,7 +210,12 @@ each with its precondition recorded: `contested` needs a second source (every ed
 always Wikidata), and `checks_disagree` needs a corpus policy that flags conflicting checks rather than
 excluding them. A test locks both. See `phases/phase-3-agent-loop.md` A1.1.
 
-## 6. API contract — OPEN
+## 6. API contract — SETTLED through phase 3
+
+*(Headed "OPEN" until 2026-08-24. Every frame below ships: `plan`, `claim`, `rejection`, `path`, `done`,
+plus `corpus` on `/health`. What is **not** settled is the SPA-facing question phase 5 raises — auth and
+throttling on the Function URL once a billable model sits behind it. That is a deployment decision, not a
+contract change.)*
 
 Owned by the v0.1 IMPLEMENTATION doc, and it should be written **before** anything calls it. Fixed already:
 
@@ -214,9 +226,15 @@ Owned by the v0.1 IMPLEMENTATION doc, and it should be written **before** anythi
 **Added 2026-08-04 (phase 2 step 3).** `/health` and the `done` frame both carry a `corpus` object:
 
 ```json
-{ "artifact_version": "0.2.0", "nodes": 169, "edges": 133,
-  "verification": { "HAND": 22, "PROSE_AUTO": 111 }, "predicate": "influenced_by" }
+{ "artifact_version": "0.5.0", "nodes": 973, "edges": 950,
+  "verification": { "HAND": 22, "PROSE_AUTO": 111, "ASSERTS_AUTO": 760, "EXPOSURE_AUTO": 57 },
+  "predicate": "influenced_by" }
 ```
+
+*(Values refreshed 2026-08-24 from a live `corpus_summary()` call. They read `0.2.0`, 169 nodes, 133
+edges and a two-value `verification` map until then, which contradicted §5's table two screens above —
+anyone implementing against this section would have built a two-value enum against a corpus three cuts
+old. The **shape** is the contract; the numbers are illustrative and `/health` is authoritative.)*
 
 Coverage is on the screen, not in a footnote (`planning/04` §4.5), and `verification` is the honest half
 of it: a corpus that is mostly machine-verified is noisier per edge, and the product states the split
@@ -225,16 +243,22 @@ rather than presenting one undifferentiated edge count.
 **Added 2026-08-05 (phase 2 step 4).** The corpus object also carries `structure`:
 
 ```json
-{ "component_count": 41, "largest_component": 31, "diameter": 10,
-  "isolated_nodes": 0, "max_path_hops": 2 }
+{ "component_count": 169, "largest_component": 458, "diameter": 16,
+  "isolated_nodes": 0, "max_path_hops": 6 }
 ```
 
 This is the connectivity half of the same honesty, and it is the half a visitor cannot infer. An edge
-count alone implies one connected graph; the corpus is **41 disconnected islands**, so relating two
+count alone implies one connected graph; the corpus is **169 disconnected islands**, so relating two
 genres is a capability *within* a component and two genres in different components have no sourced path
 at all. `max_path_hops` is the deepest chain `path()` can return anywhere in the corpus. Publishing both
 is what keeps an empty answer legible as a **boundary rather than a failure** — which matters because
 refusal is correct behaviour here and has to be distinguishable from breakage.
+
+*(Values refreshed 2026-08-24, same reason as above. They read 41 / 31 / 10 / 2 — the **genre-only**
+corpus of v0.2.0 — and the jump to 169 / 458 / 16 / 6 is the artist axis, not drift. Both figures are
+worth knowing: more components AND a far larger largest component AND three times the depth. Genre-level
+P737 could not supply depth at all, which is why phase 2's DoD #2 had to be amended; the artist axis is
+where the six hops came from.)*
 
 Derived, never stored: the store recomputes it on load rather than trusting the manifest, so it cannot
 drift from the corpus in hand.
@@ -332,7 +356,11 @@ model configured, both ids are equal and the split costs nothing.
 synthesis was billed and never counted; what changed is that the missing half now has a name rather than
 being silently absent.
 
-## 7. Claim contract — OPEN in detail, fixed in shape
+## 7. Claim contract — SETTLED in detail and in shape
+
+*(Headed "OPEN in detail, fixed in shape" until 2026-08-24. The detail closed in phase 3: `verification`
+is on every claim, and the two unreachable states are declared and test-locked. What is owed is a second
+source in phase 6, which is a corpus job rather than a contract question.)*
 
 `Claim(subject_id, predicate, object_id, source_ids, verification, span)`. The pipeline is claims first,
 prose second: the agent emits claims, a deterministic gate approves them, and prose is generated from the

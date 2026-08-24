@@ -1,4 +1,4 @@
-a# Phase 3 — Agent Loop (v0.3): IMPLEMENTATION
+# Phase 3 — Agent Loop (v0.3): IMPLEMENTATION
 
 > **As-built plan.** Written 2026-08-07, immediately before phase 3 is built, so it absorbs what phases
 > 0–2 actually taught. The scope doc (`phase-3-agent-loop.md`) was written 2026-07-30, before the corpus,

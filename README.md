@@ -12,14 +12,14 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-08-12. Phase 2 complete; phase 3's local work
-complete and not yet deployed. Every open item is enumerated in
+**Deployed, and honestly incomplete.** Last updated 2026-08-24. Phases 2, 3 and 4 are complete and
+tagged (`v0.3.0-local`, `v0.4.0`); phase 5 is the SPA. Every open item is enumerated in
 [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 1085 tests, plus 7 that spend real money and are deselected by default.
+generated. 1170 tests, plus 7 that spend real money and are deselected by default.
 
 **The corpus is artifact v0.5.0: 973 nodes, 950 edges** across two axes — genre-to-genre and
 artist-to-artist, both from Wikidata P737 only. Every edge carries how strongly it was checked: 22 read
@@ -35,13 +35,23 @@ Two things are deliberately not done, and saying so is the point of this section
   What has *not* happened is a redeploy: the public URL still walks the graph, gates the claims and cites
   real Wikidata statement URIs while **the prose comes from a template rather than a model, and the token
   counts are synthetic.** The provider is a deploy-time variable precisely so the twelve days were
-  survivable.
-- **Real-model behaviour is demonstrated but not measured.** The loop did run end-to-end against a real
-  model on 2026-08-12 — it plans, walks the graph across multiple tools, gates the claims and writes the
-  prose — and that first run immediately found a multi-turn bug every scripted test had missed. What has
-  *not* happened is measurement: refusal accuracy, traversal recall and injection resistance are recorded
-  only against scripted traces, so the published numbers describe **the machinery, not the model**. One
-  live case is an anecdote, not a rate, and that distinction is not smoothed over anywhere in this repo.
+  survivable. The redeploy is **deliberately deferred to phase 5**: putting a billable model behind a
+  public unauthenticated URL is a spend decision, not a deploy step, and phase 5 needs a live backend for
+  the SPA anyway — so the auth and throttling question gets answered once. Until then, "deployed on AWS
+  Lambda and Bedrock" is not a claim this project makes.
+- **Coverage generalisation is untested, and the held-out run is a single observation.** Real-model
+  behaviour *is* now measured rather than demonstrated: 41 development cases against a live model, a
+  noise floor taken over five identical runs, a judged tier 2 pass with judge-human agreement reported as
+  a range beside every judged number, and a sealed held-out set opened once, on 2026-08-24, that came
+  back 10 of 10 with every metric matching the development set. That is a real negative on the
+  overfitting question. What it is *not* is a rate: **n=1 with no error bar** — the noise floor showed
+  refusal accuracy swinging 12.5 points across five identical runs, and the held-out set has 2 refusal
+  cases, so one flip moves that metric 50 points. It cannot be given an error bar without re-running the
+  set, and re-running spends the property the set exists to have. Worse for the coverage claim
+  specifically: **9 of its 10 subjects are undated and 9 of 10 have no stated region**, because a
+  stratified random draw inherits the corpus's missingness where the gold set was curated to span. So the
+  set cannot answer "does this hold up on older or non-Western material." That question is open, not
+  passed.
 
 **Coverage is a computed number, not a disclaimer.** The corpus skews Western, anglophone and recent, and
 the output says so with figures rather than a footnote. But concentration is not absence: it spans 500 CE

@@ -4,6 +4,74 @@
 > from the 2026-07-30 scope pass on purpose, so it could be written against measurements rather than
 > assumptions. Re-read it at the start of phase 6 and amend it — phases 1 through 5 will have taught
 > things this doc cannot know.
+>
+> **Amended 2026-08-24, at the phase 4 close.** That is exactly what happened: phases 2 through 4
+> answered a substantial part of this doc, including its central "measure this early" decision. See §0.
+> The sections below are unedited except where a marked blockquote says otherwise — this doc is a map,
+> and the record of what was assumed on 2026-07-31 is worth keeping.
+
+## 0. What phases 2–4 already answered
+
+Read this before the sections below. They were written when the corpus was 158 genre edges and the
+artist axis was still a phase 6 deliverable.
+
+### Delivered already, so do not re-plan it
+
+- **The artist axis shipped in phase 2, step 6c** — Wikidata P737 artist-to-artist, not MusicBrainz. It
+  is listed under "Delivers" below as a phase 6 job and it is not one.
+- **Component structure is already queryable** (`graph/structure.py`, phase 2 step 4). It is recomputed
+  at load rather than read from the manifest, and `component_count`, `largest_component`, `diameter`,
+  `isolated_nodes` and `max_path_hops` ship on `/health` and the `done` frame. **DoD #3 is met.**
+- **Slicing by era, region, density and query type exists** (`eval/slices.py`, phase 3 step 7b, carried
+  through the whole phase 4 suite). **DoD #5 is met.**
+- **Coverage is already a recorded, displayed number** (`graph/coverage.py`, phase 2 step 8): 169 genres,
+  28 without inception, 48 without country, 29 distinct countries, 43 naming no US or UK connection.
+  DoD #2 is partly met — the number exists and ships; what is unmet is coverage rendered to a *user*,
+  which is phase 5's surface, not a corpus job.
+- **The prose-check markup defect under "Known risks" is fixed.** `ingest.prosecheck.strip_markup`
+  (phase 2 step 1) removes refs, templates and tables, category and file links, and appendix sections.
+  The risk entry stands as a record; the work is done.
+
+### The numbers below are superseded
+
+| this doc says | artifact v0.5.0 says |
+|---|---|
+| 158 sourced influence edges | **950 edges** |
+| 198 genres | **973 nodes** — 169 genres and 804 artists |
+| 46 disconnected components | **169 components**, largest **458** |
+| — | diameter **16**; deepest chain `path()` can return: **6 hops** |
+
+The genre-only picture the doc was written against still exists inside that: 41 components, largest 31,
+deepest chain **two** hops. The artist axis is the entire difference.
+
+### The central decision is already made, and it came back positive
+
+Under "Key decisions": *"Whether the artist axis changes the component picture. It plausibly does...
+**This should be measured early in the phase, because a positive result reshapes the whole decision.**"*
+
+It was measured in phase 2 and it was positive. Genre-level P737 could not supply depth at all — DoD #2
+of phase 2 originally promised a three-hop path and the genre corpus tops out at two. The artist axis
+supplied six. So the reshaping this bullet anticipated has already happened, one phase early, and the
+three candidate resolutions should be re-read in that light:
+
+1. **Narrow to component-local lineage** — much weaker now. The largest component holds 458 nodes rather
+   than 44, so "refuse across components" refuses far less than it would have in July.
+2. **P279 supplies connectivity** — unchanged and still unbuilt. P279 is still not ingested, and
+   `.claude/rules/graph-semantics.md` still owes a real boundary predicate if this phase ingests it.
+3. **A second source** — still open, and now open for a *different reason than connectivity*. Connectivity
+   was largely solved by the artist axis. What a second source buys is **`contested`**, which is
+   arithmetically unreachable while every edge has exactly one source, always Wikidata.
+   `agent/claims.py:UNREACHABLE` declares `contested` and `checks_disagree` with a test locking both, so
+   this phase is what makes one of them reachable or leaves it honestly unreachable forever.
+   **MusicBrainz cannot be that source** — it has no influence relationship in its schema at all, so it
+   can add releases and identifiers and not one lineage edge. `dbo:stylisticOrigin` is the named
+   candidate (`SPEC.md` §2.2).
+
+### What phase 5 will add to this before it starts
+
+The chip row. Of the six aspirational chips in `SPEC.md` §2.2, one answers, one refuses correctly and
+deliberately, and **four are blocked on this phase's second source**. Whatever phase 5 decides to put on
+the first screen is a direct statement about what this phase is for, and it should be read here first.
 
 ## What this phase is for
 
@@ -23,6 +91,10 @@ principle into a specific, uncomfortable problem — which is what this phase ex
 
 **The 158 sourced influence edges connect 198 genres in 46 disconnected components.** The largest holds
 44 genres; 24 of the 46 are a single pair. Full detail in `docs/graph-semantics.md` §5.
+
+> **Superseded 2026-08-24 — see §0.** Artifact v0.5.0 is 973 nodes and 950 edges in 169 components,
+> largest 458. The figures above are the genre-only corpus of 2026-07-31, kept because the question below
+> was posed against them.
 
 `CLAUDE.md` states the project thesis as: *"Genres look like separate things; underneath they are one
 connected organism, and most of the connections are not written down in one place."* The second clause is
@@ -54,6 +126,10 @@ Three candidate resolutions, none preselected:
 - **Density along three axes:** artists (P737's artist edges, which are far more numerous than the genre
   edges — 31,691 P737 edges exist in total), geography, and time (`P571` inception, which reaches back to
   roughly 2000 BCE).
+
+  > **Amended 2026-08-24.** The **artists** axis is delivered — phase 2 step 6c, 804 artist nodes on
+  > Wikidata P737. Geography and time remain, and remain thin: 28 of 169 genres carry no inception date
+  > and 48 no country of origin.
 - **Coverage rendered as a first-class displayed metric** — not a footnote, not a README caveat. The
   exclusion rate from the ingestion prose check (`docs/graph-semantics.md` §4.5) is part of this.
 - **Component structure as a queryable, sliceable property** of the artifact, so "is this genre reachable"
@@ -76,11 +152,18 @@ eval number depends on.
   where it conflicts with `01`.
 - **How coverage renders.** A number on the screen is the requirement; the form is open. It must be
   legible to someone who has not read any of these docs.
-- **Whether the artist axis changes the component picture.** It plausibly does — artist-level influence is
+- ~~**Whether the artist axis changes the component picture.**~~ It plausibly does — artist-level influence is
   ~100x denser than genre-level, and artists may bridge genre components that have no direct genre edge.
   **This should be measured early in the phase, because a positive result reshapes the whole decision.**
 
+  > **Answered 2026-08-06, in phase 2 — see §0.** Measured, and positive: the deepest chain went from two
+  > hops to six. This decision is closed and this phase inherits its consequences rather than making it.
+
 ## Definition of done
+
+> **Status as of 2026-08-24 (§0):** **#3 and #5 are already met** by phase 2 step 4 and phase 3 step 7b.
+> **#2 is half met** — the coverage numbers exist and ship on `/health`; rendering them to a user is
+> phase 5's surface. The items are left unedited so the phase is still judged against the whole list.
 
 1. The connectivity question has a recorded answer with reasoning, and the product's claim matches it.
 2. Coverage and density are displayed to a user, in numbers, without needing a footnote to be honest.
@@ -116,9 +199,13 @@ eval number depends on.
   already ranks this: on a tired week, the deployed URL beats the density work.
 - **Artist-axis density may not bridge components**, in which case resolution 3 becomes materially more
   attractive and the phase gets more expensive. Measure before committing.
-- **Wikipedia prose-check defects carried forward.** The mention counter over-reports because it counts
+- ~~**Wikipedia prose-check defects carried forward.**~~ The mention counter over-reports because it counts
   category tags and navbox templates as prose (`docs/graph-semantics.md` §4.5). Fix before any number
   from it is displayed to a user or published as an eval result.
+
+  > **Closed 2026-08-04, in phase 2 step 1.** `ingest.prosecheck.strip_markup` removes refs, templates
+  > and tables, category and file links, and appendix sections. It retains 29% of the raw wikitext on a
+  > typical genre article and roughly halves the hit count.
 - **Geography and time are thinner than they look.** `P571` reaches back millennia, but sparse ancient
   coverage against dense modern coverage is exactly the slice where an aggregate looks healthy while the
   interesting part is empty.

@@ -16,8 +16,21 @@ Stated once, because it settles arguments when two things compete for a session
 On a tired week, 2 beats 3, and 1 beats both.
 
 **Resume-ready is roughly v0.3–v0.4, not v1.0.** Deployed URL, real agent loop, published eval numbers.
-"Deployed on AWS Lambda and Bedrock with a deterministic groundedness gate at 100%" is fully claimable at
-v0.3. This is written down now so a bad week does not relitigate it later.
+This is written down now so a bad week does not relitigate it later.
+
+> **Corrected 2026-08-24.** This paragraph read *"'Deployed on AWS Lambda and Bedrock with a deterministic
+> groundedness gate at 100%' is fully claimable at v0.3."* **It is not claimable, at v0.3 or at v0.4.**
+> The gate half is true and measured. The *deployed on Bedrock* half is not: the public URL runs
+> `llm_provider=local`, and the redeploy was deliberately deferred to phase 5 (`KNOWN-GAPS.md`, DoD #8).
+> Every other place in this repo states this correctly — the phase 3 ledger below, `KNOWN-GAPS.md`,
+> `README.md`, `docs/eval-suite-explained.md`. This was the one place it slipped, and it is the section
+> that feeds recruiter copy, which is exactly why it is corrected in place rather than quietly edited.
+>
+> **What IS claimable at v0.4**, and it is not a small list: a hand-built Bedrock Converse tool loop
+> measured across 41 development cases; a deterministic groundedness gate at 100% and citation resolution
+> at 100%; a noise floor measured over five identical runs before any threshold was set; a validated
+> non-Anthropic judge with agreement reported as a range beside every judged number; and a sealed
+> held-out set opened once at 10/10. What is missing is the redeploy, not the work.
 
 ## 2. The version spine
 
@@ -35,14 +48,16 @@ so both columns are labelled. Reading one as the other is the confusion this hea
 | **0** `scaffold-and-spine` | — | — | The repo itself | Complete 2026-07-29 |
 | **1** `walking-skeleton` | **v0.1** | v0.1.0 | Everything present, connected, deployed, and tiny | — |
 | **2** `corpus-and-traversal` **DONE 2026-08-06** | **v0.2** | **v0.5.0** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
-| **3** `agent-loop` | **v0.3** | **v0.5.0** (unchanged) | Real agent loop: planning, **7** tools, corroboration | Tool registry; loop untouched |
+| **3** `agent-loop` **DONE 2026-08-12** | **v0.3** | **v0.5.0** (unchanged) | Real agent loop: planning, **7** tools, corroboration | Tool registry; loop untouched |
 | **4** `eval-suite` **DONE 2026-08-24** | **v0.4** | **v0.5.0** (unchanged) | The eval suite proper | Independent scorers over a pinned artifact |
-| **5** `spa-and-visualization` | **v0.5** | pinned, TBD | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
+| **5** `spa-and-visualization` | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
 | **6** `density-and-coverage` | **v0.6** | new cut | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |
 
-**Phase 3 does not cut a new artifact.** The corpus does not change, and re-cutting it would silently
-invalidate every prior benchmark for nothing.
+**Phases 3, 4 and 5 do not cut a new artifact.** The corpus does not change, and re-cutting it would
+silently invalidate every prior benchmark for nothing. Phase 5's pin read `pinned, TBD` until 2026-08-24;
+it is `v0.5.0` for the same reason phase 4's is — a frontend consumes the API, and the API reads whatever
+the backend has pinned. **Phase 6 is the next new cut.**
 
 **Phase 6 gained a named dependency on 2026-08-07:** a **second source per edge**. Every edge in v0.5.0
 has exactly one, always Wikidata, which is why contested-claim detection is unbuildable before then. See
@@ -61,8 +76,8 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | 0 | written (retroactively) | written (as-built) |
 | 1 | written | written (as-built) |
 | 2 | written; **amended 2026-08-04 (A1–A4)**, **A5–A6.8 during the build**, **A7 retroactively 2026-08-07** | written 2026-08-04; **all 8 steps built, phase complete** |
-| 3 | written; **amended 2026-08-07 (A1–A5)** | **written 2026-08-07, approved; no code yet** |
-| 4 | written | at phase start |
+| 3 | written; **amended 2026-08-07 (A1–A5)** | written 2026-08-07; **built; phase complete 2026-08-12, tagged `v0.3.0-local`** |
+| 4 | written; **amended 2026-08-12 (§0, at the phase 3 release step)** | written 2026-08-15; **all 9 steps built, phase complete 2026-08-24, tagged `v0.4.0`** |
 | 5 | written | at phase start |
 | 6 | written 2026-07-31, after the validation | at phase start |
 | 7 | written | at phase start |
@@ -76,167 +91,45 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-08-06
+### Where the build actually is — 2026-08-24
 
-**Phase 2 is COMPLETE. All eight steps are built, tested and deployed.**
+**Phases 0 through 4 are complete.** `v0.3.0-local` and `v0.4.0` are tagged. Phase 5 is next and has not
+started.
 
-| step | what | state |
+> **This section was rewritten on 2026-08-24, and the rewrite is the point.** It used to be a running
+> status board — an eight-row phase 2 step table, a phase 3 step table, a phase 2 definition-of-done
+> audit, and the full AWS quota narrative — carried inline and hand-updated. The project outgrew that.
+> Per-step as-built detail now lives in each phase's IMPLEMENTATION doc, the open-item list lives in
+> **[`docs/KNOWN-GAPS.md`](KNOWN-GAPS.md)**, and findings that outlive the step that produced them are
+> filed in §4 below. Three copies of the same status, drifting apart at different rates, is how the
+> stale-doc problem starts, and by 2026-08-24 this section was eighteen days behind while the rest of
+> the repo was current. What replaced it is a pointer and a small set of facts that are true right now.
+
+| Phase | State | Detail |
 |---|---|---|
-| 1 | harden the prose check into `ingest/prosecheck.py` | done 2026-08-04 |
-| 2 | full P737 discovery replaces the hand-verified list | done 2026-08-04 |
-| 3 | the schema carries verification strength | done 2026-08-04 |
-| 4 | `path()` and the component structure | done 2026-08-05 |
-| 5 | multi-hop through the agent, without touching the loop | done 2026-08-05 |
-| 6 | the artist axis — filter, held-out measurement, ingest | done 2026-08-06 |
-| 7 | publish every artifact version to a versioned S3 record | done 2026-08-06 |
-| 8 | coverage as a recorded number | done 2026-08-06 |
+| 0 `scaffold-and-spine` | complete 2026-07-29 | §3 below |
+| 1 `walking-skeleton` | complete | `phase-1-walking-skeleton-IMPLEMENTATION.md` |
+| 2 `corpus-and-traversal` | complete 2026-08-06, 8 steps | `phase-2-corpus-and-traversal-IMPLEMENTATION.md` |
+| 3 `agent-loop` | complete 2026-08-12, tagged `v0.3.0-local` | `phase-3-agent-loop-IMPLEMENTATION.md` §11 |
+| 4 `eval-suite` | complete 2026-08-24, 9 steps, tagged `v0.4.0` | `phase-4-eval-suite-IMPLEMENTATION.md` |
+| 5 `spa-and-visualization` | not started | scope doc written; IMPLEMENTATION doc owed |
 
 **Corpus as shipped: artifact `v0.5.0`, 973 nodes, 950 edges** — 22 `HAND`, 111 `PROSE_AUTO`, 760
 `ASSERTS_AUTO`, 57 `EXPOSURE_AUTO`. Live on AWS. `v0.1.0` through `v0.4.0` stay on disk and in S3 as
 frozen records; `v0.1.0` and `v0.2.0` are deliberately unloadable under the current schema.
 
-**RESOLVED 2026-08-11. Phase 1 DoD #1 is closed.** A real `converse` call was made and logged against
-Claude Haiku 4.5. What remains is a **deployment** gap, not an access gap: the deployed stack still runs
-`llm_provider=local`, so the public URL's prose is a template and its token counts are synthetic until a
-deliberate redeploy. Every other part of the stack — Lambda, ECR, S3, CloudFront, Terraform, IAM, OIDC,
+**Structure, measured rather than assumed:** 169 components over 973 nodes, largest 458, diameter 16,
+and the deepest chain `path()` can return is **six hops**. The genre-only corpus those figures replaced
+was 41 components, largest 31, deepest chain **two** — the artist axis is the entire difference, and
+`tests/test_structure.py::test_the_depth_arrived_with_the_artist_axis` records both halves. Coverage is
+likewise a computed number and ships on `/health`; the figures and the reasoning are in `SPEC.md` §6 and
+`docs/graph-semantics.md`.
+
+**The one gap with consequences outside the repo:** the deployed URL still runs `llm_provider=local`, so
+its prose is a template and its token counts are synthetic. Bedrock access itself has been fine since
+2026-08-11 (§4); what is outstanding is a **redeploy, deliberately deferred to phase 5** as a spend
+decision rather than a deploy step. Everything else — Lambda, ECR, S3, CloudFront, Terraform, IAM, OIDC,
 CloudWatch, Budgets — is applied and working.
-
-**AWS update, 2026-08-06 23:48 CDT.** Support confirmed the diagnosis in their own words — the block was
-"at the account level at the Bedrock runtime layer, not a per-model or per-region quota setting, which is
-why the values visible in Service Quotas do not reflect what is being enforced." They reported the root
-cause identified and an active internal review to **restore the standard new-account inference
-allocation**, with no action required from us and no ETA.
-
-**Resolution, 2026-08-11 ~17:25 CDT.** The allocation was restored. **AWS never said so** — no reply
-landed on case `178545883500013`; the restored numbers were found by checking the Bedrock Quotas console
-directly. Two gates in sequence, and only the first was AWS's:
-
-1. **The tokens-per-day zero: gone.** Amazon Nova Micro returned real usage on the first attempt.
-2. **Anthropic models then threw `AccessDeniedException`** naming `aws-marketplace:ViewSubscriptions`
-   and `Subscribe`. **This was not a quota problem and not a support case.** The Bedrock "Model access"
-   page is retired; third-party models auto-subscribe on first invocation, but only when invoked by an
-   identity holding Marketplace permissions, and `mycelium-dev` is a scoped IAM user that lacks them.
-   Fixed in about five minutes, self-serve: as root, Model catalog → Claude Haiku 4.5 → Playground,
-   submit the Anthropic first-time-use form (instant, not a review queue), invoke once. That created
-   Marketplace agreement `agmt-khy4nwv8klfzzthldwq47ty1` at $0.00 and entitled the whole account.
-   `mycelium-dev` then worked with plain `bedrock:InvokeModel`; **no Marketplace permission was added
-   to the dev key or to the Lambda execution role, and none is needed.**
-
-**Provisioned quotas, and the constraint that actually matters.** Claude Haiku 4.5 5M TPM / 10 RPM;
-Sonnet 4.6 6M / 10; Nova Pro 2M / 25. **RPM binds, not tokens** — an agentic loop exhausts 10 requests
-per minute long before 5M tokens, so anything that fans out needs throttling and backoff. That is a
-phase 4 design input, not a discovery to make mid-run. Newest-generation rows (Opus 5, Sonnet 5,
-Fable 5, Opus 4.7/4.8) read 0 and are normal provisioning lag, not an account fault.
-
-### Phase 3 — planned 2026-08-07, **all local steps built (2026-08-11); only the Bedrock gate remains**
-
-Scope doc amended (A1–A5) and IMPLEMENTATION doc written and approved the same night. Per-step as-built
-records live in `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §11 — that doc is the detail, this is
-the ledger.
-
-The phase was sequenced around the Bedrock block rather than waiting on it: **steps 1–7 need no model at
-all** and ship as **`v0.3.0-local`**; **step 8 is a single skippable Bedrock gate** carrying DoD items
-10–12, with **phase 4 as its named home** if quota were still absent when the local work finished.
-
-**That contingency did not fire.** Access was restored 2026-08-11, hours after step 7b landed, so step 8
-is now *unblocked rather than deferred*. The sequencing decision still looks right in hindsight: the
-local work was finished, committed and testable before access arrived, and nothing had to wait.
-
-| step | what | needs | status |
-|---|---|---|---|
-| 1 | the adversarial set — 18 cases, hand-authored **before** any loop code | LOCAL | DONE 08-07 |
-| 2 | four new tools (7 total); `corpus_coverage` registered last as the invariant-4 seam test | LOCAL | DONE 08-07 |
-| 3 | the plan object and the `Planned` event; **3b** the backwards premise (DoD #13) | LOCAL | DONE 08-08 |
-| 4 | per-claim `verification`, `MAX_TURNS` 5 → 8, and a token budget (DoD #3) | LOCAL | DONE 08-08 |
-| 5 | untrusted-text delimiting; the three injection tests (DoD #5) | LOCAL | DONE 08-09 |
-| 6 | the cheap/strong routing seam, proven with two `ScriptedLLM`s (DoD #8) | LOCAL | DONE 08-09 |
-| 7a | the six deterministic scorers; **claims no DoD item, by design** | LOCAL | DONE 08-11 |
-| 7b | the era/region/density/query-type slicing and the adversarial baseline run | LOCAL | DONE 08-11 |
-| — | **the multi-tool-turn bug** — `loop.py` sent one message per tool result; Bedrock needs all of a turn's results in one. Found 08-11 by the first live-model test | BEDROCK-FOUND | DONE 08-12 (`700bad3`), with a two-tool `ScriptedLLM` test |
-| — | **the `v0.3.0-local` release: KNOWN-GAPS, the README statement, tag** | LOCAL | KNOWN-GAPS + README + doc corrections DONE 08-12 (`08612ba`); **only the tag remains**. Version decided 08-11 (spine, `0.3.0`); `costs_money` tests DONE |
-| 8 | **the Bedrock gate — smoke call, model IDs, live adversarial run, cost to CloudWatch** | BEDROCK | unblocked 08-11; smoke call and model IDs DONE, live adversarial run and CloudWatch cost open |
-
-**Step 7 was split 7a/7b on the 3a/3b precedent.** 7a is six pure functions and closes nothing; 7b is the
-slicing and the run, and closes DoD 1, 2, 4, 6, 7 and 9. **DoD 1–9 and 13 are now green.**
-
-**Step 4 is not "corroboration".** This table said `Corroboration` until 2026-08-09; the A1 recalibration
-of 2026-08-07 replaced it with per-claim `verification`, because **`contested` is unbuildable on a corpus
-with one source per edge** — arithmetic, not effort. `contested` and `checks_disagree` ship as
-test-locked-unreachable names. Do not re-litigate.
-
-**Two things found by building, recorded here because they outlive the step that found them:**
-
-- **Delimiting untrusted text needs a return path** (step 5). Marking tool payloads without stripping the
-  marks off incoming tool arguments breaks the walk it was protecting — a model hands a wrapped node id
-  straight back and every id-taking tool answers `unknown node`.
-- **A streamed call reported no usage, so synthesis was billed and never counted** (step 6). Survivable
-  while one model does everything; uncostable the moment two roles run on differently-priced models.
-  `LLM.stream` is now `Generator[str, None, Usage]` and `done` reports cost **per role, never summed**.
-- **A fabricated edge cannot reach the gate through a tool at all** (step 7b). Every proposal is built by
-  a tool from a real artifact edge, so the only channel by which a model states a triple of its own is
-  `asserted_premise` on the plan turn. This narrowed the adversarial harness while it was being written,
-  and it is a stronger result than the test it replaced.
-- **The adversarial set only ever walks `HAND`-verified edges** (step 7b) — all 7 approved claims across
-  16 cases. The baseline therefore says nothing about the `PROSE_AUTO` majority of the corpus. A gap in
-  the **dataset**, owed to the gold set, and locked by a test so it cannot quietly stop being true.
-  **Closed 2026-08-14 by the completed gold set**, whose 67 claims break down `ASSERTS_AUTO` 29,
-  `PROSE_AUTO` 21, `HAND` 15, `EXPOSURE_AUTO` 2 — all four tiers, with the two weakest deliberately
-  walked rather than avoided.
-
-**`get_descendants` closes a real gap:** `Direction.INFLUENCED` has been supported by `GraphStore` since
-phase 2 and no registered tool exposes it, so "what came out of the blues?" is currently unanswerable
-except as a side effect of `trace_lineage`.
-
-**The resume line — "deployed on AWS Lambda and Bedrock with a deterministic groundedness gate at 100%" —
-is NOT claimable at `v0.3.0-local`.** It travels with step 8. Recorded here rather than glossed.
-
-#### Phase 2's definition of done, item by item
-
-| # | item | state |
-|---|---|---|
-| 1 | corpus ingests locally, artifact + manifest + per-edge exclusions | **met** |
-| 2 | a path of three or more hops, sourced on every edge | **met** — 5 hops: `Nine Inch Nails -> The Clash -> Ramones -> The Beatles -> Bob Dylan -> Woody Guthrie` |
-| 3 | the artist axis answers "Who influenced Kate Bush?" end to end | **partially — see below** |
-| 4 | type filter is a bounded membership test against `Q188451` | **met** |
-| 5 | phase 1's five gold cases pass against the new pin | **met** |
-| 6 | `run()` and `gate()` not edited to accommodate the corpus | **met with one named exception — see below** |
-| 7 | coverage is a recorded number | **met** |
-| 8 | the artifact is published to S3, versioned and immutable | **met** |
-
-**DoD #3, stated honestly.** The artist axis works: `U2` resolves and returns six gated claims, each
-citing a Wikidata statement URI. But **Kate Bush specifically has zero outgoing `P737` and seven
-incoming** — Wikidata records nobody as having influenced her, while seven artists cite her. So the
-literal SPEC query *"Who influenced Kate Bush?"* **correctly refuses**, and that refusal is right rather
-than broken. The capability is delivered; the example chosen for it in `SPEC.md` §2.2 happens to be a
-node with no parents. Either the DoD item or the SPEC example should be restated — a decision, not a
-fix, and it is not phase 2's to make unilaterally.
-
-**DoD #6, stated honestly.** `run()` was not edited. **`gate()` was**, once: it gained a `CROSS_AXIS`
-rejection when the artist axis landed, so a genre-to-artist claim is refused rather than narrated. That
-is invariant 3 being enforced rather than the corpus being accommodated, but it *is* an edit to `gate()`
-caused by a corpus change, and calling it anything else would be reading the item generously.
-
-**Connectivity, measured rather than assumed:** 169 components over 973 nodes, largest 458, diameter 16,
-and the deepest chain `path()` can return is **six hops**.
-
-Those numbers replace the genre-only ones — 41 components, largest 31, deepest chain **two** hops — and
-the change is a finding rather than a drift. Step 4 measured that the genre axis could not supply depth
-and said the depth would have to come from somewhere other than P737 among genres; **the artist axis is
-that somewhere.** DoD #2 was amended to match the old constraint (scope doc A5); that amendment stands
-as a decision about what to promise, but the constraint it reasoned around is gone.
-`tests/test_structure.py::test_the_depth_arrived_with_the_artist_axis` records both halves.
-
-**Coverage, also measured rather than assumed** (DoD #7, step 8): over 169 genres, **28 carry no
-inception date and 48 no country of origin**. The corpus spans **500 CE to the present across 29
-places** — medieval and classical music at 500, opera and Baroque at 1600, samba, kuduro, bachata,
-Anatolian rock, kayōkyoku — and **43 genres name no US or UK connection at all**, while 78 of the 121
-with any place do. **It is dense in post-war anglophone material and thin elsewhere; concentration is
-not absence, and both halves ship together on `/health`** so neither can be quoted without the other.
-
-*(43/78, not 44/77, since 2026-08-07: `UK drill`'s P495 is `Brixton`, a London district, which an
-exact-string test read as "names no UK". P495 records places, not countries. The counterweight figure is
-audited as hard as the bias figure, and note the correction made the corpus look **more** anglophone, not
-less — it was applied because it was right, not because of which way it moved.)*
 
 ## 3. Scaffolding ledger
 
@@ -265,7 +158,7 @@ before a Lambda exists is not preparation, it is clutter.
 | Pinned dependency lockfile | `uv.lock` (committed; CI runs `uv sync --locked`) |
 | Product shape and canonical queries | `SPEC.md` |
 | Phase spine and the two-layer phase-doc pattern | `CLAUDE.md`, `docs/phases/` |
-| Scope docs, phases 0–5 and 7 | `docs/phases/phase-{0,1,2,3,4,5,7}-*.md` |
+| Scope docs, **all phases 0–7** | `docs/phases/phase-{0..7}-*.md` (6 written 2026-07-31, after the validation) |
 | Terraform 1.15.8, Docker Engine 29.6.2 | Installed on WSL2, 2026-07-30 |
 | AWS account, `us-east-1`, PAID plan | Budget armed at $20 with 25/50/100% alerts; Cost Explorer on |
 
@@ -281,7 +174,7 @@ before a Lambda exists is not preparation, it is clutter.
 | `web/` SPA scaffold | v0.5. Initialized **inside** `web/`, never at the root |
 | Frozen eval datasets | Hand-authored **before** the agent is coded, or they are contaminated |
 | Graph-viz engine choice | v0.5, via throwaway previews |
-| Logo and banner | **After** the first successful Bedrock call, not before |
+| Logo and banner | **After** the first successful Bedrock call, not before — **unblocked 2026-08-11**; phase 5 owns it |
 
 ### Local prerequisites
 
@@ -290,16 +183,23 @@ Make. Python is 3.12 locally; `uv` provisions the 3.13 this project targets, so 
 file.
 
 **There is no remaining local prerequisite.** Bedrock was the last one and it cleared 2026-08-11; see
-§3's phase-1 block for the full resolution. The account is live, both Terraform roots are applied, the
+§4's `2026-08-11` entry for the full resolution. The account is live, both Terraform roots are applied, the
 deployed Lambda serves a public streaming URL on `llm_provider=local`, and `BedrockLLM` has been executed
 against the live Converse API.
 
 **Two things to keep straight, because they are easy to conflate.** The *provider seam* is verified —
 single-turn, streaming with real usage, and a real tool-use turn — and as of 2026-08-12 the *agent loop*
 on top of it is verified too: plan, multi-tool traversal, gate, synthesis and prose, end to end against a
-real model. What is not demonstrated is real model behaviour **measured across a set**: refusal accuracy,
-traversal recall and injection resistance are recorded only against scripted traces. And the deployed URL
-has not been redeployed onto Bedrock, so the live demo's prose remains a template. The full list is
+real model.
+
+*(Corrected 2026-08-24. This paragraph continued "What is not demonstrated is real model behaviour
+**measured across a set**: refusal accuracy, traversal recall and injection resistance are recorded only
+against scripted traces." **That has been false since 2026-08-16.** Phase 4 measured all three against a
+live model over the 41-case development set, took a noise floor over five identical runs, ran a judged
+tier 2 pass, and opened the sealed held-out set once at 10/10.)*
+
+What remains true is narrower and it is the whole of it: **the deployed URL has not been redeployed onto
+Bedrock**, so the live demo's prose is a template and its token counts are synthetic. The full list is
 `docs/KNOWN-GAPS.md`.
 
 ## 4. Decision history
@@ -307,6 +207,35 @@ has not been redeployed onto Bedrock, so the live demo's prose remains a templat
 Decisions made before the repo existed live in `planning/00`–`09`. Recorded here from the point the repo
 exists.
 
+*(The five entries below were rescued from §2's status board on 2026-08-24 when it was replaced. They are
+findings that outlive the step that produced them, which is what this section is for; the status board was
+not.)*
+
+- **2026-08-09 — Delimiting untrusted text needs a return path.** Marking tool payloads without stripping
+  the marks off *incoming* tool arguments breaks the walk it was protecting: a model hands a wrapped node
+  id straight back and every id-taking tool answers `unknown node`. Found by building phase 3 step 5.
+- **2026-08-09 — A streamed call reported no usage, so synthesis was billed and never counted.**
+  Survivable while one model does everything; uncostable the moment two roles run on differently-priced
+  models. `LLM.stream` is now `Generator[str, None, Usage]` and `done` reports cost **per role, never
+  summed** — summing is a presentation choice belonging to whoever knows both prices.
+- **2026-08-11 — A fabricated edge cannot reach the gate through a tool at all.** Every proposal is built
+  by a tool from a real artifact edge, so the only channel by which a model states a triple of its own is
+  `asserted_premise` on the plan turn. This narrowed the adversarial harness while it was being written,
+  and it is a stronger result than the test it replaced.
+- **2026-08-11 — The adversarial set only ever walks `HAND`-verified edges** — all 7 approved claims
+  across 16 cases — so that baseline says nothing about the `PROSE_AUTO` majority of the corpus. A gap in
+  the **dataset**, locked by a test so it could not quietly stop being true. **Closed 2026-08-14 by the
+  completed gold set**, whose 67 claims break down `ASSERTS_AUTO` 29, `PROSE_AUTO` 21, `HAND` 15,
+  `EXPOSURE_AUTO` 2 — all four tiers, with the two weakest deliberately walked rather than avoided.
+- **2026-08-06 — Phase 2 met its definition of done with two items stated honestly rather than generously.**
+  **DoD #3:** the artist axis works and `U2` returns six gated claims, but **Kate Bush has zero outgoing
+  `P737` and seven incoming**, so the literal `SPEC.md` query *"Who influenced Kate Bush?"* **correctly
+  refuses**. The capability shipped; the example chosen for it happens to be a node with no parents, and
+  that refusal is now the corpus's best coverage-honesty demo rather than a defect. **DoD #6:** `run()`
+  was not edited, but **`gate()` was**, once — it gained a `CROSS_AXIS` rejection so a genre-to-artist
+  claim is refused rather than narrated. That is invariant 3 being enforced rather than the corpus being
+  accommodated, but it *is* an edit to `gate()` caused by a corpus change, and calling it anything else
+  would be reading the item generously.
 - **2026-08-14 — The gold set is complete at 25 cases / 67 claims, and two schema decisions came with it.**
   Size decided by sjtroxel: 25, not the 27 of the composition draft — `.claude/rules/evals.md` requires
   20–30 and both sit inside it. **(a) `citation_status`**, an optional per-claim flag for claims whose

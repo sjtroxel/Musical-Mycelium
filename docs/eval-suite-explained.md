@@ -26,9 +26,9 @@ because there is no other way to check a free-text answer. That works, sort of, 
 soft.
 
 This project mostly does not have to. **We own the graph.** Every influence edge in it came from
-Wikidata or MusicBrainz, and it is sitting in a file we control. So when the agent claims "bebop was
-influenced by swing", checking it is not a judgement call. It is a dictionary lookup: is that edge in the
-file, yes or no.
+Wikidata, and it is sitting in a file we control. So when the agent claims "bebop was influenced by
+swing", checking it is not a judgement call. It is a dictionary lookup: is that edge in the file, yes or
+no.
 
 That one property turns the headline correctness measures into free, instant, deterministic checks:
 
@@ -42,7 +42,12 @@ That one property turns the headline correctness measures into free, instant, de
 - **Injection resistance** - if a question contains a planted instruction trying to make the agent assert
   something false, does it hold.
 
-These run on every commit, cost nothing, and five of them can block a merge.
+These run on every commit and cost nothing. Five of them are wired as gates — but on the free run, only
+**three** can actually block a merge. Traversal recall on a scripted run is determined by the script
+rather than the model, and the planted injections live in the adversarial set, which the free run does not
+include. Both come back as `N/A`, and `N/A` is never counted as a pass: the report prints gated, failed,
+and inapplicable as three separate counts, so a run where nothing was gated cannot come out looking green.
+The other two gates need money.
 
 ## Why the agent cannot lie in the prose
 
@@ -67,9 +72,13 @@ into how the project is described out loud.
 - **The gold set** - 25 questions, hand-built, every expected edge cited. Includes deliberately boring
   middles, because a set of only dramatic examples flatters a system that skips steps.
 - **The adversarial set** - 18 questions designed to break things, including a planted prompt injection.
-- **The held-out set** - 10 questions that are **never looked at** during development.
+- **The held-out set** - 10 questions that are **never looked at** during development. This one was not
+  hand-written: it was **drawn** from the graph by a seeded random sample matched to the gold set's mix of
+  question shapes. That was deliberate. A held-out set someone curates inherits the same blind spots as
+  the gold set they curated first, and a drawn one cannot contain a hallucinated edge at all, because
+  every case is generated from edges that are already in the file.
 
-All three were built before the agent could run, so none of them are contaminated by its output.
+All three were fixed before the agent could run, so none of them are contaminated by its output.
 
 The held-out set is encrypted, and the reason is worth stating plainly: **the threat is the coding agent,
 not the person.** An AI assistant working in this repo greps, opens files to check a schema, and reads
@@ -80,6 +89,16 @@ does not stop that. Encryption does.
 It is still checkable while sealed. A tool decrypts it in memory and reports problems as case numbers and
 problem codes - `heldout_v1_007: claims-diverged` - which says everything you need in order to act and
 discloses nothing. A case number is not content.
+
+**It has now been opened, once, on 2026-08-24, and it came back 10 of 10** with every metric matching the
+development set. That is a real negative on the overfitting question, and it is one observation rather
+than a rate: with two refusal cases and no error bar, one flip moves that metric fifty points. The rule
+written afterwards is that the set may only be run again at a future freeze, and only if nothing was
+tuned in response to what it said - because a set re-run after a change made because of its own result
+has stopped measuring generalisation and started measuring how many attempts it took. Two things it
+cannot tell us at all: nothing was planted in it, so injection resistance has no held-out evidence; and
+nine of its ten subjects carry no date and no stated region, so it cannot answer whether the system holds
+up on older or non-Western material. That question is open, not passed.
 
 ## Why a score with no noise floor is not a score
 

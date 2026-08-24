@@ -5,7 +5,8 @@
 > its §0 first — this doc does not restate it. The open-item list is
 > [`docs/KNOWN-GAPS.md`](../KNOWN-GAPS.md).
 >
-> **Status: awaiting approval. No phase 4 code is written until this doc is approved.**
+> **Status: COMPLETE 2026-08-24.** All 9 steps built; tagged `v0.4.0`. DoD 8 closed as partial — the
+> Bedrock redeploy is deferred to phase 5 — and that deferral is recorded in `docs/KNOWN-GAPS.md`.
 
 ## 1. What this phase delivers, in one sentence
 

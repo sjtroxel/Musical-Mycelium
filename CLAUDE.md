@@ -106,8 +106,14 @@ Patchwork and Heritage Odyssey both reached 26 root entries.
 
 Fixed infrastructure is designed to cost approximately $0/month: Lambda's always-free tier, S3 and
 CloudFront pennies, no managed database, no VPC, no NAT gateway, no provisioned concurrency. **The only
-meaningful spend is Bedrock tokens**, and the eval suite is the real line item (~$5–25/run, based on
-Patchwork's actual $4.57 and $10.55 judged runs).
+meaningful spend is Bedrock tokens**, and the eval suite is the real line item.
+
+**Measured, 2026-08-24 — these replace the estimate.** A full live tier 1 run over the 41-case
+development set is roughly **$0.36**; the sealed held-out run was about **nine cents**; a judged tier 2
+run is a few cents on top. Four live runs in one night came to about **$1** total. The planning estimate
+was ~$5–25/run, carried over from Patchwork's $4.57 and $10.55 judged runs; this suite is far cheaper
+because correctness is a dictionary lookup here and only two metrics are judged at all. Quote the
+measured numbers, not the estimate.
 
 Hard rules in `.claude/rules/aws-and-cost.md`. The short version: no always-on resources, budget alarms
 before the first `terraform apply`, explicit CloudWatch log retention (the default is never-expire), and
@@ -117,5 +123,19 @@ any operation that spends money at scale goes behind an explicit confirmation.
 
 This is the project's central honest claim and it must not be overstated. "Grounded" means every edge
 traces to a checkable source. It does **not** mean the edge is true. Wikidata can be wrong; musical
-influence is genuinely contested. Contested claims are flagged as contested, not resolved. When writing
-copy, docs, or interview material about this project, never let "grounded" slide into "correct."
+influence is genuinely contested. When writing copy, docs, or interview material about this project,
+never let "grounded" slide into "correct."
+
+**What the corpus can and cannot say about disagreement — decision A1, do not re-litigate.** This section
+read *"contested claims are flagged as contested, not resolved"* until 2026-08-24, which described a
+capability the corpus cannot have. **Every edge in artifact v0.5.0 carries exactly one source, always
+Wikidata**, so there is nothing that could disagree with anything: `contested` is arithmetically
+unreachable, not merely unbuilt. It is *declared* in `agent/claims.py:UNREACHABLE` alongside
+`checks_disagree`, with a test asserting no artifact edge can produce either — named rather than silently
+absent, so a future corpus that could express one fails the test instead of quietly making it reachable.
+
+What ships instead is **`verification`**, on every edge and copied onto every approved claim by the gate:
+`HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`, `EXPOSURE_AUTO`. It says **how strongly this claim's one source was
+checked. It is not a count of agreeing sources and not a disputed flag** — reading these tiers as
+corroboration is reading the opposite of the truth. Phase 6's second source is what would make `contested`
+reachable; `SPEC.md` §7 and `phase-3-agent-loop.md` A1.1 carry the detail.

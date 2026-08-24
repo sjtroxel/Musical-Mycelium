@@ -16,10 +16,24 @@ Canonical detail: `docs/planning/07-EVAL-SPEC.md` §2 (as amended) and `08-REVIE
   difflib coverage bug in Patchwork.
 - **"Grounded" is a provenance guarantee, not a truth guarantee.** Every edge traces to a checkable source.
   Wikidata can still be wrong. Never let project copy, docs, or interview answers slide from "traceable" to
-  "correct." The honest follow-up answer is: traceable to a checkable source, contested claims flagged as
-  contested, and the gold set cites sources *independent of Wikidata* so divergence surfaces.
-- **Contested is a first-class state, not an error.** Musical influence is genuinely disputed. Flag it;
-  do not resolve it, and do not silently drop it.
+  "correct." The honest follow-up answer is: traceable to a checkable source, the strength of that check
+  published per claim, and the gold set cites sources *independent of Wikidata* so divergence surfaces.
+- **`contested` is UNREACHABLE on this corpus, and saying otherwise is the error.** *(Amended 2026-08-24.
+  This bullet read "Contested is a first-class state, not an error. Musical influence is genuinely
+  disputed. Flag it; do not resolve it, and do not silently drop it." — an instruction to build something
+  the corpus cannot support.)* Musical influence **is** genuinely disputed; what this corpus cannot do is
+  detect the dispute. Every v0.5.0 edge has exactly one source, always Wikidata, so nothing can disagree
+  with anything. That is arithmetic, not effort — **decision A1, do not re-litigate.**
+  - `contested` and `checks_disagree` are **declared and test-locked-unreachable** in
+    `agent/claims.py:UNREACHABLE`. Named rather than silently absent, so a future corpus that could
+    express one fails the test instead of quietly making it reachable. Do not delete them and do not
+    make them reachable to satisfy a metric.
+  - What ships instead is **`verification`** — `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`, `EXPOSURE_AUTO` —
+    on every edge and copied onto every approved claim by the gate, never supplied by the model. It says
+    **how strongly one source was checked. It is not a count of agreeing sources and not a disputed
+    flag.** In the eval catalog, `verification_mix` replaces the "contested flagging" metric.
+  - Phase 6's second source is the precondition. Until it lands, a doc, a metric, or an interview answer
+    that implies this system detects disagreement is overstating it.
 - **Refusal is correct behavior.** An unsourced influence edge must be refused rather than narrated.
   Report refusal accuracy as a **pair** — true refusals and false refusals — always. A system that refuses
   everything scores perfectly on hallucination and is useless.
