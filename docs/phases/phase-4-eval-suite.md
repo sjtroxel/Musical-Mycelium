@@ -164,12 +164,12 @@ the fix is in scope; a new agent *feature* is not. Historical trend view and the
 > cannot look green. **The other two gates need money.** This is a limit of a free deterministic tier,
 > not a defect, but the DoD as written overstates it. `eval/thresholds.py` is the authority.
 >
-> **#8 — closed as PARTIAL, deliberately.** Per-run cost is **measured** from real usage and recorded in
-> committed result files; it does **not** reach CloudWatch, because that needs a redeploy, and the
-> redeploy was deferred to phase 5 (`KNOWN-GAPS.md`). Phase 5 needs a live backend for the SPA anyway, so
-> the auth and throttling decision gets made once instead of twice, and no billable public URL is exposed
-> in the meantime. **The resume line "deployed on AWS Lambda and Bedrock" stays unclaimable until that
-> redeploy** — nothing about this partial close softens that.
+> **#8 — closed as PARTIAL on 2026-08-24, then CLOSED FULLY the same day.** The partial close read: cost
+> is measured from real usage and recorded in committed result files, but does not reach CloudWatch,
+> because that needs a redeploy deferred to phase 5. **Phase 5 step 0 shipped that redeploy hours later.**
+> Per-query cost now reaches CloudWatch as EMF in namespace `MusicalMycelium`, dimensioned by `Role` and
+> `ModelId`, from real traffic against Claude Haiku 4.5. **The resume line "deployed on AWS Lambda and
+> Bedrock" is claimable.** The partial close stands as the record of a correctly-scoped phase boundary.
 >
 > **#7 landed as written and is now governed by a rule.** The held-out set was run once, at the freeze,
 > and reported separately. `.claude/rules/heldout-set.md` records the run and forbids a second one at any

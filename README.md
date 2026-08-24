@@ -21,6 +21,12 @@ provisioned entirely by Terraform, with budget alarms and log retention armed be
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
 generated. 1170 tests, plus 7 that spend real money and are deselected by default.
 
+**The prose comes from a real model on Bedrock as of 2026-08-24** — Claude Haiku 4.5 on a cross-region
+inference profile, deployed by CI with no long-lived AWS keys. A live query streams first byte in ~0.24s
+against a ~6.4s total, and reports its own token usage per role — traversal and synthesis counted
+separately, never summed, because two roles may run on differently-priced models and one combined number
+cannot be turned into dollars by anyone downstream. Per-query cost lands in CloudWatch from real traffic.
+
 **The corpus is artifact v0.5.0: 973 nodes, 950 edges** across two axes — genre-to-genre and
 artist-to-artist, both from Wikidata P737 only. Every edge carries how strongly it was checked: 22 read
 by hand, 111 passed an automated Wikipedia prose check, 760 passed an influence-assertion filter, and 57
@@ -29,16 +35,12 @@ recall**, so it is a floor on what exists in the sources and is never quoted as 
 
 Two things are deliberately not done, and saying so is the point of this section:
 
-- **The deployed URL still runs the local provider, not Bedrock.** Bedrock access was restored on
-  2026-08-11, after a twelve-day account-level quota fault, and the provider seam has now been exercised
-  against the live Converse API — single-turn, streaming with real token usage, and a real tool-use turn.
-  What has *not* happened is a redeploy: the public URL still walks the graph, gates the claims and cites
-  real Wikidata statement URIs while **the prose comes from a template rather than a model, and the token
-  counts are synthetic.** The provider is a deploy-time variable precisely so the twelve days were
-  survivable. The redeploy is **deliberately deferred to phase 5**: putting a billable model behind a
-  public unauthenticated URL is a spend decision, not a deploy step, and phase 5 needs a live backend for
-  the SPA anyway — so the auth and throttling question gets answered once. Until then, "deployed on AWS
-  Lambda and Bedrock" is not a claim this project makes.
+- **The corpus is one source deep, so it cannot detect disagreement.** Every edge in the graph carries
+  exactly one source, always Wikidata. What the output distinguishes is *how strongly that single source
+  was checked* — read by a human, or cleared by one of two automated filters — and it does **not** and
+  cannot mean two sources agreed. `contested` is declared in the code and locked as unreachable by a test,
+  named rather than silently absent, because a second source is what would make it real and this corpus
+  has none. Anyone reading the verification tiers as corroboration is reading the opposite of the truth.
 - **Coverage generalisation is untested, and the held-out run is a single observation.** Real-model
   behaviour *is* now measured rather than demonstrated: 41 development cases against a live model, a
   noise floor taken over five identical runs, a judged tier 2 pass with judge-human agreement reported as

@@ -356,3 +356,40 @@ would invalidate the pin every published eval number depends on.
 
 Per-step notes get appended here as the phase is built, the way phases 2, 3 and 4 did. The doc is allowed
 to be wrong; it is not allowed to be silently wrong.
+
+### Step 0 — the Bedrock redeploy — DONE 2026-08-24
+
+Deploy run `32780499772` via `deploy.yml`, `llm_provider=bedrock`, `reserved_concurrency=-1`, image built
+from `main` at dispatch. Verified from the `done` frame rather than inferred: `model_id`
+`us.anthropic.claude-haiku-4-5-20251001-v1:0`, traversal usage 6,700/349, synthesis 90/12,
+`stop_reason: complete`, plan adherence 2/2. Streaming TTFB **0.242s** against **6.41s**, ratio **0.038**.
+Four EMF records in `MusicalMycelium`. **DoD 0 met; phase 4 DoD #8 fully closed; the resume line is true.**
+
+**Four things this doc got wrong or did not know, recorded because they cost real risk:**
+
+1. **§4.4 said the flip was environment-variable only. It was not.** The deployed image was `deaa548`
+   from 2026-08-06 — **37 commits stale, predating `700bad3`, the multi-tool-turn fix.** Flipping that
+   image to `bedrock` would have deployed a loop that breaks on any multi-tool turn: green `/health`,
+   broken `/lineage`. Caught by reading `terraform plan` before applying, because the plan wanted to move
+   `image_uri`. **The lesson is not "check the image" — it is that a plan carrying more changes than you
+   predicted is the signal, and the fix is to read it rather than to reconcile it.**
+2. **A hand `terraform apply` was the wrong path and CI was the right one.** `deploy.yml` already passed
+   all three load-bearing vars, tagged with the git sha for traceability, and smoke-tested the stream.
+   The hand-apply would have taken `reserved_concurrency`'s default of 5 against a ~10 account ceiling
+   and failed **after** mutating the function.
+3. **The smoke test cannot catch a synthesis regression.** It queries a bare noun (`thrash metal`), and
+   both its calls emitted a traversal EMF record and **no synthesis record** — nothing was narrated. The
+   streaming ratio passes anyway because TTFB is the `plan` frame. Confirmed live: the planner returns
+   `query_kind: "coverage"`, approves two claims, emits `refused`, and never synthesises — **correct loop
+   behaviour on a query that asks nothing**, and a badly chosen gate query. Owed: a real question as the
+   smoke query, with the coverage-shaped one kept as a second check rather than discarded.
+4. **The buffering assertion warns rather than fails**, and the `/lineage` calls omit `curl -f`, so a 500
+   would pass too. A green smoke test does not prove streaming; the numbers did.
+
+Items 3 and 4 are logged in `docs/KNOWN-GAPS.md` and are not fixed here — they are deploy-pipeline
+defects rather than step 0 blockers, and fixing a check in the same breath as trusting it is how a check
+gets fitted to the result it just produced.
+
+**Still open from step 0, by decision:** `timeout_seconds` stays at 30. Two observed runs at 7.4s and
+6.4s give roughly 4x headroom, and two samples is not a p99. It tightens from real CloudWatch
+`ElapsedSeconds` once there is traffic.

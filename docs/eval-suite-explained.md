@@ -156,10 +156,10 @@ paces itself and backs off rather than running everything at once.
 
 ## What this phase does not claim
 
-- The deployed public URL still runs a stub, not the real model. "Deployed on Bedrock" is not yet a claim
-  this project makes.
-- Per-run cost is measured and recorded in committed result files, but has not yet reached CloudWatch,
-  because that needs a redeploy that is deferred to phase 5.
+- ~~The deployed public URL still runs a stub~~ and ~~per-run cost has not yet reached CloudWatch~~.
+  **Both closed on 2026-08-24, at phase 5 step 0.** The public URL runs Claude Haiku 4.5 on Bedrock, and
+  per-query token counts land in CloudWatch from real traffic. Struck rather than deleted because the
+  honest version of this section is what it looked like while those were true.
 - The graph skews Western, anglophone and recent. That is by construction and it is visible in every
   sliced result rather than disclaimed in a footnote. Every number is cut four ways - era, region, how
   densely connected the subject is, and what kind of question was asked - because an aggregate that looks

@@ -22,6 +22,8 @@ This is written down now so a bad week does not relitigate it later.
 > groundedness gate at 100%' is fully claimable at v0.3."* **It is not claimable, at v0.3 or at v0.4.**
 > The gate half is true and measured. The *deployed on Bedrock* half is not: the public URL runs
 > `llm_provider=local`, and the redeploy was deliberately deferred to phase 5 (`KNOWN-GAPS.md`, DoD #8).
+> **That deferral ended the same day: phase 5 step 0 shipped the redeploy on 2026-08-24, and the line IS
+> claimable now.** The correction stands as the record of a claim that was false for 25 days.
 > Every other place in this repo states this correctly — the phase 3 ledger below, `KNOWN-GAPS.md`,
 > `README.md`, `docs/eval-suite-explained.md`. This was the one place it slipped, and it is the section
 > that feeds recruiter copy, which is exactly why it is corrected in place rather than quietly edited.
@@ -125,11 +127,13 @@ was 41 components, largest 31, deepest chain **two** — the artist axis is the 
 likewise a computed number and ships on `/health`; the figures and the reasoning are in `SPEC.md` §6 and
 `docs/graph-semantics.md`.
 
-**The one gap with consequences outside the repo:** the deployed URL still runs `llm_provider=local`, so
-its prose is a template and its token counts are synthetic. Bedrock access itself has been fine since
-2026-08-11 (§4); what is outstanding is a **redeploy, deliberately deferred to phase 5** as a spend
-decision rather than a deploy step. Everything else — Lambda, ECR, S3, CloudFront, Terraform, IAM, OIDC,
-CloudWatch, Budgets — is applied and working.
+**CLOSED 2026-08-24 at phase 5 step 0.** This paragraph read *"the one gap with consequences outside the
+repo: the deployed URL still runs `llm_provider=local`, so its prose is a template and its token counts
+are synthetic."* The redeploy happened: deploy run `32780499772`, `model_id`
+`us.anthropic.claude-haiku-4-5-20251001-v1:0` verified from the `done` frame, streaming at a 0.038
+TTFB/total ratio, and per-query cost reaching CloudWatch from real usage. **Phase 4's DoD #8 goes from
+partial to closed, and the resume line is true.** Detail and the four findings that came with it are in
+`docs/KNOWN-GAPS.md`.
 
 ## 3. Scaffolding ledger
 

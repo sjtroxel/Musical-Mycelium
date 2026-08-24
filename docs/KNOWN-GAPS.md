@@ -49,6 +49,76 @@ part 2.
 
 ---
 
+## PHASE 5 STEP 0 IS COMPLETE — the deployed URL runs Bedrock, 2026-08-24
+
+**The longest-standing gap in this document is closed.** Deploy run `32780499772`, dispatched through
+`deploy.yml` with `llm_provider=bedrock` and `reserved_concurrency=-1`, image built from `main` at
+dispatch. Live at `https://unrd6y5qdhx7h5zfbwb4ufafsm0kkmsm.lambda-url.us-east-1.on.aws/`.
+
+**Every assertion in this file that the deployed URL runs a template stub is superseded as of
+2026-08-24.** Older sections below are kept as dated records of what was true when written; do not quote
+them as current.
+
+- [x] **It is genuinely Bedrock, verified from the `done` frame, not inferred.**
+  `model_id` and `synthesis_model_id` both read `us.anthropic.claude-haiku-4-5-20251001-v1:0`.
+  Traversal `usage` 6,700 in / 349 out; synthesis 90 in / 12 out; `stop_reason: complete`;
+  `planned_steps: 2, executed_steps: 2`. **6,700/349 against phase 4's measured average of 6,624/421** —
+  the deployed function costs what the eval suite measured it would.
+
+- [x] **Streaming is real on the deployed stack.** TTFB **0.242s** against a **6.41s** total, ratio
+  **0.038**, no buffering warning. Comparable to the 2026-07-31 spike's 0.214/10.22. Token frames arrive
+  progressively over the wire.
+
+- [x] **DoD #8 IS NOW FULLY CLOSED — per-run cost reaches CloudWatch from real usage.** Four EMF records
+  in namespace `MusicalMycelium`, dimensioned by `Role` and `ModelId`, carrying `InputTokens`,
+  `OutputTokens`, `TotalTokens` and — on the traversal record only, deliberately, so it is not
+  double-counted in any statistic — `ElapsedSeconds`. `EstimatedCostUsd` is absent because
+  `MYCELIUM_TOKEN_PRICES` is unset, which `telemetry.py` states is correct: *absent is honest, zero is a
+  claim.* **The phase 4 partial close is retired.**
+
+- [x] **The resume line is TRUE.** "Deployed on AWS Lambda and Bedrock with a deterministic groundedness
+  gate at 100%" has been unclaimable since 2026-07-30. It is claimable now.
+
+### Caught during step 0 and worth more than the deploy
+
+- [x] **The deployed image was 37 commits stale, and nothing anywhere reported it.** The live function
+  was running `deaa548` — *"phase 2 step 8"*, **2026-08-06** — which **predates `700bad3`, the
+  multi-tool-turn fix.** Without it the Bedrock loop breaks on any turn returning more than one tool
+  result, which is most real queries. A flip to `bedrock` on that image would have produced a green
+  `/health` over a broken `/lineage`. Surfaced only because `terraform plan` wanted to move `image_uri`
+  and the plan was read before it was applied. `deploy.yml` now carries this as a standing pre-redeploy
+  check.
+
+- [x] **A hand `terraform apply` would have half-applied.** The plan carried three changes, not one:
+  the provider flip, `image_uri` to `:latest`, and `reserved_concurrent_executions` `-1 -> 5`. The third
+  is the failure `deploy.yml` already documents — this account's concurrency ceiling is ~10, so
+  `PutFunctionConcurrency` is refused **after the function has already been updated.** The CI path passes
+  all three vars explicitly and is the correct path; the hand-apply is not.
+
+- [ ] **The deploy smoke test cannot catch a synthesis regression.** It queries `q=thrash metal`, a bare
+  noun rather than a question. Both smoke-test calls emitted a `traversal` EMF record and **no
+  `synthesis` record at all**, meaning neither narrated an answer — `thrash metal` has a parent edge, so
+  this is a query-shape effect and not a corpus one.
+
+  **Mechanism confirmed live 2026-08-24, and it is not what it first looked like.** The bare noun is not
+  failing to parse: the planner returns **`query_kind: "coverage"`** with three deliberate steps —
+  `resolve_node`, `describe_node`, `corpus_coverage` — then approves two claims, emits `refused`, and
+  never synthesises. **That is arguably correct behaviour.** "thrash metal" asks nothing, so the agent
+  reports what the graph holds and declines to answer a question it was not asked. The defect is in the
+  *smoke test's choice of query*, not in the loop.
+
+  The streaming ratio passes regardless, because TTFB is the `plan` frame either way. **Fix: use a real
+  question as the smoke query** so the gate-to-narration path is exercised on every deploy. Keeping a
+  coverage-shaped query as a *second* check would be worth more than replacing this one, since the
+  refusal path is now known to be reachable from the deployed URL.
+
+- [ ] **The buffering assertion warns instead of failing.** The step's own comment says *"anything close
+  to a 1.0 ratio here means streaming is off, whatever the status code says"*, but the `awk` emits
+  `::warning::` on `r > 0.9` and only `exit 1`s when there is no response at all. The `/lineage` calls
+  also use `curl -sN` without `-f`, so a 500 still yields a time-to-first-byte and passes. **A green
+  smoke test does not currently prove streaming works.** It did work this time, and that was read off
+  the numbers rather than off the checkmark.
+
 ## Phase 5 step 0 pre-flight — two findings, 2026-08-24
 
 Found while preparing the Bedrock redeploy, before anything was applied.
