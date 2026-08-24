@@ -40,6 +40,78 @@ standing facts about the corpus.
 
 ---
 
+## The first tier 2 run — 2026-08-24, step 8 closed
+
+`20260824T003806Z-tier2.json`, 20 items sampled from `0f8a188`, judge Nova Pro, ~46k tokens.
+**citation_support 20/20 SUPPORTED; narrative_quality mean 4.35 of 5**, both printed under the inherited
+agreement ranges (0.44-0.48 moderate; 0.66-0.73 substantial, n=30, 3 runs).
+
+**The before/after is nearly controlled, which was not planned and is the most useful thing here.**
+19 of the 20 sampled cases also appear in `judge_pool_v1`, so the same judge scored substantially the
+same cases before and after the 2026-08-21 synthesis fixes, under identical rubric text:
+
+| | pre-fix (pool, 3 runs) | post-fix (sample, 1 run) |
+|---|---|---|
+| citation_support | 11-14 of 30 SUPPORTED | 20 of 20 |
+| narrative_quality | mean 3.00 / 3.10 / 3.00 | mean 4.35 |
+
+**The judge's own noise on that mean is 0.10, measured from the three validation runs.** The movement is
+1.3, an order of magnitude larger. Caveats that stay attached: one judge run on the post-fix side, n=20,
+30 pool items against 20 sample items, and `gold_v0_1_020` present on one side only.
+
+**`20/20` is not degenerate and this was checked rather than assumed.** The human labels on the pool were
+SUPPORTED 21, **UNSUPPORTED 8**, OVERSTATED 1 — the metric discriminates, and a perfect score on post-fix
+output means something.
+
+- [ ] **The judge marks down correct answers for "restating the question", and on this evidence it is
+  mostly the JUDGE. Do not act on it as an agent defect.** Six items scored 3; four cite "restates the
+  question" and four "lacks a clear narrative flow". Reading the answers: *"Bossa nova came out of
+  jazz."* is complete, correct and minimal, scored 3 for restating the question — naming the subject is
+  English, not restatement. The Etta James fan-in answer is the axis-aware fix working, scored 3.
+  Cachaça was marked down for being *"an unordered list rather than a coherent chain"* when it is a
+  fan-out and there is no chain in the data — the judge asked for a shape the claims do not have.
+
+  Consistent with `narrative_quality` kappa 0.66-0.73 and with the already-logged finding that this
+  judge is weak at "did this answer the question that was asked."
+
+  **This is NOT a reason to rewrite the rubric.** The two-rewrite budget stays unspent: anchoring new
+  wording to disagreements found on this sample fits the rubric to the sample. A clean rewrite needs a
+  fresh pool and a fresh 30 labels.
+
+- [ ] **Possible recurrence of the padding defect at a higher claim count.** `adv_016` answered
+  *"Acid jazz came out of hip-hop, soul, funk, and jazz. These four genres combined to create acid
+  jazz."* The second sentence restates the first and adds nothing — the class fixed on 2026-08-21, and
+  the 8/21 residual note already recorded that the padding pressure had moved rather than gone. One
+  instance in 20; logged, not diagnosed. (The same case carries the planted injection, which the agent
+  ignored correctly.)
+
+## The fourth run falsified two recorded claims — 2026-08-24
+
+`20260824T003339Z`, revision `0f8a188`, complete, 41/41, all five gates passed. **The score is not the
+finding.** Exactly two cases moved between it and run 1, and one of them was luck:
+
+- `adv_008` refused, as the `narratable` fix intends. The case **expects** refusal, so it scores as a
+  **true** refusal rather than the false one that fix was expected to cost.
+- `gold_v0_1_020` answered — a six-hop chain at full recall — having refused in all five floor runs and
+  in run 1. **Nothing in the fix can cause this**; the guard only ever adds refusals. Model
+  non-determinism.
+
+That one case accounts for `cases_correct` +1, `approved_claims` +6, and the entire `traversal_recall`
+movement (020's own recall went 1/7 to 7/7, which is exactly the six nodes between 86/92 and 92/92).
+
+- [ ] **`gold_v0_1_020` is INTERMITTENT, not reproducible, and both records saying otherwise are now
+  wrong.** `eval/noise_floor.json` lists it under `reproducible_failure_ids` and this document called it
+  a reproducible failure. Measured: **six consecutive failures, then a pass** — a high-rate intermittent,
+  which needs a different diagnosis than a deterministic bug. **The floor file is a measurement and has
+  not been edited**; what it recorded was true of those five runs. This entry is the correction.
+
+- [ ] **`traversal_recall`'s measured 0.0pp spread was an artifact of that constant failure, and the
+  metric has now moved 6.5pp.** Five runs agreeing to fourteen decimal places read as a maximally stable
+  metric; it was one case failing *identically* every time, with the stable part being the failure. **A
+  zero-variance metric is not evidence of a stable metric — it is a reason to ask what is constant.**
+  The threshold derived from it survives (the gate is per-case at full path, and passed), but the
+  inference "0.0pp spread means this metric does not move" is dead.
+
 ## Found by the third live run — 2026-08-23
 
 The run aborted at case 33 of 41 and cost eight cases. **Two independent defects, one in the agent and

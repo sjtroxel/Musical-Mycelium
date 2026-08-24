@@ -818,6 +818,27 @@ deliberately and watched to fail: six on the agent side, five on the harness sid
 **Part 2 is the judged run** and it needs a post-fix release candidate to sample from — judging output
 written before the 2026-08-21 synthesis fixes would measure answers already known to be broken.
 
+#### Step 8, as-built part 2 — the first tier 2 run, 2026-08-24 (spend, ~46k tokens)
+
+**Step 8 is closed and DoD #2 with it.** Numbers, the near-controlled before/after, and the two open
+findings are in `docs/KNOWN-GAPS.md` and not restated here. What belongs in this document:
+
+1. **The sample landed on 19 of the 26 cases the validation pool used, by accident of seeding.** That
+   turned a tracked quality metric into something close to a controlled before/after across the 8/21
+   synthesis fixes — the strongest quantitative evidence this phase has produced that those fixes
+   worked, and it exists because both pools draw from the same 41-case dataset rather than because
+   anyone designed it. Worth designing on purpose if a future phase wants a real regression comparison.
+2. **The judge's measured run-to-run noise is what made the movement readable.** Mean quality moved 1.3
+   against a noise floor of 0.10 taken from the three validation runs. Without that figure the number
+   would have been an anecdote; `.claude/rules/evals.md`'s "measure the noise floor" earned its place
+   here on a metric that never blocks.
+3. **The first thing tier 2 found, it found about the judge rather than the agent.** Four of six
+   low-scored items penalise correct answers — a minimal correct answer marked down for "restating the
+   question", a fan-out marked down for not being a chain. That is the phase's blind-spot finding
+   arriving from the other direction: step 7 showed the deterministic metrics cannot see answer quality,
+   and step 8 shows the judge cannot fully see it either. **Neither half of the suite is a substitute
+   for reading the answers**, and that sentence is now supported by evidence from both halves.
+
 ### Step 9 — The held-out run, once, at freeze
 
 After everything above is frozen. `make eval-heldout` decrypts in memory, runs, and writes **aggregate
@@ -957,7 +978,7 @@ and this doc does not soften that.
 | Scope DoD | Closes at | Note |
 |---|---|---|
 | 1. Tier 1 every commit, $0, blocks on five | steps 3 + 5 | scripted provider in CI; real-model runs stored separately |
-| 2. Tier 2 only behind a confirmation naming the dollar figure | step 8 | |
+| 2. Tier 2 only behind a confirmation naming the dollar figure | step 8 | **CLOSED 2026-08-24** |
 | 3. Judge-human agreement measured and printed | step 7 | structurally enforced by `report.py` |
 | 4. Noise floor over five identical runs | step 6 | |
 | 5. Every metric unit-tested, vacuous-truth guard included | already met; extended | new suite-level tests in §7 |
