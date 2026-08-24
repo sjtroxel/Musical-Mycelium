@@ -1947,3 +1947,153 @@ def test_the_token_budget_counts_the_plan_turn(store: InMemoryGraphStore) -> Non
     )
     done = next(e for e in events if isinstance(e, Done))
     assert done.stop_reason == agent_loop.STOP_MAX_TOKENS
+
+
+# --- the unnarratable shape, and why the caller has to ask ---------------------------------------
+#
+# Found 2026-08-23 by the full 41-case live run, which aborted at case 33 of 41. `adv_008` approved two
+# claims sharing no subject, sharing no object, and forming no chain, and `synthesize` raised a
+# `ValueError` that nothing caught -- so one non-deterministic case killed a billable run and every
+# case after it. Nine earlier live runs had not hit it. See `ApprovedClaimSet.narratable`.
+
+
+def _disjoint_pair() -> ApprovedClaimSet:
+    """Two real, sourced, correctly directed claims that describe no single lineage."""
+    return ApprovedClaimSet(
+        claims=(
+            Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
+            Claim(ACID_JAZZ, INFLUENCED_BY, JAZZ, ("stmt/2",), HAND),
+        ),
+        labels={
+            HEAVY_METAL: "heavy metal",
+            BLUES_ROCK: "blues rock",
+            ACID_JAZZ: "acid jazz",
+            JAZZ: "jazz",
+        },
+    )
+
+
+def test_two_disjoint_claims_are_not_narratable() -> None:
+    assert not _disjoint_pair().narratable
+
+
+@pytest.mark.parametrize(
+    "claim_set",
+    [
+        pytest.param(
+            ApprovedClaimSet(
+                claims=(Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),),
+                labels={HEAVY_METAL: "heavy metal", BLUES_ROCK: "blues rock"},
+            ),
+            id="single-claim-origins",
+        ),
+        pytest.param(
+            ApprovedClaimSet(
+                claims=(
+                    Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
+                    Claim(HEAVY_METAL, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
+                ),
+                labels={HEAVY_METAL: "heavy metal", BLUES_ROCK: "blues rock", BLUES: "blues"},
+            ),
+            id="fan-out",
+        ),
+        pytest.param(
+            ApprovedClaimSet(
+                claims=(
+                    Claim(HEAVY_METAL, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),
+                    Claim(ACID_JAZZ, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
+                ),
+                labels={HEAVY_METAL: "heavy metal", ACID_JAZZ: "acid jazz", BLUES: "blues"},
+            ),
+            id="fan-in",
+        ),
+        pytest.param(
+            ApprovedClaimSet(
+                claims=(
+                    Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
+                    Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
+                ),
+                labels={HEAVY_METAL: "heavy metal", BLUES_ROCK: "blues rock", BLUES: "blues"},
+                chain=(HEAVY_METAL, BLUES_ROCK, BLUES),
+            ),
+            id="chain",
+        ),
+    ],
+)
+def test_the_three_real_shapes_stay_narratable(claim_set: ApprovedClaimSet) -> None:
+    """The other direction. A guard that refuses everything would also stop the crash, and would be a
+    far worse bug -- every answer becomes a false refusal and the metrics still look calm."""
+    assert claim_set.narratable
+
+
+def test_narratable_is_exactly_the_set_synthesize_can_describe() -> None:
+    """**The binding test.** `narratable` is a second statement of the shapes `synthesize` branches on,
+    and two statements of one rule drift. This asserts they agree in both directions rather than
+    trusting that they do -- which is the failure that produced this bug in the first place: a comment
+    claiming the caller refuses, next to a caller that could not ask.
+    """
+    unnarratable = _disjoint_pair()
+    assert not unnarratable.narratable
+    with pytest.raises(ValueError, match="no shape to narrate"):
+        list(synthesize(unnarratable, ScriptedLLM([])))
+
+    narratable = ApprovedClaimSet(
+        claims=(Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),),
+        labels={HEAVY_METAL: "heavy metal", BLUES_ROCK: "blues rock"},
+    )
+    assert narratable.narratable
+    assert list(synthesize(narratable, ScriptedLLM([LLMResponse(text="prose")])))
+
+
+def test_an_unnarratable_shape_refuses_instead_of_killing_the_run(
+    store: InMemoryGraphStore,
+) -> None:
+    """**The regression test for 2026-08-23.** Two real, gate-approved, correctly directed edges that
+    share nothing: `blues rock -> blues` and `acid jazz -> jazz`, both verified present in the pinned
+    artifact rather than recalled.
+
+    Before the fix this raised `ValueError` out of `run()`, and because the eval harness calls `run()`
+    per case with nothing catching it, one case ended a 41-case billable run at case 33. The assertion
+    that matters is not merely that it refuses -- it is that **nothing propagates out of the
+    generator**, because that is what made a single bad case cost every case after it.
+    """
+
+    class Disjoint:
+        name = "disjoint"
+        description = "Proposes two real edges that share no subject and no object."
+
+        def input_schema(self) -> dict[str, Any]:
+            return {"type": "object", "properties": {}}
+
+        def __call__(self, **kwargs: Any) -> ToolResult:
+            return ToolResult(
+                content={},
+                proposals=(
+                    ClaimProposal(BLUES_ROCK, INFLUENCED_BY, BLUES),
+                    ClaimProposal(ACID_JAZZ, INFLUENCED_BY, JAZZ),
+                ),
+                visited=(BLUES_ROCK, BLUES, ACID_JAZZ, JAZZ),
+            )
+
+    llm = ScriptedLLM(
+        [
+            plan_turn("origins", "disjoint"),
+            LLMResponse(
+                tool_uses=(ToolUse(id="t1", name="disjoint", arguments={}),),
+                stop_reason="tool_use",
+            ),
+            LLMResponse(text="done"),
+        ]
+    )
+
+    events = list(
+        run("Where did metal come from?", store=store, llm=llm, registry=ToolRegistry([Disjoint()]))
+    )
+
+    assert len([e for e in events if isinstance(e, ClaimApproved)]) == 2, (
+        "both edges are real; this test is about shape, not about grounding"
+    )
+    refusal = next(e for e in events if isinstance(e, Refused))
+    assert "no single lineage" in refusal.reason
+    assert llm.exhausted, "the loop asked for prose it had no describable shape for"
+    assert next(e for e in events if isinstance(e, Done)).claim_count == 2

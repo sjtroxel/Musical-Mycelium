@@ -791,6 +791,30 @@ that names no particular commit.
 billable run was in flight — was a bad trade and is not one to repeat. Free work during a live run has
 to happen outside the tree, or wait.
 
+#### What the third run found, 2026-08-23 (free fixes)
+
+The run aborted at case 33 of 41. **Two defects, one in the agent and one in the harness; full detail and
+the before/after are in `docs/KNOWN-GAPS.md` and not restated here.** What belongs in this document is
+what the pair taught about the suite:
+
+1. **The eval suite found an agent bug that nine earlier live runs and the entire scripted suite could
+   not.** Not because the metrics improved — no metric was involved. The case *crashed*, and it crashed
+   only because the full 41-case set was run against a non-deterministic case for the tenth time. This is
+   the second time this phase that breadth, rather than a better measurement, is what produced the
+   finding; the first was step 7's human reading thirty answers.
+2. **A recovery mechanism inherits the response of whatever it was copied from.** The 8/17 fix caught
+   every exception and then did what the budget abort did: stop. That is correct for an unaffordable tail
+   and wrong for one broken case, and the difference went unnoticed for six days because both are spelled
+   "an exception reached the loop". **The lesson is narrower than "catch more": it is that *stop* and
+   *skip* are different answers and the code was only ever asked the first question.**
+3. **Three separate places read `aborted_reason` as the explanation of an incomplete run.** Introducing a
+   second shape of incomplete — finished, but missing cases — made all three print "()" or point the
+   reader at a field that was empty. A field that has always been non-empty when reached acquires
+   readers who assume it.
+
+`make check`: **1152 passed, 0 skipped**, 7 `costs_money` deselected. Every new lock was broken
+deliberately and watched to fail: six on the agent side, five on the harness side.
+
 **Part 2 is the judged run** and it needs a post-fix release candidate to sample from — judging output
 written before the 2026-08-21 synthesis fixes would measure answers already known to be broken.
 

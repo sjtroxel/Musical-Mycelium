@@ -140,6 +140,44 @@ class CaseResult:
         return self.refusal_correct and self.fully_grounded
 
 
+#: How many cases may fail before the run stops anyway. A case-local bug costs one case; a systemic
+#: failure — expired credentials, a provider outage — would otherwise burn every remaining case to
+#: record the same error N times. Five is generous enough that a couple of flaky cases do not end a
+#: run and tight enough that a broken configuration is not paid for forty times.
+MAX_CASE_ERRORS = 5
+
+
+@dataclass(frozen=True, slots=True)
+class CaseError:
+    """One case that raised. Recorded and stepped over, rather than ending the run.
+
+    **Added 2026-08-23, after a run died at case 33 of 41.** ``adv_008`` approved two claims forming a
+    shape ``synthesize`` could not narrate, raised ``ValueError``, and took the eight cases after it
+    down with it — cases that were affordable, unaffected, and already paid for by the time the
+    exception was raised.
+
+    The distinction this draws is the one the previous design missed. On ``BudgetExceeded`` stopping is
+    right: everything after is unaffordable, so the missing subset is *the tail*, and a number computed
+    over it is a number computed over a non-random sample. A case-local bug is not that. The cases after
+    it are unaffected, and dropping them buys nothing.
+
+    Nothing is swallowed. The error and its type ride in the result file, ``complete`` is ``False``, and
+    the gates refuse to run — the same treatment a budget abort gets. What changes is only how much
+    survives.
+    """
+
+    case_id: str
+    error_type: str
+    message: str
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "case_id": self.case_id,
+            "error_type": self.error_type,
+            "message": self.message,
+        }
+
+
 @dataclass(frozen=True, slots=True)
 class SuiteResult:
     """One run of one dataset through one provider, with everything needed to read it later.
@@ -172,6 +210,8 @@ class SuiteResult:
     #: Why it stopped early. Empty on a complete run.
     aborted_reason: str = ""
     script_determined: tuple[str, ...] = ()
+    #: Cases that raised and were stepped over. Non-empty means ``complete`` is ``False``.
+    errors: tuple[CaseError, ...] = ()
 
     @property
     def artifact_matches_pin(self) -> bool:
@@ -202,6 +242,7 @@ class SuiteResult:
             "artifact_matches_pin": self.artifact_matches_pin,
             "complete": self.complete,
             "aborted_reason": self.aborted_reason,
+            "errored_cases": [error.to_json() for error in self.errors],
             "script_determined": list(self.script_determined),
             "cases_run": self.cases_run,
             "cases_correct": self.cases_correct,
@@ -303,19 +344,37 @@ def run_suite(
     ``BudgetExceeded`` was caught here, so a ``ThrottlingException`` on case 41 of 41 propagated past
     the writer and **destroyed forty completed cases** — no file, no recorded usage, seventeen minutes
     and a real bill for nothing. A billable run's cases are expensive and non-reproducible; the one
-    thing this function must never do is throw them away. So every exception is treated the way the
-    budget already was: **stop, record why, return what exists.**
+    thing this function must never do is throw them away.
 
-    It still does not skip and continue, for the same reason it does not on a budget abort, and
-    ``noise.py`` already refuses to pool an incomplete run — so a partial result cannot quietly become
-    a sample in a noise floor. What it can do is tell you what the first forty cases did.
+    **Amended 2026-08-23: a failing case is now stepped over rather than ending the run.** The 8/17 fix
+    caught the exception but kept the budget's *response* to it — stop and return what exists — and on
+    2026-08-23 that cost eight cases. ``adv_008`` raised a ``ValueError`` from ``synthesize`` at case 33
+    of 41 and the remaining eight died with it, though they were affordable, unaffected, and about to
+    run.
+
+    The two situations are not alike and this is the line between them:
+
+    - **``BudgetExceeded`` stops the run.** Everything after is unaffordable, so the cases that go
+      missing are *the tail* — a subset chosen by exhaustion, which is not a random sample.
+    - **A case that raises is recorded and skipped.** The cases after it are unaffected. Dropping them
+      buys no honesty and loses real, already-paid-for evidence.
+
+    **Nothing is swallowed either way.** An errored case rides in the result file with its type and
+    message, ``complete`` is ``False``, and ``render`` refuses to gate — exactly the treatment a budget
+    abort gets. ``noise.py`` already refuses to pool an incomplete run, so a partial result still cannot
+    become a sample in a noise floor.
+
+    **``MAX_CASE_ERRORS`` is the guard against the other failure.** A systemic fault — expired
+    credentials, a provider outage — would otherwise record the same error once per remaining case.
+    After five, the run stops and says so.
     """
     results: list[CaseResult] = []
+    errors: list[CaseError] = []
     usage = Usage()
     complete = True
     aborted_reason = ""
 
-    for case in cases:
+    for position, case in enumerate(cases, start=1):
         try:
             if budget is not None:
                 budget.check()
@@ -331,14 +390,25 @@ def run_suite(
             break
         except Exception as failure:
             # The case id matters more than the traceback here. A throttle at case 41 and a throttle
-            # at case 3 are different situations, and `aborted_reason` is the only place a reader of
+            # at case 3 are different situations, and the recorded error is the only place a reader of
             # the result file can tell them apart.
             complete = False
-            aborted_reason = (
-                f"{type(failure).__name__} on {case.case_id} "
-                f"(case {len(results) + 1} of {len(cases)}): {failure}"
+            errors.append(
+                CaseError(
+                    case_id=case.case_id,
+                    error_type=type(failure).__name__,
+                    message=str(failure),
+                )
             )
-            break
+            if len(errors) >= MAX_CASE_ERRORS:
+                aborted_reason = (
+                    f"stopped after {len(errors)} failing cases (last: {type(failure).__name__} on "
+                    f"{case.case_id}, case {position} of {len(cases)}). That many failures is a "
+                    "systemic fault rather than a case-local bug, and the rest of the run would only "
+                    "record it again."
+                )
+                break
+            continue
 
         case_usage = run.traversal_usage + run.synthesis_usage
         usage = usage + case_usage
@@ -356,6 +426,7 @@ def run_suite(
         usage=usage,
         complete=complete,
         aborted_reason=aborted_reason,
+        errors=tuple(errors),
     )
 
 
@@ -370,6 +441,7 @@ def _aggregate(
     usage: Usage,
     complete: bool,
     aborted_reason: str,
+    errors: tuple[CaseError, ...] = (),
 ) -> SuiteResult:
     """Roll per-case results into the catalog.
 
@@ -405,6 +477,7 @@ def _aggregate(
         complete=complete,
         aborted_reason=aborted_reason,
         script_determined=SCRIPT_DETERMINED if provider == PROVIDER_SCRIPTED else (),
+        errors=errors,
     )
 
 

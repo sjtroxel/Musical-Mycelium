@@ -478,8 +478,15 @@ def _ungateable(result: SuiteResult, chosen: ThresholdSet) -> str | None:
     regression.
     """
     if not result.complete:
+        # `aborted_reason` is empty on a run that stepped over a failing case and finished the rest
+        # (2026-08-23). Interpolating it blindly produced "the run did not finish ()." -- true, and
+        # useless to the person deciding whether to trust the numbers.
+        why = result.aborted_reason or (
+            f"{len(result.errors)} case(s) failed and were skipped: "
+            + ", ".join(f"{error.case_id} ({error.error_type})" for error in result.errors)
+        )
         return (
-            f"the run did not finish ({result.aborted_reason}). Its numbers cover the cases that ran, "
+            f"the run did not finish ({why}). Its numbers cover the cases that ran, "
             "chosen by exhaustion rather than at random, so they are not comparable to a baseline."
         )
     if result.cases_run != chosen.case_count:

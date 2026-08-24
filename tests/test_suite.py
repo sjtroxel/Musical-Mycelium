@@ -269,9 +269,14 @@ def test_a_provider_failure_keeps_the_cases_that_already_ran(store: InMemoryGrap
     propagated past the writer and destroyed forty completed cases — no file, no recorded usage,
     seventeen minutes and a real bill for nothing.
 
-    Only `BudgetExceeded` was caught. Every exception now aborts the same way the budget does: stop,
-    record why, return what exists. Billable cases are expensive and non-reproducible, and the one
+    Only `BudgetExceeded` was caught. Billable cases are expensive and non-reproducible, and the one
     thing `run_suite` must never do is throw them away.
+
+    **Amended 2026-08-23.** The 8/17 fix caught the exception but kept the budget's *response* to it —
+    stop and return what exists — and that response cost eight more cases on 2026-08-23 when
+    `adv_008` raised at case 33 of 41. A failing case is now recorded and stepped over, so the cases
+    after it still run. What must not change, and is asserted below, is that nothing is swallowed: the
+    failure is named in the result with its type, and `complete` stays False.
 
     Broken deliberately by narrowing the handler back to `BudgetExceeded`: the exception escaped
     `run_suite` and this test failed with `ThrottlingLikeError` instead of an assertion.
@@ -300,13 +305,18 @@ def test_a_provider_failure_keeps_the_cases_that_already_ran(store: InMemoryGrap
         provider="bedrock",
     )
 
-    assert not result.complete
-    assert result.cases_run == 2, "the two cases that finished must survive the third one failing"
-    assert "ThrottlingLikeError" in result.aborted_reason
-    assert fail_on in result.aborted_reason, (
-        "which case died is the difference between case 3 and 41"
+    assert not result.complete, "a run that lost a case is not a complete run"
+    assert result.cases_run == len(cases) - 1, (
+        "one case failed, so exactly one case should be missing -- the cases after it were "
+        "unaffected and already paid for"
     )
-    assert "case 3 of 25" in result.aborted_reason
+
+    errored = {error.case_id: error for error in result.errors}
+    assert set(errored) == {fail_on}
+    assert errored[fail_on].error_type == "ThrottlingLikeError", (
+        "which case died, and of what, is the difference between case 3 and case 41"
+    )
+    assert "Too many requests" in errored[fail_on].message
 
 
 def test_an_exhausted_budget_stops_before_spending_more(store: InMemoryGraphStore) -> None:
@@ -475,3 +485,106 @@ def test_the_module_exposes_the_catalog_the_phase_doc_names() -> None:
         ).to_json()
     )
     assert suite_module.SCRIPT_DETERMINED
+
+
+# --- a failing case is stepped over, not fatal ---------------------------------------------------
+#
+# Added 2026-08-23, after `adv_008` raised at case 33 of 41 and took eight affordable, unaffected
+# cases with it. See `suite.CaseError`.
+
+
+def _failing_on(
+    store: InMemoryGraphStore,
+    failures: set[str],
+    gold_cases: tuple[gold.GoldCase, ...],
+) -> SuiteResult:
+    """Drive the gold set with a chosen set of cases raising a case-local bug."""
+    by_id = {case.case_id: case for case in gold_cases}
+
+    def llm_for(case: EvalCase) -> LLM:
+        if case.case_id in failures:
+            raise ValueError("no shape to narrate")
+        return ScriptedLLM(gold.build_script(by_id[case.case_id]))
+
+    return run_suite(
+        gold.eval_cases(gold_cases),
+        store=store,
+        llm_for=llm_for,
+        dataset="live",
+        dataset_version="gold",
+        artifact_pin=gold.dataset_version()[1],
+        provider="bedrock",
+    )
+
+
+def test_one_failing_case_costs_one_case_and_not_the_rest(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    """**The regression test for what the 2026-08-23 run cost.** The case that raises is case 3 of 25;
+    the twenty-two after it are unaffected and must still run."""
+    result = _failing_on(store, {cases[2].case_id}, cases)
+
+    assert result.cases_run == 24
+    assert [error.case_id for error in result.errors] == [cases[2].case_id]
+    assert result.errors[0].error_type == "ValueError"
+
+
+def test_a_run_that_lost_a_case_is_never_complete(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    """Salvaging the other cases must not make a partial run look whole. `complete` is what every
+    downstream consumer checks -- `noise.py` refuses to pool on it and `render` refuses to gate on it --
+    so a skipped case that left `complete` True would be strictly worse than the crash it replaced."""
+    result = _failing_on(store, {cases[2].case_id}, cases)
+    assert not result.complete
+
+
+def test_enough_failures_stop_the_run_rather_than_repeating_the_same_error(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    """The other direction. A systemic fault -- expired credentials, a provider outage -- would
+    otherwise record the identical error once per remaining case and pay for the privilege."""
+    doomed = {case.case_id for case in cases}
+    result = _failing_on(store, doomed, cases)
+
+    assert len(result.errors) == suite_module.MAX_CASE_ERRORS
+    assert result.cases_run == 0
+    assert "systemic" in result.aborted_reason
+
+
+def test_an_errored_case_is_named_in_the_report_not_just_in_the_denominator(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    """A skipped case that shows up only as a smaller denominator is a skipped case nobody notices --
+    which would make this change a way of hiding bugs rather than surviving them."""
+    from musical_mycelium.eval.report import render
+
+    result = _failing_on(store, {cases[2].case_id}, cases)
+    text = render(result)
+
+    assert "1 CASE(S) FAILED" in text
+    assert cases[2].case_id in text
+    assert "ValueError" in text
+    assert "INCOMPLETE" in text
+
+
+def test_an_incomplete_run_still_refuses_to_gate(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    """The property that makes salvaging safe: more surviving cases must not buy a passing verdict.
+
+    Asserted against the gate itself rather than the report text, because the gate is what exits
+    non-zero. `_ungateable` returns a reason for any incomplete run, and a skipped case makes a run
+    incomplete -- so this holds by construction, which is exactly why it is worth pinning.
+    """
+    from musical_mycelium.eval.thresholds import gate
+
+    result = _failing_on(store, {cases[2].case_id}, cases)
+    outcome = gate(result)
+
+    assert outcome.report is None, "an incomplete run must never receive a verdict"
+    text = "\n".join(outcome.lines)
+    assert "NOT GATED" in text
+    assert "did not finish" in text
+    assert cases[2].case_id in text, "the empty aborted_reason must not swallow which case failed"
+    assert "finish ()" not in text, "an empty reason was interpolated into the message"

@@ -64,11 +64,28 @@ def render(result: SuiteResult, gates: GateOutcome | None = None) -> str:
             "  WARNING: the artifact does not match the pin this dataset was authored against. "
             "Every number below is scored against a corpus the cases were not written for."
         )
-    if not result.complete:
-        lines.append(f"  INCOMPLETE: {result.aborted_reason}")
+    if result.errors:
+        # Rendered before `aborted_reason` because on a skip-and-continue run there may be no abort
+        # reason at all -- the run finished every case it could and simply did not finish some. An
+        # errored case that appears only as a smaller denominator is an errored case nobody notices.
         lines.append(
-            "  Numbers below cover only the cases that ran, chosen by exhaustion, not at random."
+            f"  {len(result.errors)} CASE(S) FAILED and were skipped; "
+            f"{result.cases_run} of {len(result.errors) + result.cases_run} cases scored:"
         )
+        lines.extend(
+            f"    {error.case_id}: {error.error_type}: {error.message}" for error in result.errors
+        )
+    if not result.complete:
+        if result.aborted_reason:
+            lines.append(f"  INCOMPLETE: {result.aborted_reason}")
+            lines.append(
+                "  Numbers below cover only the cases that ran, chosen by exhaustion, not at random."
+            )
+        else:
+            lines.append(
+                "  INCOMPLETE: some cases failed and were skipped. Numbers below cover only the "
+                "cases that scored, and the set they were drawn from is not the whole dataset."
+            )
     if result.truncated_runs:
         lines.append(f"  truncated traversals: {', '.join(result.truncated_runs)}")
 

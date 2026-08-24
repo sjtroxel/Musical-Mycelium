@@ -343,9 +343,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"\nwritten to {path}")
     print(f"transcript written to {transcript_path}")
     if not result.complete:
-        print(
-            "\nRUN WAS INCOMPLETE — see aborted_reason above. Partial results were still written."
-        )
+        # Two shapes of incomplete since 2026-08-23, and they want different sentences. A run that
+        # stopped has an `aborted_reason`; a run that stepped over failing cases and finished the rest
+        # has none, and telling its reader to "see aborted_reason above" points at nothing.
+        if result.errors and not result.aborted_reason:
+            failed = ", ".join(error.case_id for error in result.errors)
+            print(
+                f"\nRUN WAS INCOMPLETE — {len(result.errors)} case(s) failed and were skipped "
+                f"({failed}). The other {result.cases_run} ran and were written. The run is not "
+                "gated and must not be pooled into a noise floor."
+            )
+        else:
+            print(
+                "\nRUN WAS INCOMPLETE — see aborted_reason above. Partial results were still written."
+            )
     # The result file is written **before** the gate is consulted and is kept either way. A blocking
     # failure is the most expensive data this project produces — seventeen minutes and a real bill —
     # and discarding it to signal failure would repeat the step 6 defect that destroyed forty finished

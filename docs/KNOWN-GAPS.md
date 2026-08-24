@@ -40,6 +40,47 @@ standing facts about the corpus.
 
 ---
 
+## Found by the third live run — 2026-08-23
+
+The run aborted at case 33 of 41 and cost eight cases. **Two independent defects, one in the agent and
+one in the harness, and the second is why the first was expensive.**
+
+- [x] **FIXED. The agent raised on a claim shape it could not narrate.** `adv_008` approved two real,
+  sourced, correctly directed claims that share no subject, share no object, and form no chain — two
+  disjoint edges. `synthesize` raised `ValueError`, and `run()` did not catch it.
+
+  **Latent since `bb54263`** (the 8/21 synthesis fix), which replaced `subject_id or ""` — silently
+  wrong prose — with a raise, without giving the caller a way to ask the question. `synthesize`'s own
+  comment said *"the caller refuses, exactly as it does for an empty set above"*, and the caller could
+  not: an empty set is visible from outside as `decision.approved`, an unnarratable shape was only
+  discoverable by calling `synthesize` and catching the failure. **A comment describing an intent that
+  was never implemented — the repo's named failure mode, third instance.**
+
+  `adv_008` is one of the four cases the noise floor already records as unstable, which is why nine
+  earlier live runs never hit it, and why the 8/21 verification over four case ids could not have.
+
+  **Fix:** `ApprovedClaimSet.narratable`, asked by `run()` before synthesis; the case refuses with
+  "its sourced influences describe no single lineage". **The cost is stated rather than hidden: these
+  claims are sourced, so this is a FALSE refusal and is scored as one.** The alternative is prose
+  asserting a lineage the claims do not support. A fourth shape for disjoint sets is a product
+  question, not a crash fix. Locked by a regression test that drives two real artifact edges through
+  `run()` end to end and reproduces the exact production message when the guard is disabled.
+
+- [x] **FIXED. One failing case ended the whole run.** The harness caught the exception (the 8/17 fix,
+  after a throttle at case 41 destroyed forty cases) but kept the **budget's response** to it: stop and
+  return what exists. That response is right for `BudgetExceeded` — everything after is unaffordable, so
+  the missing subset is *the tail* — and wrong for a case-local bug, where the remaining cases are
+  unaffected and already paid for.
+
+  **Fix:** a failing case is recorded as a `CaseError` and stepped over; the rest of the run proceeds.
+  Nothing is swallowed — the case, its exception type and its message ride in the result file, `render`
+  names them above the metrics, `complete` stays `False`, the gates refuse, and `noise.py` still refuses
+  to pool it. `MAX_CASE_ERRORS = 5` stops a genuinely systemic fault rather than paying to record it
+  forty times. Three follow-on spots that read `aborted_reason` were fixed with it, since a
+  skip-and-continue run has none: the gate message otherwise read "the run did not finish ()".
+
+  **What it would have saved on 2026-08-23: 8 of 41 cases.**
+
 ## Part 1 — open items, closable
 
 Each of these can be finished. Mark `[x]` when it is, with the evidence.

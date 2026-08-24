@@ -405,6 +405,33 @@ class ApprovedClaimSet:
         return objects.pop() if len(objects) == 1 and len(subjects) > 1 else None
 
     @property
+    def narratable(self) -> bool:
+        """Whether these claims form one of the three arrangements ``synthesize`` can describe.
+
+        **The caller's half of the contract, and it was missing until 2026-08-23.** ``synthesize``
+        raises on a set that is neither a chain, a single-subject fan-out, nor a single-object fan-in,
+        and its own comment said "the caller refuses, exactly as it does for an empty set above" — but
+        the caller had no way to ask. The empty set is visible from outside (``decision.approved``);
+        an unnarratable shape was only discoverable by calling ``synthesize`` and catching the failure,
+        which nothing did. So a ``ValueError`` escaped ``run()`` and aborted a 41-case billable run at
+        case 33.
+
+        The arrangement that reached it: two approved claims sharing no subject, sharing no object, and
+        forming no chain — two disjoint edges. Real, sourced, correctly directed, and describing no
+        single lineage. ``adv_008`` produced it on 2026-08-23, having produced a narratable set on the
+        identical query forty minutes earlier; it is one of the four cases the noise floor already
+        records as unstable, which is why nine live runs had not hit it.
+
+        **Refusing is the honest outcome here and it is not free.** These claims are sourced, so a
+        refusal is a *false* refusal and is scored as one. That cost is deliberate: the alternative is
+        prose asserting a lineage the claims do not support, which is the exact failure
+        ``.claude/rules/grounding-and-claims.md`` exists to prevent. A fourth shape for disjoint sets is
+        a product question, not a crash fix, and it belongs to whoever decides what such an answer
+        should say.
+        """
+        return bool(self.chain) or self.subject_id is not None or self.object_id is not None
+
+    @property
     def axis(self) -> str | None:
         """``genre``, ``artist``, or ``None`` when the endpoints do not agree on one.
 
@@ -764,7 +791,17 @@ def run(
             chain=approved_chain,
             inverted_premise=inverted_premise,
         )
-        synthesis_usage = yield from _tokens(synthesize(claim_set, prose_llm))
+        if not claim_set.narratable:
+            # The shape guard, and it is asked BEFORE synthesis rather than caught after. See
+            # `ApprovedClaimSet.narratable`: `synthesize` raising here escaped `run()` and killed a
+            # whole billable run at case 33 of 41. A refusal costs one case; an uncaught exception
+            # costs every case after it.
+            reason = "its sourced influences describe no single lineage"
+            text = refusal_text(query, reason)
+            yield Refused(reason=reason, query=query)
+            yield Token(text)
+        else:
+            synthesis_usage = yield from _tokens(synthesize(claim_set, prose_llm))
 
     yield Done(
         usage=usage,
