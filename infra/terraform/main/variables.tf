@@ -66,9 +66,20 @@ variable "llm_provider" {
     what is actually deployed, so a bare `plan` reports no drift. CI is unaffected: deploy.yml passes
     this explicitly (`inputs.llm_provider || 'local'`) and always did.
 
-    **Before ever passing `bedrock`, decide `timeout_seconds`.** It is 30 and documented there as a
-    placeholder awaiting a measurement of the real loop that has not happened yet. That number is the
-    per-visitor exposure ceiling.
+    **SUPERSEDED 2026-08-24.** This paragraph read: *"Before ever passing `bedrock`, decide
+    `timeout_seconds`. It is 30 and documented there as a placeholder awaiting a measurement of the real
+    loop that has not happened yet. That number is the per-visitor exposure ceiling."*
+
+    It was written 2026-07-31. `MAX_ACCUMULATED_TOKENS = 60_000` landed 2026-08-08 in `agent/loop.py`,
+    which calls itself "the half that actually bounds spend" — correctly. **The token budget is the
+    per-visitor exposure ceiling; the timeout is not.** Measured: a query averages 6,624 input + 421
+    output tokens (~$0.009) and is hard-capped near $0.075. An abandoned request burns 30 GB-seconds of
+    a 400,000 GB-second monthly free tier — about 13,000 abandonments to exhaust it.
+
+    So the timeout is worth tightening and is **not** a precondition on passing `bedrock`. 30s is
+    already the deployed value and flipping the provider does not raise it. Decided by sjtroxel
+    2026-08-24: flip first, then tighten from real `elapsed_seconds` in CloudWatch, which is a better
+    p99 than any synthetic run.
 
     Be honest about what a `local` deploy is: the prose comes from a template, not a model. It proves
     the plumbing, the grounding path, and the streaming. It does not close phase 1's definition of
@@ -142,6 +153,16 @@ variable "timeout_seconds" {
     the entire timeout. On a $20 ceiling with a recruiter-facing URL, this number is the exposure.
 
     30s is the starting point from IMPLEMENTATION 9. Measure the real loop and tighten it.
+
+    **Qualified 2026-08-24, at phase 5 step 0.** The billing rule above is real and unchanged. What is
+    wrong is the implied scale: at 1024 MB an abandoned 30s request costs **30 GB-seconds against a
+    400,000 GB-second monthly free tier** — roughly 13,000 abandonments before it bills at all. The
+    dollar exposure per visitor is **Bedrock tokens**, and those are bounded by
+    `MAX_ACCUMULATED_TOKENS = 60_000` in `agent/loop.py`, not by this number.
+
+    So this stays a control worth tightening and stops being the thing the spend story rests on. It is
+    still unmeasured; the measurement now comes from real `elapsed_seconds` in CloudWatch after the
+    Bedrock flip rather than from a synthetic run before it.
   EOT
   type        = number
   default     = 30

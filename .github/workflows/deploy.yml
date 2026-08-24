@@ -12,6 +12,18 @@ name: Deploy
 #      A deploy would succeed and the deployed /lineage endpoint would fail on the first model call.
 #
 # Enabling it is step 9's business, once a live converse call has actually worked.
+#
+# **BOTH PRECONDITIONS ARE RESOLVED as of 2026-08-24, and the block above is kept as the record.**
+# Bootstrap is applied (the state bucket, ECR repo and OIDC role all exist and this workflow's own
+# `-backend-config` resolves against them). Bedrock quota was restored 2026-08-11. Enabling `push:`
+# is now a live decision rather than a blocked one — and the reason to keep it manual has changed:
+# an auto-deploy on every merge would push image churn at a public URL that costs money per visit.
+#
+# **A COST OF LEAVING IT MANUAL, discovered at phase 5 step 0 on 2026-08-24 and worth stating:** the
+# deployed function ran image `deaa548` from 2026-08-06 — 37 commits stale, and predating `700bad3`,
+# the multi-tool-turn fix without which the Bedrock loop breaks on any multi-tool turn. Nothing
+# reported that, because nothing was watching. If `push:` stays off, the deployed image's age is a
+# thing to check deliberately before any redeploy, not a thing to assume.
 on:
   workflow_dispatch:
     inputs:
@@ -137,8 +149,14 @@ jobs:
       #                        the same forgotten flag stopped failing loudly and started succeeding
       #                        expensively. This `||` fallback is now belt-and-braces rather than the
       #                        only thing standing between a dispatch and a billable public URL — keep
-      #                        it anyway. Pass `bedrock` at dispatch time deliberately, and only after
-      #                        timeout_seconds has been set from a real measurement.
+      #                        it anyway. Pass `bedrock` at dispatch time deliberately.
+      #
+      #                        *(The clause "and only after timeout_seconds has been set from a real
+      #                        measurement" was removed 2026-08-24. It was written 2026-07-31, before
+      #                        MAX_ACCUMULATED_TOKENS = 60_000 landed on 2026-08-08 and became the
+      #                        actual per-visitor dollar ceiling. The timeout bounds Lambda duration,
+      #                        which is ~30 GB-seconds of a 400,000 GB-second free tier per abandoned
+      #                        request. See main/variables.tf and .claude/rules/aws-and-cost.md.)*
       #   reserved_concurrency defaults to 5; this account's entire concurrency ceiling is ~10, so
       #                        PutFunctionConcurrency is refused and the apply fails AFTER it has
       #                        already updated the function. -1 leaves the account ceiling in charge.

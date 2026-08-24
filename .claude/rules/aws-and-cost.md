@@ -31,6 +31,14 @@ roughly $20/month total across all tooling, and there is a history of a real spe
   *"streamed responses are not interrupted or stopped when the invoking client connection is broken.
   Customers are billed for the full function duration."* A visitor who triggers a multi-step agent loop on
   the public URL and closes the tab bills the full timeout. Set it as tight as the workload allows.
+- **But the timeout is NOT the per-visitor dollar ceiling — the token budget is.** *(Qualified 2026-08-24.
+  The bullet above is from 2026-07-31; `MAX_ACCUMULATED_TOKENS = 60_000` landed 2026-08-08 and
+  `agent/loop.py` calls it "the half that actually bounds spend.")* Measured: a query averages **6,624
+  input + 421 output tokens (~$0.009)** and is hard-capped near **$0.075**. An abandoned 30s request at
+  1024 MB burns **30 GB-seconds of a 400,000 GB-second monthly free tier** — about **13,000** abandonments
+  before Lambda duration bills anything. Tighten the timeout because it is free to tighten, not because it
+  is where the money is. **Do not cite the timeout as the exposure ceiling** in docs, interviews, or
+  planning; cite the token budget, the turn cap, and reserved concurrency.
 - **Bedrock spend is the only real line item.** Route traversal and tool turns to the cheap model and use a
   stronger model only for synthesis and judging. Agentic loops are input-heavy — every turn re-sends
   accumulated context. Any operation that spends money at scale (the eval suite above all) goes behind an

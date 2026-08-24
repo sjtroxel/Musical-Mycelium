@@ -49,6 +49,48 @@ part 2.
 
 ---
 
+## Phase 5 step 0 pre-flight — two findings, 2026-08-24
+
+Found while preparing the Bedrock redeploy, before anything was applied.
+
+- [ ] **`latency` is in the tier 1 catalog and is not implemented.** `.claude/rules/evals.md` lists
+  *"cost and latency"* among the deterministic metrics. `eval/suite.py` records tokens and **no
+  wall-clock at all** — `per_case` carries no duration field and neither does the run summary.
+  `api/app.py` does measure `elapsed_seconds` and ships it to `telemetry.emit_query_cost`, but the eval
+  harness calls the loop directly and bypasses the API entirely, so nothing the suite writes has ever
+  contained a time. **Same shape as the contested-flagging gap:** a catalog naming a property the code
+  does not produce, with nothing failing to reveal it. Not fixed here — it is a phase 4 metric gap, and
+  after the redeploy the better latency source is real CloudWatch traffic rather than a synthetic run.
+
+- [x] **"The Lambda timeout is the per-visitor exposure ceiling" was true when written and is not now.**
+  `aws-and-cost.md` and `variables.tf` both said so, from 2026-07-31. `MAX_ACCUMULATED_TOKENS = 60_000`
+  landed 2026-08-08 in `agent/loop.py`, which describes itself as *"the half that actually bounds
+  spend."* Measured: **6,624 input + 421 output tokens per query on average (~$0.009)**, hard-capped
+  near **$0.075**; an abandoned 30s request costs **30 GB-seconds of a 400,000 GB-second monthly free
+  tier**, roughly **13,000 abandonments** before it bills. Both documents corrected in place 2026-08-24.
+  The timeout stays a control worth tightening; it stops being the number the spend story rests on.
+
+## Deliberate drift: the repo declares `local`, production will run `bedrock`
+
+**Decided 2026-08-24 by sjtroxel, and recorded here because it is a real cost with a real reason.**
+
+`llm_provider`'s default stays `"local"`. It was inverted from `bedrock` to `local` on 2026-08-11 for a
+specific reason: while quotas read 0, a forgotten flag failed loudly and free; once quota was restored the
+same forgotten flag would silently put a billable model behind a public URL. Keeping `local` as the
+default preserves the property that **spending money requires typing it out.**
+
+The accepted consequence, stated rather than discovered later: **after step 0, `variables.tf` will say
+`local` while the deployed function runs `bedrock`,** and a bare `terraform apply` — one that forgets
+`-var llm_provider=bedrock` — will **silently revert the public URL to the template stub with `/health`
+still green and nothing erroring.** That is the mirror image of the failure the 08-11 inversion prevented,
+and it is chosen deliberately: an accidental un-deploy is recoverable in one command, an accidental spend
+is not recoverable at all.
+
+**The deploy path that matters is unaffected:** `deploy.yml` passes the value explicitly
+(`inputs.llm_provider || 'local'`) and always has. Anyone applying by hand needs the flag.
+
+---
+
 ## The held-out run — 2026-08-24, step 9 closed, PHASE 4 COMPLETE
 
 `results/20260824T120956Z-heldout.json`, revision `d6f521a`, complete, no errored cases. 48 requests,
