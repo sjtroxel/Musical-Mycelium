@@ -25,8 +25,10 @@ substantial — so the *sentence* the project reports is stable even though the 
 itself is not yet taken. Two defects were fixed on the way through — the false-dirty provenance defect
 below, and a `make help` filter that could not see a target with a digit in its name.
 
-**Updated 2026-08-24** at phase 4 step 8 (the first tier 2 run) and then at step 9, part 1 — the held-out
-runner is built, blind. See the two 2026-08-24 sections below.
+**Updated 2026-08-24** at phase 4 step 8 (the first tier 2 run), then step 9 part 1 (the held-out runner,
+built blind), then **step 9 part 2 — the held-out set has been run, once, and PHASE 4 IS COMPLETE.**
+DoD 7 closed; DoD 8 closed as partial with the Bedrock redeploy deferred to phase 5. See the 2026-08-24
+sections below, top-most first.
 
 **Verified state:** `make check` green — **1169 passed, 0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. The former skip was the held-out seal; that set now exists, so
@@ -38,10 +40,85 @@ DoD #10. **The deployed URL still runs the template stub**, which remains the on
 outside the repo and is untouched by any of this.
 
 **Bedrock is not a blocker.** Access was restored 2026-08-11 after a twelve-day account-level quota fault.
-Nothing here is waiting on AWS. What remains is unrun work, one undrawn dataset, and a small number of
-standing facts about the corpus.
+Nothing here is waiting on AWS. **The "unrun work, one undrawn dataset" wording that stood here is stale
+as of 2026-08-24:** the held-out set was drawn 2026-08-14 and run 2026-08-24, and every phase 4 step has
+now been executed. What remains is the **Bedrock redeploy, deliberately deferred to phase 5** — which is
+also why the deployed URL still runs the template stub — plus the standing facts about the corpus in
+part 2.
 
 ---
+
+## The held-out run — 2026-08-24, step 9 closed, PHASE 4 COMPLETE
+
+`results/20260824T120956Z-heldout.json`, revision `d6f521a`, complete, no errored cases. 48 requests,
+70,490 in / 4,538 out, roughly nine cents. Preflight passed first: the seal matched its manifest and the
+set still agreed with artifact `0.5.0`.
+
+**10 of 10 cases correct.** Groundedness 100% (44/44), citation resolution 100% (44/44), refusal accuracy
+true 2/2 and false 0/8, traversal recall 100% (54/54), traversal precision 100%, plan adherence 10/10
+exact. Every one of those matches the development set's most recent run at the same revision, which was
+41/41.
+
+- [x] **The overfitting check the set exists for came back negative.** Ten questions the agent was never
+  tuned against, that nobody working on it had read, and nothing moved. That is the finding.
+
+- [ ] **n=1, and this project has already measured that n=1 is not enough.** The noise floor showed
+  `true_refusal_rate` swinging 12.5 points across five *identical* dev runs. The held-out run has no
+  error bar, and with 2 refusal cases one flip moves that metric 50 points. **It cannot be given an error
+  bar without re-running the set, and re-running costs the property the set exists to have.** Quote it as
+  a single observation, never as a rate.
+
+- [ ] **`injection_resistance` is unmeasured on this set and always will be.** 0 of 10 cases scored,
+  because `heldout_draw.py` plants nothing. The report says "10 cases planted nothing" rather than
+  reporting a free pass, which is correct — but one of the five blocking properties has no held-out
+  evidence at all.
+
+- [ ] **The era and region slices came back degenerate, and this was not predicted.** 9 of 10 subjects are
+  `undated`; 9 of 10 are `unstated` for region. **This is a real cost of the draw-versus-curate decision
+  of 2026-08-14.** The gold set was curated to span eras and regions; a stratified random draw inherits
+  the corpus's missingness instead, and most nodes carry no inception year and no P495. So the held-out
+  set cannot answer *"does this hold up on older or non-Western material"* — one of the questions a
+  held-out set is most wanted for. **Logged, not fixed:** re-drawing for a better slice profile means
+  drawing a set chosen for its slice profile, which is a curated set with extra steps. The honest
+  statement is that coverage generalisation is untested, not that it passed.
+
+- [x] **`verification_mix` shows `HAND=0`.** No held-out claim rests on a hand-verified edge. That is
+  `not_sought` behaving as documented, not a defect.
+
+- [x] **The set is spent for this freeze, and the condition for re-running it is now a rule.**
+  `.claude/rules/heldout-set.md` records the run and states it: re-run only at a future freeze and only
+  if nothing was tuned in response to this result, with the run count reported beside every number.
+
+### Found while closing phase 4 — the results were being ignored by the rule meant to keep them
+
+- [x] **FIXED 2026-08-24. `.gitignore` negated `*-judge.json` only.** `**/eval/results/*` is excluded
+  because a suite run is reproducible by re-running it, with a negation for the runs that are not. The
+  negation was written against a **filename** rather than against the reason, so **both** of the results
+  this phase produced were being ignored by a rule that exists to keep exactly those files:
+  `20260824T003806Z-tier2.json` (the project's first tier 2 number) and `20260824T120956Z-heldout.json`.
+
+  **The held-out one is the strongest case in the repo, not the weakest.** Re-running that set does not
+  reproduce the file; it spends the one property the set exists to have. A `git clean` would have made
+  the phase 4 held-out result unrecoverable at any price, silently, with `make check` green throughout.
+
+  Both suffixes added, the comment rewritten to state the *criterion* (non-reproducible in principle, not
+  merely expensive) rather than a list, and `test_gitignore_keeps_every_non_reproducible_result_type`
+  locks it — verified by deleting the `-heldout` negation and watching it fail. Plain `-bedrock.json`
+  runs stay ignored on purpose: they cost about 36 cents and re-running one asks the same question again.
+
+  **This is the repo's named failure mode in a config file** — a comment describing an intent that the
+  rule beneath it did not implement, green the whole time.
+
+### DoD #8 — closed as partial, deliberately
+
+**Decided 2026-08-24: the Bedrock redeploy is deferred to phase 5**, per the recommendation in
+`phase-4-eval-suite-IMPLEMENTATION.md` §8. Phase 4 closes DoD 8 as far as it honestly can — per-run cost
+**measured** from real usage and recorded in committed result files — and the CloudWatch clause stays
+open with its reason. Phase 5 needs a live backend for the SPA anyway, so the auth and throttling decision
+gets made once instead of twice, and no billable public URL is exposed in the meantime.
+
+**The resume line "deployed on AWS Lambda and Bedrock" stays unclaimable until that redeploy.** Nothing
+in this section softens that, and the deployed URL still runs the template stub.
 
 ## Step 9, part 1 — the held-out runner, built blind — 2026-08-24
 
@@ -70,10 +147,8 @@ was never requested, and no case content entered any agent context.** The schema
   removing `slices` from `HELDOUT_RESULT_KEYS` is a one-line change — but any run already written cannot
   be un-published.**
 
-- [ ] **The run itself has not happened.** Ten cases at the measured per-case rate. Preflight verifies the
-  seal and checks the set against the pinned corpus first, and refuses on any finding rather than
-  warning — the one shot spent against a drifted corpus is spent. **If a number comes back bad and is not
-  diagnosable from ids and error types alone, the correct outcome is to report it undiagnosed.**
+- [x] **The run has happened — 2026-08-24, and it is the section above.** Preflight passed, the run was
+  complete, nothing errored, and no diagnosis from case content was ever needed.
 
 - [x] **The plain-English write-up is written.** `docs/eval-suite-explained.md`, the phase 4 §11
   deliverable. Covers what an eval suite is, why owning the graph makes correctness a lookup, why a score
@@ -910,8 +985,9 @@ narrower than the sentence sounds, and the narrowness is the gap.
   but the gold set is now clean **by procedure**, not by construction. The held-out set is the narrower
   case: it was drawn 2026-08-14 with every field read out of the pinned artifact and no authored
   judgement anywhere in it, so it has no contamination surface of this kind to begin with.
-  Recorded in the dataset's own `provenance.honest_limits` rather than only here. Step 8, the full
-  evaluated run, still has not happened.
+  Recorded in the dataset's own `provenance.honest_limits` rather than only here. **The sentence that
+  stood here until 2026-08-24 — "Step 8, the full evaluated run, still has not happened" — is stale:
+  step 8 ran on 2026-08-24 and so did step 9.**
 
 ---
 

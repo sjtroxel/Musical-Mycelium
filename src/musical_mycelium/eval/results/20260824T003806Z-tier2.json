@@ -1,0 +1,192 @@
+{
+  "tier": 2,
+  "blocking": false,
+  "sample": "tier2_sample",
+  "sample_size": 20,
+  "seed": 20260823,
+  "sources": [
+    {
+      "written_at": "20260824T003339Z",
+      "dataset": "live",
+      "provider": "bedrock",
+      "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "code_revision": "0f8a188"
+    }
+  ],
+  "judge_model_id": "amazon.nova-pro-v1:0",
+  "judged_at": "20260824T003806Z",
+  "code_revision": "0f8a188-dirty",
+  "metrics": {
+    "citation_support": {
+      "supported": 20,
+      "scored": 20,
+      "rate": 1.0,
+      "agreement": {
+        "metric": "citation_support",
+        "validation_runs": 3,
+        "n_low": 30,
+        "n_high": 30,
+        "kappa_low": 0.4444444444444444,
+        "kappa_high": 0.4807692307692307,
+        "kappa_kind": "cohen",
+        "kappa_bands": [
+          "moderate"
+        ],
+        "exact_low": 0.6333333333333333,
+        "exact_high": 0.7,
+        "single_run_caveat": ""
+      }
+    },
+    "narrative_quality": {
+      "mean": 4.35,
+      "scored": 20,
+      "agreement": {
+        "metric": "narrative_quality",
+        "validation_runs": 3,
+        "n_low": 30,
+        "n_high": 30,
+        "kappa_low": 0.6624999999999999,
+        "kappa_high": 0.7284768211920529,
+        "kappa_kind": "quadratic-weighted",
+        "kappa_bands": [
+          "substantial"
+        ],
+        "exact_low": 0.6,
+        "exact_high": 0.6666666666666666,
+        "single_run_caveat": ""
+      }
+    }
+  },
+  "validation_runs": [
+    "20260820T175935Z",
+    "20260821T185921Z",
+    "20260821T190737Z"
+  ],
+  "usage": {
+    "input_tokens": 44576,
+    "output_tokens": 1107,
+    "total_tokens": 45683
+  },
+  "judgements": [
+    {
+      "item_id": "tier2_sample_001",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influences on acid jazz as per the approved claims, but it restates the question and includes unnecessary connective tissue, slightly reducing its quality."
+    },
+    {
+      "item_id": "tier2_sample_002",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is concise, coherent, and directly answers the question without unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_003",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly follows the approved claims and provides a clear, concise lineage without any unnecessary information or hedging."
+    },
+    {
+      "item_id": "tier2_sample_004",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claim, and it is concise, clear, and directly answers the question asked."
+    },
+    {
+      "item_id": "tier2_sample_005",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies an influence on Fela Kuti as per the approved claim, but it does not provide a complete or well-structured narrative, hence the narrative quality score of 3."
+    },
+    {
+      "item_id": "tier2_sample_006",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer is supported by the claims and provides a coherent list of artists influenced by Etta James, though it restates the question and lacks a clear narrative flow."
+    },
+    {
+      "item_id": "tier2_sample_007",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the approved claim, and it is concise, coherent, and directly answers the question asked."
+    },
+    {
+      "item_id": "tier2_sample_008",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly states the influence of jazz on bossa nova, matching the approved claim, but it restates the question and lacks a clear narrative flow, resulting in a score of 3 for narrative quality."
+    },
+    {
+      "item_id": "tier2_sample_009",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly asserts the claim supported by the provided citations and is concise and clear, fully answering the question without any flaws."
+    },
+    {
+      "item_id": "tier2_sample_010",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is clear, concise, and directly answers the question without unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_011",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is clear, concise, and directly answers the question without unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_012",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer correctly traces the influence chain from Chappell Roan to Woody Guthrie using the provided claims, and it is coherent, concise, and directly answers the question."
+    },
+    {
+      "item_id": "tier2_sample_013",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly states the influence chain from blues to blues rock to heavy metal, but it restates the question and lacks a clear narrative flow, resulting in a score of 3 for narrative quality."
+    },
+    {
+      "item_id": "tier2_sample_014",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly asserts the influence of the listed genres on cacha\u00e7a, which is supported by the claims. However, the narrative quality is a 3 because it states the information as an unordered list rather than a coherent chain, and it does not provide a clear, readable narrative flow."
+    },
+    {
+      "item_id": "tier2_sample_015",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is concise, coherent, and directly answers the question without unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_016",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is clear, concise, and directly answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_017",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer is directly supported by the provided claims and presents a clear, coherent narrative that effectively answers the question without any unnecessary elements."
+    },
+    {
+      "item_id": "tier2_sample_018",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims without adding any uncited details, and it clearly and concisely answers the question asked."
+    },
+    {
+      "item_id": "tier2_sample_019",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 4,
+      "rationale": "The answer correctly traces the influence from jazz to bossa nova to Shibuya-kei, which is supported by the provided claims. The narrative is coherent and answers the question, though it could be slightly more detailed in explaining the connection between Shibuya-kei and jazz through bossa nova."
+    },
+    {
+      "item_id": "tier2_sample_020",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is concise, coherent, and directly answers the question asked."
+    }
+  ]
+}

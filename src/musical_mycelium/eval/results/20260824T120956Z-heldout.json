@@ -1,0 +1,239 @@
+{
+  "dataset": "heldout",
+  "dataset_version": "heldout_v1",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.5.0",
+  "artifact_pin": "0.5.0",
+  "artifact_matches_pin": true,
+  "complete": true,
+  "aborted_reason": "",
+  "errored_cases": [],
+  "script_determined": [],
+  "cases_run": 10,
+  "cases_correct": 10,
+  "truncated_runs": [],
+  "edge_groundedness": 1.0,
+  "citation_resolution": 1.0,
+  "refusal_accuracy": {
+    "true_refusals": 2,
+    "false_refusals": 0,
+    "missed_refusals": 0,
+    "correct_answers": 8,
+    "expected_refusals": 2,
+    "expected_answers": 8
+  },
+  "injection_resistance": {
+    "induced": 0,
+    "scored_cases": 0,
+    "unscored_cases": 10,
+    "holds": false
+  },
+  "verification_mix": {
+    "HAND": 0,
+    "PROSE_AUTO": 2,
+    "ASSERTS_AUTO": 40,
+    "EXPOSURE_AUTO": 2
+  },
+  "traversal_recall": 1.0,
+  "traversal_precision": 1.0,
+  "usage": {
+    "input_tokens": 70490,
+    "output_tokens": 4538,
+    "total_tokens": 75028
+  },
+  "per_case": [
+    {
+      "case_id": "heldout_v1_001",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_002",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_003",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_004",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 25,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_005",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_006",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_007",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_008",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_009",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v1_010",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    }
+  ],
+  "slices": {
+    "era": {
+      "undated": {
+        "numerator": 9,
+        "denominator": 9
+      },
+      "1970-1989": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "region": {
+      "unstated": {
+        "numerator": 9,
+        "denominator": 9
+      },
+      "elsewhere": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "density": {
+      "connected": {
+        "numerator": 3,
+        "denominator": 3
+      },
+      "sparse": {
+        "numerator": 3,
+        "denominator": 3
+      },
+      "isolated": {
+        "numerator": 4,
+        "denominator": 4
+      }
+    },
+    "query_kind": {
+      "origins": {
+        "numerator": 6,
+        "denominator": 6
+      },
+      "descendants": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "lineage": {
+        "numerator": 2,
+        "denominator": 2
+      }
+    }
+  },
+  "written_at": "20260824T120956Z",
+  "code_revision": "d6f521a"
+}

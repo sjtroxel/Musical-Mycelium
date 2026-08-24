@@ -36,7 +36,7 @@ so both columns are labelled. Reading one as the other is the confusion this hea
 | **1** `walking-skeleton` | **v0.1** | v0.1.0 | Everything present, connected, deployed, and tiny | — |
 | **2** `corpus-and-traversal` **DONE 2026-08-06** | **v0.2** | **v0.5.0** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
 | **3** `agent-loop` | **v0.3** | **v0.5.0** (unchanged) | Real agent loop: planning, **7** tools, corroboration | Tool registry; loop untouched |
-| **4** `eval-suite` | **v0.4** | pinned, TBD | The eval suite proper | Independent scorers over a pinned artifact |
+| **4** `eval-suite` **DONE 2026-08-24** | **v0.4** | **v0.5.0** (unchanged) | The eval suite proper | Independent scorers over a pinned artifact |
 | **5** `spa-and-visualization` | **v0.5** | pinned, TBD | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
 | **6** `density-and-coverage` | **v0.6** | new cut | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |

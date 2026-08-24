@@ -59,12 +59,28 @@ data/
 **/eval/results/*
 eval-results/
 
-# EXCEPT judged runs, which are not reproducible by re-running. A judge pass costs money, is the only
-# place a measured judge-human agreement figure exists, and re-running it produces a different file
-# rather than the same one. `.claude/rules/evals.md` requires that agreement be "reported permanently
-# next to every judged metric" — a number quoted in a doc whose evidence lives on one laptop does not
-# satisfy that, and this repo's whole claim is that provenance is structural. Added 2026-08-20.
+# EXCEPT runs that re-running does not reproduce. A judge pass costs money, is the only place a measured
+# judge-human agreement figure exists, and re-running it produces a different file rather than the same
+# one — the judge is not deterministic at temperature 0, measured over three runs on 2026-08-21.
+# `.claude/rules/evals.md` requires that agreement be "reported permanently next to every judged metric"
+# — a number quoted in a doc whose evidence lives on one laptop does not satisfy that, and this repo's
+# whole claim is that provenance is structural. Added 2026-08-20.
+#
+# EXTENDED 2026-08-24, after the rule above was found to be doing less than its comment claimed. It
+# matched `-judge.json` only, so the first tier 2 run and the held-out run were both being ignored by a
+# rule written to keep exactly that kind of file. Two suffixes added:
+#
+#   -tier2.json    judged, costs money, non-deterministic. Same argument as -judge.json, missed because
+#                  the negation was written against a filename rather than against the reason.
+#   -heldout.json  THE STRONGEST CASE IN THE REPO, not the weakest. Re-running the held-out set does not
+#                  reproduce this file; it spends the one property the set exists to have. Losing it to a
+#                  `git clean` means the phase 4 held-out result cannot be recovered at any price.
+#
+# Anything added here must be non-reproducible *in principle*, not merely expensive. Plain `-bedrock.json`
+# runs stay ignored: they cost about 36 cents and re-running one answers the same question again.
 !**/eval/results/*-judge.json
+!**/eval/results/*-tier2.json
+!**/eval/results/*-heldout.json
 
 # AWS SAM / build litter
 .aws-sam/

@@ -23,6 +23,14 @@ the one dataset in this project that an agent must actively refuse to read. Hard
 - **A skipped `test_the_committed_sealed_set_matches_its_manifest` means the set does not exist yet.**
   That is a real outstanding item — it is a hard precondition on the first live model run, per
   `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §4.8 — not a passing state to report as fine.
+- **THE SET HAS BEEN RUN. Once, 2026-08-24, at the phase 4 freeze — 10/10, result in
+  `eval/results/20260824T120956Z-heldout.json`.** It may be run again at a future freeze **only if
+  nothing was tuned in response to that result**, and every run after the first must be reported with the
+  run count beside it. A set re-run after a change made because of what it said has stopped measuring
+  generalisation and started measuring how many attempts it took. If you are about to propose a fix whose
+  justification traces back to a held-out number, that is the moment the set dies — say so and let him
+  decide, rather than making the change and re-running.
+
 - **Never regenerate or re-seal the set to make a check pass.** The manifest exists precisely so that a
   set rewritten after seeing results is detectable. If the corpus moved under it, say so and let the user
   decide; re-sealing silently is how a benchmark stops measuring anything.

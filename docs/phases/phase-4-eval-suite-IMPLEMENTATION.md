@@ -898,7 +898,61 @@ transfer to another. This is not a pass."* A held-out set that gates is a held-o
 
 `make check`: **1169 passed, 0 skipped, 7 `costs_money` deselected**, up from 1152.
 
-Remaining in step 9: he runs it once. Roughly ten cases at the measured per-case rate.
+Remaining in step 9 at the time part 1 landed: he runs it once. That happened the same day — part 2.
+
+#### Step 9, as-built part 2 — the held-out run, 2026-08-24 (spend, ~75k tokens)
+
+He ran it. `results/20260824T120956Z-heldout.json`, code revision `d6f521a`, clean, complete, no errored
+cases. 48 requests, 70,490 in / 4,538 out, roughly nine cents. **The estimate was 2x high on tokens and
+1.5x on requests**, consistent with the 2.2x over-estimate already recorded at step 6 — erring high is
+correct for a spend gate and the figure is still not a cost estimate.
+
+Preflight passed before a cent was spent: `verify_seal` matched the manifest, and `check_against_corpus`
+reported the set still agrees with artifact `0.5.0`.
+
+**The result, beside the development set's most recent run at the same revision:**
+
+| | held-out (10 cases, n=1) | dev (41 cases, n=1) |
+|---|---|---|
+| edge_groundedness | 100% (44/44) | 100% |
+| citation_resolution | 100% (44/44) | 100% |
+| refusal accuracy | true 2/2, false 0/8 | true 16/16, false 0/25 |
+| traversal_recall | 100% (54/54) | 100% |
+| traversal_precision | 100% | 100% |
+| plan_adherence | 10/10 exact | — |
+| cases correct | 10/10 | 41/41 |
+| injection scored | **0 of 10** | 5 |
+
+**What this earns, stated at exactly its strength.** On ten questions the agent was never tuned against
+and that no one working on it had read, every measurable property matched the development set. That is
+the specific thing a held-out set is drawn to detect, and it did not detect it. **It is not evidence that
+the agent is perfect, and the numbers being identical rather than merely close is itself a reason to read
+the limits below before quoting any of it.**
+
+**Four limits, none of which the number discloses on its own:**
+
+1. **n=1, and this project has measured that n=1 is not enough.** The noise floor showed `true_refusal_rate`
+   swinging 12.5 points across five *identical* dev runs. The held-out set has no error bar at all, and
+   at 2 refusal cases a single flip moves that metric 50 points. It cannot be given one without re-running
+   the set, and re-running it costs the property it exists to have.
+2. **One of the five blocking properties is unmeasured here.** `heldout_draw.py` plants no injections, so
+   `injection_resistance` scored 0 of 10 cases. The report says so rather than reporting a free pass, but
+   the held-out set says *nothing* about injection resistance and never will.
+3. **The era and region slices came back degenerate, and this was not predicted.** 9 of 10 subjects are
+   `undated` and 9 of 10 are `unstated` for region. **This is a real cost of the draw-versus-curate
+   decision made on 2026-08-14**: the gold set was *curated* to span eras and regions, and a stratified
+   random sample inherits the corpus's missingness instead — most nodes carry no inception year and no
+   P495. So the held-out set cannot answer "does this hold up on older or non-Western material", which is
+   one of the questions a held-out set is most wanted for. Logged rather than fixed: re-drawing to correct
+   it would mean drawing a set chosen for its slice profile, which is a curated set with extra steps.
+4. **`verification_mix` shows `HAND=0`.** No held-out claim rests on a hand-verified edge, which is
+   `not_sought` behaving exactly as documented and is not a defect.
+
+**The set is now spent for this freeze, and the condition for ever running it again is written into
+`.claude/rules/heldout-set.md`:** it may be re-run at a future freeze **only if nothing was tuned in
+response to this result.** Every run after the first must be reported with the run count. A set re-run
+after a change made because of what it said has stopped measuring generalisation and started measuring
+how many attempts it took.
 
 ## 4. Explicitly not in this phase
 
@@ -1031,8 +1085,8 @@ and this doc does not soften that.
 | 4. Noise floor over five identical runs | step 6 | |
 | 5. Every metric unit-tested, vacuous-truth guard included | already met; extended | new suite-level tests in §7 |
 | 6. Every result sliced four ways | step 3 | `slices.py` exists |
-| 7. Held-out run once, reported separately | step 9 | runner built blind 2026-08-24; content never read |
-| 8. Real per-run cost to CloudWatch | **partial** | see §8; the decision is yours |
+| 7. Held-out run once, reported separately | step 9 | **CLOSED 2026-08-24.** 10/10, reported in its own section; content never read |
+| 8. Real per-run cost to CloudWatch | **PARTIAL, closed as partial 2026-08-24** | measured and recorded per run from real usage in committed result files; the CloudWatch clause stays open. The redeploy is **deferred to phase 5**, where the SPA needs a live backend and the auth/throttling decision is made once. See §8. |
 
 Plus the three inherited items from phase 3 §0 — refusal accuracy, traversal recall, injection resistance
 on real model output — all closing together at step 4.

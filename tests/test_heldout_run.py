@@ -351,3 +351,34 @@ def _result_with_error(error: CaseError) -> SuiteResult:
         complete=False,
         errors=(error,),
     )
+
+
+# --- the result has to survive a `git clean` --------------------------------------------------------
+
+
+def test_gitignore_keeps_every_non_reproducible_result_type() -> None:
+    """**Found 2026-08-24, and the rule had been doing less than its comment claimed since 2026-08-20.**
+
+    `.gitignore` excludes `**/eval/results/*` because a suite run is reproducible by re-running it, then
+    negates the runs that are not. The negation was written against a *filename* (`-judge.json`) rather
+    than against the reason, so the first tier 2 run and the held-out run were both silently ignored by a
+    rule that exists to keep exactly those files.
+
+    The held-out one is the strongest case in the repo, not the weakest: re-running that set does not
+    reproduce the file, it spends the property the set exists to have. A `git clean` would have made the
+    phase 4 held-out result unrecoverable at any price.
+
+    Asserted by reading `.gitignore` rather than by shelling out to `git check-ignore`, so the test says
+    the same thing in a tarball, a fresh clone, and CI.
+    """
+    ignore = Path(__file__).resolve().parent.parent / ".gitignore"
+    negations = {
+        line.strip()
+        for line in ignore.read_text(encoding="utf-8").splitlines()
+        if line.strip().startswith("!")
+    }
+
+    for suffix in ("judge", "tier2", "heldout"):
+        assert f"!**/eval/results/*-{suffix}.json" in negations, (
+            f"a {suffix} result is not reproducible by re-running and would be lost to a git clean"
+        )
