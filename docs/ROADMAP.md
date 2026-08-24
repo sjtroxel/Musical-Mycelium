@@ -78,7 +78,7 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | 2 | written; **amended 2026-08-04 (A1–A4)**, **A5–A6.8 during the build**, **A7 retroactively 2026-08-07** | written 2026-08-04; **all 8 steps built, phase complete** |
 | 3 | written; **amended 2026-08-07 (A1–A5)** | written 2026-08-07; **built; phase complete 2026-08-12, tagged `v0.3.0-local`** |
 | 4 | written; **amended 2026-08-12 (§0, at the phase 3 release step)** | written 2026-08-15; **all 9 steps built, phase complete 2026-08-24, tagged `v0.4.0`** |
-| 5 | written | at phase start |
+| 5 | written; **amended 2026-08-24 (§0) at phase start** | **written and approved 2026-08-24; step 0 next** |
 | 6 | written 2026-07-31, after the validation | at phase start |
 | 7 | written | at phase start |
 

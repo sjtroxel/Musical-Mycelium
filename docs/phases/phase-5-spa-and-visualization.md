@@ -2,6 +2,53 @@
 
 > **Scope doc.** Written 2026-07-30, before building. Re-read it at the start of phase 5 and amend it where
 > phases 1–4 taught something different — it was written before any of this existed.
+>
+> **Amended 2026-08-24, at phase 5 start.** It was re-read and four things had gone stale. See §0. The
+> sections below are unedited except where a marked blockquote says otherwise. The as-built plan is
+> [`phase-5-spa-and-visualization-IMPLEMENTATION.md`](phase-5-spa-and-visualization-IMPLEMENTATION.md).
+
+## 0. What phases 2–4 changed
+
+Read this before the sections below. This doc was written before the corpus, the agent, the eval suite, or
+a single Bedrock call existed — it is the oldest unamended plan in the repo, and four of its assumptions
+did not survive.
+
+### It inherits the Bedrock redeploy, and that goes first
+
+Phase 4 closed its DoD #8 as **partial** on 2026-08-24 and deferred the redeploy into this phase, because
+phase 5 needs a live backend anyway and the auth-and-throttling decision should be made once. This doc
+predates that by 25 days and does not mention it.
+
+By `ROADMAP.md` §1's ordering it is the highest-priority item here: priority 2 is *a deployed URL plus real
+eval numbers*, the eval numbers closed on 2026-08-24, and this is the other half. **It is step 0.** Until
+it lands, "deployed on AWS Lambda and Bedrock" is not claimable.
+
+### "the subgraph the API already returns" — the API does not return one
+
+Verified 2026-08-24: `api/app.py` registers exactly two routes, `/health` and `/lineage`. `/lineage`
+streams a *trace* — `plan`, `tool`, `claim`, `rejected`, `path`, `token`, `done` — from which a client can
+reconstruct the walked path and the approved claims. That is enough for DoD #3. It is **not** enough for
+DoD #4's *follow an edge*, which needs neighbour data the stream never sends.
+
+Resolved without a backend edit: the pinned artifact is **640 KB raw, 56 KB gzipped**, so the whole graph
+ships to the browser as a static asset and the map is client-side. Pan, zoom and follow-edge then cost
+zero Lambda invocations. Detail in the IMPLEMENTATION doc §4.2.
+
+### The chip set it points at is four-sixths blocked
+
+Of `SPEC.md` §2.2's six aspirational chips, one answers, one refuses deliberately, and **four are blocked
+on phase 6's second source**. The chip row is therefore drawn from §2.1's validated five plus the two
+working §2.2 rows. **Six chips, one refusal** — decided by sjtroxel 2026-08-24.
+
+### Two of its four "key decisions" are already made
+
+- **The imagined user** is answered: **a music-curious adult.** No music theory and no Wikidata literacy
+  assumed; every genre gets a one-clause gloss and `P737` never appears on screen. `SPEC.md` §4 is updated
+  to match.
+- **The rendering engine and the time axis are still open**, and both are decided in this phase via
+  throwaway previews against the real graph — not from the planning docs. The measured complication the
+  planning docs could not know: **832 of 973 nodes carry no inception date** (28 of 169 genres, and all
+  804 artists), so "is time a spatial axis" is really "where do 832 undated nodes go".
 
 ## What this phase is for
 
@@ -23,10 +70,20 @@ wearing a nice font.
   root — built to S3 and served through CloudFront, provisioned by Terraform like everything else.
 - **The first screen from `SPEC.md` §1:** a search box with 5–7 canonical query chips beneath it. No blank
   page, and the chips double as the demo script.
+
+  > **Amended 2026-08-24 — see §0.** Six chips, one of them a refusal. The §2.2 set this pointed at is
+  > four-sixths blocked on phase 6.
+
 - **Graph visualization** of the subgraph the API already returns, with the agent's walked path rendered in
   order rather than reconstructed.
 - **Surface B, the explorable map** — wander, zoom, follow edges, ask the agent to annotate. It falls out of
   rendering a graph the API already returns, but it is a commitment, not a byproduct.
+
+  > **Corrected 2026-08-24 — see §0.** "the subgraph the API already returns" and "falls out of rendering a
+  > graph the API already returns" are both **false**: there are two routes and neither returns a subgraph.
+  > Surface B does not fall out of anything. It is delivered by shipping the pinned artifact to the browser
+  > as a static asset — which is why it remains a commitment rather than a byproduct, exactly as this
+  > bullet insisted.
 - **Citations visible as claims are made**, not collected in a footer. The 30-second recruiter path is: land,
   click a chip without inventing a question, watch a cited lineage stream in, leave remembering that every
   edge had a source.
@@ -52,11 +109,21 @@ read-only data, there is nothing to protect, and statelessness is an invariant, 
 - **Whether time is a spatial axis.** Anchoring an axis to real chronology turns the layout into an argument:
   influence flows one way, eras become bands, the sparse ancient end looks ancient rather than accidentally
   empty. Force-directed placement is the default and the default is mush.
-- **The imagined user** — `SPEC.md` §4, left open on purpose and due here. It sets reading level and how much
+- ~~**The imagined user**~~ — `SPEC.md` §4, left open on purpose and due here. It sets reading level and how much
   context each answer assumes, and SPA copy cannot be written without it.
+
+  > **Answered 2026-08-24 by sjtroxel: a music-curious adult.** No music theory assumed, no Wikidata
+  > literacy assumed, every genre glossed in a clause, `P737` never on screen. This decision is closed;
+  > `SPEC.md` §4 carries it.
 
 ## Definition of done
 
+> **Amended 2026-08-24.** A tenth item is added, and it comes first: **the Bedrock redeploy** (§0), which
+> this doc could not know it was inheriting. An eleventh covers the refusal treatment — see the
+> IMPLEMENTATION doc §10.
+
+0. `llm_provider = bedrock` on the deployed stack, per-query cost reaching CloudWatch, and the resume line
+   "deployed on AWS Lambda and Bedrock with a deterministic groundedness gate at 100%" **true**.
 1. A public CloudFront URL loads the SPA and the first screen renders a search box with the canonical chips.
 2. Clicking a chip streams a cited lineage, with citations appearing as claims are made.
 3. The graph renders the returned subgraph and highlights the walked path in the order it was walked.

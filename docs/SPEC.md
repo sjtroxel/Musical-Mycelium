@@ -155,15 +155,28 @@ One line, because a scope fence does more work than a feature list:
 opposite of this project: recommendation optimizes for what you will enjoy next, this optimizes for what
 can be sourced.
 
-## 4. The imagined user — OPEN, AND NOW DUE
+## 4. The imagined user — ANSWERED 2026-08-24
 
 `planning/09` §2 question 4 asks who the non-recruiter user is: a music-curious adult, a student, or
-himself. Left open deliberately; it changes reading level and how much context each answer assumes, and it
-is a product-taste call. Answer before the SPA copy is written at v0.5. It does not block v0.1.
+himself. Left open deliberately from 2026-07-29; it changes reading level and how much context each answer
+assumes, and it is a product-taste call.
 
-> **2026-08-24: v0.5 is next.** This is the only genuinely open item in this document and it is now on
-> the critical path — phase 5's scope doc names it as due, and SPA copy cannot be written without it. It
-> is a taste call and it is his, not an agent's. Answer it in the phase 5 IMPLEMENTATION doc.
+**Answered by sjtroxel at phase 5 start: a music-curious adult.** What that fixes:
+
+- **No music theory assumed and no Wikidata literacy assumed.** Every genre gets a one-clause gloss the
+  first time it appears. `P737`, QIDs, and the word "predicate" never appear on screen — they belong in
+  the source links, one click deeper, for the reader who wants them.
+- **The reference class is the explorable explanation**, per `planning/06` §2: The Pudding, a newspaper
+  graphics desk. Legible to a curious non-specialist without being thin.
+- **Verification tiers are shown, but translated.** "A person read the source" and "an automated check
+  found the claim in the article text" rather than `HAND` and `ASSERTS_AUTO`. The honesty is not
+  negotiable; the vocabulary is.
+- **Refusals read as answers about the evidence**, never as errors, and never as negative claims. See the
+  phase 5 IMPLEMENTATION doc §4.5 for the five requirements this puts on the interface.
+
+This does **not** displace the 30-second recruiter path, which `SPEC.md` §1 fixes separately. The two
+audiences want the same thing here: land, click one chip, watch a cited lineage arrive, leave remembering
+that every edge had a source.
 
 ## 5. Data contracts — SETTLED at v0.5.0
 
