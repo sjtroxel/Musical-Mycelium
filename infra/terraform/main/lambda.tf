@@ -144,8 +144,19 @@ resource "aws_lambda_function_url" "app" {
   # happen — which is the failure mode that eats an afternoon because nothing looks broken.
   invoke_mode = "RESPONSE_STREAM"
 
+  # Narrowed from ["*"] at phase 5 step 1, 2026-08-25. The CloudFront domain is READ FROM THE RESOURCE
+  # rather than passed as a variable value: the distribution's domain does not exist until the apply
+  # that creates it, so a literal value would need two applies with the wildcard live in between, and
+  # would go stale if the distribution were ever replaced. There is no dependency cycle — CloudFront
+  # does not front this Function URL (IMPLEMENTATION §4.1), so nothing points back the other way.
+  #
+  # `cors_extra_origins` is the escape hatch for a Vite dev server calling the DEPLOYED backend. It is
+  # empty by default so that shape has to be asked for.
   cors {
-    allow_origins = var.cors_allowed_origins
+    allow_origins = concat(
+      ["https://${aws_cloudfront_distribution.spa.domain_name}"],
+      var.cors_extra_origins,
+    )
     allow_methods = ["GET"]
     allow_headers = ["content-type"]
     max_age       = 3600

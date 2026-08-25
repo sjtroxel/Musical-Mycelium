@@ -213,14 +213,24 @@ variable "budget_thresholds" {
   default     = [5, 10, 20]
 }
 
-variable "cors_allowed_origins" {
+variable "cors_extra_origins" {
   description = <<-EOT
-    Origins allowed to call the Function URL from a browser.
+    ADDITIONAL origins allowed to call the Function URL from a browser, beyond the CloudFront domain.
 
-    ["*"] while the only client is curl and the eventual SPA has no domain yet. Narrow this to the
-    CloudFront domain when phase 5 ships a frontend — CORS is not a security boundary for a public
-    read-only endpoint, but a wildcard that outlives its reason is how one stops being noticed.
+    **Replaced `cors_allowed_origins` at phase 5 step 1, 2026-08-25.** That variable defaulted to ["*"]
+    and its own description said to narrow it to the CloudFront domain once a frontend shipped. It is
+    gone rather than re-defaulted because the CloudFront origin is no longer a value anyone types:
+    `lambda.tf` reads it off `aws_cloudfront_distribution.spa.domain_name`, which is the only form that
+    cannot drift and does not need a two-pass apply. See the comment on the `cors` block there.
+
+    So what is left for a variable is the exception, and the exception is a Vite dev server on
+    localhost calling the DEPLOYED backend — the one legitimate way to exercise a real Bedrock response
+    from an unbuilt SPA. It defaults to empty so that has to be asked for out loud, and it should be
+    emptied again afterwards.
+
+    CORS is not a security boundary for a public read-only endpoint. It is a wildcard that outlives its
+    reason that this is about, which is how one stops being noticed.
   EOT
   type        = list(string)
-  default     = ["*"]
+  default     = []
 }

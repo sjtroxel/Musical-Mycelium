@@ -179,6 +179,22 @@ jobs:
       # miss AWS_LWA_INVOKE_MODE or the Function URL's invoke_mode and every request still returns
       # 200. The 2026-07-31 spike measured 0.214s vs 10.22s; anything close to a 1.0 ratio here means
       # streaming is off, whatever the status code says.
+      #
+      # Rewritten 2026-08-25 after step 0 found three ways this step could pass while broken. All three
+      # are recorded in docs/KNOWN-GAPS.md; the fixes are:
+      #
+      #   1. `curl -sN` had no `-f`, so a 500 still produced a time-to-first-byte and passed. Both
+      #      /lineage calls now use -f. That covers the status code; it does NOT cover a stream that
+      #      opens 200 and then fails, which is what the frame assertions below are for.
+      #   2. The ratio check emitted ::warning:: and only exit 1'd on no response at all. It now fails.
+      #   3. The query was `thrash metal`, a bare noun. Confirmed live: the planner correctly routes it
+      #      to query_kind "coverage", approves claims, emits `refused`, and never synthesises — so no
+      #      `token` frame was ever produced and a synthesis regression could not be caught. The real
+      #      question runs first and is the gated one; the coverage-shaped query is kept as a second
+      #      check because the refusal path is reachable from the public URL and is worth exercising.
+      #
+      # The ratio gate applies to the real question only. The coverage query does almost no work after
+      # the `plan` frame, so its ratio is legitimately high and gating it would flake, not detect.
       - name: Smoke test the deployed URL
         run: |
           set -euo pipefail
@@ -189,20 +205,53 @@ jobs:
           curl -fsS --max-time 60 "${url}health" | tee /dev/stderr
           echo
 
-          echo "--- /lineage streaming check ---"
-          ttfb=$(curl -sN -o /dev/null --max-time 60 -w '%{time_starttransfer}' "${url}lineage?q=thrash%20metal")
-          total=$(curl -sN -o /dev/null --max-time 60 -w '%{time_total}' "${url}lineage?q=thrash%20metal")
-          echo "time to first byte: ${ttfb}s"
-          echo "total:              ${total}s"
-          awk -v t="$ttfb" -v T="$total" 'BEGIN {
+          # One request, both timings. The previous version issued two identical requests to read
+          # time_starttransfer and time_total separately, which doubled the Bedrock spend per deploy
+          # and measured the ratio across two different runs.
+          stream() {  # label, query, body file. Sets TTFB and TOTAL.
+            echo "--- /lineage: $1 ---"
+            local timings
+            timings=$(curl -fsN --max-time 60 --get \
+              --data-urlencode "q=$2" \
+              -o "$3" -w '%{time_starttransfer} %{time_total}' \
+              "${url}lineage")
+            TTFB=${timings% *}
+            TOTAL=${timings#* }
+            echo "query:              $2"
+            echo "time to first byte: ${TTFB}s"
+            echo "total:              ${TOTAL}s"
+          }
+
+          frame() {  # frame name, body file, label
+            grep -q "^event: $1$" "$2" || {
+              echo "::error::no '$1' frame in the $3 response"
+              echo "frames seen:"
+              grep '^event: ' "$2" | sort | uniq -c || echo "  (none)"
+              exit 1
+            }
+          }
+
+          answer="$(mktemp)"
+          stream "a real question" "How is the blues connected to heavy metal?" "$answer"
+          awk -v t="$TTFB" -v T="$TOTAL" 'BEGIN {
             if (T <= 0) { print "::error::no response"; exit 1 }
             r = t / T
             printf "ttfb/total ratio:   %.3f\n", r
             if (r > 0.9) {
-              print "::warning::Response looks BUFFERED, not streamed. Check AWS_LWA_INVOKE_MODE in the"
-              print "::warning::Dockerfile and invoke_mode on aws_lambda_function_url."
+              print "::error::Response looks BUFFERED, not streamed. Check AWS_LWA_INVOKE_MODE in the"
+              print "::error::Dockerfile and invoke_mode on aws_lambda_function_url."
+              exit 1
             }
           }'
+          # claim then token is the gate-to-narration path: the gate approved something and the
+          # synthesis model narrated it. Either one missing is a regression the old check could not see.
+          frame claim "$answer" "answer"
+          frame token "$answer" "answer"
+          frame done  "$answer" "answer"
+
+          coverage="$(mktemp)"
+          stream "a coverage-shaped query" "thrash metal" "$coverage"
+          frame done "$coverage" "coverage"
 
       - name: Report what is live
         run: |
@@ -210,5 +259,6 @@ jobs:
             echo "### Deployed"
             echo
             echo "- image tag: \`${{ steps.names.outputs.image_tag }}\`"
-            echo "- url: $(terraform -chdir=infra/terraform/main output -raw function_url)"
+            echo "- api: $(terraform -chdir=infra/terraform/main output -raw function_url)"
+            echo "- site: $(terraform -chdir=infra/terraform/main output -raw site_url)"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -95,7 +95,8 @@ them as current.
   `PutFunctionConcurrency` is refused **after the function has already been updated.** The CI path passes
   all three vars explicitly and is the correct path; the hand-apply is not.
 
-- [ ] **The deploy smoke test cannot catch a synthesis regression.** It queries `q=thrash metal`, a bare
+- [x] **FIXED 2026-08-25.** The deploy smoke test could not catch a synthesis regression. It queried
+  `q=thrash metal`, a bare
   noun rather than a question. Both smoke-test calls emitted a `traversal` EMF record and **no
   `synthesis` record at all**, meaning neither narrated an answer — `thrash metal` has a parent edge, so
   this is a query-shape effect and not a corpus one.
@@ -107,17 +108,40 @@ them as current.
   reports what the graph holds and declines to answer a question it was not asked. The defect is in the
   *smoke test's choice of query*, not in the loop.
 
-  The streaming ratio passes regardless, because TTFB is the `plan` frame either way. **Fix: use a real
-  question as the smoke query** so the gate-to-narration path is exercised on every deploy. Keeping a
-  coverage-shaped query as a *second* check would be worth more than replacing this one, since the
-  refusal path is now known to be reachable from the deployed URL.
+  The streaming ratio passes regardless, because TTFB is the `plan` frame either way.
 
-- [ ] **The buffering assertion warns instead of failing.** The step's own comment says *"anything close
-  to a 1.0 ratio here means streaming is off, whatever the status code says"*, but the `awk` emits
-  `::warning::` on `r > 0.9` and only `exit 1`s when there is no response at all. The `/lineage` calls
-  also use `curl -sN` without `-f`, so a 500 still yields a time-to-first-byte and passes. **A green
-  smoke test does not currently prove streaming works.** It did work this time, and that was read off
-  the numbers rather than off the checkmark.
+  **As fixed:** the smoke query is now *"How is the blues connected to heavy metal?"* — chip 1, the
+  signature demo — and the step asserts a `claim` frame **and** a `token` frame **and** a `done` frame in
+  the response body. Claim-then-token is the gate-to-narration path; either one missing is the regression
+  the old check was blind to. The coverage-shaped query was kept as a **second** call rather than
+  replaced, exactly as this entry recommended, so the refusal path stays exercised from the public URL.
+
+- [x] **FIXED 2026-08-25.** The buffering assertion warned instead of failing. The step's own comment said
+  *"anything close to a 1.0 ratio here means streaming is off, whatever the status code says"*, but the
+  `awk` emitted `::warning::` on `r > 0.9` and only `exit 1`d when there was no response at all. The
+  `/lineage` calls also used `curl -sN` without `-f`, so a 500 still yielded a time-to-first-byte and
+  passed. **A green smoke test did not prove streaming works.** It did work on 2026-08-24, and that was
+  read off the numbers rather than off the checkmark.
+
+  **As fixed:** `r > 0.9` now emits `::error::` and `exit 1`, and both `/lineage` calls carry `-f`. Two
+  further changes fell out of the rewrite:
+
+  - **One request per query instead of two.** The old step called `/lineage` twice with the identical
+    query to read `time_starttransfer` and `time_total` separately — which doubled the Bedrock spend per
+    deploy and computed the ratio across two different runs. A single `-w '%{time_starttransfer}
+    %{time_total}'` gives both from one run.
+  - **The ratio gate applies to the real question only.** The coverage query does almost no work after
+    the `plan` frame, so its ratio is legitimately high; gating it would flake rather than detect.
+
+  **Verified by breaking each lock** (the counter-practice adopted 2026-08-14), against the local stub on
+  `:8000` plus a purpose-built failing server: a missing frame exits 1 and prints the frames it did see; a
+  500 exits 22 under `-f` where the old step passed; and a response held for 2s and then flushed whole
+  exits 1 on a 1.000 ratio **even though its body contained valid `claim`, `token` and `done` frames** —
+  the frame assertions and the ratio gate catch different failures and neither subsumes the other. The
+  unbroken script exits 0 against the local stub, which emits 2 `claim` and 3 `token` frames for chip 1.
+
+  **Not yet run against the deployed URL.** These are CI-only edits and the next `deploy.yml` dispatch is
+  their first real exercise.
 
 ## Phase 5 step 0 pre-flight — two findings, 2026-08-24
 

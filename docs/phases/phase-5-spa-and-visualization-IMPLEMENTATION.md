@@ -252,8 +252,13 @@ web/                                    ALL new. Vite + React + TS. package.json
   previews/                             throwaway preview files for steps 3, 5, 6, 7 — gitignored
 infra/terraform/main/
   frontend.tf                           NEW: S3 bucket, OAC, CloudFront distribution, bucket policy
+  placeholder.html                      NEW: step 1's placeholder, shipped by Terraform. Deleted at step 2
   variables.tf                          cors_allowed_origins narrowed; timeout_seconds retightened
   outputs.tf                            CloudFront domain name
+infra/terraform/bootstrap/
+  oidc.tf                               NOT ANTICIPATED — see the step 1 as-built note in §12. The deploy
+                                        role names its ARNs explicitly, so main/ cannot create a bucket
+                                        or a distribution until bootstrap grants it. Applied LOCALLY.
 .github/workflows/deploy.yml            add the web build-and-sync job
 docs/SPEC.md                            §4 answered (imagined user); §2.2 chip row resolved
 docs/phases/phase-5-...-IMPLEMENTATION.md   this doc, kept as the as-built record
@@ -389,6 +394,75 @@ Four EMF records in `MusicalMycelium`. **DoD 0 met; phase 4 DoD #8 fully closed;
 Items 3 and 4 are logged in `docs/KNOWN-GAPS.md` and are not fixed here — they are deploy-pipeline
 defects rather than step 0 blockers, and fixing a check in the same breath as trusting it is how a check
 gets fitted to the result it just produced.
+
+### Step 0 follow-up — the smoke test, fixed 2026-08-25
+
+A separate session, deliberately, for the reason the paragraph above gives. Items 3 and 4 are both closed
+in `deploy.yml`: the smoke query is now chip 1 (*"How is the blues connected to heavy metal?"*) and the
+step asserts `claim`, `token` and `done` frames in the body; the coverage-shaped query is kept as a second
+call so the refusal path stays exercised; `r > 0.9` fails instead of warning; both `/lineage` calls carry
+`-f`. Two calls became one per query, halving the Bedrock spend per deploy and computing the ratio from a
+single run rather than across two.
+
+Each lock was verified by breaking it — missing frame, 500, and a buffered response whose body contained
+valid frames — and each failed as intended. **Not yet exercised against the deployed URL**; step 1's
+deploy is the first real run. This matters for step 1 specifically: step 1 adds a web sync job to the same
+workflow, so it inherits this smoke test as its verification.
+
+### Step 1 — S3 + CloudFront — WRITTEN 2026-08-25, NOT YET APPLIED
+
+`terraform fmt` and `terraform validate` pass on both roots. **Nothing has been applied**, no bucket and
+no distribution exist yet, and the CloudFront domain in every output below is still a plan-time unknown.
+
+**Three things this doc did not anticipate, recorded before they are applied rather than after.**
+
+1. **§4.1's "that is a variable value, not a backend edit" is not achievable as written.** The CloudFront
+   domain does not exist until the apply that creates the distribution, so passing it as a variable value
+   needs two applies with the wildcard live in between, and the value goes stale if the distribution is
+   ever replaced. `lambda.tf` reads `aws_cloudfront_distribution.spa.domain_name` off the resource
+   instead — one apply, no wildcard window, no drift. There is no cycle, precisely because §4.1 decided
+   CloudFront does not front the Function URL. Still a Terraform edit rather than a Python one, so
+   **DoD #9 is intact**; the deviation is in the *mechanism*, not the boundary.
+
+   `cors_allowed_origins` is gone, replaced by **`cors_extra_origins`** defaulting to `[]`. What is left
+   for a variable is the exception — a Vite dev server on localhost calling the deployed backend — and it
+   now has to be asked for out loud.
+
+2. **§6's file list is incomplete: `infra/terraform/bootstrap/oidc.tf` changes too, and it is applied by
+   a different identity.** The OIDC deploy role names its ARNs statement by statement on purpose, so it
+   cannot create an S3 bucket or a CloudFront distribution until bootstrap grants it. **`bootstrap` is
+   applied locally with an admin credential, not by CI** — which collides with the standing rule in
+   `.claude/rules/aws-and-cost.md` that the `mycelium-dev` key is time-boxed and deleted after use. A key
+   has to exist for this step. The CloudFront invalidation verbs step 2 will need are therefore included
+   **now**, so this is one bootstrap apply rather than two.
+
+   The grants follow the two shapes already in that file, and they are opposite trades made for opposite
+   reasons: `s3:*` scoped to the one SPA bucket ARN (the `LambdaFunction` statement's argument — the
+   provider's read path alone calls a dozen `Get*` actions nothing in the config mentions), and an
+   **enumerated** CloudFront action list on `*`, because CloudFront supports no resource-level
+   permissions for `CreateDistribution` and none at all for Origin Access Controls. Where resource
+   scoping is unavailable the action list has to be the bound.
+
+3. **The bucket lives in `main/`, not `bootstrap/`, unlike the state and artifact buckets.** Those are
+   records that must outlive a teardown. The frontend is the application, and invariant 5 says
+   `terraform destroy` on `main/` has to take it with it — §7 already names a frontend as the easiest
+   thing to accidentally make un-destroyable. `bootstrap` mirrors the bucket *name* only, to scope the
+   grant, the same coupling that file already documents for the function and log group.
+
+**What step 1 does not do.** No `deploy.yml` web sync job — Terraform ships `placeholder.html` directly,
+so `terraform apply` alone produces a working URL with no build step involved, which makes the
+destroy-then-apply check §7 demands a single operation. Node, Vite and the sync job land in step 2 when
+there is a real build to sync, and `aws_s3_object.placeholder` is deleted in the same commit. If that
+resource still exists when the SPA ships, something was skipped.
+
+The distribution carries `custom_error_response` for 403 and 404 already, before there is a single route
+to deep-link to: it is a property of the distribution rather than of the app, and a distribution update is
+a slow thing to discover you need. 403 is there alongside 404 because a private bucket answers a missing
+key with `AccessDenied` — S3 will not confirm that an object it will not serve you also does not exist.
+
+**Order of operations when this is applied:** `bootstrap` locally first, then `main` via `deploy.yml`. A
+`main` apply before the bootstrap one fails on `s3:CreateBucket`, and per step 0's own lesson the first
+sign will be a plan carrying more changes than expected — read it rather than reconcile it.
 
 **Still open from step 0, by decision:** `timeout_seconds` stays at 30. Two observed runs at 7.4s and
 6.4s give roughly 4x headroom, and two samples is not a p99. It tightens from real CloudWatch

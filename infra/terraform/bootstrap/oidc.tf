@@ -35,9 +35,17 @@ locals {
   exec_role_name = "${var.project}-lambda-exec"
   log_group_name = "/aws/lambda/${var.project}"
 
-  function_arn  = "arn:aws:lambda:${var.region}:${local.account_id}:function:${local.function_name}"
-  exec_role_arn = "arn:aws:iam::${local.account_id}:role/${local.exec_role_name}"
-  log_group_arn = "arn:aws:logs:${var.region}:${local.account_id}:log-group:${local.log_group_name}"
+  # Added at phase 5 step 1, 2026-08-25. The SPA bucket is created by main/frontend.tf, NOT here —
+  # unlike the state and artifact buckets above, which are records that must outlive a teardown. The
+  # frontend is the application, and invariant 5 says `terraform destroy` on main/ has to take it with
+  # it. So the name is mirrored here purely to scope the grant, the same coupling the comment above
+  # describes.
+  spa_bucket_name = "${var.project}-web-${local.account_id}"
+
+  function_arn   = "arn:aws:lambda:${var.region}:${local.account_id}:function:${local.function_name}"
+  exec_role_arn  = "arn:aws:iam::${local.account_id}:role/${local.exec_role_name}"
+  log_group_arn  = "arn:aws:logs:${var.region}:${local.account_id}:log-group:${local.log_group_name}"
+  spa_bucket_arn = "arn:aws:s3:::${local.spa_bucket_name}"
 }
 
 data "aws_iam_policy_document" "github_assume" {
@@ -242,6 +250,74 @@ data "aws_iam_policy_document" "github_deploy" {
     effect    = "Allow"
     actions   = ["logs:DescribeLogGroups"]
     resources = ["*"] # Does not support resource-level permissions.
+  }
+
+  # --- The SPA bucket and its CloudFront distribution (phase 5 step 1) ---
+  #
+  # Scoped by resource, using the same reasoning the LambdaFunction statement above spells out:
+  # enumerating every s3:* verb the provider calls across create, tag, policy, public-access-block,
+  # object write and destroy is a list that is wrong until the fourth failed deploy, and the AWS
+  # provider's *read* path for `aws_s3_bucket` alone calls a dozen Get* actions nothing in the config
+  # mentions. One bucket ARN is a genuinely tight blast radius and an honest trade.
+  #
+  # Note this bucket does NOT exist in this root — main/ creates it. The grant therefore has to include
+  # `s3:CreateBucket`, which is the one action here that reads oddly and is exactly right.
+  statement {
+    sid       = "SpaBucket"
+    effect    = "Allow"
+    actions   = ["s3:*"]
+    resources = [local.spa_bucket_arn, "${local.spa_bucket_arn}/*"]
+  }
+
+  # CloudFront is the weaker of the two guardrails in this block and it is worth naming why rather than
+  # letting `*` pass unremarked. **CloudFront does not support resource-level permissions for the
+  # actions that matter**: `CreateDistribution` cannot be scoped to a distribution that does not exist
+  # yet, and Origin Access Controls have no resource ARN form at all. Since scoping by resource is not
+  # available, the bound has to come from the action list instead — which is the opposite trade from the
+  # Lambda statement above, made for the opposite reason.
+  #
+  # `cloudfront:*` would be shorter and would silently include CreateKeyGroup, CreatePublicKey and the
+  # signed-URL machinery, none of which this project uses. The list below is what a static-site
+  # distribution actually needs, and a missing verb fails a plan loudly.
+  statement {
+    sid    = "CloudFrontDistribution"
+    effect = "Allow"
+    actions = [
+      "cloudfront:CreateDistribution",
+      "cloudfront:DeleteDistribution",
+      "cloudfront:GetDistribution",
+      "cloudfront:GetDistributionConfig",
+      "cloudfront:ListDistributions",
+      "cloudfront:UpdateDistribution",
+
+      "cloudfront:CreateOriginAccessControl",
+      "cloudfront:DeleteOriginAccessControl",
+      "cloudfront:GetOriginAccessControl",
+      "cloudfront:GetOriginAccessControlConfig",
+      "cloudfront:ListOriginAccessControls",
+      "cloudfront:UpdateOriginAccessControl",
+
+      # `data "aws_cloudfront_cache_policy"` in main/frontend.tf resolves Managed-CachingOptimized by
+      # name, so these fail the PLAN rather than the apply if absent — the same shape as
+      # ecr:ListTagsForResource above, which cost a deploy to learn.
+      "cloudfront:GetCachePolicy",
+      "cloudfront:ListCachePolicies",
+
+      # default_tags applies to the distribution, and tagging is a separate action from creating —
+      # the lesson the ArtifactObjects statement above paid for with a failed deploy on 2026-08-06.
+      "cloudfront:ListTagsForResource",
+      "cloudfront:TagResource",
+      "cloudfront:UntagResource",
+
+      # Not needed until step 2, when CI syncs a real build and must invalidate the edge cache.
+      # Included now on purpose: applying this root needs a local admin credential, and the standing
+      # rule in .claude/rules/aws-and-cost.md is that the dev key is time-boxed and deleted after use.
+      # A second bootstrap apply two steps from now costs more than three unused verbs do.
+      "cloudfront:CreateInvalidation",
+      "cloudfront:GetInvalidation",
+      "cloudfront:ListInvalidations",
+    ]
+    resources = ["*"]
   }
 
   # --- Cost guardrails ---
