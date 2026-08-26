@@ -467,3 +467,60 @@ sign will be a plan carrying more changes than expected — read it rather than 
 **Still open from step 0, by decision:** `timeout_seconds` stays at 30. Two observed runs at 7.4s and
 6.4s give roughly 4x headroom, and two samples is not a p99. It tightens from real CloudWatch
 `ElapsedSeconds` once there is traffic.
+
+### Step 1 — S3 + CloudFront — APPLIED 2026-08-26
+
+Live at **`https://d2vtdkpgmecreg.cloudfront.net`**, bucket `musical-mycelium-web-178870257607`. Deploy
+run `32979468111`, 1m49s, image built from `main` at `01b9cfed7bee`.
+
+**Order as the previous section specified: `bootstrap` locally first, then `main` via `deploy.yml`.** The
+bootstrap plan was `0 to add, 1 to change, 0 to destroy` — `aws_iam_role_policy.github_deploy` in place
+and nothing else, which is the whole of what `01b9cfe` added to that root. Applied with `mycelium-dev`,
+which was still live from a previous session.
+
+The `main` plan was **6 to add, 2 to change, 0 to destroy**:
+
+- created: `aws_s3_bucket.spa`, `aws_s3_bucket_public_access_block.spa`,
+  `aws_cloudfront_origin_access_control.spa`, `aws_cloudfront_distribution.spa`,
+  `aws_s3_bucket_policy.spa`, `aws_s3_object.placeholder`
+- updated in place: `aws_lambda_function.app` (new image digest) and `aws_lambda_function_url.app`
+
+**That second in-place update is the §4.1 deviation working.** Because `lambda.tf` reads
+`aws_cloudfront_distribution.spa.domain_name` off the resource rather than taking it as a variable value,
+the Function URL's CORS origin picked up the real CloudFront domain in the *same* apply that created the
+distribution. One apply, no wildcard window, nothing to remember to come back for.
+
+**Verified after the apply, not assumed:**
+
+| check | result |
+|---|---|
+| CloudFront root | `200`, `content-type: text/html; charset=utf-8` |
+| the object read directly from S3 | **`403`** — the OAC is the only read path, as designed |
+| a deep link to a path with no object | `200` — `custom_error_response` returns `/index.html` |
+
+The 403 is the one worth stating plainly: the bucket policy conditions on `AWS:SourceArn` and all four
+public-access-block settings are on, so the private-bucket-plus-OAC shape is confirmed by behaviour
+rather than by reading the config back.
+
+**The smoke test ran against the deployed URL for the first time** — step 0's follow-up built it but
+could not exercise it. `/health` returned the pinned `0.5.0` corpus; the real question streamed with
+`claim`, `token` and `done` frames present; the coverage-shaped query took the refusal path. Timings:
+**TTFB 0.170s, total 9.80s, ratio 0.017** against a `> 0.9` failure bound. The response is genuinely
+incremental, not a buffered body that happens to contain valid frames.
+
+**Two small things observed rather than predicted.**
+
+1. `aws_s3_object.placeholder`'s explicit `content_type` earned its keep. The header came back correct,
+   which is only true because it was set — the key is `index.html` while the file on disk is
+   `placeholder.html`, and the provider infers from the key.
+2. **The first request to the new domain failed with `Could not resolve host`, and succeeded about a
+   minute later.** This is exactly the cost `wait_for_deployment = false` documents in `frontend.tf` —
+   the apply reports success before the edge serves anything. Worth knowing at step 2, when a sync
+   followed immediately by a fetch would look like a broken deploy.
+
+**Unchanged by this step:** `timeout_seconds` is still 30, still awaiting real CloudWatch
+`ElapsedSeconds`. The two new samples above (9.80s and 7.51s) join the step 0 pair; four samples is
+still not a p99, though 9.80s is the closest anything has come to the ceiling so far.
+
+**Next is step 2** — the SPA skeleton — and it deletes `aws_s3_object.placeholder` in the same commit
+that adds the web sync job.

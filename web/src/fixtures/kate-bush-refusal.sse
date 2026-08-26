@@ -1,0 +1,18 @@
+event: plan
+data: {"plan": {"query_kind": "origins", "steps": [{"tool": "resolve_node", "reason": "resolve the name asked about", "arguments": {}}, {"tool": "get_influences", "reason": "list what it came out of", "arguments": {}}], "asserted_premise": null}, "unregistered": []}
+
+event: tool
+data: {"name": "resolve_node", "arguments": {"name": "Who influenced Kate Bush"}, "is_error": false}
+
+event: path
+data: {"node_ids": [], "labels": [], "chain": [], "chain_labels": []}
+
+event: refused
+data: {"reason": "it is not in this graph", "query": "Who influenced Kate Bush?"}
+
+event: token
+data: {"text": "This graph has no sourced answer for 'Who influenced Kate Bush?': it is not in this graph. Every claim here has to trace to a checkable source, and there is none to trace — so rather than fill the gap, it is left open."}
+
+event: done
+data: {"usage": {"input_tokens": 154, "output_tokens": 72}, "claim_count": 0, "rejection_count": 0, "model_id": "local-stub", "planned_steps": 2, "executed_steps": 1, "synthesis_usage": {"input_tokens": 0, "output_tokens": 0}, "synthesis_model_id": "local-stub", "stop_reason": "complete", "elapsed_seconds": 0.003, "artifact_version": "0.5.0", "corpus": {"artifact_version": "0.5.0", "nodes": 973, "edges": 950, "verification": {"ASSERTS_AUTO": 760, "EXPOSURE_AUTO": 57, "HAND": 22, "PROSE_AUTO": 111}, "structure": {"component_count": 169, "largest_component": 458, "diameter": 16, "isolated_nodes": 0, "max_path_hops": 6}, "coverage": {"genres": 169, "without_inception": 28, "without_country": 48, "eras": {"pre-1900": 6, "1900-1949": 7, "1950-1969": 29, "1970-1989": 47, "1990-2009": 39, "2010-": 13, "unknown": 28}, "coarser_than_year": 19, "countries": {"United States": 51, "United Kingdom": 42, "Japan": 14, "Germany": 9, "Mexico": 6, "Canada": 5, "Europe": 4, "Jamaica": 4, "Brazil": 3, "France": 3, "Trinidad and Tobago": 2, "Belgium": 2, "Spain": 2, "Turkey": 2, "Dominica": 2, "Philippines": 2, "Angola": 1, "Italy": 1, "French West Indies": 1, "Israel": 1, "Haiti": 1, "Dominican Republic": 1, "Paraguay": 1, "Brixton": 1, "Hawaii": 1, "Scandinavia": 1, "Netherlands": 1, "Finland": 1, "Sweden": 1}, "distinct_countries": 29, "genres_without_us_or_uk": 43, "top_country": "United States", "top_country_share": 0.421}, "predicate": "influenced_by"}}
+

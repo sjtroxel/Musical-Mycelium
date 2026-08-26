@@ -1,0 +1,15 @@
+{
+  "_comment": [
+    "Corpus figures that appear as COPY on the first screen, kept as data so tests/test_corpus_facts.py",
+    "can assert them against the pinned artifact. A number typed into a paragraph is a number that rots",
+    "silently; this project has already retracted one published percentage (the 2026-08-06 77% figure,",
+    "which double-counted genres credited to both the US and the UK).",
+    "",
+    "nodes_without_recorded_influences underwrites IMPLEMENTATION 4.5 requirement 5: a refusal must",
+    "never become the negative claim 'nobody influenced X'. Most of the corpus has no recorded",
+    "influences, so a missing edge is overwhelmingly not evidence of a missing influence."
+  ],
+  "artifact_version": "0.5.0",
+  "nodes": 973,
+  "nodes_without_recorded_influences": 542
+}

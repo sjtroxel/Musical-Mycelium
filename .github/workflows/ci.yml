@@ -65,6 +65,37 @@ jobs:
       - name: Tier 1 eval (scripted, free)
         run: make eval
 
+  # The SPA, added at phase 5 step 2. A separate job rather than a step in `check` because it shares
+  # nothing with the Python toolchain — no uv, no venv — and a frontend failure should not read as a
+  # backend one in the checks list.
+  #
+  # `npm ci` rather than `npm install`: it fails when package-lock.json is out of date with
+  # package.json instead of silently resolving something different from local dev, which is the same
+  # property `uv sync --locked` gives the Python half above.
+  web:
+    name: spa types, tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Types, unit tests and the production build. The build is not ceremony: `tsc` and Vite disagree
+      # about what resolves, and a green test run over a bundle that will not build is a deploy that
+      # fails in `deploy.yml` instead of here.
+      - name: Check
+        run: npm run check
+
   root-hygiene:
     name: repo root cap
     runs-on: ubuntu-latest

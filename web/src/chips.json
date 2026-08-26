@@ -1,0 +1,94 @@
+{
+  "_comment": [
+    "The canonical query chips for the first screen. THIS FILE IS THE SINGLE SOURCE OF TRUTH and it is",
+    "read by two consumers: the SPA renders it, and tests/test_chips.py validates every id, direction",
+    "and expectation against the pinned artifact. That pairing is the point — the standing rule adopted",
+    "2026-08-02 is that a corpus change must fail the build rather than a demo.",
+    "",
+    "Chip selection is phase-5 IMPLEMENTATION 4.3, decided by sjtroxel 2026-08-24. Five chips: four",
+    "answer outright, the fifth is a paired chip that refuses and then answers. Do not add a sixth",
+    "without re-reading 4.3 — the count landed at the floor of SPEC.md 2.1's 5-7 range as a side effect",
+    "of merging the Kate Bush pair, and the open slot is discussed there."
+  ],
+  "artifact_version": "0.5.0",
+  "chips": [
+    {
+      "id": "blues-to-heavy-metal",
+      "label": "How is the blues connected to heavy metal?",
+      "blurb": "Two hops, both hand-checked.",
+      "steps": [
+        {
+          "query": "How is the blues connected to heavy metal?",
+          "kind": "path",
+          "start_id": "Q38848",
+          "end_id": "Q9759",
+          "direction": "influenced_by",
+          "expect": "answer"
+        }
+      ]
+    },
+    {
+      "id": "acid-jazz-origins",
+      "label": "Where did acid jazz come from?",
+      "blurb": "The richest node in the corpus: four parents.",
+      "steps": [
+        {
+          "query": "Where did acid jazz come from?",
+          "kind": "origins",
+          "subject_id": "Q221772",
+          "direction": "influenced_by",
+          "expect": "answer"
+        }
+      ]
+    },
+    {
+      "id": "trip-hop-origins",
+      "label": "Where did trip hop come from?",
+      "blurb": "A boring middle, on purpose.",
+      "steps": [
+        {
+          "query": "Where did trip hop come from?",
+          "kind": "origins",
+          "subject_id": "Q205560",
+          "direction": "influenced_by",
+          "expect": "answer"
+        }
+      ]
+    },
+    {
+      "id": "western-swing-origins",
+      "label": "Where did Western swing come from?",
+      "blurb": "Carries the taxonomic-first-sentence trap.",
+      "steps": [
+        {
+          "query": "Where did Western swing come from?",
+          "kind": "origins",
+          "subject_id": "Q1730388",
+          "direction": "influenced_by",
+          "expect": "answer"
+        }
+      ]
+    },
+    {
+      "id": "kate-bush-paired",
+      "label": "Kate Bush",
+      "blurb": "One click, two answers: the sources run one way and not the other.",
+      "steps": [
+        {
+          "query": "Who influenced Kate Bush?",
+          "kind": "origins",
+          "subject_id": "Q636",
+          "direction": "influenced_by",
+          "expect": "refusal"
+        },
+        {
+          "query": "Who did Kate Bush influence?",
+          "kind": "descendants",
+          "subject_id": "Q636",
+          "direction": "influenced",
+          "expect": "answer"
+        }
+      ]
+    }
+  ]
+}

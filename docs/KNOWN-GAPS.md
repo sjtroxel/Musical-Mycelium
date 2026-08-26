@@ -30,6 +30,9 @@ built blind), then **step 9 part 2 — the held-out set has been run, once, and 
 DoD 7 closed; DoD 8 closed as partial with the Bedrock redeploy deferred to phase 5. See the 2026-08-24
 sections below, top-most first.
 
+**Updated 2026-08-26** at phase 5 step 1, applied: the project has a public CloudFront URL. It serves a
+placeholder, not a SPA — see the top-most section.
+
 **Verified state:** `make check` green — **1170 passed, 0 skipped**, 7 `costs_money` tests deselected, mypy
 clean, root 15/18, terraform valid. *(Count re-measured 2026-08-24 during the doc-currency pass; it read
 1169 here.)* The former skip was the held-out seal; that set now exists, so
@@ -46,6 +49,30 @@ as of 2026-08-24:** the held-out set was drawn 2026-08-14 and run 2026-08-24, an
 now been executed. What remains is the **Bedrock redeploy, deliberately deferred to phase 5** — which is
 also why the deployed URL still runs the template stub — plus the standing facts about the corpus in
 part 2.
+
+---
+
+## PHASE 5 STEP 1 IS APPLIED — the site has a public URL, 2026-08-26
+
+**`https://d2vtdkpgmecreg.cloudfront.net`** is live and serves a placeholder. Deploy run `32979468111`,
+image `01b9cfed7bee`, bucket `musical-mycelium-web-178870257607`. The bootstrap grant was applied locally
+first (`0 to add, 1 to change, 0 to destroy`), then `main` through `deploy.yml` (`6 to add, 2 to change,
+0 to destroy`).
+
+**What this does and does not mean.** The hosting spine exists and is correct: the bucket is private, the
+OAC is the only read path (a direct S3 read returns `403`), deep links fall back to `/index.html`, and the
+Function URL's CORS origin now names the real CloudFront domain. **There is no SPA yet.** The URL serves
+`infra/terraform/main/placeholder.html`, shipped by Terraform rather than by CI, and
+`aws_s3_object.placeholder` is deleted in step 2's commit. If that resource still exists when the SPA
+ships, something was skipped.
+
+**The smoke test ran against the deployed URL for the first time and passed** — TTFB 0.170s, total 9.80s,
+ratio **0.017** against a `> 0.9` bound, with `claim`, `token` and `done` frames all asserted present.
+Step 0's follow-up wrote that test but never got to exercise it; it is now exercised.
+
+**A new operational fact for step 2:** `wait_for_deployment = false` means an apply reports success before
+the CloudFront edge resolves. The first fetch of the new domain failed to resolve and succeeded a minute
+later. A step 2 sync followed immediately by a fetch will look like a broken deploy and will not be one.
 
 ---
 
