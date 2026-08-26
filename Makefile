@@ -319,8 +319,33 @@ clean: ## Remove caches and build artifacts
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
 # MYCELIUM_LLM_PROVIDER=local is the default here on purpose: it runs the whole stack with no AWS
-# account, no credentials and no spend. Set it to `bedrock` once the quota clears.
-dev: ## Run the API locally on :8000 (local stub LLM by default — no AWS needed)
+# account, no credentials and no spend.
+#
+# **KNOW WHAT THE STUB CANNOT DO BEFORE YOU JUDGE AN ANSWER BY IT (learned 2026-08-26).** `LocalLLM`
+# walks ONE fixed path — resolve, then get_influences, then stop — and has no route to
+# `get_descendants` at all. So every "who did X influence?" query refuses under it, no matter what the
+# corpus holds: Kate Bush and Elvis Presley both refuse locally and both answer on Bedrock, with 7 and
+# 5 cited claims. That is a property of the fixture, not of the system. Use `make dev-live` before
+# concluding an answer is bad.
+dev: ## Run the API locally on :8000 (local stub LLM — no AWS, and see the caveat above)
 	MYCELIUM_LLM_PROVIDER=$${MYCELIUM_LLM_PROVIDER:-local} \
 		uv run uvicorn musical_mycelium.api.app:app --reload --port 8000
 	@exit 1
+
+# The same server on the real model. Roughly a cent a query (6,624 input + 421 output tokens on
+# average, measured 2026-08-24), hard-capped near $0.075 by MAX_ACCUMULATED_TOKENS. Needs AWS
+# credentials. This is what the deployed site runs, and it is the only local mode whose ANSWERS are
+# representative.
+dev-live: ## SPENDS MONEY. Run the API locally on :8000 against Bedrock, like production
+	MYCELIUM_LLM_PROVIDER=bedrock \
+		uv run uvicorn musical_mycelium.api.app:app --reload --port 8000
+	@exit 1
+
+web-install: ## Install the SPA's dependencies
+	npm --prefix web ci
+
+web-dev: ## Run the SPA on :5173, proxying /api to whatever is on :8000
+	npm --prefix web run dev
+
+web-check: ## SPA types, unit tests, and production build
+	npm --prefix web run check

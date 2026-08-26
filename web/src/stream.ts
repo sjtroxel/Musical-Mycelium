@@ -99,6 +99,11 @@ export interface StreamOptions {
  */
 export async function streamLineage(query: string, options: StreamOptions): Promise<void> {
   const url = `${API_BASE}/lineage?q=${encodeURIComponent(query)}`;
+  // `Accept` is a CORS-safelisted request header, so this stays a *simple* request and never
+  // preflights. That matters: the Function URL's `allow_headers` is `["content-type"]` only. Adding any
+  // non-safelisted header here — an `X-Request-Id`, an auth token — turns this into a preflighted
+  // request that the deployed CORS config will reject, and it will work perfectly in `npm run dev`
+  // because the Vite proxy makes it same-origin. Verified live 2026-08-26.
   const init: RequestInit = { headers: { Accept: "text/event-stream" } };
   if (options.signal) init.signal = options.signal;
 

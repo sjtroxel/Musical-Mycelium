@@ -524,3 +524,114 @@ still not a p99, though 9.80s is the closest anything has come to the ceiling so
 
 **Next is step 2** — the SPA skeleton — and it deletes `aws_s3_object.placeholder` in the same commit
 that adds the web sync job.
+
+### Step 2 — the SPA skeleton — 2026-08-26
+
+Closes DoD 1, 2, 5 and 10. `web/` is Vite + React 19 + TypeScript, built and synced by `deploy.yml`.
+`aws_s3_object.placeholder` is gone, in this same commit, as step 1 said it would be.
+
+**What §6's file list did not anticipate: `.github/workflows/ci.yml` changes too.** The SPA needs types,
+tests and a build on every commit, and none of that shares a toolchain with the Python half. It is a
+separate `web` job rather than steps inside `check` — no uv, no venv — so a frontend failure does not
+read as a backend one in the checks list. §6 also listed `docs/SPEC.md` §4 as owed; §4 was already
+answered on 2026-08-24, so only §2.2 needed the chip-row resolution.
+
+**Three decisions this step made that the plan did not reach.**
+
+1. **`EventSource` is not used, and the reason is money.** It reconnects automatically when the server
+   closes the stream — which is what ends every successful `/lineage` run. On a one-shot query that
+   reconnect re-runs the whole agent loop, indefinitely, in a tab someone left open. The token budget is
+   the per-visitor ceiling (`.claude/rules/aws-and-cost.md`), and an auto-reconnecting client multiplies
+   that ceiling by tab lifetime, which is not a ceiling. `fetch` + `ReadableStream` + `AbortController`
+   gives one request and an explicit stop; the abort also fires on unmount, because AWS bills the full
+   duration of a stream whose client has already hung up.
+
+2. **The chips and the corpus figures ship as JSON, validated by Python tests.** `web/src/chips.json`
+   and `web/src/corpus-facts.json` are read by the SPA and asserted against the pinned artifact by
+   `tests/test_chips.py` (10 tests) and `tests/test_corpus_facts.py` (4). That is what makes 4.3's
+   "validated before it ships" a build failure rather than an intention. A chip list written in
+   TypeScript could not have been checked by the Python suite at all.
+
+   **It earned itself immediately.** The blues-to-metal chip stores `start_id: Q38848` (heavy metal) and
+   `end_id: Q9759` (blues) — backwards from how the label reads. `path("Q9759", "Q38848")` returns `[]`;
+   the edges run descendant-to-ancestor. Writing the endpoints in the order the question suggests would
+   have shipped the headline chip rendering nothing. That is the fourth instance of this project's
+   named ORIGINS-direction failure mode, and the first one caught before it was written.
+
+3. **The refusal and the answer are the same React component.** DoD 10 requirement 1 is "no error
+   chrome, ever", and an absence enforced by convention decays. One component makes it structural: the
+   only thing that differs is wording. There is no colour, border or weight in `.panel` that keys off
+   refusal.
+
+**Verified by breaking, per the practice adopted 2026-08-14.** Every lock here was deliberately broken,
+watched to fail, and restored: the chip refusal-direction assertion (flipped to the direction with 7
+edges — failed, naming the chip and the count), and both DoD 10 assertions.
+
+**That practice found a defect in the tests themselves.** Requirements 1 and 5 were asserted inside one
+test, so breaking *both* produced a single failure. One signal for two unrelated requirements says
+something is wrong without saying which. They are separate tests now — and this is the argument for
+breaking locks rather than reading them.
+
+**Tested, and how little.** 29 frontend tests across four files: the stream parser (including frames
+split one character at a time), the claim/prose separation, the DoD-10 absences, and a **contract test
+over real captured API bytes** rather than hand-written strings — `web/src/fixtures/*.sse`, from a local
+run of `api/app.py` on v0.5.0. The two halves deploy on different schedules, so a renamed field has no
+other place to fail loudly. No component snapshots: the frontend is a two-way door and over-testing it
+is waste (§7).
+
+**CORS verified live, not assumed.** `https://d2vtdkpgmecreg.cloudfront.net` gets
+`Access-Control-Allow-Origin`; an arbitrary origin gets no header at all. The request stays *simple* —
+`Accept` is CORS-safelisted, so it never preflights, which matters because `allow_headers` is
+`["content-type"]` only. Any non-safelisted header added later will preflight, fail in production, and
+work perfectly in `npm run dev` where the Vite proxy makes it same-origin. Noted in `stream.ts`.
+
+**Backend Python was not edited.** DoD 9 intact, no exception to record. The two new files under
+`tests/` test data in `web/`; they add no `src/` change.
+
+**Root entry count unchanged at 15**, as §6 required. `web/` was already counted.
+
+**Deploy ordering, decided here:** the frontend gate (`npm ci && npm run check`) runs *before*
+`terraform apply`, and the build-and-sync *after* it. The build needs `function_url`, which is an
+output — but the apply in this commit deletes the placeholder, so a build that failed after the apply
+would leave the public site with no `index.html` at all. Failing before it costs a red deploy and
+changes nothing. The site smoke test then asserts CloudFront is serving *this* build by name, with a
+retry loop, because an invalidation does not propagate instantly and a single immediate fetch tests the
+previous deploy.
+
+#### Step 2 correction, same day — the paired chip was a dead end and every free test said otherwise
+
+**Found by sjtroxel looking at the running app, not by the suite.** He typed *"who did elvis presley
+influence"*, got a refusal, and said it looked wrong. It was.
+
+Against `make dev`'s local stub, **both** halves of the Kate Bush pair refuse — so the chip that exists
+specifically to satisfy DoD 10 requirement 4 (*no reachable dead end*) was itself a dead end everywhere
+the stub runs. Against Bedrock the same chip answers with **7 cited claims**, and Elvis Presley (`Q303`,
+5 outgoing edges) answers with **5**.
+
+**Cause: `LocalLLM` is a fixture that walks one fixed path** — resolve, then `get_influences`, then stop.
+It has no route to `get_descendants` at all, so *every* "who did X influence?" query refuses under it
+regardless of what the corpus holds. Its own docstring says it is not a model and says not to extend it,
+and it has not been extended: the fix is that the limitation is now stated where someone will hit it
+(`make dev`'s comment, `make dev-live` beside it, and `web/README.md`).
+
+**Two things about this are worth more than the bug.**
+
+1. **The free tests could not have caught it and did not.** `tests/test_chips.py` validates the chip set
+   against the *corpus*, which was right about everything: the node exists, the edges run that way, the
+   pairing ends on an answer *as declared*. None of that is evidence about what the agent does.
+   `tests/test_chips_live.py` now closes exactly that loop — the declared expectation, checked by running
+   it — and is `costs_money`, seven queries, under a dime. **It passes 7/7.**
+
+2. **One of my own tests was constructed so it could not fail.** `App.test.tsx`'s "the pair continues to
+   an answer" case stubbed the *second* response with `acid-jazz-answer.sse` — a capture of an entirely
+   different question. It proved the UI renders a second panel with claims and proved nothing about the
+   query it named. That is this project's named failure mode (*assertions written from a mental model and
+   never executed*) appearing inside the test written to prevent it. The fixture is now
+   `kate-bush-descendants.sse`, captured from Bedrock, and the test additionally asserts the panel shows
+   **7** claims so a substituted fixture fails instead of passing.
+
+**The lesson to carry, and it is not "add more tests":** a fixture that cannot perform the behaviour
+under test will make the whole suite agree with itself. Before believing a green suite about agent
+behaviour, ask which provider produced the evidence.
+
+**Not changed:** the product. DoD 1, 2, 5 and 10 hold on the deployed stack, and did throughout.

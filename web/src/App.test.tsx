@@ -92,7 +92,7 @@ describe("a refusal", () => {
   it("renders in the same card as an answer, with no error chrome", async () => {
     vi.stubGlobal(
       "fetch",
-      stubFetch([fixture("kate-bush-refusal.sse"), fixture("acid-jazz-answer.sse")]),
+      stubFetch([fixture("kate-bush-refusal.sse"), fixture("kate-bush-descendants.sse")]),
     );
     const { container } = render(<App />);
 
@@ -113,7 +113,7 @@ describe("a refusal", () => {
     // requirements tells you something is wrong without telling you which thing.
     vi.stubGlobal(
       "fetch",
-      stubFetch([fixture("kate-bush-refusal.sse"), fixture("acid-jazz-answer.sse")]),
+      stubFetch([fixture("kate-bush-refusal.sse"), fixture("kate-bush-descendants.sse")]),
     );
     render(<App />);
 
@@ -127,7 +127,7 @@ describe("a refusal", () => {
   it("is never the last thing on screen — the pair continues to an answer", async () => {
     vi.stubGlobal(
       "fetch",
-      stubFetch([fixture("kate-bush-refusal.sse"), fixture("acid-jazz-answer.sse")]),
+      stubFetch([fixture("kate-bush-refusal.sse"), fixture("kate-bush-descendants.sse")]),
     );
     const { container } = render(<App />);
 
@@ -135,6 +135,12 @@ describe("a refusal", () => {
 
     // Requirement 4: no reachable dead end. The paired chip runs a second query after the refusal, so
     // two panels must appear and the last one must carry claims.
+    //
+    // **The second fixture must be this chip's own second query.** It was `acid-jazz-answer.sse` until
+    // 2026-08-26 — a capture of a completely different question — and that made the test a lie: it
+    // proved the UI renders a second panel, and proved nothing about whether "Who did Kate Bush
+    // influence?" answers. It does answer, with seven claims, but only against a real model; the local
+    // stub refuses it, so the pair really was a dead end everywhere the stub runs.
     await waitFor(() => {
       expect(container.querySelectorAll(".panel")).toHaveLength(2);
     });
@@ -142,5 +148,7 @@ describe("a refusal", () => {
       const panels = container.querySelectorAll(".panel");
       expect(panels[panels.length - 1]?.querySelector(".claims")).not.toBeNull();
     });
+    // The claims rendered are Kate Bush's, not some other query's.
+    expect(screen.getByText(/7 cited claims/i)).toBeDefined();
   });
 });

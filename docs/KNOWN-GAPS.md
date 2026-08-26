@@ -52,6 +52,34 @@ part 2.
 
 ---
 
+## PHASE 5 STEP 2 — the SPA ships, and `make dev` cannot be trusted about answers, 2026-08-26
+
+The SPA is built, tested and synced by `deploy.yml`; `aws_s3_object.placeholder` is gone. DoD 1, 2, 5
+and 10 hold on the deployed stack.
+
+**The standing gap this creates is a development one, and it is the important line in this section.**
+`make dev` runs `LocalLLM`, a fixture that walks one fixed path — resolve, then `get_influences`, then
+stop. **It has no route to `get_descendants`, so every "who did X influence?" query refuses locally no
+matter what the corpus holds.** Kate Bush and Elvis Presley both refuse under it; both answer on Bedrock
+with 7 and 5 cited claims. Use `make dev-live` before concluding a local answer is bad. This is a
+property of the fixture and was never a property of the deployed system.
+
+**It cost a real defect.** The paired Kate Bush chip — which exists to satisfy DoD 10's *no reachable
+dead end* — refused twice under the stub, and every free test agreed it was fine, because the free tests
+validate the chip set against the **corpus** rather than against the **agent**.
+`tests/test_chips_live.py` now closes that loop: `costs_money`, seven queries, under a dime, passing
+7/7. Found by looking at the running app, not by the suite.
+
+**A test of mine was also constructed so it could not fail** — the "pair continues to an answer" case
+stubbed its second response with a capture of a different question entirely. Fixed, and it now asserts
+the claim count so a substituted fixture fails.
+
+**Still open after step 2:** the frontend has no graph on it (steps 3-4), no design pass (steps 5-7),
+and coverage is a footer line rather than a first-class part of the interface (step 9). The **CHECKPOINT**
+is next and it is a step, not a mood.
+
+---
+
 ## PHASE 5 STEP 1 IS APPLIED — the site has a public URL, 2026-08-26
 
 **`https://d2vtdkpgmecreg.cloudfront.net`** is live and serves a placeholder. Deploy run `32979468111`,

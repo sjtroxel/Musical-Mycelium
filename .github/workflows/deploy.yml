@@ -130,6 +130,28 @@ jobs:
           terraform_version: "1.15.8"
           terraform_wrapper: false
 
+      # --- the SPA, phase 5 step 2 -------------------------------------------------------------
+      #
+      # Node and the frontend gate run BEFORE `terraform apply`, deliberately. The apply in this same
+      # commit deletes `aws_s3_object.placeholder`, so from here on the bucket's index.html is whatever
+      # the sync last put there — and a build that fails *after* the apply would leave the public site
+      # with no index.html at all. Failing here costs a red deploy and changes nothing.
+      #
+      # CI already runs this on push. It runs again because a deploy is dispatched manually and may
+      # target a commit CI never saw, which is exactly the situation on a day when GitHub is dropping
+      # push events.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install and check the SPA
+        working-directory: web
+        run: |
+          npm ci
+          npm run check
+
       # The bucket name carries the account id, and backend blocks cannot interpolate variables, so it
       # arrives here rather than in versions.tf. See infra/terraform/main/versions.tf.
       - name: Terraform init
@@ -171,6 +193,76 @@ jobs:
             -var="image_tag=${{ steps.names.outputs.image_tag }}" \
             -var="llm_provider=${{ inputs.llm_provider || 'local' }}" \
             -var="reserved_concurrency=${{ inputs.reserved_concurrency || -1 }}"
+
+      # The SPA is built AFTER apply because it needs the Function URL, which is a Terraform output.
+      # `VITE_API_BASE` is baked into the bundle at build time rather than fetched at runtime: the two
+      # halves live on different hostnames by decision (IMPLEMENTATION 4.1 — CloudFront does not front
+      # the Function URL), and a runtime config fetch would put a round trip in front of first paint,
+      # which is the thing DoD 5 forbids.
+      #
+      # Two cache lifetimes, because the two kinds of file have opposite needs. Vite content-hashes
+      # everything under assets/, so those can be immutable for a year and a new build simply has new
+      # names. index.html must never be cached, or a visitor keeps loading the old bundle's filenames
+      # after a deploy and sees a blank page with 404s in the console.
+      #
+      # `--delete` prunes assets from previous builds. It is safe with `--exclude index.html` because an
+      # excluded key is excluded from deletion too — index.html is then written by the `cp` below.
+      - name: Build and sync the SPA
+        run: |
+          set -euo pipefail
+          api="$(terraform -chdir=infra/terraform/main output -raw function_url)"
+          bucket="$(terraform -chdir=infra/terraform/main output -raw spa_bucket)"
+          dist_id="$(terraform -chdir=infra/terraform/main output -raw distribution_id)"
+
+          echo "api base:     $api"
+          echo "bucket:       $bucket"
+          echo "distribution: $dist_id"
+
+          VITE_API_BASE="$api" npm --prefix web run build
+
+          aws s3 sync web/dist "s3://${bucket}/" \
+            --delete \
+            --exclude index.html \
+            --cache-control "public, max-age=31536000, immutable"
+
+          aws s3 cp web/dist/index.html "s3://${bucket}/index.html" \
+            --cache-control "no-cache, must-revalidate" \
+            --content-type "text/html; charset=utf-8"
+
+          # One wildcard counts as a single path against the 1,000 free paths per month, so this is
+          # cheaper than enumerating index.html and hoping nothing else needed it.
+          aws cloudfront create-invalidation \
+            --distribution-id "$dist_id" \
+            --paths '/*' \
+            --query 'Invalidation.Id' --output text
+
+      # The site half of the smoke test. `terraform apply` succeeding says the distribution exists; it
+      # says nothing about whether the bundle in the bucket is the one just built.
+      #
+      # The retry loop is not padding: CloudFront serves the previous object until the invalidation
+      # propagates, so a single immediate fetch tests the last deploy rather than this one.
+      - name: Smoke test the deployed site
+        run: |
+          set -euo pipefail
+          site="$(terraform -chdir=infra/terraform/main output -raw site_url)"
+          asset="$(basename "$(ls web/dist/assets/index-*.js)")"
+          echo "site:  $site"
+          echo "asset: $asset"
+
+          for attempt in $(seq 1 12); do
+            body="$(curl -fsS --max-time 20 "$site/")"
+            if printf '%s' "$body" | grep -q "$asset"; then
+              echo "the site is serving this build (attempt $attempt)"
+              exit 0
+            fi
+            echo "attempt $attempt: not this build yet, waiting"
+            sleep 10
+          done
+
+          echo "::error::$site did not serve $asset within ~2 minutes of the invalidation"
+          echo "what it served instead:"
+          printf '%s' "$body" | head -c 400
+          exit 1
 
       # The deploy is not finished when apply succeeds. It is finished when the URL streams.
       #

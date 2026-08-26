@@ -144,7 +144,23 @@ signature demo. Delta blues is absent from the corpus and no path exists between
 blues-to-metal chain is the same shape, the same memorability, and it is real. It is the strongest argument
 in the corpus for the project's thesis that music history is a network rather than a timeline.
 
-## 3. What this refuses to be
+**RESOLVED AND SHIPPED — 2026-08-26, phase 5 step 2.** The table above is the *aspirational* set and stays
+as the record of what was considered. What actually ships is **five chips**, and the definitive list is
+**`web/src/chips.json`**, not this document — it is read by the SPA and validated against the pinned
+artifact by `tests/test_chips.py`, so a corpus change fails the build rather than a demo. Do not restate
+the chips here; that duplication is what goes stale.
+
+Three things this section predicted correctly and one it did not:
+
+- The blues-to-metal path is chip 1, as the last paragraph argues it should be.
+- The Kate Bush follow-up landed exactly as the paragraph above proposed: **the refusal and the
+  descendants query are one chip, run in sequence on a single click.** `get_descendants` shipped with
+  phase 3, so nothing blocked it.
+- Every "blocked on a second source" row is still blocked, and none of them is on the screen.
+- **U2 is not on the chip row.** The paragraph above says it "answers with six gated claims"; the
+  artifact holds **nine** incoming edges for `Q396` today. Not a contradiction — claims are what survives
+  the gate, not what the graph holds — but the two numbers are counting different things, and the chip
+  row was filled without needing to resolve which. It remains the open sixth slot.
 
 One line, because a scope fence does more work than a feature list:
 

@@ -154,24 +154,15 @@ resource "aws_s3_bucket_policy" "spa" {
   depends_on = [aws_s3_bucket_public_access_block.spa]
 }
 
-# --- The step 1 placeholder ---
+# --- The bucket's contents ---
 #
-# Terraform ships this, not CI, so that `terraform apply` on its own produces a working URL with no
-# build step involved. That makes the destroy-then-apply check invariant 5 demands (§7) a single
-# operation rather than a two-system dance, and it means step 1 can be verified today against nothing
-# but the plan.
+# **Terraform does not put objects in this bucket.** Step 1 shipped a `aws_s3_object.placeholder` here
+# so that `terraform apply` alone produced a working URL with no build step involved; step 2 removed it
+# on the same commit that added the web sync job to `deploy.yml`, which is what that resource's own
+# comment said would happen.
 #
-# **Step 2 replaces this with a real build synced from CI, and this resource goes away with it.** It is
-# a placeholder in the literal sense: if it is still here when the SPA ships, something was skipped.
-resource "aws_s3_object" "placeholder" {
-  bucket = aws_s3_bucket.spa.id
-  key    = "index.html"
-  source = "${path.module}/placeholder.html"
-
-  # Explicit, because the provider infers text/html from the KEY and the key here is index.html while
-  # the file on disk is placeholder.html. Without this a browser would be offered a download.
-  content_type = "text/html; charset=utf-8"
-
-  # Same reason as the artifact objects: makes a changed file visible in the plan rather than silent.
-  etag = filemd5("${path.module}/placeholder.html")
-}
+# The frontend is now built and synced by CI, after the apply, because it needs `function_url` as a
+# build-time value. One consequence worth knowing: `terraform apply` on an empty bucket produces a
+# distribution that serves nothing until a deploy syncs a build into it. That is the correct trade —
+# the alternative is Terraform owning a build artifact it cannot rebuild — but it does mean a
+# destroy-then-apply is not by itself a restored site. `deploy.yml` is.

@@ -37,3 +37,22 @@ from scratch twice without touching the backend. The client through v0.4 is `cur
 
 The one thing worth getting right early, because it is annoying to change once the schema has consumers:
 the response payload includes the agent's walked **path, in order**.
+
+## Running it — READ THIS BEFORE JUDGING AN ANSWER
+
+Two terminals:
+
+```
+make dev-live     # the API on :8000, against Bedrock. Costs about a cent a query.
+make web-dev      # the SPA on :5173, proxying /api to :8000
+```
+
+**`make dev` (the free local stub) will lie to you about answers, and it did on 2026-08-26.** `LocalLLM`
+is a development fixture that walks exactly one path — resolve, then `get_influences`, then stop. It has
+**no route to `get_descendants`**, so every *"who did X influence?"* query refuses under it regardless of
+what the corpus contains. Kate Bush and Elvis Presley both refuse locally; both answer on Bedrock with
+seven and five cited claims respectively.
+
+The stub is still the right default for working on the SSE plumbing, the reducer, or anything about
+rendering — it is free, instant and deterministic. It is the wrong tool for deciding whether an answer is
+any good. `make dev-live` is what the deployed site runs.
