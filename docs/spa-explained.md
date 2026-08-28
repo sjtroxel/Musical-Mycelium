@@ -98,6 +98,44 @@ descendant-to-ancestor. Writing the endpoints in the order the *label* suggests 
 headline chip that renders an empty answer. This project has had three separate bugs from assuming the
 origins direction, and none of them raised — each silently answered the opposite question and passed.
 
+## Why the graph is drawn on a canvas
+
+Three renderers were built against the real corpus and looked at: SVG, Canvas 2D, and WebGL via Sigma.
+Canvas won, and the reason is a measurement rather than a preference.
+
+The planning documents argued for WebGL, on the grounds that smooth camera work over thousands of nodes
+is what WebGL is for. Then the corpus was measured: the largest connected component is **458 nodes**, and
+the graphs an actual answer draws are **3 and 31**. WebGL's advantage is real and, at this size, entirely
+unspent. Canvas is comfortable an order of magnitude above where this corpus sits.
+
+What canvas charges is that hit-testing, dragging and label placement are yours to write — roughly forty
+lines that SVG gets free from the DOM. What it buys is that every visual effect after that is just
+drawing, with no renderer to negotiate with. Since everything remaining in this phase is design work,
+that trade is the right way round.
+
+Sigma was also rejected for a reason that has nothing to do with graphics: it touches
+`WebGL2RenderingContext` when the module loads, so it cannot be imported in jsdom, and the frontend tests
+run in jsdom. Choosing it would have meant mocking the graph component out of the one test in this phase
+that genuinely carries weight — the test that the app cannot narrate the static graph. Cosmograph was
+rejected on licensing: it is `CC-BY-NC-4.0`, and a project whose whole pitch is correct attribution
+cannot be casual about its own licenses.
+
+## What the map can honestly show
+
+The corpus is not one connected organism, and the interface must not imply that it is.
+
+Measured: 973 nodes fall into **169 separate components**, and artists and genres never touch — 128
+components are purely artists, 41 are purely genres, and **none are mixed**. The largest component is 458
+nodes and every one of them is an artist. The blues-to-heavy-metal example that opens the app is a
+component of **three nodes**.
+
+None of this is broken. Only one Wikidata property is ingested — `P737`, *influenced by* — and it does
+not link artists to genres. The property that would, `P136`, is not in the corpus, and adding it means
+cutting a new artifact, which would invalidate every published evaluation number.
+
+So the map shows a neighbourhood, and says so. The alternative — drawing all 169 islands at once and
+letting it look like one graph — would be a picture that argues for a claim the data does not make.
+
 ## What is deliberately missing
 
 **There is no graph on the screen yet.** The map, the layout, the palette and the motion are steps 3

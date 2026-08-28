@@ -52,6 +52,40 @@ part 2.
 
 ---
 
+## PHASE 5 STEP 3 — the engine is decided, and the graph is not one organism, 2026-08-28
+
+**The checkpoint was answered: continue.** The engine decision is **Canvas 2D + d3-force**, recorded with
+its full reasoning and its rejections in the phase 5 IMPLEMENTATION doc §12. Sigma 3 was rejected partly
+on a test-seam cost worth naming here: it touches `WebGL2RenderingContext` at module scope, so it cannot
+be imported in jsdom, and the frontend suite runs in jsdom.
+
+**The finding with consequences outside this step.** Measured from the pinned artifact before drawing
+anything:
+
+- **Artists and genres are in disjoint components. 128 pure-artist, 41 pure-genre, ZERO mixed**, out of
+  169 components over 973 nodes.
+- The largest component is **458 nodes and 100% artists** — it contains no genres at all.
+- **The signature blues → heavy metal chip's entire component is 3 nodes**: `blues`, `blues rock`,
+  `heavy metal music`. That is the whole island, not a slice of a bigger one.
+- Median degree is **1**. All **141** dated nodes are genres; all **804** artists carry no date.
+
+This is not a defect and nothing is broken. Only **P737** is ingested and P737 does not cross the
+artist/genre boundary; genre membership is **P136**, which is not in the corpus. But it does mean
+**`CLAUDE.md`'s thesis sentence — "underneath they are one connected organism" — is not drawable on
+artifact v0.5.0**, and any visualization copy implying a single connected map would be overstating what
+the corpus holds. The honest shape of the map is a *neighbourhood*. Phase 5 §9 uncertainty 1 explicitly
+allowed for this answer as a finding rather than a failure. **Whether to ingest P136 is a phase 6
+question** and is deliberately not pulled into phase 5 (§11).
+
+**A near-miss worth more than the decision.** The canvas preview was handed over with no `d3-drag`
+import, which killed its drag *and* its zoom while leaving it rendering normally. It was reported as
+canvas feeling worse than SVG — an accurate reading of a broken instrument — and that reading was one
+step away from sending a one-way door the wrong way. Found by sjtroxel using the running app, not by any
+check of mine. Full account in the IMPLEMENTATION doc. The previews now surface uncaught errors as a
+visible banner, and a headless browser is available locally for the step 5-7 previews.
+
+---
+
 ## PHASE 5 STEP 2 — the SPA ships, and `make dev` cannot be trusted about answers, 2026-08-26
 
 The SPA is built, tested and synced by `deploy.yml`; `aws_s3_object.placeholder` is gone. DoD 1, 2, 5

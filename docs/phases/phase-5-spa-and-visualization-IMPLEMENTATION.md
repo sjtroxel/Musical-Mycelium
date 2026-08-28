@@ -635,3 +635,111 @@ under test will make the whole suite agree with itself. Before believing a green
 behaviour, ask which provider produced the evidence.
 
 **Not changed:** the product. DoD 1, 2, 5 and 10 hold on the deployed stack, and did throughout.
+
+### The CHECKPOINT — answered 2026-08-28: continue
+
+Answered by sjtroxel, out loud, as §3 required: **continue into the design work.** His reasoning is that
+the deployed URL on its own is not what gets a project looked at, and the design steps are the difference
+between a thing that works and a thing worth posting. Priority 2 is banked and intact either way — steps
+0-2 delivered it — so this spends priority 3 time deliberately rather than by drift.
+
+Recorded because §3 said the checkpoint is a step and not a mood, and a decision that is never written
+down cannot later be distinguished from having wandered past it.
+
+### Step 3 — the rendering engine — DECIDED 2026-08-28: Canvas 2D + d3-force
+
+**The decision is Canvas 2D with `d3-force` for layout.** Recorded with its reasoning per §9 uncertainty
+2, because v1.0 inherits it and the scope doc (§142) is explicit that swapping renderers after the motion
+system exists is the one expensive reversal in this phase.
+
+Three previews were built against real corpus data and looked at on real hardware — `web/previews/`,
+gitignored per §6, with `build-data.py` extracting the three targets from the pinned artifact.
+
+| | engine | verdict |
+|---|---|---|
+| A | SVG + d3-force | Viable. Crisp text and DOM interactions for free; the one that dies first when motion lands on 458 nodes |
+| **B** | **Canvas 2D + d3-force** | **Chosen** |
+| C | WebGL — sigma 3.0.3 + graphology | Its advantage is unspent here, and it costs a test seam. See below |
+
+**Why B.** The WebGL argument in `planning/06` §6 was scale, and the measurement removes it: the largest
+component in the artifact is **458 nodes** and the demo surfaces are **3 and 31**. Canvas is comfortable
+an order of magnitude above that. What canvas charges is hit-testing, drag and label placement by hand —
+about **forty lines, written once, now written**. What it buys is that every bespoke visual in steps 5-7
+is just drawing, with no renderer to negotiate with and no shader between an idea and the screen. Given
+that steps 5, 6 and 7 are the entire remaining design arc, that is the trade worth making.
+
+**Rejected, with reasons, so they are not re-litigated:**
+
+- **Cosmograph — licence, not merit.** npm reports `CC-BY-NC-4.0`. A public site backing a job search is
+  at best ambiguous under a non-commercial licence, and this project's pitch is correct attribution
+  (`.claude/rules/graph-semantics.md`). Not evaluated further.
+- **Sigma v4 — beta only.** npm `latest` is `3.0.3`; the newest v4 is `4.0.0-beta.5`. Portfolio
+  infrastructure that has to stay live through a job search does not run a beta renderer.
+- **Sigma 3 — a real test-seam cost, found by trying to import it.** Sigma touches
+  `WebGL2RenderingContext` at **module scope**, so it throws on import anywhere without WebGL. jsdom does
+  not define that symbol (verified). The existing 29 frontend tests run in vitest/jsdom, so choosing
+  sigma means a WebGL stub or a mock on every test whose module graph reaches the graph component — which
+  would directly weaken step 8's load-bearing test that the SPA cannot narrate the static graph. A
+  renderer that has to be mocked out to be tested is the wrong renderer for the one test in this phase
+  that carries weight.
+- **Cytoscape.js — MIT and excellent, and redundant.** Its value is layout and graph algorithms, which
+  `GraphStore` already owns server-side. A second graph engine in the browser buys nothing here.
+
+**Dependencies are not added in this step.** `d3-force`, `d3-selection`, `d3-zoom` and `d3-drag` land in
+step 4 alongside the code that imports them. Step 3's deliverable is the decision; shipping unused
+dependencies to look decisive is how a `package.json` accumulates things nobody can later explain.
+
+#### What the measurement found, and it is bigger than the engine pick
+
+Measured from the pinned artifact before anything was drawn, to answer §9 uncertainty 1:
+
+- **973 nodes, 950 edges, 169 components.** Largest is **458**; then 31, 13, 11, 8. No singletons.
+- **The 458-node component is 100% artists and contains zero genres.**
+- **Artists and genres are in disjoint components. 128 pure-artist, 41 pure-genre, ZERO mixed.**
+- **The signature blues → heavy metal chip's entire component is 3 nodes** — `blues`, `blues rock`,
+  `heavy metal music`. Not a slice of a larger graph; that is the whole island.
+- Degree: max 25 (Sum 41, Bridgit Mendler, The Beatles), **median 1**.
+- **All 141 dated nodes are genres.** All 804 artists are undated, which is §9 uncertainty 3 confirmed
+  before step 5 rather than during it.
+
+The cause is not a defect: only **P737** is ingested, and P737 does not cross the artist/genre boundary.
+Genre membership is **P136**, which is not in the corpus. `CLAUDE.md` states the thesis as *"underneath
+they are one connected organism"* — **on artifact v0.5.0 that is not drawable**, and the honest answer to
+§9 uncertainty 1 is that the map shows a *neighbourhood*, which the uncertainty explicitly allowed for as
+a finding rather than a failure. Steps 4, 5 and 9 are all shaped by this. Whether it is worth a P136 cut
+is a **phase 6** question and is not smuggled into this phase (§11).
+
+#### The process failure that nearly decided a one-way door
+
+**The canvas preview shipped with no `d3-drag` import.** SVG imported four d3 modules; canvas imported
+three. `d3.drag` was `undefined`, `d3.drag()` threw, and because drag was registered one line before
+zoom, the same exception killed zoom registration too. The simulation had already started, so the page
+**rendered and looked finished while being completely inert.**
+
+sjtroxel looked at it and reported that canvas was "not as much fun to flip and drag around" as SVG. That
+was an accurate report of a broken preview, and it was **about to be the reason a one-way door went the
+other way.** The engine comparison was, for one round, a comparison between an engine and a bug.
+
+Three compounding causes, all the same shape as this project's named failure mode — *assertions written
+from a mental model and never executed*:
+
+1. **The previews were handed over having never been rendered.** There was no browser on the box and I
+   proceeded anyway, verifying library APIs in Node and treating that as sufficient. It was not: every
+   API call was correct and the page was still dead.
+2. **The first verification script produced a false FAIL** on canvas/headline once a browser existed. It
+   sampled every thousandth pixel to decide whether anything had drawn, and three small circles on a
+   1280x800 canvas fell between the samples. Re-run with full screenshot hashing: all nine
+   engine x target combinations pass. **A checker too insensitive to see the subject is not evidence.**
+3. **Headless FPS numbers are worthless here.** Software WebGL in a headless shell put SVG at 60 and
+   WebGL at a worst of 20 — the reverse of what real hardware says. They were not quoted as evidence.
+
+**Two things changed as a result.** `harness.js` now installs global `error` and `unhandledrejection`
+handlers that surface any uncaught exception as the same visible banner the import failures already got —
+a preview that renders but does not respond is worse than a blank one, because it looks finished. And
+**playwright-core plus a headless chromium shell are now available locally** for steps 5, 6 and 7, whose
+previews are the same trap again.
+
+**The lesson, stated for the steps that follow:** a design preview is an instrument, and an unverified
+instrument produces a confident wrong reading rather than no reading. Before treating a preview's feel as
+evidence about an engine, confirm the preview can perform the behaviour being judged. This is the same
+finding as step 2's `acid-jazz-answer.sse` fixture, arriving from a different direction, two days later.
