@@ -2,12 +2,16 @@ import { useState } from "react";
 import type { Chip } from "./components/ChipRow";
 import { ChipRow } from "./components/ChipRow";
 import { StepPanel } from "./components/StepPanel";
+import { useStaticGraph } from "./graph/useStaticGraph";
 import { useLineageRun } from "./useLineageRun";
 
 export function App() {
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const { steps, corpus, busy, label, run, cancel } = useLineageRun();
+  // The corpus downloads alongside the first run, never before one. DoD 5 forbids putting a 640 KB
+  // fetch in front of first paint, and `App.test.tsx` asserts that loading the page requests nothing.
+  const { graph } = useStaticGraph(steps.length > 0);
 
   const pickChip = (chip: Chip) => {
     setActiveId(chip.id);
@@ -70,7 +74,7 @@ export function App() {
           {steps
             .filter((step) => step.phase !== "queued")
             .map((step, index) => (
-              <StepPanel key={`${step.query}-${index}`} step={step} />
+              <StepPanel key={`${step.query}-${index}`} step={step} graph={graph} />
             ))}
         </main>
       )}

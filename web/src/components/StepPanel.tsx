@@ -1,4 +1,7 @@
 import facts from "../corpus-facts.json";
+import { GraphView } from "../graph/GraphView";
+import type { StaticGraph } from "../graph/staticGraph";
+import { buildRenderGraph } from "../graph/subgraph";
 import type { StepState } from "../useLineageRun";
 import { ClaimList } from "./ClaimList";
 
@@ -48,6 +51,43 @@ function Chain({ step, labels }: { step: StepState; labels: Map<string, string> 
   );
 }
 
+/**
+ * The map slot, and the two conditions under which it draws nothing.
+ *
+ * **1. A version mismatch.** If the corpus this browser downloaded is not the corpus the answer was
+ * produced from, the map is not drawn at all. Every id would still resolve and the picture would look
+ * entirely reasonable while showing a different graph than the one that was walked, which is the
+ * quietest possible way for this screen to lie. Cheap to check, so it is checked.
+ *
+ * **2. Nothing to draw around.** A run that never resolved a node has no neighbourhood: the local
+ * stub answers "Who influenced Kate Bush?" by passing the whole question to `resolve_node`, which
+ * fails, so no id ever appears. The honest response is no map. The chip's own `subject_id` is sitting
+ * in `chips.json` and would fill the hole, and using it would be the interface asserting it knows
+ * which node the run meant when the run never established that.
+ */
+function NeighbourhoodMap({ step, graph }: { step: StepState; graph: StaticGraph | null }) {
+  if (graph === null) return null;
+
+  const answered = step.done?.artifact_version;
+  if (answered !== undefined && answered !== graph.version) {
+    return (
+      <p className="map__mismatch">
+        The map is not drawn here: this answer came from corpus v{answered} and the map holds v
+        {graph.version}. Drawing one over the other would show a graph that was never walked.
+      </p>
+    );
+  }
+
+  const rendered = buildRenderGraph(graph, {
+    claims: step.claims,
+    pathNodeIds: step.path?.node_ids ?? [],
+    toolNodeIds: step.toolNodeIds,
+  });
+  if (rendered.nodes.length === 0) return null;
+
+  return <GraphView graph={rendered} />;
+}
+
 function Status({ step }: { step: StepState }) {
   if (step.phase === "failed") {
     return (
@@ -83,7 +123,7 @@ function Truncation({ step }: { step: StepState }) {
   );
 }
 
-export function StepPanel({ step }: { step: StepState }) {
+export function StepPanel({ step, graph }: { step: StepState; graph: StaticGraph | null }) {
   const labels = labelMap(step);
   const refused = step.outcome === "refusal";
 
@@ -93,6 +133,7 @@ export function StepPanel({ step }: { step: StepState }) {
 
       <Status step={step} />
       <Chain step={step} labels={labels} />
+      <NeighbourhoodMap step={step} graph={graph} />
 
       {step.prose && <p className="panel__prose">{step.prose}</p>}
 

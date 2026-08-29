@@ -267,6 +267,40 @@ code {
   color: var(--ink-faint);
 }
 
+/*
+ * The map, step 4.
+ *
+ * Restrained for the same reason everything else here is: layout is step 5, the palette is step 6 and
+ * motion is step 7, each behind its own previews. The canvas reads its colours from the tokens at the
+ * top of this file rather than carrying its own, so step 6 changes them in one place.
+ */
+.map {
+  margin: 0 0 1.25rem;
+}
+
+.map__canvas {
+  display: block;
+  width: 100%;
+  height: 300px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.map__caption,
+.map__mismatch {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* No warning colour here, deliberately. A version mismatch is a thing the interface declines to draw,
+   not a fault the visitor did something about. Same rule as the refusal — see IMPLEMENTATION 4.5. */
+.map__mismatch {
+  margin: 0 0 1.25rem;
+}
+
 .truncation,
 .rejections {
   max-width: var(--measure);

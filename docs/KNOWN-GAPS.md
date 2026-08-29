@@ -52,6 +52,33 @@ part 2.
 
 ---
 
+## PHASE 5 STEP 4 — the corpus is in the browser and the map draws, 2026-08-29
+
+**DoD 3 is closed.** The pinned artifact ships to the SPA as a version-pinned static asset, the map
+renders what a run returned, and the approved connections are numbered in gate-approval order. Detail is
+in the phase 5 IMPLEMENTATION doc; what belongs here is what is still open.
+
+**Still true, and unchanged by this step:** the deployed CloudFront URL does **not** yet serve any of
+this. Step 4 was built and verified locally against `make dev` and the Vite dev server. Nothing was
+deployed, no AWS resource was touched, and no money was spent. The deployed image's staleness noted at
+step 0 is likewise untouched.
+
+**Open, and named rather than fixed:**
+
+- **Label placement is per-node side-selection and nothing more.** On a dense hub an approval ordinal can
+  still clip the end of a label. Layout is step 5's remit; fixing it twice would be waste.
+- **There is no favicon**, so `/favicon.ico` 404s on every page load and Chromium logs it. Pre-existing,
+  found while verifying step 4, and it is step 10's item.
+- **The map's invariant-1 guard is structural but not yet tested as such.** Claimed and context edges are
+  separate types rather than one type with a flag, and the caption says which is which — but the test that
+  the SPA *cannot* narrate the static graph is step 8's, per IMPLEMENTATION 4.2, and it is not written.
+- **A refusal draws no map under the local stub**, because the stub never resolves a node and the SPA
+  refuses to guess one from `chips.json`. That is deliberate. It also means the refusal map is
+  **unverified against a real model**, where the node does resolve and the neighbourhood would draw.
+  That check costs about a cent on `make dev-live` and has not been run.
+
+---
+
 ## PHASE 5 STEP 3 — the engine is decided, and the graph is not one organism, 2026-08-28
 
 **The checkpoint was answered: continue.** The engine decision is **Canvas 2D + d3-force**, recorded with

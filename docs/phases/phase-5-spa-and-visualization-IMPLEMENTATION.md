@@ -743,3 +743,95 @@ previews are the same trap again.
 instrument produces a confident wrong reading rather than no reading. Before treating a preview's feel as
 evidence about an engine, confirm the preview can perform the behaviour being judged. This is the same
 finding as step 2's `acid-jazz-answer.sse` fixture, arriving from a different direction, two days later.
+
+### Step 4 — the graph data path and the first real render — DONE 2026-08-29
+
+**DoD 3 is closed.** The pinned corpus reaches the browser, the map draws what a run returned, and the
+approved connections are numbered in the order the gate approved them. Verified in a real browser on
+all three chip shapes before being called done, per the step 3 lesson.
+
+**The two calls sjtroxel made, both on 2026-08-29.** The artifact ships **verbatim, not slimmed**:
+measured 640 KB raw / 55 KB gzipped against a slim shape's 20 KB, and 35 KB is not worth a second
+representation of the corpus that can diverge from the pin, or losing `source_id`, which is the citation
+itself and which step 8's follow-an-edge annotation will want. And the **refusal keeps a map**, strictly
+bounded — same component, same code path, nothing highlighted, cut on the spot if it wants its own
+anything. His framing was that visitors only care about the happy path; the counterweight recorded here
+is that the Kate Bush refusal is **one of the five chips on the first screen**, not a wrong turn a
+visitor stumbles into.
+
+#### The data path
+
+`web/scripts/stage-graph.mjs` copies the artifact into `web/public/graph/v<pin>/graph.json` as a
+`prebuild` and `predev` step; the copy is gitignored. The pin is read from `chips.json`, which
+`tests/test_chips.py` already validates against the corpus, so the version is written down in one place.
+
+**`deploy.yml` needed no change, and the version-pinned path is why.** Vite copies `public/` into
+`dist/`, the existing sync ships `web/dist` with `--cache-control immutable`, and a corpus cut is a new
+URL rather than a stale cache. Confirmed by building: `dist/graph/v0.5.0/graph.json` is the artifact
+byte for byte.
+
+**The fetch is lazy and starts when a run starts.** `App.test.tsx`'s "makes no network request on load"
+is DoD 5's guard, and 640 KB in front of first paint is exactly what DoD 5 forbids. A second test in
+`graph/map.test.tsx` now asserts the same thing from the map's side, because this is the easiest thing in
+the new directory to break by accident.
+
+#### What is drawn, and the line it must not cross
+
+Claimed and context edges are **two types in `subgraph.ts`, not one type with a style flag.** A flag is
+one careless `.filter()` away from putting an ungated corpus edge in front of a visitor as an approved
+one. Claimed edges come only from `claim` frames; context comes only from the static artifact, is drawn
+faint, and the caption says so in words: *"shown for bearings and not part of this answer."* Step 8's
+test is the formal guard; this is the structure it will test.
+
+The arrow runs **object to subject**, the way history ran. That has its own test, and **the test was
+verified by breaking it** — the direction was reversed, one test failed and only that one, then it was
+restored. Same for the version guard below. This project's named failure mode is assertions written from
+a mental model and never executed, and the counter-practice is to break the lock and watch it fail.
+
+**A version guard was added that the plan did not have.** If the `done` frame's `artifact_version` is not
+the version the browser downloaded, the map is not drawn at all. Every id would still resolve and the
+picture would look entirely reasonable while showing a graph that was never walked, which is the
+quietest way this screen could lie. One comparison.
+
+#### Three findings from building it
+
+1. **The refusal has no node id in it, so on the local stub it gets no map.** `kate-bush-refusal.sse`
+   carries an empty `path` frame, a `refused` frame holding only a reason and the query string, and one
+   `resolve_node` call whose argument is the whole question. There is no id anywhere. `chips.json` holds
+   Q636 and using it would have filled the hole — and would have been the interface asserting it knew
+   which node the run meant when the run never established it. **No map is the honest answer**, and it
+   is what ships. Against Bedrock the same query resolves the node first and the refusal *would* draw a
+   neighbourhood, which is why `toolNodeIds` exists at all.
+2. **`forceCenter` is wrong for this corpus and `forceX`/`forceY` are right.** 169 disjoint components
+   (step 3) means a disconnected piece under `forceCenter` drifts off screen with nothing pulling it
+   back.
+3. **The layout had to be fitted to the box, and that is not cosmetic.** The headline chip's whole
+   component is three nodes, and a force layout of three nodes occupies a fraction of a 650x300 canvas —
+   the first render put the signature demo in a tiny cluster with its labels overlapping. Positions are
+   projected to fit while radii and type stay fixed, which is the thing canvas makes easy.
+
+#### What was deliberately not done
+
+No pan, zoom, drag or follow-an-edge (step 8). No palette work (step 6) — every colour is read from the
+CSS custom properties so step 6 has one place to change. No motion (step 7), though
+`prefers-reduced-motion` settles the layout without animating rather than being retrofitted later.
+`d3-force` is the only dependency added: step 3 said four d3 modules would land here, and the other
+three are imported by step 8's code, not this step's.
+
+**Left for step 5, named rather than polished away:** label placement is per-node side-selection and
+nothing more, so on a dense hub an ordinal can still clip the end of a label. Layout is step 5's remit
+and this is its problem, not a defect to fix twice.
+
+#### Verified
+
+`make check` **1184 passed, 14 deselected**, mypy clean over 89 files, root 15/18, terraform valid,
+eval gates unchanged at 3 passed / 0 failed / 2 not applicable — **no Python was edited in this step.**
+The frontend suite is **48 passed**, up from 29. In a headless Chromium against `make dev` and the dev
+server: acid jazz draws 4 cited and 10 context connections, blues-to-heavy-metal draws 2 cited and 0
+context (the 3-node island, exactly as step 3 measured), Kate Bush draws no map on either panel and
+raises no page error. The checker reads **every pixel** of the canvas rather than sampling, because step
+3's first checker sampled every thousandth pixel and produced a confident false FAIL.
+
+**One pre-existing 404 was found and is not step 4's:** there is no favicon, so `/favicon.ico` 404s and
+Chromium logs it. That is step 10's item. It is named and skipped explicitly in the checker rather than
+ignored wholesale, so the checker stays sensitive to everything else.

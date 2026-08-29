@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { nodeIdsInArguments } from "./graph/subgraph";
 import { streamLineage } from "./stream";
 import type { Claim, CorpusSummary, DoneFrame, Frame, PathFrame, RefusedFrame } from "./types";
 
@@ -18,6 +19,16 @@ export interface StepState {
   claims: Claim[];
   rejectionCount: number;
   path: PathFrame | null;
+  /**
+   * Node ids the run's tool calls named, in the order they were called.
+   *
+   * **Navigation only, and the distinction is load-bearing.** These are model-proposed tool arguments
+   * that no gate ever saw, so they may put a node on the map and may never put a claim in the list.
+   * They exist because a refusal has no other id in it: `kate-bush-refusal.sse` carries an empty
+   * `path` and a `refused` frame holding only a reason and the query string, so without this the
+   * refusal has nothing to draw a neighbourhood around.
+   */
+  toolNodeIds: string[];
   refusal: RefusedFrame | null;
   done: DoneFrame | null;
   error: string | null;
@@ -36,6 +47,7 @@ function emptyStep(query: string): StepState {
     claims: [],
     rejectionCount: 0,
     path: null,
+    toolNodeIds: [],
     refusal: null,
     done: null,
     error: null,
@@ -64,10 +76,17 @@ export function applyFrame(step: StepState, frame: Frame): StepState {
         phase: "settled",
         outcome: step.outcome ?? "answer",
       };
-    // `plan` and `tool` are consumed but not stored. They are the machinery, and step 2's screen is
-    // about the answer; surfacing them is a later step's call, not something to half-do here.
+    case "tool": {
+      // Step 2 stored nothing from a tool frame. Step 4 takes exactly one thing: the node ids in the
+      // arguments, so the map knows where in the corpus to look. Everything else about the machinery
+      // is still dropped; surfacing the loop itself remains a later step's call.
+      const fresh = nodeIdsInArguments(frame.arguments).filter(
+        (id) => !step.toolNodeIds.includes(id),
+      );
+      return fresh.length === 0 ? step : { ...step, toolNodeIds: [...step.toolNodeIds, ...fresh] };
+    }
+    // `plan` is consumed but not stored.
     case "plan":
-    case "tool":
       return step;
   }
 }

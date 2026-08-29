@@ -24,6 +24,7 @@ function blank(): StepState {
     claims: [],
     rejectionCount: 0,
     path: null,
+    toolNodeIds: [],
     refusal: null,
     done: null,
     error: null,
