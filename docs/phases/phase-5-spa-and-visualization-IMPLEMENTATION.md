@@ -835,3 +835,121 @@ raises no page error. The checker reads **every pixel** of the canvas rather tha
 **One pre-existing 404 was found and is not step 4's:** there is no favicon, so `/favicon.ico` 404s and
 Chromium logs it. That is step 10's item. It is named and skipped explicitly in the checker rather than
 ignored wholesale, so the checker stays sensitive to everything else.
+
+### Step 5 — layout — DECIDED 2026-08-30: influence depth, deterministic, no time axis
+
+**The decision: x is influence depth, y is year within the column, and there is no simulation.**
+Recorded per §9 uncertainty 3. `web/src/graph/layout.ts` is the whole of it and `GraphView` no longer
+decides where anything goes.
+
+**This was decided by me, not by sjtroxel, at his explicit request** — he was overwhelmed and asked
+me to pick and record the reasoning so he could overturn it later. It is therefore a weaker decision
+than step 3's, which he made by looking. **It is reversible**: the previews still describe all four
+candidates, and `layout()` is one pure function behind one call site.
+
+#### The question was wrong, and the measurement is the real deliverable
+
+§9 uncertainty 3 and the scope doc (§51) both framed this as *"where do 832 undated nodes go"*. They
+never share a map. Step 3 measured artists and genres into disjoint components; the consequence
+nobody had drawn out is that **every chip renders either a pure-genre map or a pure-artist map**, so
+the undated nodes are never mixed in among dated ones. There is no placement problem to solve.
+
+Measured on what `subgraph.ts` actually draws, with `web/previews/measure-time.py`:
+
+| chip | nodes | dated | edges |
+|---|---|---|---|
+| blues → heavy metal | 3 | 100% | 2 forward |
+| acid jazz | 15 | 80% | 11 forward, 3 undatable |
+| trip hop | 8 | 62% | 4 forward, 3 undatable |
+| Western swing | 5 | 100% | 3 forward, **1 backwards** |
+| Kate Bush, both panels | 8 / 16 | **0%** | all undatable |
+
+**Two findings with consequences beyond the layout.**
+
+1. **6 of the 102 datable edges in the corpus run backwards in time** — the object is younger than
+   the thing it influenced. `electroclash (1995) -> electropop (1978)` is the worst at 17 years, and
+   **one of the six is inside a chip**: `swing (1930) -> Western swing (1928)`. A force layout hides
+   this. A year axis draws it as an arrow pointing left, which is the map asserting an influence
+   arrived before its own cause. This is not a data defect to fix — an `inception_year` is a Wikidata
+   field, not a measurement, and a genre does not begin on a date. It is a reason not to build
+   geometry on top of those numbers.
+2. **The three undated genres are the same three in every genre map** — Na mele paleoleo, Pinoy hip
+   hop, sampledelia. Hawaiian, Filipino, and one technique. **The undated nodes are the non-Western
+   ones**, which is step 9's coverage-honesty work arriving early and unasked. `layout.ts` sorts a
+   missing year to the END of its column rather than treating it as year 0, with a test, because
+   sorting them to the ancient end would be the map inventing dates for exactly the nodes the corpus
+   is thinnest on.
+
+#### The four previews, and why B lost
+
+`web/previews/layout.html`, gitignored, four layouts x five real targets, switchable in the page.
+
+| | x means | verdict |
+|---|---|---|
+| A | nothing — the step 4 force baseline | the control |
+| B | **the year** | **rejected** — see below |
+| C | influence depth, force-relaxed y | viable |
+| **D** | **influence depth, year within the column** | **chosen** |
+
+**B is rejected because it stops existing for 40% of the demo surface.** It is the better picture on
+the genre chips — jazz 1917 on the left through skweee 2005 on the right reads well — and it is still
+worth looking at. But not one node on either Kate Bush panel carries a date, so B silently falls back
+to A there. A design system that becomes a different design system on two of six panels is worse than
+one that never claimed chronology, and steps 6 and 7 would have to be built twice.
+
+**D over C** on the value this codebase already committed to one layer down: `subgraph.ts` sorts the
+context neighbourhood by label *"so the same answer draws the same map twice"*, and a settling
+simulation put that straight back. D is a pure function of the graph. A screenshot in a writeup now
+matches what a visitor sees, `prefers-reduced-motion` needs no branch because there is no settling
+animation to suppress, and step 7's motion animates between known positions rather than racing a
+simulation. Measured column widths on the five targets are 1, 11, 3, 7 and 259 — the 259 is the
+whole-component stress case, which **no chip can reach** because `subgraph.ts` caps context at 40.
+
+**Time survives as ordering, not geometry.** The dates still sort each column, oldest at the top. That
+is the only claim an inception year can carry.
+
+#### What changed in the SPA
+
+`layout.ts` + `layout.test.ts` are new; `GraphView` lost the simulation, the position cache and the
+`prefersReducedMotion` branch, and gained a height that follows the busiest column (a fixed 300px
+squeezed acid jazz's eleven-node column into a stack of anonymous dots). **`d3-force` and
+`@types/d3-force` are uninstalled** — nothing imports d3 any more, and step 3's own rule was that
+shipping unused dependencies is how a `package.json` accumulates things nobody can later explain.
+Step 8 can reinstate what it needs. Frontend suite **48 -> 60**; `make check` **1184**, unchanged, no
+Python edited.
+
+**Two locks verified by breaking them**, per the standing counter-practice: reversing the edge
+direction in `layerOf` fails 4 tests and only those; treating a missing year as `0` fails exactly 1.
+
+#### Three process failures in this step, all the same shape
+
+1. **Layout D shipped drawing ZERO edges.** `d3.forceLink` is what replaces string endpoint ids with
+   node objects, and D deliberately has no simulation, so its endpoints stayed strings while nodes
+   and axis furniture still painted. **My checker passed it on pixel count.** Fixed by resolving
+   endpoints once, up front, for every layout.
+2. **Node drag did not work in any preview, and my checker reported that it did.** Zoom and drag were
+   bound to the same canvas, so mousedown started a pan before drag saw it. The check dragged from
+   the middle of an empty canvas and asserted the picture changed — **but panning changes the picture
+   too**, so a pan passed as a drag. **Found by sjtroxel using the running app.** The check now aims
+   at a real node and asserts that node moved and the camera did not.
+3. That rewritten check immediately caught a **third** bug: D's drag set `fy`, which only the
+   simulation reads, so with no simulation nothing moved.
+
+This is 2026-08-28 for the third time, and the lesson has now been re-learned twice at the same cost.
+**The rule that actually generalises: a check must be able to distinguish the behaviour it is
+asserting from the nearest thing that looks like it.** "Pixels changed" cannot tell a drag from a
+pan, and "pixels were lit" cannot tell a drawn graph from a drawn axis with no graph on it. Both
+passed. Both were wrong. Write the check so the near-miss fails it.
+
+#### Open after this step
+
+- **The context column reads as a regimented stack.** Ten unlabelled context nodes at one x are a
+  vertical line rather than a neighbourhood. The force layout scattered them, which read better; the
+  caption carries the meaning either way. Step 6 or 8's item, named rather than fixed here.
+- **The 458-node component is a hairball in every one of the four layouts**, and in C and D nodes
+  overflow the box vertically. It is unreachable from any chip and was not designed for.
+- **The map is still not deployed.** Everything in this step is local, as at step 4. No AWS resource
+  was touched and no money was spent.
+- **B is worth revisiting if phase 6 ever dates the artists.** A second source that carries artist
+  dates would make the year axis drawable across the whole demo surface, and it is the better picture
+  where it works.

@@ -52,6 +52,42 @@ part 2.
 
 ---
 
+## PHASE 5 STEP 5 — the layout is decided, and a time axis is not drawable, 2026-08-30
+
+**x is influence depth, y is year within the column, and there is no simulation.** Full reasoning in
+the phase 5 IMPLEMENTATION doc §12. **Decided by the agent at sjtroxel's explicit request, not by
+him** — it is reversible and weaker than step 3's decision, which he made by looking.
+
+**The measurement is the part with consequences beyond this step.** The scope doc asked "where do
+832 undated nodes go"; they never share a map, because artists and genres are disjoint components,
+so every chip is either wholly dated or wholly undated. Two findings that outlive the layout:
+
+- **6 of the 102 datable edges in the corpus run BACKWARDS in time**, and one of them is inside a
+  chip: `swing (1930) -> Western swing (1928)`. A year axis draws those as arrows pointing left. This
+  is not a defect to fix — an `inception_year` is a Wikidata field, not a measurement — but it is a
+  reason not to build geometry on those numbers, and it should not be described as one.
+- **The three undated genres are the same three in every genre map**: Na mele paleoleo, Pinoy hip
+  hop, sampledelia. **The undated nodes are the non-Western ones.** Step 9's coverage work arriving
+  early. `layout.ts` sorts a missing year to the end of its column rather than to year 0, with a
+  test, so the map cannot invent dates for the nodes the corpus is thinnest on.
+
+**Still open, and named rather than fixed:** the context nodes now stack in a regimented vertical
+line rather than reading as a neighbourhood; the 458-node component is a hairball in all four
+candidate layouts and unreachable from any chip; **nothing is deployed**, exactly as at step 4.
+
+**Three bugs in this step, all one shape, and the third was found by sjtroxel using the app.** A
+layout drew zero edges and passed a checker that only counted lit pixels. Node drag was broken in
+every preview and a checker reported it working, because it asserted "the picture changed" and
+panning changes the picture too. **The rule that generalises: a check must distinguish the behaviour
+it asserts from the nearest thing that looks like it.** Both checks passed; both were wrong.
+
+**Verified:** `make check` **1184 passed, 14 deselected**, mypy clean over 89 files, root 15/18,
+terraform valid, eval gates unchanged at 3 passed / 0 failed / 2 not applicable — **no Python was
+edited.** Frontend suite **48 -> 60**. `d3-force` and `@types/d3-force` uninstalled; nothing imports
+d3 any more.
+
+---
+
 ## PHASE 5 STEP 4 — the corpus is in the browser and the map draws, 2026-08-29
 
 **DoD 3 is closed.** The pinned artifact ships to the SPA as a version-pinned static asset, the map

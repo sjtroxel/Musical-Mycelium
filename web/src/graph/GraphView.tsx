@@ -1,41 +1,51 @@
-import {
-  forceCollide,
-  forceLink,
-  forceManyBody,
-  forceSimulation,
-  forceX,
-  forceY,
-} from "d3-force";
-import type { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 import { useEffect, useRef } from "react";
+import { layout, tallestColumn } from "./layout";
 import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
 
 /**
- * The map. Canvas 2D, laid out by `d3-force`.
+ * The map. Canvas 2D, laid out by `layout.ts`.
  *
  * The engine was decided at step 3 with reasons recorded in the phase 5 IMPLEMENTATION doc: WebGL's
  * only argument here was scale, and the measured scale is 458 nodes at the very worst with the demo
  * surfaces at 3 and 31. What canvas charges is hit-testing and label placement by hand, and what it
  * buys is that steps 5, 6 and 7 are then just drawing.
  *
- * **This step deliberately stops at drawing.** Pan, zoom, drag and follow-an-edge are step 8; the
- * palette is step 6; motion is step 7. The phase's fence is engine, then layout, then palette, then
- * motion, and reaching forward from here is how the fence stops meaning anything. What is here is the
- * first honest render and nothing else.
+ * **Layout is step 5's decision and it lives in `layout.ts`.** x is influence depth, y is year within
+ * the column, and there is no simulation at all — see that file for why a chronological axis cannot
+ * be drawn on this corpus. This file draws; it does not decide where anything goes.
  *
- * Two things it does do now rather than later, because both are cheaper now than as a retrofit:
- * `prefers-reduced-motion` settles the layout without animating it, and every colour is read from the
- * CSS custom properties in `styles.css` so step 6 has one place to change rather than twenty.
+ * Pan, zoom, drag and follow-an-edge are step 8; the palette is step 6; motion is step 7. The phase's
+ * fence is engine, then layout, then palette, then motion, and reaching forward from here is how the
+ * fence stops meaning anything.
+ *
+ * Every colour is read from the CSS custom properties in `styles.css` so step 6 has one place to
+ * change rather than twenty. `prefers-reduced-motion` needs no special case any more: a deterministic
+ * layout has no settling animation to suppress.
  */
 
-interface SimNode extends SimulationNodeDatum, RenderNode {}
+interface SimNode extends RenderNode {
+  x: number;
+  y: number;
+}
 
-interface SimLink extends SimulationLinkDatum<SimNode> {
+interface SimLink {
+  source: SimNode;
+  target: SimNode;
   kind: RenderEdge["kind"];
   order: number | null;
 }
 
-const HEIGHT = 300;
+/**
+ * The map is as tall as its busiest column needs, between these two bounds.
+ *
+ * A fixed height was right when a simulation spread nodes in two dimensions. A column layout only
+ * has the vertical, so eleven nodes in one column at 300px became a stack of dots a few pixels
+ * apart. The upper bound is there because the map must not push the cited claims below the fold —
+ * the claims are the answer and the picture is the illustration, never the other way round.
+ */
+const MIN_HEIGHT = 260;
+const MAX_HEIGHT = 460;
+const ROW_PITCH = 30;
 const FALLBACK_WIDTH = 640;
 
 function palette(root: Element): Record<string, string> {
@@ -50,13 +60,6 @@ function palette(root: Element): Record<string, string> {
     card: token("--card", "#ffffff"),
     accent: token("--accent", "#3d5a45"),
   };
-}
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
 }
 
 /** A short triangle at the target end, so the direction of influence is readable without a legend. */
@@ -87,9 +90,10 @@ function arrowhead(
 
 export function GraphView({ graph }: { graph: RenderGraph }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Positions survive a re-render so a claim arriving mid-stream extends the map instead of shuffling
-  // it. Watching the layout reshuffle on every frame would read as the answer changing its mind.
-  const positions = useRef(new Map<string, { x: number; y: number }>());
+  // No position cache any more. It existed because a simulation settled somewhere new on every run,
+  // so a claim arriving mid-stream would reshuffle the whole map and read as the answer changing its
+  // mind. `layout()` is a pure function of the graph, so a node that was already on screen keeps the
+  // position it had unless the answer actually changed its shape.
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -102,18 +106,23 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
     if (ctx === null) return;
 
     const width = canvas.parentElement?.clientWidth || FALLBACK_WIDTH;
+    const height = Math.min(
+      MAX_HEIGHT,
+      Math.max(MIN_HEIGHT, tallestColumn(graph) * ROW_PITCH + 60),
+    );
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr;
-    canvas.height = HEIGHT * dpr;
+    canvas.height = height * dpr;
     canvas.style.width = "100%";
-    canvas.style.height = `${HEIGHT}px`;
+    canvas.style.height = `${height}px`;
 
     const colors = palette(document.documentElement);
 
-    const nodes: SimNode[] = graph.nodes.map((node) => {
-      const seen = positions.current.get(node.id);
-      return seen === undefined ? { ...node } : { ...node, x: seen.x, y: seen.y };
-    });
+    const placed = layout(graph);
+    const nodes: SimNode[] = graph.nodes.map((node) => ({
+      ...node,
+      ...(placed.get(node.id) ?? { x: 0, y: 0 }),
+    }));
     const byId = new Map(nodes.map((node) => [node.id, node]));
 
     const links: SimLink[] = graph.edges.flatMap((edge) => {
@@ -134,20 +143,10 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
       neighbours.set(target.id, [...(neighbours.get(target.id) ?? []), source]);
     }
 
-    const simulation = forceSimulation(nodes)
-      .force("link", forceLink<SimNode, SimLink>(links).id((node) => node.id).distance(70))
-      .force("charge", forceManyBody().strength(-220))
-      .force("collide", forceCollide<SimNode>((node) => radius(node) + 12))
-      // forceX/forceY toward the centre rather than forceCenter: the corpus is 169 disjoint islands
-      // (measured at step 3) and a disconnected component under forceCenter drifts off screen
-      // forever, because nothing is pulling it back.
-      .force("x", forceX(width / 2).strength(0.06))
-      .force("y", forceY(HEIGHT / 2).strength(0.09));
-
     const font = '12px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
 
     /**
-     * Fit whatever the simulation settled on into the box.
+     * Fit the laid-out positions into the box.
      *
      * Not cosmetic. The headline chip's entire component is three nodes (measured at step 3), and a
      * force layout of three nodes occupies a fraction of a 650x300 canvas, so without this the
@@ -170,8 +169,8 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
       const padLeft = 20;
       const padRight = 20 + Math.min(widest + 10, width * 0.35);
 
-      const xs = nodes.map((node) => node.x ?? 0);
-      const ys = nodes.map((node) => node.y ?? 0);
+      const xs = nodes.map((node) => node.x);
+      const ys = nodes.map((node) => node.y);
       const minX = Math.min(...xs);
       const maxX = Math.max(...xs);
       const minY = Math.min(...ys);
@@ -180,24 +179,24 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
       // A cap, so two nodes are not blown up until the map reads as a diagram of nothing.
       const k = Math.min(
         (width - padLeft - padRight) / Math.max(maxX - minX, 1),
-        (HEIGHT - padY * 2) / Math.max(maxY - minY, 1),
+        (height - padY * 2) / Math.max(maxY - minY, 1),
         2.2,
       );
       const cx = (minX + maxX) / 2;
       const cy = (minY + maxY) / 2;
       const originX = padLeft + (width - padLeft - padRight) / 2;
 
-      return (x, y) => [(x - cx) * k + originX, (y - cy) * k + HEIGHT / 2];
+      return (x, y) => [(x - cx) * k + originX, (y - cy) * k + height / 2];
     }
 
     function draw() {
       if (ctx === null) return;
       const at = project();
-      const px = (node: SimNode): [number, number] => at(node.x ?? 0, node.y ?? 0);
+      const px = (node: SimNode): [number, number] => at(node.x, node.y);
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, width, HEIGHT);
+      ctx.clearRect(0, 0, width, height);
 
       // Context first, so an unclaimed corpus edge can never be drawn over an approved one.
       for (const link of links) {
@@ -308,24 +307,9 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
       ctx.restore();
     }
 
-    if (prefersReducedMotion()) {
-      // Settle the layout without animating it. DoD 6 lands properly at step 7; this is the honest
-      // minimum, and it is three lines rather than a retrofit.
-      simulation.stop();
-      for (let i = 0; i < 240; i += 1) simulation.tick();
-      draw();
-    } else {
-      simulation.on("tick", draw);
-    }
-
-    return () => {
-      simulation.stop();
-      for (const node of nodes) {
-        if (node.x !== undefined && node.y !== undefined) {
-          positions.current.set(node.id, { x: node.x, y: node.y });
-        }
-      }
-    };
+    // One draw. There is nothing to settle, so there is nothing to animate and nothing to stop —
+    // which is also why `prefers-reduced-motion` no longer needs a branch here.
+    draw();
   }, [graph]);
 
   const walked = graph.nodes.filter((node) => node.role === "walked").length;
