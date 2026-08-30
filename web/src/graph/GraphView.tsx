@@ -57,6 +57,9 @@ function palette(root: Element): Record<string, string> {
     inkSoft: token("--ink-soft", "#55555f"),
     inkFaint: token("--ink-faint", "#7c7c88"),
     rule: token("--rule", "#e3e3de"),
+    // The map's context edges read `--edge-context`, not `--rule`. Same colour until step 6; two
+    // different jobs, and only one of them is content the caption counts out loud.
+    edgeContext: token("--edge-context", "#b0b0a7"),
     card: token("--card", "#ffffff"),
     accent: token("--accent", "#3d5a45"),
   };
@@ -205,7 +208,7 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
         if (link.kind !== "context") continue;
         const [sx, sy] = px(source);
         const [tx, ty] = px(target);
-        ctx.strokeStyle = colors.rule ?? "#e3e3de";
+        ctx.strokeStyle = colors.edgeContext ?? "#b0b0a7";
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(sx, sy);

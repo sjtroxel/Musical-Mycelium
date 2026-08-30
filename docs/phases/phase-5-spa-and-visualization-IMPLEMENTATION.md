@@ -953,3 +953,162 @@ passed. Both were wrong. Write the check so the near-miss fails it.
 - **B is worth revisiting if phase 6 ever dates the artists.** A second source that carries artist
   dates would make the year axis drawable across the whole demo surface, and it is the better picture
   where it works.
+
+#### Step 6 inputs, banked 2026-08-30
+
+Recorded when they came up rather than fixed on the spot, because type and palette are step 6's remit
+and `planning/06` §4 says to run the `dataviz` skill rather than hand-roll them.
+
+- **sjtroxel does not want the body serif.** `styles.css:47` is `ui-serif, Georgia, "Times New Roman",
+  serif` on `body`, set at step 2 and never chosen deliberately. One line, one place.
+- **The page and the map already disagree**, which nobody decided: the body is serif and
+  `GraphView`'s node labels are `ui-sans-serif, system-ui`. Step 6 picks one relationship between the
+  two on purpose — matching, or a deliberate pairing — instead of inheriting this one by accident.
+
+### Step 6 — type chosen, palette briefed — 2026-08-30
+
+**Type is decided and applied. Colour is briefed, not built.**
+
+#### Type — option A, system sans
+
+Chosen by sjtroxel from a three-way specimen (`web/previews/type.html`, gitignored): system sans,
+Source Sans 3 on one webfont request, and a sans-body/serif-title pairing. `styles.css` body is now
+`ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
+
+Two things it fixes that were never decided in the first place. The serif was set at step 2 as
+placeholder styling and inherited ever since. And **the page and the map had been disagreeing** —
+body serif, canvas labels sans — so the stack now matches `GraphView`'s label font deliberately
+rather than by accident. **No webfont**: a portfolio site that must stay live through a job search
+should not put its text rendering behind another CDN and another person's connection.
+
+**The specimen's own check was wrong first and it is worth recording.** It compared the three
+columns by measuring each `h1`'s bounding box, which is the *column* width for a block element — all
+three read 447px and it reported that the webfont had failed to load when it had loaded fine.
+Measuring the text with a `Range` gave 295 / 223 / 304 and the real answer. Same family as the step 5
+failures: **a check that cannot distinguish the thing it is asserting from something adjacent.**
+
+#### Palette — the brief, in his words, recorded before anything is drawn
+
+> *"a music venue, lights, camera, showtime and neons, rich colors and hues... performing arts feel...
+> cinematic."*
+
+**The structural consequence, stated once so it is decided rather than discovered: neon requires a
+dark ground.** Neon reads as emitted light, and a saturated hue on a near-white `#fbfbf9` paper
+ground reads as a bright sticker instead. Taking this brief seriously means **the SPA becomes
+dark-primary**, with light as the secondary mode rather than the reverse. That inverts the map's ink
+logic (claimed and context are currently dark-on-light), retires most of the current light palette,
+and is a materially bigger change than a hue swap. It is a good direction and it is not a small one.
+
+**The trade worth naming, because it is genuinely two-sided.** The current design signals rigour
+through restraint, which suits a project whose central claim is *grounded means provenance, not
+truth*. A cinematic treatment risks reading as louder than the claim. Against that: **this portfolio
+has one unique visitor and it is him.** Memorability is not a luxury for a site nobody has opened,
+and sober-and-unvisited is the outcome that is already happening. His instinct has the stronger
+argument on current evidence.
+
+**Deliberately NOT decided here: verification tiers stay uncoded.** `HAND` / `PROSE_AUTO` /
+`ASSERTS_AUTO` / `EXPOSURE_AUTO` are the obvious next thing to put on a colour ramp, and a
+light-to-dark ramp reads as confidence. The tiers say **how hard ONE source was checked, never how
+many sources agree** (`.claude/rules/grounding-and-claims.md`). Encoding them as a ramp would make
+the picture assert the opposite of the truth to anyone who does not read the caption. If a later step
+wants them visible, it needs a non-ramp encoding and its own justification.
+
+#### Also open from the palette check
+
+**`--rule` is 1.25:1 against the ground in BOTH light and dark**, measured with the `dataviz`
+validator. That colour does two different jobs: page borders, where 1.25:1 is correct because a
+separator is not information, and **map context edges, where it is content the caption counts out
+loud** — "the faint lines are 10 further connections." At 1.25:1 a visitor cannot find them. The fix
+is to split the token by job rather than to lift it globally. Folded into the palette work.
+
+*(The validator's other FAILs do not apply and were not actioned: its scope line says categorical
+palettes, where every series needs its own hue. This palette is one accent plus neutrals, so "reads
+gray" is the design working. Making the neutrals chromatic to satisfy that check would be wrong.)*
+
+#### Palette — decided and applied, 2026-08-30
+
+**Hot magenta `#ff5cae` on a venue-dark `#0d0a14`, and the theme is DARK ONLY.** Chosen by sjtroxel
+from three accents rendered in the real running app — the palette was injected before each query ran
+and the page screenshotted, so the comparison was the actual product rather than a mock-up.
+
+**Dark-only is a decision, not an omission.** Neon reads as emitted light; the same hue on a
+paper-white ground reads as a bright sticker. A light variant would not be a tint of this design, it
+would be a second and different one, and two designs is real maintenance for a portfolio site. The
+`@media (prefers-color-scheme: dark)` token block is gone and `color-scheme: dark` is declared.
+**Verified with the OS preference forced to light: the body still resolves to `rgb(13, 10, 20)`.**
+
+**Every value was validated, not eyeballed** (`dataviz` `validate_palette.js`, `--surface #0d0a14`).
+All six candidate accents cleared contrast, so the check did not pick the hue — it only proved none
+of them were disqualified, and sjtroxel picked on the brief.
+
+*(The validator's lightness-band and chroma FAILs were not actioned. Its scope line says categorical
+palettes, where each series needs its own hue; this is one accent plus neutrals, so "reads gray" is
+the design working. Making the neutrals chromatic to satisfy that check would be wrong.)*
+
+##### The refusal gets NO special treatment, and this was nearly lost
+
+sjtroxel proposed an orange refusal state with warning glyphs, then withdrew it when §4.5 was quoted
+back. Recording the exchange because the reasoning is worth more than the outcome:
+
+- **DoD 10 requirement 1 forbids exactly that** — "no red, no warning glyph" — and the reason is that
+  **a refusal is the system working correctly.** Wikidata genuinely records nobody as having
+  influenced Kate Bush. Warning chrome on a true statement about the sources reports a fault where
+  none occurred, and converts a provenance statement into an error message.
+- **The proposed fix would have introduced the problem it was aimed at.** Amber and red are the alert
+  conventions; magenta is not. Of the three candidates, **marquee amber was the one most at risk of
+  reading as a warning**, and the chosen magenta is the safest on that axis. The original concern was
+  stated too strongly by me and pointed the other way.
+- What distinguishes a refusal is **what it says and what it shows** — Kate Bush drawn as connected,
+  her seven incoming edges listed, the gap attributed to Wikidata, and the paired query answering
+  immediately after. A sentence does not have to be learned; a colour does.
+
+**`.status--failed` keeps its own colour and that is not an exception.** A transport failure is a
+real error and is allowed to look like one. The distinction between "the request broke" and "the
+sources are silent" predates this palette and survives it.
+
+##### Open
+
+- ~~The refusal has never been seen in this palette.~~ **DONE — checked live 2026-08-30 against
+  Bedrock, on sjtroxel's explicit approval to spend. DoD 10 holds in the neon palette, all five
+  requirements, and it is the first time the refusal has been seen against a real model at all.**
+  Detail below.
+- **The "Trace it" button is solid accent**, making it the loudest element above the fold — louder
+  than the answer, and on a neon palette it competes with the map. An outline treatment is likely
+  right. Not done.
+- Nothing here is deployed. Still local, as at steps 4 and 5.
+
+##### The refusal, verified live — 2026-08-30
+
+`make dev-live`, the Kate Bush pair, **$0.0258 across 4 queries** (20,363 input / 1,097 output,
+Haiku 4.5). The live API was stopped immediately afterwards and confirmed not listening.
+
+**All five DoD 10 requirements hold, in the neon palette, against the real model:**
+
+1. **No error chrome.** Same card, same type, same weight as the answer beneath it. No red, no glyph,
+   no empty state. Confirmed by assertion, not by looking.
+2. **It shows what the graph knows.** Kate Bush resolves and draws with **7 context edges radiating
+   out of her**. Step 4 predicted this would happen against Bedrock and could not test it; it does.
+3. **The gap is attributed to the sources.** *"A missing edge is not evidence of a missing influence.
+   542 of the corpus's 973 nodes record no influences at all, so silence here is the state of the
+   sources rather than a finding about the music."*
+4. **No dead end.** The paired second query returns **7 cited claims**.
+5. **No negative claim.** The copy says what is recorded, never what is true.
+
+**An unplanned property worth keeping.** The refusal panel contains **no magenta except the node
+itself**, because magenta is reserved for gate-approved claims and a refusal has none. The answer
+panel below it is vivid. So the two states are visually distinct **as a consequence of the accent
+meaning something**, not because a refusal was given its own colour. That is the distinction
+sjtroxel's orange-and-warning proposal was reaching for, arrived at without borrowing the alert
+vocabulary — and it is free, because it falls out of the rule that hue encodes gate approval.
+
+**A third check-that-could-not-see-its-subject, in one day.** The DoD 10 harness reported
+requirement 3 as FAILED. The copy satisfies it well; the regex looked for "sources record" as
+adjacent words and the sentence reads "the state of the sources". Following the first two, the
+pattern is now unmistakable and is written at the top of step 5's record: **a check must be able to
+distinguish the behaviour it asserts from the nearest thing that resembles it** — and, added here,
+**a check written against remembered copy will fail on real copy.** Assert the property, not the
+phrasing.
+
+**Cost note, reported against the estimate:** quoted as "about a cent", actual **2.6 cents**. The
+overrun is entirely the failed check — the pair was run a second time to read the copy the assertion
+should have read the first time.

@@ -9,31 +9,37 @@
  * colour and no reduced weight anywhere in `.panel`. See IMPLEMENTATION 4.5 and `StepPanel.tsx`.
  */
 
+/*
+ * Step 6 palette, chosen by sjtroxel 2026-08-30 from three candidates rendered in the real app.
+ * The brief was his: "a music venue, lights, camera, showtime and neons... performing arts...
+ * cinematic."
+ *
+ * DARK ONLY, and that is a decision rather than an omission. Neon reads as emitted light: the same
+ * hue on a paper-white ground reads as a bright sticker, so a light variant would not be a tint of
+ * this design, it would be a second and different one. One design, committed to, beats two hedged.
+ * Every value below was checked with the `dataviz` validator against this ground, not eyeballed.
+ */
 :root {
-  --ink: #16161a;
-  --ink-soft: #55555f;
-  --ink-faint: #7c7c88;
-  --ground: #fbfbf9;
-  --card: #ffffff;
-  --rule: #e3e3de;
-  --accent: #3d5a45;
-  --accent-soft: #eef2ee;
+  color-scheme: dark;
+
+  --ink: #f3effa;
+  --ink-soft: #bab0cf;
+  --ink-faint: #8b81a6;
+  --ground: #0d0a14;
+  --card: #171327;
+  --rule: #2b2440;
+  /* Context edges on the map are NOT the same job as a border, and sharing `--rule` hid a real
+     defect. A border is a separator and low contrast is correct for it. A context edge is CONTENT —
+     the caption counts them out loud, "the faint lines are 10 further connections" — and at the old
+     1.25:1 a visitor could not find the thing that sentence promises. Measured at 2.07:1 here:
+     visible, still clearly not part of the answer. Deliberately under the 3:1 bar, which the skill
+     allows when relief exists — the caption states the count and every claim is listed in text. */
+  --edge-context: #4a4160;
+  --accent: #ff5cae;
+  --accent-soft: #2a1526;
 
   --measure: 34rem;
   --radius: 10px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #ececef;
-    --ink-soft: #a8a8b2;
-    --ink-faint: #80808c;
-    --ground: #141416;
-    --card: #1c1c1f;
-    --rule: #2c2c31;
-    --accent: #9dc0a8;
-    --accent-soft: #232925;
-  }
 }
 
 * {
@@ -44,7 +50,12 @@ body {
   margin: 0;
   background: var(--ground);
   color: var(--ink);
-  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  /* Step 6, chosen by sjtroxel 2026-08-30 from a three-way specimen. The serif here was set at
+     step 2 and never actually chosen. This stack is also what `GraphView` draws its node labels in,
+     so the page and the map now agree — they disagreed by accident, not by decision. No webfont: a
+     portfolio site that has to stay live through a job search does not want a text-rendering
+     dependency on someone else's CDN and someone else's connection. */
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -244,13 +255,7 @@ code {
 /* A transport failure IS an error and is allowed to look like one. A refusal is not, and does not. */
 .status--failed {
   font-style: normal;
-  color: #9a3a2f;
-}
-
-@media (prefers-color-scheme: dark) {
-  .status--failed {
-    color: #e08c7d;
-  }
+  color: #e08c7d;
 }
 
 .chain {
