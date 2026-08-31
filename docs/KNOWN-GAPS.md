@@ -30,25 +30,117 @@ built blind), then **step 9 part 2 — the held-out set has been run, once, and 
 DoD 7 closed; DoD 8 closed as partial with the Bedrock redeploy deferred to phase 5. See the 2026-08-24
 sections below, top-most first.
 
-**Updated 2026-08-26** at phase 5 step 1, applied: the project has a public CloudFront URL. It serves a
-placeholder, not a SPA — see the top-most section.
+**Updated 2026-08-26** at phase 5 step 1, applied: the project has a public CloudFront URL. ~~It serves a
+placeholder, not a SPA~~ — **corrected 2026-08-31: it serves a real SPA and has since step 2 the same
+day.** Verified by fetching it: `index.html` loads a hashed Vite bundle, and that bundle contains the
+chip row, the streaming answer and the grounded footer. What it does **not** contain is the map — the
+step 4 caption strings are absent from the deployed JavaScript. "Placeholder" was the wrong word for a
+shipped SPA that is four steps behind.
 
-**Verified state:** `make check` green — **1170 passed, 0 skipped**, 7 `costs_money` tests deselected, mypy
-clean, root 15/18, terraform valid. *(Count re-measured 2026-08-24 during the doc-currency pass; it read
-1169 here.)* The former skip was the held-out seal; that set now exists, so
+**Verified state, re-measured 2026-08-31:** `make check` green — **1184 passed, 14 `costs_money` tests
+deselected**, mypy clean over 89 source files, root 15/18, terraform valid, eval gates 3 passed / 0
+failed / 2 not applicable. *(This read **1170 passed, 0 skipped**, 7 deselected until 2026-08-31, and
+1169 before 2026-08-24. The suite grows most sessions; a lower count written anywhere is stale, not a
+regression.)* The former skip was the held-out seal; that set now exists, so
 `test_the_committed_sealed_set_matches_its_manifest` runs and passes.
 
 **What changed on 2026-08-16, in one line:** the agent has now been measured against a real model across
 a whole dataset — 41 cases, 183 requests, ~$0.36 — closing DoD #11 (both halves) and the rate clause of
-DoD #10. **The deployed URL still runs the template stub**, which remains the one gap with consequences
-outside the repo and is untouched by any of this.
+DoD #10. ~~**The deployed URL still runs the template stub**, which remains the one gap with consequences
+outside the repo and is untouched by any of this.~~ **Stale since 2026-08-24** — phase 5 step 0 shipped
+the Bedrock redeploy and the deployed URL has run a real model since. Never write this sentence again.
 
 **Bedrock is not a blocker.** Access was restored 2026-08-11 after a twelve-day account-level quota fault.
 Nothing here is waiting on AWS. **The "unrun work, one undrawn dataset" wording that stood here is stale
 as of 2026-08-24:** the held-out set was drawn 2026-08-14 and run 2026-08-24, and every phase 4 step has
-now been executed. What remains is the **Bedrock redeploy, deliberately deferred to phase 5** — which is
-also why the deployed URL still runs the template stub — plus the standing facts about the corpus in
-part 2.
+now been executed. ~~What remains is the **Bedrock redeploy, deliberately deferred to phase 5** — which
+is also why the deployed URL still runs the template stub~~ — **also stale: that redeploy shipped at
+phase 5 step 0 on 2026-08-24.** What remains from this paragraph is only the standing facts about the
+corpus in part 2.
+
+---
+
+## PHASE 5 STEP 7 — motion is decided and DoD 6 is closed, 2026-08-31
+
+**One motion mode at 850ms per edge, and `prefers-reduced-motion` is honoured in the canvas.** DoD 6
+closed. Full as-built in the phase 5 IMPLEMENTATION doc §12; what belongs here is what is still open
+and what generalises.
+
+**The step was not what the sequence said it was.** It was planned as "add motion to a still picture".
+Replaying the captured fixtures frame by frame first showed **the map was already moving and nobody
+had designed how** — the acid jazz subject reflows vertically four times while an answer streams, and
+context edges convert into numbered claimed edges one at a time as the gate approves them. Both were
+hard cuts. The second one is the claims-first invariant becoming visible to a visitor.
+
+**Two defects, both found by sjtroxel using the app, both invisible to a green suite of twelve tests:**
+
+- **StrictMode double-invokes the effect**, so a single slot of memory recorded every edge as drawn on
+  the first pass and painted the finished picture instantly on the second. All three preview modes
+  looked identical while every test passed, because the tests rendered the component bare and the app
+  never does.
+- **The animation was keyed to a React object identity.** `buildRenderGraph` returns a fresh object
+  every render, so each prose token restarted the animation with nothing left to enter and the edge
+  snapped to full length mid-draw. **This one was not a StrictMode artifact and would have shipped.**
+
+**The finding that generalises, and it is the fourth instance of the same shape in this phase:** *"they
+look the same"* is a report about the screen, never a verdict on the design. Told twice that two modes
+were indistinguishable, the correct response both times was to measure why rather than accept the
+comparison. The second time, the measurement showed **the camera moves more than the nodes do** — on
+the last acid jazz claim the subject travels 65px on screen and only 34 come from its layout position
+changing — so the mode that tweened node coordinates alone was smoothing half the movement and
+hard-cutting the rest. It was not losing a fair comparison; it was not doing its own job.
+
+**A test can fail because the fixture is too small, and that looks exactly like a broken
+implementation.** The camera test failed against working code until its fixture grew a column from
+three nodes to thirteen: at three, the scale is bound by the horizontal fit and both heights clamp to
+the 260px minimum, so there was no camera movement to smooth.
+
+**Still open:** **nothing from steps 4, 5, 6 or 7 is deployed** — the live URL serves the step 2 SPA;
+the "Trace it" button is still solid accent and the loudest element above the fold, named at step 6.
+
+**Verified:** `make check` **1184 passed, 14 deselected**, mypy clean over 89 files, root 15/18,
+terraform valid, eval gates unchanged at 3 passed / 0 failed / 2 not applicable — **no Python was
+edited.** Frontend suite **60 -> 76**, production build clean.
+
+---
+
+## PHASE 5 STEP 6 — type and palette, and the refusal seen against a real model, 2026-08-30
+
+**System sans, hot magenta `#ff5cae` on venue-dark `#0d0a14`, and the theme is DARK ONLY.** Chosen by
+sjtroxel from candidates rendered in the real running app rather than from mock-ups. Full reasoning in
+the phase 5 IMPLEMENTATION doc §12. This section was never added to this file when step 6 landed; it is
+written here on 2026-08-31 for completeness.
+
+**Dark-only is a decision, not an omission.** Neon reads as emitted light; the same hue on a
+paper-white ground reads as a bright sticker. A light variant would be a second design, not a tint of
+this one, and two designs is real maintenance for a portfolio site.
+
+**DoD 10 was verified live against Bedrock** — the Kate Bush pair, $0.0258 across 4 queries — and all
+five requirements hold in the neon palette. It is the first time the refusal had been seen against a
+real model at all. **An unplanned property worth keeping:** the refusal panel contains no magenta
+except the node itself, because magenta is reserved for gate-approved claims and a refusal has none.
+The two states are visually distinct *as a consequence of the accent meaning something*, without
+borrowing the alert vocabulary.
+
+**Verification tiers are deliberately NOT on a colour ramp, and this must stay true.** `HAND` /
+`PROSE_AUTO` / `ASSERTS_AUTO` / `EXPOSURE_AUTO` are the obvious thing to put on a light-to-dark ramp,
+and a ramp reads as confidence. The tiers say **how hard ONE source was checked, never how many
+sources agree** (`.claude/rules/grounding-and-claims.md`). Encoding them as a ramp would make the
+picture assert the opposite of the truth to anyone who does not read the caption. Any later step that
+wants them visible needs a non-ramp encoding and its own justification.
+
+**`--edge-context` was split from `--rule` and the contrast defect is FIXED** — `#4a4160` at 2.07:1
+against the ground, up from 1.25:1. A border is a separator and low contrast is correct for it; a map
+context edge is content the caption counts out loud. *(Recorded as still-open in that step's own "Open"
+list, which was wrong and misled a later session on 2026-08-31. The code is the authority.)*
+
+**A third check-that-could-not-see-its-subject, in one day:** the DoD 10 harness reported requirement 3
+as failed because its regex looked for "sources record" as adjacent words while the real sentence reads
+"the state of the sources". **A check written against remembered copy will fail on real copy.** Assert
+the property, not the phrasing.
+
+**Still open at step 6:** the "Trace it" button is solid accent, making it louder than the answer;
+nothing deployed.
 
 ---
 

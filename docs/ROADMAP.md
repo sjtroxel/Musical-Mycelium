@@ -93,10 +93,17 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-08-24
+### Where the build actually is — 2026-08-31
 
-**Phases 0 through 4 are complete.** `v0.3.0-local` and `v0.4.0` are tagged. Phase 5 is next and has not
-started.
+**Phases 0 through 4 are complete and phase 5 is mid-build: steps 0 through 7 of 11 are done.**
+`v0.3.0-local` and `v0.4.0` are tagged; `v0.5.0` is step 10's and not cut.
+
+**The one thing to know before reading anything else about phase 5:** the deployed CloudFront URL
+serves the **step 2** SPA. Steps 4 through 7 — the map, the layout, the palette and the motion — are
+built, tested and **local only**. Verified 2026-08-31 by fetching the live bundle: it contains the chip
+row and the grounded footer and none of the map's caption strings. Nothing since step 2 has been
+deployed, no AWS resource has been touched since step 0, and the redeploy is not blocked on anything —
+it simply has not been done.
 
 > **This section was rewritten on 2026-08-24, and the rewrite is the point.** It used to be a running
 > status board — an eight-row phase 2 step table, a phase 3 step table, a phase 2 definition-of-done
@@ -114,7 +121,7 @@ started.
 | 2 `corpus-and-traversal` | complete 2026-08-06, 8 steps | `phase-2-corpus-and-traversal-IMPLEMENTATION.md` |
 | 3 `agent-loop` | complete 2026-08-12, tagged `v0.3.0-local` | `phase-3-agent-loop-IMPLEMENTATION.md` §11 |
 | 4 `eval-suite` | complete 2026-08-24, 9 steps, tagged `v0.4.0` | `phase-4-eval-suite-IMPLEMENTATION.md` |
-| 5 `spa-and-visualization` | not started | scope doc written; IMPLEMENTATION doc owed |
+| 5 `spa-and-visualization` | **mid-build**, steps 0-7 of 11 | `phase-5-spa-and-visualization-IMPLEMENTATION.md` §12 |
 
 **Corpus as shipped: artifact `v0.5.0`, 973 nodes, 950 edges** — 22 `HAND`, 111 `PROSE_AUTO`, 760
 `ASSERTS_AUTO`, 57 `EXPOSURE_AUTO`. Live on AWS. `v0.1.0` through `v0.4.0` stay on disk and in S3 as

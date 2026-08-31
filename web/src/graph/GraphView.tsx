@@ -1,5 +1,17 @@
 import { useEffect, useRef } from "react";
 import { layout, tallestColumn } from "./layout";
+import {
+  edgeKey,
+  frameAt,
+  graphSignature,
+  lerp,
+  lerpView,
+  prefersReducedMotion,
+  resolveMotionMode,
+  type MotionFrame,
+  type MotionMode,
+  type View,
+} from "./motion";
 import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
 
 /**
@@ -19,13 +31,33 @@ import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
  * fence stops meaning anything.
  *
  * Every colour is read from the CSS custom properties in `styles.css` so step 6 has one place to
- * change rather than twenty. `prefers-reduced-motion` needs no special case any more: a deterministic
- * layout has no settling animation to suppress.
+ * change rather than twenty.
+ *
+ * **Motion is step 7 and it lives in `motion.ts`.** The sentence that stood here — *"`prefers-reduced-motion`
+ * needs no special case any more: a deterministic layout has no settling animation to suppress"* — was
+ * true about the *simulation* and wrong about the map. Removing the simulation removed the settling,
+ * not the movement: this component redraws on every claim frame, and step 7 measured the result. The
+ * acid jazz subject reflows vertically four times while the answer streams and a claim edge appears
+ * fully formed the instant the gate approves it, both as hard cuts. `motion.ts` carries the numbers.
  */
 
 interface SimNode extends RenderNode {
+  /** Where `layout()` says this node belongs. */
   x: number;
   y: number;
+  /** Where it was last drawn, which is the same as `x`/`y` unless the layout just moved it. */
+  fromX: number;
+  fromY: number;
+  /** True when this node was not on screen at all in the previous draw. */
+  entering: boolean;
+}
+
+/** A record of one drawn picture: where its nodes sat, what it had approved, and where the camera was. */
+interface Painted {
+  signature: string;
+  positions: Map<string, { x: number; y: number }>;
+  claimed: Set<string>;
+  view: View | null;
 }
 
 interface SimLink {
@@ -33,6 +65,8 @@ interface SimLink {
   target: SimNode;
   kind: RenderEdge["kind"];
   order: number | null;
+  /** True when the gate approved this edge since the last draw. Only ever true for a claimed edge. */
+  entering: boolean;
 }
 
 /**
@@ -91,12 +125,47 @@ function arrowhead(
   ctx.fill();
 }
 
-export function GraphView({ graph }: { graph: RenderGraph }) {
+export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: MotionMode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // No position cache any more. It existed because a simulation settled somewhere new on every run,
-  // so a claim arriving mid-stream would reshuffle the whole map and read as the answer changing its
-  // mind. `layout()` is a pure function of the graph, so a node that was already on screen keeps the
-  // position it had unless the answer actually changed its shape.
+
+  /**
+   * What the map last put on screen, so the next draw can tell what actually changed.
+   *
+   * The position cache is back, and for the opposite reason it was removed. It existed to stop a
+   * *simulation* settling somewhere new on every run; `layout()` is pure, so that problem is gone.
+   * What these hold is the previous DRAW, which is what tells a node that just moved from one that
+   * did not, and a claim edge the gate approved a moment ago from one already on screen.
+   *
+   * **Two slots, not one, and that is the whole StrictMode fix.** `main.tsx` mounts the app inside
+   * `StrictMode`, so React runs this effect TWICE on mount. One slot meant the first pass recorded
+   * every edge as drawn and the second pass found nothing new and painted the finished picture
+   * instantly — all three motion modes looked identical in the browser while every unit test passed,
+   * because the tests rendered this component bare and the app never does. `shown` describes the
+   * picture on screen now; `before` describes the one prior to it. A repeat invocation of the same
+   * picture animates from `before`, so running the effect twice is indistinguishable from running it
+   * once.
+   */
+  const shown = useRef<Painted>({
+    signature: "",
+    positions: new Map(),
+    claimed: new Set(),
+    view: null,
+  });
+  const before = useRef<Painted>({
+    signature: "",
+    positions: new Map(),
+    claimed: new Set(),
+    view: null,
+  });
+
+  /**
+   * When the current animation began, held across renders on purpose.
+   *
+   * Reset only when the picture's content changes. An unrelated re-render mid-animation — a prose
+   * token, most often — re-enters this effect, and restarting the clock there would make the edge
+   * begin drawing itself again from nothing on every token.
+   */
+  const startedAt = useRef<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -114,25 +183,59 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
       Math.max(MIN_HEIGHT, tallestColumn(graph) * ROW_PITCH + 60),
     );
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
     canvas.style.width = "100%";
-    canvas.style.height = `${height}px`;
+    // Narrowing does not survive into the draw closure, so the non-null element is captured once.
+    const surface: HTMLCanvasElement = canvas;
+    // The backing store is sized per FRAME, not here. The canvas box itself grows as the map gains
+    // rows, and a box that jumps height is a layout shift no amount of in-canvas tweening can hide.
 
     const colors = palette(document.documentElement);
 
+    // The mode is resolved per draw rather than once, so a visitor who turns reduced motion on
+    // mid-answer gets it honoured on the next claim instead of at the next page load.
+    const mode = motion ?? resolveMotionMode(prefersReducedMotion());
+
+    // Keyed on what the picture CONTAINS, never on the `RenderGraph` object — see `graphSignature`.
+    const signature = graphSignature(graph);
+    const isNewPicture = signature !== shown.current.signature;
+    // On a repeat invocation of the same picture, `shown` already describes it, so the state to
+    // animate away from is the one before it. That is what makes the StrictMode double-invoke and a
+    // mid-answer re-render both behave like a single mount.
+    const from = isNewPicture ? shown.current : before.current;
+    const previous = from.positions;
+    const seenEdges = from.claimed;
+    const previousView = from.view;
+
     const placed = layout(graph);
-    const nodes: SimNode[] = graph.nodes.map((node) => ({
-      ...node,
-      ...(placed.get(node.id) ?? { x: 0, y: 0 }),
-    }));
+    const nodes: SimNode[] = graph.nodes.map((node) => {
+      const target = placed.get(node.id) ?? { x: 0, y: 0 };
+      const was = previous.get(node.id);
+      return {
+        ...node,
+        ...target,
+        fromX: was?.x ?? target.x,
+        fromY: was?.y ?? target.y,
+        entering: was === undefined,
+      };
+    });
     const byId = new Map(nodes.map((node) => [node.id, node]));
 
     const links: SimLink[] = graph.edges.flatMap((edge) => {
       const source = byId.get(edge.from);
       const target = byId.get(edge.to);
       if (source === undefined || target === undefined) return [];
-      return [{ source, target, kind: edge.kind, order: edge.order }];
+      return [
+        {
+          source,
+          target,
+          kind: edge.kind,
+          order: edge.order,
+          // Only a claimed edge can enter. A context edge appearing is a side effect of the
+          // neighbourhood growing, not a thing the gate decided, and animating it would give the
+          // corpus's unwalked lines the same arrival as an approved claim.
+          entering: edge.kind === "claimed" && !seenEdges.has(edgeKey(edge.from, edge.to)),
+        },
+      ];
     });
 
     const radius = (node: SimNode) => (node.role === "walked" ? 6 : 3.5);
@@ -161,8 +264,10 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
      * node and would otherwise run off the edge. That is the by-hand label placement canvas charges
      * for, and step 3 took that trade knowingly.
      */
-    function project(): (x: number, y: number) => [number, number] {
-      if (ctx === null || nodes.length === 0) return (x, y) => [x, y];
+    function viewFor(): View {
+      if (ctx === null || nodes.length === 0) {
+        return { k: 1, cx: 0, cy: 0, originX: 0, height };
+      }
       ctx.font = font;
       const widest = nodes
         .filter((node) => node.role === "walked")
@@ -189,17 +294,42 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
       const cy = (minY + maxY) / 2;
       const originX = padLeft + (width - padLeft - padRight) / 2;
 
-      return (x, y) => [(x - cx) * k + originX, (y - cy) * k + height / 2];
+      return { k, cx, cy, originX, height };
     }
 
-    function draw() {
+    // Hoisted out of `draw` because it depends only on the *target* layout, which does not change
+    // while a frame animates, and because it measures text — not free to redo sixty times a second.
+    const targetView = viewFor();
+
+    function draw(frame: MotionFrame) {
       if (ctx === null) return;
-      const at = project();
-      const px = (node: SimNode): [number, number] => at(node.x, node.y);
+
+      // The camera for THIS frame. In `none` and `reveal`, `positionT` is always 1 and this is
+      // exactly `targetView` — the cut step 6 committed. Only `full` moves the camera, and moving it
+      // is most of what `full` is: the nodes barely travel by comparison.
+      const view =
+        previousView === null || frame.positionT >= 1
+          ? targetView
+          : lerpView(previousView, targetView, frame.positionT);
+
+      // Resized per frame so the element grows with the picture instead of snapping to its final
+      // height on the first one. Reallocating a 640x460 backing store twenty-five times over 420ms
+      // is not a cost worth optimising at this scale.
+      const frameHeight = Math.round(view.height);
+      surface.width = width * dpr;
+      surface.height = frameHeight * dpr;
+      surface.style.height = `${frameHeight}px`;
+
+      const at = (x: number, y: number): [number, number] => [
+        (x - view.cx) * view.k + view.originX,
+        (y - view.cy) * view.k + view.height / 2,
+      ];
+      const px = (node: SimNode): [number, number] =>
+        at(lerp(node.fromX, node.x, frame.positionT), lerp(node.fromY, node.y, frame.positionT));
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, frameHeight);
 
       // Context first, so an unclaimed corpus edge can never be drawn over an approved one.
       for (const link of links) {
@@ -222,18 +352,32 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
         if (link.kind !== "claimed") continue;
         const [sx, sy] = px(source);
         const [tx, ty] = px(target);
+
+        // The one motion in this file that means something. The line grows from the object toward
+        // the subject — the direction influence actually runs, per `RenderEdge.from` — so watching it
+        // is watching the gate approve a claim. An edge already on screen is drawn whole; `t` is 1
+        // for it and every expression below collapses to what step 6 committed.
+        const t = link.entering ? frame.edgeT : 1;
+        const hx = lerp(sx, tx, t);
+        const hy = lerp(sy, ty, t);
+
         ctx.strokeStyle = colors.accent ?? "#3d5a45";
         ctx.fillStyle = colors.accent ?? "#3d5a45";
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(sx, sy);
-        ctx.lineTo(tx, ty);
+        ctx.lineTo(hx, hy);
         ctx.stroke();
-        arrowhead(ctx, [sx, sy], [tx, ty], radius(target) + 3);
+        // The arrowhead only lands once the line has arrived. A head travelling ahead of its own
+        // line reads as a cursor rather than as a connection being made.
+        if (t >= 1) arrowhead(ctx, [sx, sy], [tx, ty], radius(target) + 3);
       }
 
       for (const node of nodes) {
         const [nx, ny] = px(node);
+        // A node that was not on screen before fades in rather than blinking on. Nodes already
+        // drawn are untouched, so a growing neighbourhood does not re-enter itself on every claim.
+        ctx.globalAlpha = node.entering ? frame.edgeT : 1;
         ctx.beginPath();
         ctx.arc(nx, ny, radius(node), 0, Math.PI * 2);
         ctx.fillStyle =
@@ -243,6 +387,7 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
           node.role === "walked" ? (colors.accent ?? "#3d5a45") : (colors.inkFaint ?? "#7c7c88");
         ctx.lineWidth = 1.5;
         ctx.stroke();
+        ctx.globalAlpha = 1;
       }
 
       // Only walked nodes are labelled. A context node is there to show the answer sits in a
@@ -280,6 +425,10 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
       // than by stacking them.
       for (const link of links) {
         if (link.kind !== "claimed" || link.order === null) continue;
+        // The badge waits for its own line. Numbering an edge before the edge exists puts the
+        // ordinal in empty space, and the ordinal is the thing that says what order the gate
+        // approved these in.
+        if (link.entering && frame.edgeT < 1) continue;
         const source = link.source as SimNode;
         const target = link.target as SimNode;
         const [sx, sy] = px(source);
@@ -310,10 +459,46 @@ export function GraphView({ graph }: { graph: RenderGraph }) {
       ctx.restore();
     }
 
-    // One draw. There is nothing to settle, so there is nothing to animate and nothing to stop —
-    // which is also why `prefers-reduced-motion` no longer needs a branch here.
-    draw();
-  }, [graph]);
+    // Record what this picture puts on screen, and start its clock — but only when the picture is
+    // genuinely a new one. Doing this unconditionally is precisely the bug that made all three modes
+    // look the same.
+    if (isNewPicture) {
+      before.current = shown.current;
+      shown.current = {
+        signature,
+        positions: new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }])),
+        claimed: new Set(
+          graph.edges
+            .filter((edge) => edge.kind === "claimed")
+            .map((edge) => edgeKey(edge.from, edge.to)),
+        ),
+        view: targetView,
+      };
+      startedAt.current = null;
+    }
+
+    // `none` — which is what `prefers-reduced-motion: reduce` resolves to — is a single draw with no
+    // loop started at all, identical to what step 6 committed. Not a loop that runs at zero duration:
+    // reduced motion should mean no animation happened, not an animation nobody could see.
+    if (mode === "none") {
+      draw({ positionT: 1, edgeT: 1, done: true });
+      return;
+    }
+
+    let raf = 0;
+    const tick = (now: number) => {
+      startedAt.current ??= now;
+      const frame = frameAt(mode, now - startedAt.current);
+      draw(frame);
+      if (!frame.done) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+
+    // Cancelled on unmount and before every re-run. A claim landing mid-animation replaces the loop
+    // rather than racing a second one against it — two loops drawing the same canvas is a flicker
+    // that only appears under a fast stream, which is exactly when a visitor is watching.
+    return () => cancelAnimationFrame(raf);
+  }, [graph, motion]);
 
   const walked = graph.nodes.filter((node) => node.role === "walked").length;
 

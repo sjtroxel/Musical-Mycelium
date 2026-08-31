@@ -12,9 +12,10 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-08-24. Phases 2, 3 and 4 are complete and
-tagged (`v0.3.0-local`, `v0.4.0`); phase 5 is the SPA. Every open item is enumerated in
-[`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
+**Deployed, and honestly incomplete.** Last updated 2026-08-31. Phases 2, 3 and 4 are complete and
+tagged (`v0.3.0-local`, `v0.4.0`); **phase 5 is the SPA and is mid-build, steps 0-7 of 11.** The live
+URL serves the step 2 SPA — the map, its layout, the palette and its motion are built and local only.
+Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
@@ -121,7 +122,7 @@ src/musical_mycelium/
   eval/     deterministic scorers, the judge, the frozen datasets.
 tests/      unit, integration, and the architecture tests.
 infra/      terraform/ and docker/ — deployment lives here, not in the repo root.
-web/        reserved for the SPA, so its toolchain never reaches the repo root.
+web/        the React + TypeScript SPA, so its toolchain never reaches the repo root.
 docs/       planning/ (00-09, closed), phases/, archive/, ROADMAP.md, SPEC.md
 ```
 

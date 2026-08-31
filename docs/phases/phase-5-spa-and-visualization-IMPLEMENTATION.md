@@ -1112,3 +1112,119 @@ phrasing.
 **Cost note, reported against the estimate:** quoted as "about a cent", actual **2.6 cents**. The
 overrun is entirely the failed check — the pair was run a second time to read the copy the assertion
 should have read the first time.
+
+### Step 7 — motion, and DoD 6 closed — 2026-08-31
+
+**Decision: one motion mode, `animated`, at 850ms per edge. DoD 6 is closed.** Nothing deployed —
+still local, as at steps 4, 5 and 6.
+
+#### The step was not what the sequence said it was
+
+The plan called this "motion previews", which assumed a still picture that motion would be added to.
+Replaying the three captured fixtures frame by frame through `buildRenderGraph` and `layout` — before
+writing anything — showed **the map was already moving, and nobody had designed how.** Two motions,
+both hard cuts:
+
+| | acid jazz | Kate Bush descendants |
+|---|---|---|
+| map first appears | tool frame, 5 nodes | tool frame, 8 nodes |
+| grows to | 15 nodes over 4 claim frames | 16 over 7 |
+| subject's y | `0 -> -110 -> -88 -> -88 -> -44` | unchanged |
+| context edges | 4 -> 10 | **10 -> 9 -> 8 -> 7** |
+
+The second column is the interesting one: **faint context edges converting into numbered claimed
+edges, one at a time, as the gate approves them.** That is the claims-first invariant becoming
+visible to a visitor, and it was arriving unannounced. So the step was not "add motion" but "decide
+which of the two motions already here is worth being able to see".
+
+#### The previews ran in the real app, not in a preview renderer
+
+Steps 3 and 5 built throwaway HTML previews with hand-rolled drawing, correctly — the real component
+did not exist yet. Step 6 changed the pattern by injecting palettes into the running app, and step 7
+follows step 6. **A hand-rolled motion preview would have been a third renderer**, and motion tuned in
+a fake renderer then applied to the real one is precisely the check-that-cannot-see-its-subject
+failure this phase has hit four times. The three modes were built into `GraphView` behind a
+`?motion=` switch and compared on free `make dev` stub queries. The switch and the losing modes are
+gone; nothing in `web/previews/` was added for this step.
+
+#### Two defects, both found by sjtroxel using it, both invisible to a green suite
+
+He ran all three modes and reported them **looking exactly the same**. They did.
+
+1. **StrictMode.** `main.tsx` mounts inside `StrictMode`, so React invokes the effect twice on mount.
+   With one slot of memory, the first pass recorded every edge as drawn and the second found nothing
+   new and painted the finished picture instantly. Fixed with **two** slots — the picture on screen
+   and the one before it — so a repeat invocation animates from the earlier state.
+2. **The animation was keyed to a React object identity.** `buildRenderGraph` returns a fresh object
+   every render, so each prose token produced a "new" graph that was byte-for-byte the same picture,
+   tearing down the running animation and restarting it with nothing left to enter. The edge snapped
+   to full length mid-draw. **This one was not a dev-only artifact and would have shipped.** Now keyed
+   to `graphSignature`, a content hash, and the clock survives unrelated re-renders.
+
+**Twelve tests passed against both defects** because they rendered `GraphView` bare and the app never
+does. Same family as steps 5 and 6, and worth stating plainly: the test file carried a docstring
+about that exact failure mode while committing it.
+
+#### The camera moves more than the nodes do
+
+With those fixed he reported `reveal` and `full` still indistinguishable. Measured rather than
+argued, and he was right about the screen:
+
+| frame | nodes | canvas height | zoom `k` | subject on screen |
+|---|---|---|---|---|
+| tool | 5 | 260 | 1.576 | (411, 130) |
+| claim 1 | 10 | 260 | 0.945 | (361, 26) |
+| claim 2 | 11 | 270 | 0.826 | (351, 62) |
+| claim 3 | 13 | 330 | 0.790 | (348, 96) |
+| claim 4 | 15 | 390 | 0.768 | (346, 161) |
+
+`full` tweened **layout** coordinates, but most of the travel is the camera: on the last transition
+the subject moves 65px on screen and only 34 come from its layout position changing. It smoothed half
+and hard-cut the other half, so the eye saw a jump either way. **`full` was not losing a fair
+comparison — it was not doing its own job.** Fixed by making the camera data (`View`) and
+interpolating scale, centre, origin and canvas height per frame. Only then were the two modes
+genuinely different, and `full` was the immediate pick.
+
+**The general lesson, and it is the one to carry into step 8:** *"they look the same"* is a report
+about the screen, never a verdict on the design. Twice in one step the honest response was to find
+out why they looked the same rather than to accept the comparison.
+
+#### What shipped
+
+- **`animated`**, the only motion mode. A newly approved claim edge grows from the object toward the
+  subject — the direction influence runs — with its arrowhead landing only on arrival and its
+  approval ordinal held back until the line exists. New nodes fade in. The camera glides.
+- **850ms per edge, 526ms for the camera**, chosen by eye in the running app. 420 read as "kind of
+  fast", 700 was better, 850 was the pick. Deliberately slower than a UI transition, because it is
+  not one: it is the gate approving a claim.
+- **`none`**, which is what `prefers-reduced-motion` resolves to: a single draw, **no loop started at
+  all** — not a loop running at zero duration. There is no override; the `?motion=` switch went with
+  the losing modes, because a switch that can turn an accessibility preference back on is worth not
+  having. **DoD 6 closed.** The CSS blanket rule in `styles.css` never reached this: it zeroes
+  transition and animation durations, and a canvas driven by `requestAnimationFrame` has neither.
+- **Motion may change how the map arrives and may not change what it says.** A test asserts the
+  animation converges on byte-identical geometry to the still image step 6 committed.
+
+Frontend suite **60 -> 76**. No Python edited, no backend touched, root entry count unchanged.
+
+#### On the tests, since this step is the reason to trust them
+
+`jsdom` returns `null` from `getContext`, so a completely dead animation loop passes every other test
+in this repo. The canvas context is stubbed with a recorder and `requestAnimationFrame` driven by
+hand. **Every assertion was watched failing before it was kept**, and three caught real defects that
+way — the two above plus a camera that never moved.
+
+One is worth recording because it nearly went the other way: the camera test **failed against a
+working implementation** at first. Its fixture added two nodes, which is too few — with a short
+column the scale is bound by the horizontal fit and both heights clamp to the 260px minimum, so `k`
+was 1.713 for both pictures and there was no camera movement to smooth. A fixture too small to
+exercise the behaviour looks exactly like a broken implementation. It now grows a column to thirteen,
+which is the shape the real acid jazz answer has.
+
+#### Open
+
+- **Nothing here is deployed.** Steps 4, 5, 6 and 7 are all local.
+- **The "Trace it" button is still solid accent**, the loudest element above the fold. Named at step 6,
+  still not done.
+- *(Corrected: the `--rule` contrast split was recorded as open at step 6 and is in fact **done** —
+  `--edge-context: #4a4160` at 2.07:1. Read the code, not the doc's open list.)*
