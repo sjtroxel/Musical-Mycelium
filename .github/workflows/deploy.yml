@@ -140,7 +140,7 @@ jobs:
       # CI already runs this on push. It runs again because a deploy is dispatched manually and may
       # target a commit CI never saw, which is exactly the situation on a day when GitHub is dropping
       # push events.
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
