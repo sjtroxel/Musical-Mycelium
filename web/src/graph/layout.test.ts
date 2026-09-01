@@ -24,6 +24,7 @@ const graph = (nodes: RenderNode[], edges: RenderEdge[]): RenderGraph => ({
   edges,
   claimed: edges.length,
   context: 0,
+  opened: 0,
   truncated: false,
 });
 

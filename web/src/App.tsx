@@ -8,7 +8,7 @@ import { useLineageRun } from "./useLineageRun";
 export function App() {
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
-  const { steps, corpus, busy, label, run, cancel } = useLineageRun();
+  const { steps, corpus, busy, label, run, annotate, cancel } = useLineageRun();
   // The corpus downloads alongside the first run, never before one. DoD 5 forbids putting a 640 KB
   // fetch in front of first paint, and `App.test.tsx` asserts that loading the page requests nothing.
   const { graph } = useStaticGraph(steps.length > 0);
@@ -74,7 +74,13 @@ export function App() {
           {steps
             .filter((step) => step.phase !== "queued")
             .map((step, index) => (
-              <StepPanel key={`${step.query}-${index}`} step={step} graph={graph} />
+              <StepPanel
+                key={`${step.query}-${index}`}
+                step={step}
+                graph={graph}
+                busy={busy}
+                onAnnotate={(query) => void annotate(query)}
+              />
             ))}
         </main>
       )}

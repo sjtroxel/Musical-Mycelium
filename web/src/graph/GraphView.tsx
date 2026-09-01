@@ -151,9 +151,20 @@ function arrowhead(
 export function GraphView({
   graph,
   motion,
+  selectedId = null,
+  onSelectNode,
 }: {
   graph: RenderGraph;
   motion?: MotionMode;
+  /**
+   * The selected node, owned by `StepPanel`.
+   *
+   * Controlled rather than internal because step 8b's inspector is a DOM sibling of this canvas,
+   * not a child of it — and the inspector is the accessible half of selection (D4). Two components
+   * have to agree on one node, so neither of them owns it.
+   */
+  selectedId?: string | null;
+  onSelectNode?: (id: string | null) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -197,7 +208,6 @@ export function GraphView({
 
   /** Whether the visitor has taken the camera. Mirrors `cameraRef`; exists to show Recenter. */
   const [manual, setManual] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   /**
    * What the map last put on screen, so the next draw can tell what actually changed.
@@ -741,7 +751,7 @@ export function GraphView({
       localPoint(event, event.currentTarget),
     );
     // Clicking the selected node again clears it, and clicking empty canvas clears it too.
-    setSelectedId((current) => (current === hit ? null : hit));
+    onSelectNode?.(hit === selectedId ? null : hit);
   };
 
   useEffect(() => {
@@ -772,7 +782,6 @@ export function GraphView({
   }, [takeCamera, applyCamera]);
 
   const walked = graph.nodes.filter((node) => node.role === "walked").length;
-  const selected = graph.nodes.find((node) => node.id === selectedId) ?? null;
 
   return (
     <figure className="map">
@@ -829,29 +838,6 @@ export function GraphView({
         </div>
       </div>
 
-      {selected !== null && (
-        <p className="map__selection">
-          <strong>{selected.label}</strong>
-          {selected.kind === "" ? "" : ` — ${selected.kind}`}
-          {selected.year === null
-            ? ", no inception date in the corpus"
-            : `, ${selected.year}`}
-          .{" "}
-          {/* Which of the two things this node is, said in words. A visitor who clicks a faint dot
-              must not be left to infer from a ring whether the answer went there. */}
-          {selected.role === "walked"
-            ? "Reached by this answer."
-            : "Held by the corpus around this answer, and not walked by it."}{" "}
-          <a
-            className="map__source"
-            href={`https://www.wikidata.org/wiki/${selected.id}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {selected.id}
-          </a>
-        </p>
-      )}
       <figcaption className="map__caption">
         {/* The claimed/context distinction stated in words. Without this sentence the map implies the
             faint edges are part of the answer, which is the exact slide from "traceable" to "asserted"
@@ -862,6 +848,18 @@ export function GraphView({
         <strong>{graph.context}</strong> further{" "}
         {graph.context === 1 ? "connection" : "connections"} the corpus holds
         around them, shown for bearings and <em>not</em> part of this answer.
+        {/* D3. Without this clause the sentence above quietly starts covering ground it does not
+            describe: "around them" means around the ANSWER, and a visitor three hops into a wander
+            is looking at connections around something else. Still not part of the answer —
+            following an edge reveals corpus, it never approves anything. */}
+        {graph.opened > 0 && (
+          <>
+            {" "}
+            You have opened a further <strong>{graph.opened}</strong>{" "}
+            {graph.opened === 1 ? "connection" : "connections"} by following edges out from it.
+            Those are corpus too, and no more part of this answer than the rest.
+          </>
+        )}
         {graph.truncated &&
           " The neighbourhood is larger than what is drawn here."}
       </figcaption>

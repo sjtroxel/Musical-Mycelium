@@ -49,6 +49,7 @@ const GRAPH: RenderGraph = {
   ],
   claimed: 1,
   context: 1,
+  opened: 0,
   truncated: false,
 };
 
@@ -85,6 +86,7 @@ const GROWN: RenderGraph = {
   ],
   claimed: 13,
   context: 1,
+  opened: 0,
   truncated: false,
 };
 

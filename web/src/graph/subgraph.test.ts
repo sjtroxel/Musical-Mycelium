@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Claim } from "../types";
 import type { Artifact, ArtifactEdge, ArtifactNode } from "./staticGraph";
 import { indexArtifact } from "./staticGraph";
-import { buildRenderGraph, nodeIdsInArguments } from "./subgraph";
+import { NEIGHBOURS_PER_OPEN, buildRenderGraph, nodeIdsInArguments } from "./subgraph";
 
 /**
  * The map's selection logic, tested where it can be tested.
@@ -120,7 +120,10 @@ describe("building the render graph", () => {
   ];
 
   it("draws a claimed edge from the object to the subject, the way history ran", () => {
-    const rendered = buildRenderGraph(graph, { ...EMPTY, claims: [claim("Q221772", "Q8341")] });
+    const rendered = buildRenderGraph(graph, {
+      ...EMPTY,
+      claims: [claim("Q221772", "Q8341")],
+    });
     const claimed = rendered.edges.filter((e) => e.kind === "claimed");
 
     expect(claimed).toHaveLength(1);
@@ -165,7 +168,10 @@ describe("building the render graph", () => {
   it("draws a neighbourhood from a tool argument alone, with nothing claimed", () => {
     // The refusal case as it arrives from a real model: a node was resolved, no claim survived the
     // gate. The map still has something honest to show, and none of it is a claim.
-    const rendered = buildRenderGraph(graph, { ...EMPTY, toolNodeIds: ["Q8341"] });
+    const rendered = buildRenderGraph(graph, {
+      ...EMPTY,
+      toolNodeIds: ["Q8341"],
+    });
     expect(rendered.claimed).toBe(0);
     expect(rendered.edges.every((e) => e.kind === "context")).toBe(true);
     expect(rendered.nodes.map((n) => n.id)).toContain("Q9759");
@@ -178,19 +184,176 @@ describe("building the render graph", () => {
   });
 
   it("drops a claim whose endpoints are not in this corpus", () => {
-    const rendered = buildRenderGraph(graph, { ...EMPTY, claims: [claim("Q221772", "Q999999")] });
+    const rendered = buildRenderGraph(graph, {
+      ...EMPTY,
+      claims: [claim("Q221772", "Q999999")],
+    });
     expect(rendered.claimed).toBe(0);
   });
 
   it("caps the neighbourhood and says so instead of implying the map is complete", () => {
     const hub = "Q221772";
     const big: Artifact = {
-      nodes: [node(hub, "acid jazz"), ...Array.from({ length: 30 }, (_, i) => node(`Q${i + 1}`, `n${i}`))],
+      nodes: [
+        node(hub, "acid jazz"),
+        ...Array.from({ length: 30 }, (_, i) => node(`Q${i + 1}`, `n${i}`)),
+      ],
       edges: Array.from({ length: 30 }, (_, i) => edge(hub, `Q${i + 1}`)),
     };
-    const rendered = buildRenderGraph(indexArtifact("0.5.0", big), { ...EMPTY, toolNodeIds: [hub] }, 5);
+    const rendered = buildRenderGraph(
+      indexArtifact("0.5.0", big),
+      { ...EMPTY, toolNodeIds: [hub] },
+      5,
+    );
 
     expect(rendered.nodes.filter((n) => n.role === "context")).toHaveLength(5);
     expect(rendered.truncated).toBe(true);
+  });
+});
+
+/**
+ * Step 8b's boundary, and the reason `openedIds` is safe to have at all.
+ *
+ * IMPLEMENTATION §5 names invariant 1 as the one-way door this phase touches and says the SPA "must
+ * never render an unqueried edge as a claim", tested in step 8. This is that test. It is written as a
+ * property over arbitrary opened sets rather than as a few examples, because the failure it guards
+ * against is a future edit quietly threading `openedIds` into the claimed pass — which no fixed
+ * example would necessarily hit.
+ */
+describe("wandering cannot manufacture a claim", () => {
+  // A chain plus a side branch, so opening things genuinely reaches new corpus.
+  const ARTIFACT: Artifact = {
+    nodes: [
+      node("Q1", "acid jazz"),
+      node("Q2", "jazz"),
+      node("Q3", "blues"),
+      node("Q4", "ragtime"),
+      node("Q5", "gospel"),
+      node("Q6", "spirituals"),
+      node("Q7", "work song"),
+    ],
+    edges: [
+      edge("Q1", "Q2"),
+      edge("Q2", "Q3"),
+      edge("Q3", "Q4"),
+      edge("Q3", "Q5"),
+      edge("Q5", "Q6"),
+      edge("Q6", "Q7"),
+    ],
+  };
+  const graph = indexArtifact("0.5.0", ARTIFACT);
+  const claims = [claim("Q1", "Q2")];
+  const every = ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7"];
+
+  /** Every subset of the corpus, as opened sets. 128 of them on seven nodes. */
+  const subsets = (ids: string[]): string[][] =>
+    ids.reduce<string[][]>((acc, id) => [...acc, ...acc.map((set) => [...set, id])], [[]]);
+
+  const base = buildRenderGraph(graph, {
+    claims,
+    pathNodeIds: [],
+    toolNodeIds: [],
+  });
+  const claimedOf = (g: ReturnType<typeof buildRenderGraph>) =>
+    g.edges.filter((e) => e.kind === "claimed");
+
+  it("leaves the claimed edges byte-identical no matter what is opened", () => {
+    for (const openedIds of subsets(every)) {
+      const rendered = buildRenderGraph(graph, {
+        claims,
+        pathNodeIds: [],
+        toolNodeIds: [],
+        openedIds,
+      });
+      expect(claimedOf(rendered)).toEqual(claimedOf(base));
+      expect(rendered.claimed).toBe(base.claimed);
+    }
+  });
+
+  it("never promotes an opened node to walked", () => {
+    // `walked` means the agent reached it. A visitor clicking their way somewhere is not that, and
+    // if this ever flips, the map starts asserting the run went places it did not.
+    for (const openedIds of subsets(every)) {
+      const rendered = buildRenderGraph(graph, {
+        claims,
+        pathNodeIds: [],
+        toolNodeIds: [],
+        openedIds,
+      });
+      const walked = rendered.nodes
+        .filter((n) => n.role === "walked")
+        .map((n) => n.id)
+        .sort();
+      expect(walked).toEqual(["Q1", "Q2"]);
+    }
+  });
+
+  it("adds every opened edge to the opened count and none to the context count", () => {
+    // The caption's honesty depends on this split. If opening leaked into `context`, the sentence
+    // "connections the corpus holds around them" would silently start covering three hops out.
+    const wandered = buildRenderGraph(graph, {
+      claims,
+      pathNodeIds: [],
+      toolNodeIds: [],
+      openedIds: ["Q3", "Q5"],
+    });
+    expect(wandered.context).toBe(base.context);
+    expect(wandered.opened).toBeGreaterThan(0);
+    expect(wandered.claimed + wandered.context + wandered.opened).toBe(wandered.edges.length);
+  });
+
+  it("reveals the neighbours of the node that was opened", () => {
+    // Following an edge has to actually reach new corpus, or D2 is satisfied by doing nothing.
+    const before = new Set(base.nodes.map((n) => n.id));
+    expect(before.has("Q6")).toBe(false);
+
+    const after = buildRenderGraph(graph, {
+      claims,
+      pathNodeIds: [],
+      toolNodeIds: [],
+      openedIds: ["Q5"],
+    });
+    expect(after.nodes.map((n) => n.id)).toContain("Q6");
+    expect(after.nodes.find((n) => n.id === "Q6")?.role).toBe("context");
+  });
+
+  it("ignores an opened id the corpus does not hold", () => {
+    const rendered = buildRenderGraph(graph, {
+      claims,
+      pathNodeIds: [],
+      toolNodeIds: [],
+      openedIds: ["Q999999"],
+    });
+    expect(rendered.nodes.map((n) => n.id)).not.toContain("Q999999");
+    expect(claimedOf(rendered)).toEqual(claimedOf(base));
+  });
+
+  it("gives an opened node room for its whole neighbourhood even when the base cap is spent", () => {
+    // The automatic neighbourhood is capped at 40 for legibility. A deliberate click is a different
+    // thing, and a budget that refused it would make follow-an-edge silently stop working on a busy
+    // map. `NEIGHBOURS_PER_OPEN` is 30 against a measured maximum degree of 25.
+    const hub = "Q100";
+    const spokes = Array.from({ length: 25 }, (_, i) => `Q2${String(i).padStart(2, "0")}`);
+    const busy: Artifact = {
+      nodes: [node("Q1", "subject"), node(hub, "hub"), ...spokes.map((id) => node(id, id))],
+      edges: [edge("Q1", hub), ...spokes.map((id) => edge(hub, id))],
+    };
+    const busyGraph = indexArtifact("0.5.0", busy);
+
+    const tight = buildRenderGraph(
+      busyGraph,
+      {
+        claims: [claim("Q1", hub)],
+        pathNodeIds: [],
+        toolNodeIds: [],
+        openedIds: [hub],
+      },
+      // A base cap of 1, so the automatic pass is exhausted immediately and only the opened budget
+      // can account for the spokes arriving.
+      1,
+    );
+    const drawn = new Set(tight.nodes.map((n) => n.id));
+    expect(spokes.every((id) => drawn.has(id))).toBe(true);
+    expect(spokes.length).toBeLessThanOrEqual(NEIGHBOURS_PER_OPEN);
   });
 });

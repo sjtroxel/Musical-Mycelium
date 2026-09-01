@@ -1228,3 +1228,119 @@ which is the shape the real acid jazz answer has.
   still not done.
 - *(Corrected: the `--rule` contrast split was recorded as open at step 6 and is in fact **done** —
   `--edge-context: #4a4160` at 2.07:1. Read the code, not the doc's open list.)*
+
+### Step 8 — the explorable map, and DoD 4 closed — 2026-09-01
+
+**Split into 8a (pan, zoom, select) and 8b (follow an edge, annotate)**, approved before either was
+built, so there was a working half to look at before the second was stacked on it. Both shipped the
+same day. **The deploy gap closed first**: steps 4–7 went live before any of this was written, on the
+principle that four undeployed steps is the wrong foundation to add a fifth to.
+
+#### The decisions
+
+- **D1 — the camera becomes the visitor's the moment they touch it.** Auto-fit until the first pan or
+  zoom, theirs from then on, and arriving claims stop moving it. A **Recenter** control gives it
+  back, as a cut rather than a glide: it is a movement someone asked for, and animating those makes
+  them wait. The collision this resolves is step 7's own finding — the camera travels further than
+  the nodes do, so an auto-recentre mid-answer would be the largest motion on screen and would fire
+  while someone was reading.
+- **D2 — following an edge grows `context` and can never grow `walked`.** `walked` keeps meaning
+  exactly one thing: the agent reached this. A node clicked to, three hops out, is context like any
+  other unwalked node. This is the invariant-1 surface §5 names, and it is a **property** rather than
+  a promise: `openedIds` is not read anywhere in the claimed pass, asserted over all 128 subsets of a
+  seven-node corpus.
+- **D3 — the caption gained a clause, or D2 would have leaked through the prose.** The sentence said
+  the faint lines are what the corpus holds *"around them"*, meaning around the answer, and three
+  hops into a wander that is false. `RenderGraph` now carries `opened` alongside `context` and the
+  caption reports them separately. The honest data model would still have produced a dishonest
+  sentence without this.
+- **D4 — the inspector is DOM, and it is the accessible path rather than a panel beside the map.**
+  A canvas has no elements. Choosing a node, following an edge, revealing connections and asking the
+  agent are all real `<button>`s; the canvas keeps `role="img"` and is the shortcut. It also carries
+  a no-selection state listing the walked nodes, because without one a keyboard user could operate
+  the inspector but never open it.
+- **D5 — no node dragging.** Step 5 made position mean influence depth and year, so dragging a node
+  moves it to a position that says something false.
+- **D6 — a plain wheel scrolls the page; ctrl/cmd zooms.** The map sits above the claims, so trapping
+  the scroll there would be actively hostile. Trackpad pinch arrives as ctrl+wheel from the browser,
+  so pinch-to-zoom came free with no gesture handling.
+- **D7 — annotation goes to `/lineage` and through the gate.** `useLineageRun` gained `annotate`,
+  which **appends** a step rather than replacing the run — replacing would throw away the answer
+  someone was reading in order to answer a question about it. Refused while a stream is in flight,
+  because aborting one would leave its step showing "running" forever. Frontend only; DoD 9 intact.
+
+#### What the break-it pass found, and it is the reason to trust any of the above
+
+Every lock was broken on purpose, run, and restored. **Three of them did not fail, and each was a
+real defect in the test rather than in the code:**
+
+1. **`clampView`'s first rule had a docstring describing behaviour it did not have, and the test
+   guarding it passed with the rule deleted.** It asserted a *minimum overlap* — an inequality that
+   held either way. Replaced with a rule that is provably conflict-free (the content's centre stays
+   on screen, which is a point clamped into a rectangle) and an assertion that is an *equality* on
+   where the map comes to rest.
+2. **The Recenter test asserted that the button disappeared, not that the camera reset.** It passed
+   with the reset removed: the control vanished while the map stayed exactly where it had been
+   dragged to. It now compares drawn positions before and after.
+3. **Two break patterns silently failed to match** because the file had been reformatted, so the
+   "test caught it" reading was unearned. Both were re-run against the real text.
+
+**The tell in cases 1 and 2 is the same and it generalises: each assertion was weaker than the
+behaviour it was named after** — a bound instead of a resting place, a label instead of a pixel.
+
+#### One design flaw found by a failing test, and fixed rather than asserted around
+
+`follow` originally opened the node you came *from*. Following an edge out of a walked node then
+revealed nothing at all, because the automatic pass has already expanded every walked node's
+neighbourhood — `opened` stayed 0 and the test asserting that wandering reaches new corpus failed.
+The map was behaving exactly as written and the writing was wrong. It now opens **both** ends, so
+arriving somewhere shows what is there.
+
+The test fixture had the matching problem: at six nodes, nothing in it is more than one hop from a
+walked node, so no implementation could have discovered anything. It gained a node two hops out. **A
+fixture too small to exercise the behaviour looks exactly like a broken implementation** — the same
+sentence step 7 ended on, arrived at independently.
+
+#### A formatting mistake worth recording so it is not repeated
+
+Running `prettier --write` across `src/` reformatted **14 files that had no functional change**, to
+80 columns. There is no prettier config in this repo and `npm run check` never runs it: formatting
+here is hand-maintained and not uniform — three sampled files match prettier at width 100 exactly and
+`layout.test.ts` does not. **Any blanket formatter run in `web/` produces churn.** The 14 files were
+reverted and the semantic edits re-applied by hand.
+
+**This was already true at 8a and went unnoticed:** that commit reformatted `GraphView.tsx` and
+`styles.css` to 80 columns as a side effect. Both are still in that state and are now inconsistent
+with the rest of `web/`. Left alone deliberately rather than folded into this step's diff — a
+formatting-only change belongs in its own commit.
+
+#### Measurements
+
+- **Highest degree in artifact v0.5.0 is 25, and no node exceeds 30.** So `NEIGHBOURS_PER_OPEN = 30`
+  cannot truncate any single node's neighbourhood: opening a node shows all of its connections or
+  the corpus does not hold them. The automatic neighbourhood keeps its own separate cap of 40.
+- Auto-fit `k` runs 0.77–1.58 on the real chips against a 2.2 cap, which is what the absolute zoom
+  bounds of 0.1–10 were calibrated against.
+
+#### What shipped
+
+`viewport.ts`, a pure module holding the whole camera — project, unproject, pan, zoom-about-a-point,
+clamp, hit-test — for the third application of the same lesson: jsdom has no canvas, so arithmetic
+inside the draw closure cannot be tested. `NodeInspector.tsx`, the DOM half. Pointer, wheel and
+button wiring in `GraphView`, which stays the thin driver.
+
+**And a test file that mounts the real `App` with a recording canvas stub**, so a pointer event is
+traced all the way to the coordinates the map actually drew. That layer was completely untested when
+step 7's two defects shipped, and it is where both of them lived.
+
+Frontend suite **76 -> 116** over 10 files. `make check` **1184 passed, 14 deselected**, unchanged —
+no Python edited, no backend touched, root entry count unchanged at 15/18. **DoD 4 closed.**
+
+#### Open
+
+- **`GraphView.tsx` and `styles.css` are formatted to 80 columns** while the rest of `web/` is not.
+  A formatting-only commit, not this one.
+- **On touch, panning is horizontal only.** `touch-action: pan-y` keeps vertical page scrolling with
+  the browser, which was worth more than two-axis touch panning.
+- **The "Trace it" button is still solid accent**, the loudest element above the fold. Named at step
+  6, still not done.

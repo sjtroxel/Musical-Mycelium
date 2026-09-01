@@ -98,6 +98,10 @@ const ARTIFACT: Artifact = {
     ["Q164444", "funk"],
     ["Q8341", "jazz"],
     ["Q9759", "blues"],
+    // Two hops past anything the answer walked. The automatic neighbourhood is one hop from each
+    // walked node, so `blues` is drawn but `ragtime` is not — which makes `ragtime` the only proof
+    // available that following an edge reaches corpus the answer never showed.
+    ["Q4", "ragtime"],
   ].map(([id, label]) => ({
     id: id as string,
     label: label as string,
@@ -116,6 +120,7 @@ const ARTIFACT: Artifact = {
     ["Q221772", "Q164444"],
     ["Q221772", "Q8341"],
     ["Q8341", "Q9759"],
+    ["Q9759", "Q4"],
   ].map(([subject, object]) => ({
     subject_id: subject as string,
     object_id: object as string,
@@ -340,5 +345,122 @@ describe("selecting a node", () => {
     await waitFor(() => {
       expect(screen.queryByText(/Reached by this answer/)).toBeNull();
     });
+  });
+});
+
+/**
+ * Step 8b: following an edge, and asking the agent about where you ended up.
+ *
+ * Driven through the **DOM** rather than the canvas on purpose. Every action here is one a keyboard
+ * user can reach, so a test that can only perform them by clicking pixels would be testing the half
+ * of D4 that was never in question. If these pass, the accessible path works.
+ */
+describe("following an edge", () => {
+  /** Open the keyboard entry point and land on a named node the answer reached. */
+  async function selectWalked(label: string): Promise<void> {
+    const entry = await screen.findByText(/Explore this map without pointing at it/);
+    fireEvent.click(entry);
+    const list = entry.parentElement as HTMLElement;
+    const button = [...list.querySelectorAll("button")].find(
+      (candidate) => candidate.textContent === label,
+    );
+    expect(button).toBeDefined();
+    fireEvent.click(button as HTMLButtonElement);
+  }
+
+  /** Click a named neighbour under one of the inspector's two direction headings. */
+  async function followTo(heading: string, label: string): Promise<void> {
+    const group = await screen.findByRole("heading", { name: heading });
+    const button = [...(group.parentElement as HTMLElement).querySelectorAll("button")].find(
+      (candidate) => candidate.textContent === label,
+    );
+    expect(button).toBeDefined();
+    fireEvent.click(button as HTMLButtonElement);
+  }
+
+  const caption = (): string => document.querySelector(".map__caption")?.textContent ?? "";
+
+  it("can be reached without pointing at the map at all", async () => {
+    // D4. The canvas is a picture with a description; if this is the only way in, it has to work.
+    stubReducedMotion();
+    const recorder = installCanvas();
+    await drawnMap(recorder);
+
+    await selectWalked("jazz");
+    await screen.findByRole("complementary", { name: "About jazz" });
+    await screen.findByText(/Reached by this answer/);
+  });
+
+  it("reveals more corpus without changing a single cited connection", async () => {
+    // Invariant 1 at the level a visitor can actually break it. The unit property test in
+    // `subgraph.test.ts` proves `buildRenderGraph` cannot do it; this proves the interface wired
+    // around that function cannot either.
+    stubReducedMotion();
+    const recorder = installCanvas();
+    await drawnMap(recorder);
+    await selectWalked("jazz");
+
+    const citedBefore = /(\d+) cited/.exec(caption())?.[1];
+    expect(citedBefore).toBeDefined();
+    expect(caption()).not.toMatch(/You have opened/);
+
+    // "Came out of" lists what influenced this node. blues is already drawn; what is NOT drawn is
+    // ragtime, one hop past it, and arriving at blues is what reveals it.
+    await followTo("Came out of", "blues");
+
+    await waitFor(() => {
+      expect(caption()).toMatch(/You have opened a further/);
+    });
+
+    // The claimed count is the thing that must not move. Everything a visitor uncovers is corpus.
+    expect(/(\d+) cited/.exec(caption())?.[1]).toBe(citedBefore);
+    expect(caption()).toMatch(/no more part of this answer than the rest/);
+  });
+
+  it("moves to the node it followed to", async () => {
+    stubReducedMotion();
+    const recorder = installCanvas();
+    await drawnMap(recorder);
+    await selectWalked("jazz");
+    await followTo("Came out of", "blues");
+
+    await screen.findByRole("complementary", { name: "About blues" });
+    // And the node it came from is still on the map, so the edge just followed is visible.
+    expect(caption()).toMatch(/You have opened a further/);
+  });
+});
+
+describe("asking the agent about a node", () => {
+  it("appends a real query below the answer instead of replacing it", async () => {
+    // DoD 4's "request an annotation". It must go to /lineage and come back through the gate —
+    // the static corpus in the browser is for navigation and can never produce a claim.
+    stubReducedMotion();
+    const recorder = installCanvas();
+    await drawnMap(recorder);
+
+    const entry = await screen.findByText(/Explore this map without pointing at it/);
+    fireEvent.click(entry);
+    // Deliberately NOT the subject of the answer already on screen. Annotating `acid jazz` asks
+    // "Where did acid jazz come from?", which is the chip's own question, and two identical
+    // headings would make this test unable to tell an appended panel from the original one.
+    const label = "jazz";
+    const button = [...(entry.parentElement as HTMLElement).querySelectorAll("button")].find(
+      (candidate) => candidate.textContent === label,
+    );
+    expect(button).toBeDefined();
+    fireEvent.click(button as HTMLButtonElement);
+
+    // `annotate` refuses while a stream is in flight, and the button says so by being disabled.
+    // Waiting for that is not test hygiene — it is the guard doing its job.
+    const ask = await screen.findByRole("button", { name: `Ask the agent about ${label}` });
+    await waitFor(() => {
+      expect((ask as HTMLButtonElement).disabled).toBe(false);
+    });
+    fireEvent.click(ask);
+
+    // A new panel, with the original still on screen above it. Replacing would throw away the
+    // answer the visitor was reading in order to answer a question about it.
+    await screen.findByRole("heading", { name: `Where did ${label} come from?` });
+    expect(screen.getByRole("heading", { name: /Where did acid jazz come from\?/ })).toBeTruthy();
   });
 });

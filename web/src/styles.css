@@ -346,18 +346,128 @@ code {
   font-size: 0.78rem;
 }
 
-.map__selection {
+/* The inspector is the map's accessible half (D4), so it is styled as content rather than as a
+   floating overlay: it sits in the document under the canvas, in normal reading order, and a screen
+   reader meets it right after the picture's description. */
+.inspector {
   max-width: var(--measure);
-  margin: 0.5rem 0 0;
-  font-size: 0.82rem;
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--card);
+  font-size: 0.85rem;
   line-height: 1.5;
+}
+
+.inspector--closed {
+  padding: 0.5rem 0.9rem;
+  background: none;
+}
+
+.inspector__summary {
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.inspector__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.inspector__title {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.inspector__close {
+  border: 0;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.inspector__facts {
+  margin: 0.35rem 0 0;
   color: var(--ink-soft);
 }
 
-/* No accent here. Step 6 gave `--accent` one job — this was approved by the gate — and a node a
-   visitor merely clicked on has not been. */
-.map__source {
+/* Deliberately NOT --accent. Step 6 gave the accent one meaning — the gate approved this — and a
+   node someone merely walked to has not been approved by anything. */
+.inspector__source {
   color: var(--ink-faint);
+}
+
+.inspector__group {
+  margin-top: 0.6rem;
+}
+
+.inspector__groupTitle {
+  margin: 0 0 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+.inspector__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+}
+
+.inspector__link {
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  padding: 0;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+
+.inspector__link:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink-faint);
+}
+
+.inspector__action {
+  display: block;
+  margin-top: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--ground);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.inspector__action:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+
+.inspector__action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The one control that spends money and produces claims, so it is the one that carries the accent. */
+.inspector__action--ask {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .map__caption,

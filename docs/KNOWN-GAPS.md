@@ -33,9 +33,29 @@ sections below, top-most first.
 **Updated 2026-08-26** at phase 5 step 1, applied: the project has a public CloudFront URL. ~~It serves a
 placeholder, not a SPA~~ — **corrected 2026-08-31: it serves a real SPA and has since step 2 the same
 day.** Verified by fetching it: `index.html` loads a hashed Vite bundle, and that bundle contains the
-chip row, the streaming answer and the grounded footer. What it does **not** contain is the map — the
-step 4 caption strings are absent from the deployed JavaScript. "Placeholder" was the wrong word for a
-shipped SPA that is four steps behind.
+chip row, the streaming answer and the grounded footer. "Placeholder" was the wrong word for a shipped
+SPA.
+
+~~What it does **not** contain is the map — the step 4 caption strings are absent from the deployed
+JavaScript.~~ **Stale since 2026-09-01: steps 4-7 were deployed that morning** (workflow run
+`33529350458`, 1m49s, about 2 cents, all of it the two smoke-test `/lineage` calls). Verified by
+fetching the live bundle rather than by assuming: the map's caption strings, `requestAnimationFrame`
+and the `prefers-reduced-motion` branch are all present, and `graph/v0.5.0/graph.json` serves from
+CloudFront at 655,641 bytes raw / 56,806 gzipped, 973 nodes and 950 edges — matching IMPLEMENTATION
+4.2's measured claim exactly. Streaming re-measured healthy at **TTFB 0.073s against 8.10s total, a
+ratio of 0.009**, against the 2026-07-31 spike baseline of 0.214/10.22. **Do not write that the
+deployed site lacks the map.**
+
+**A redeploy trap, live and worth reading before dispatching anything.** The Deploy workflow is
+`workflow_dispatch` only and monolithic — it rebuilds the Lambda image and runs `terraform apply`
+every time — and **`llm_provider` defaults to `local`**. A dispatch on defaults silently reverts the
+deployed stack to the stub LLM and falsifies the resume line. Always pass `-f llm_provider=bedrock -f
+reserved_concurrency=-1`.
+
+**The URL question, answered 2026-09-01.** CloudFront has **no vanity hostname at any price**;
+`d2vtdkpgmecreg.cloudfront.net` is what AWS assigns and there is no readable subdomain to claim. A
+nicer URL means registering a real domain. `phase-5 §11` and `frontend.tf:116` both put a custom
+domain outside this phase.
 
 **Verified state, re-measured 2026-08-31:** `make check` green — **1184 passed, 14 `costs_money` tests
 deselected**, mypy clean over 89 source files, root 15/18, terraform valid, eval gates 3 passed / 0

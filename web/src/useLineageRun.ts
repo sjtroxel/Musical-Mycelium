@@ -104,6 +104,19 @@ export function useLineageRun() {
   const [state, setState] = useState<RunState>(IDLE);
   const abortRef = useRef<AbortController | null>(null);
 
+  /**
+   * How many steps exist, mirrored outside React state.
+   *
+   * `annotate` appends a step and then has to stream into it by index. Reading `prev.steps.length`
+   * from inside a `setState` updater would work exactly once: updaters must be pure, React calls
+   * them twice under StrictMode, and an index captured as a side effect of one would be wrong on the
+   * second call. A ref is the honest way to know the index before the append happens.
+   */
+  const stepCount = useRef(0);
+
+  /** Whether a stream is in flight, for the same reason: a callback cannot read current state. */
+  const busyRef = useRef(false);
+
   // A run in flight when the component goes away is a Lambda still being billed for a stream nobody
   // will read. AWS bills the full function duration on a streamed response even after the client
   // disconnects, so aborting is the polite half of a cost control, not just tidiness.
@@ -112,19 +125,18 @@ export function useLineageRun() {
   const cancel = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    busyRef.current = false;
     setState((prev) => ({ ...prev, busy: false }));
   }, []);
 
-  const run = useCallback(async (label: string, queries: string[]) => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setState({ steps: queries.map(emptyStep), corpus: null, busy: true, label });
-
-    for (const [index, query] of queries.entries()) {
-      if (controller.signal.aborted) return;
-
+  /**
+   * Stream one query into one existing step. Returns false when the step did not complete.
+   *
+   * Extracted at step 8b so `run` and `annotate` cannot drift. They differ only in how the step gets
+   * there — a fresh list of them, or one appended to what is already on screen.
+   */
+  const streamStep = useCallback(
+    async (index: number, query: string, controller: AbortController): Promise<boolean> => {
       setState((prev) => ({
         ...prev,
         steps: prev.steps.map((step, i) => (i === index ? { ...step, phase: "running" } : step)),
@@ -143,8 +155,9 @@ export function useLineageRun() {
             });
           },
         });
+        return true;
       } catch (error) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return false;
         const message = error instanceof Error ? error.message : String(error);
         setState((prev) => ({
           ...prev,
@@ -152,16 +165,82 @@ export function useLineageRun() {
             i === index ? { ...step, phase: "failed", error: message } : step,
           ),
         }));
-        // Stop the sequence. A paired chip whose first half failed must not run its second half as
-        // though the first had merely refused — that would present a transport failure as evidence.
-        break;
+        return false;
       }
-    }
+    },
+    [],
+  );
 
-    if (!controller.signal.aborted) {
-      setState((prev) => ({ ...prev, busy: false }));
-    }
-  }, []);
+  const run = useCallback(
+    async (label: string, queries: string[]) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-  return { ...state, run, cancel };
+      stepCount.current = queries.length;
+      busyRef.current = true;
+      setState({
+        steps: queries.map(emptyStep),
+        corpus: null,
+        busy: true,
+        label,
+      });
+
+      for (const [index, query] of queries.entries()) {
+        if (controller.signal.aborted) return;
+        // Stop the sequence on a failure. A paired chip whose first half failed must not run its
+        // second half as though the first had merely refused — that would present a transport
+        // failure as evidence.
+        if (!(await streamStep(index, query, controller))) break;
+      }
+
+      if (!controller.signal.aborted) {
+        busyRef.current = false;
+        setState((prev) => ({ ...prev, busy: false }));
+      }
+    },
+    [streamStep],
+  );
+
+  /**
+   * Ask the agent about one node, appending the answer below what is already on screen.
+   *
+   * **DoD 4's "request an annotation", and it goes through `/lineage` and the gate like everything
+   * else.** The static corpus in the browser is for navigation only; the moment a visitor asks a
+   * question about what they found, it is a real query, a real traversal and a real set of gated
+   * claims. Rendering an edge from the static file is not narrating it — IMPLEMENTATION 4.2.
+   *
+   * It APPENDS rather than replacing, which is the whole difference from `run`. Replacing would
+   * throw away the answer the visitor was reading in order to answer a question about it.
+   *
+   * Refused while a stream is in flight. Aborting one mid-answer would leave that step stuck showing
+   * "running" forever, since nothing would ever deliver its `done` frame.
+   */
+  const annotate = useCallback(
+    async (query: string) => {
+      if (busyRef.current) return;
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const index = stepCount.current;
+      stepCount.current += 1;
+      busyRef.current = true;
+      setState((prev) => ({
+        ...prev,
+        steps: [...prev.steps, emptyStep(query)],
+        busy: true,
+      }));
+
+      await streamStep(index, query, controller);
+
+      if (!controller.signal.aborted) {
+        busyRef.current = false;
+        setState((prev) => ({ ...prev, busy: false }));
+      }
+    },
+    [streamStep],
+  );
+
+  return { ...state, run, annotate, cancel };
 }

@@ -1,9 +1,11 @@
+import { useState } from "react";
 import facts from "../corpus-facts.json";
 import { GraphView } from "../graph/GraphView";
 import type { StaticGraph } from "../graph/staticGraph";
 import { buildRenderGraph } from "../graph/subgraph";
 import type { StepState } from "../useLineageRun";
 import { ClaimList } from "./ClaimList";
+import { NodeInspector } from "./NodeInspector";
 
 /**
  * One query's panel — the answer *and* the refusal.
@@ -65,7 +67,46 @@ function Chain({ step, labels }: { step: StepState; labels: Map<string, string> 
  * in `chips.json` and would fill the hole, and using it would be the interface asserting it knows
  * which node the run meant when the run never established that.
  */
-function NeighbourhoodMap({ step, graph }: { step: StepState; graph: StaticGraph | null }) {
+function NeighbourhoodMap({
+  step,
+  graph,
+  busy,
+  onAnnotate,
+}: {
+  step: StepState;
+  graph: StaticGraph | null;
+  busy: boolean;
+  onAnnotate: (query: string) => void;
+}) {
+  /**
+   * Where the visitor is, and what they have opened.
+   *
+   * Owned here rather than in `GraphView` because the canvas and the inspector are siblings that
+   * have to agree, and because it is per-panel: each query gets its own map, so wandering around one
+   * answer does not move the map of another. A new query mounts a new `StepPanel`, which is what
+   * resets both of these to empty without any code saying so.
+   */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [openedIds, setOpenedIds] = useState<string[]>([]);
+
+  const open = (id: string) =>
+    setOpenedIds((current) => (current.includes(id) ? current : [...current, id]));
+
+  /**
+   * Follow one edge: reveal both ends of it, then stand on the far one.
+   *
+   * Opening the node you came FROM is what puts the edge you just walked on the map. Opening the
+   * one you arrive AT is what makes the gesture worth repeating — without it, following an edge out
+   * of an already-drawn node reveals nothing at all, because the automatic pass has already shown
+   * every neighbour of every walked node. That was not a hypothetical: the first version opened
+   * only the source, and the test asserting that wandering reaches new corpus failed against it
+   * with `opened` stuck at 0. The map was behaving exactly as written and the writing was wrong.
+   */
+  const follow = (fromId: string, toId: string) => {
+    setOpenedIds((current) => [...current, ...[fromId, toId].filter((id) => !current.includes(id))]);
+    setSelectedId(toId);
+  };
+
   if (graph === null) return null;
 
   const answered = step.done?.artifact_version;
@@ -82,10 +123,28 @@ function NeighbourhoodMap({ step, graph }: { step: StepState; graph: StaticGraph
     claims: step.claims,
     pathNodeIds: step.path?.node_ids ?? [],
     toolNodeIds: step.toolNodeIds,
+    openedIds,
   });
   if (rendered.nodes.length === 0) return null;
 
-  return <GraphView graph={rendered} />;
+  const selected = rendered.nodes.find((node) => node.id === selectedId) ?? null;
+
+  return (
+    <>
+      <GraphView graph={rendered} selectedId={selectedId} onSelectNode={setSelectedId} />
+      <NodeInspector
+        node={selected}
+        graph={graph}
+        walkedNodes={rendered.nodes.filter((node) => node.role === "walked")}
+        opened={selectedId !== null && openedIds.includes(selectedId)}
+        busy={busy}
+        onSelect={setSelectedId}
+        onOpen={open}
+        onFollow={follow}
+        onAnnotate={onAnnotate}
+      />
+    </>
+  );
 }
 
 function Status({ step }: { step: StepState }) {
@@ -117,13 +176,24 @@ function Truncation({ step }: { step: StepState }) {
   // this distinguishable, and silently dropping it would waste that.
   return (
     <p className="truncation">
-      This traversal stopped early ({reason === "max_turns" ? "turn limit" : "token budget"}), so it may
-      be missing a hop. What is shown is still gated and cited; it is just not necessarily everything.
+      This traversal stopped early ({reason === "max_turns" ? "turn limit" : "token budget"}), so it
+      may be missing a hop. What is shown is still gated and cited; it is just not necessarily
+      everything.
     </p>
   );
 }
 
-export function StepPanel({ step, graph }: { step: StepState; graph: StaticGraph | null }) {
+export function StepPanel({
+  step,
+  graph,
+  busy = false,
+  onAnnotate,
+}: {
+  step: StepState;
+  graph: StaticGraph | null;
+  busy?: boolean;
+  onAnnotate?: (query: string) => void;
+}) {
   const labels = labelMap(step);
   const refused = step.outcome === "refusal";
 
@@ -133,7 +203,12 @@ export function StepPanel({ step, graph }: { step: StepState; graph: StaticGraph
 
       <Status step={step} />
       <Chain step={step} labels={labels} />
-      <NeighbourhoodMap step={step} graph={graph} />
+      <NeighbourhoodMap
+        step={step}
+        graph={graph}
+        busy={busy}
+        onAnnotate={onAnnotate ?? (() => {})}
+      />
 
       {step.prose && <p className="panel__prose">{step.prose}</p>}
 
@@ -143,9 +218,9 @@ export function StepPanel({ step, graph }: { step: StepState; graph: StaticGraph
               and this figure is why — it is checked by tests/test_corpus_facts.py. */}
           <p>
             A missing edge is not evidence of a missing influence.{" "}
-            {facts.nodes_without_recorded_influences} of the corpus&rsquo;s {facts.nodes} nodes record
-            no influences at all, so silence here is the state of the sources rather than a finding
-            about the music.
+            {facts.nodes_without_recorded_influences} of the corpus&rsquo;s {facts.nodes} nodes
+            record no influences at all, so silence here is the state of the sources rather than a
+            finding about the music.
           </p>
         </div>
       )}
@@ -154,8 +229,8 @@ export function StepPanel({ step, graph }: { step: StepState; graph: StaticGraph
 
       {step.rejectionCount > 0 && (
         <p className="rejections">
-          {step.rejectionCount} proposed{" "}
-          {step.rejectionCount === 1 ? "claim was" : "claims were"} rejected by the gate and left out.
+          {step.rejectionCount} proposed {step.rejectionCount === 1 ? "claim was" : "claims were"}{" "}
+          rejected by the gate and left out.
         </p>
       )}
 
