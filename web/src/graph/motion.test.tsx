@@ -39,9 +39,9 @@ import type { RenderGraph } from "./subgraph";
 /** acid jazz, one parent the gate approved, and one unwalked neighbour. */
 const GRAPH: RenderGraph = {
   nodes: [
-    { id: "Q221772", label: "acid jazz", kind: "genre", year: 1987, role: "walked" },
-    { id: "Q11401", label: "hip-hop", kind: "genre", year: 1979, role: "walked" },
-    { id: "Q8341", label: "jazz", kind: "genre", year: 1900, role: "context" },
+    { id: "Q221772", label: "acid jazz", kind: "genre", year: 1987, role: "walked", hidden: 0 },
+    { id: "Q11401", label: "hip-hop", kind: "genre", year: 1979, role: "walked", hidden: 0 },
+    { id: "Q8341", label: "jazz", kind: "genre", year: 1900, role: "context", hidden: 0 },
   ],
   edges: [
     { from: "Q11401", to: "Q221772", kind: "claimed", order: 1, verification: "HAND" },
@@ -72,6 +72,7 @@ const GROWN: RenderGraph = {
       kind: "genre",
       year: 1960 + i,
       role: "walked" as const,
+      hidden: 0,
     })),
   ],
   edges: [
@@ -114,6 +115,9 @@ function recordingContext(): { ctx: unknown; calls: Call[] } {
     moveTo: rec("moveTo"),
     lineTo: rec("lineTo"),
     stroke: rec("stroke"),
+    // Step 9 marks an incomplete node with a broken stroke, so the recorder needs the real API's
+    // dash calls or the whole draw throws and every assertion below fails for the wrong reason.
+    setLineDash: rec("setLineDash"),
     fill: rec("fill"),
     arc: rec("arc"),
     clearRect: rec("clearRect"),

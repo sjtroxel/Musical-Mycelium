@@ -362,6 +362,21 @@ the claim count so a substituted fixture fails.
 and coverage is a footer line rather than a first-class part of the interface (step 9). The **CHECKPOINT**
 is next and it is a step, not a mood.
 
+> **Step 9 closed the coverage half of that on 2026-09-01** and left one thing behind, recorded here
+> rather than in the step's own notes because it is a debt on `graph/`, not on `web/`.
+>
+> **Connection density is measured in `web/src/corpus-facts.json`, not in `graph/coverage.py`, and it
+> belongs in `Coverage`.** The figures — 85 of 169 genres with no recorded origin, 108 with exactly
+> one connection, the busiest with six — are the sharpest thinness statement the corpus can make and
+> the only one `analyse()` does not compute. They live in the frontend data file because putting them
+> in `Coverage` means changing what `/health` and the `done` frame serialize, which is a backend edit
+> made to serve the frontend and is what phase 5 DoD 9 forbids. His call, 2026-09-01.
+>
+> They are asserted against the pinned artifact by `tests/test_corpus_facts.py`, so this is a
+> misplacement rather than an unchecked number. **Phase 6 should move them into `Coverage` and have
+> the panel read them from the `done` frame like every other figure.** Until then, two places compute
+> facts about the corpus and only one of them is the canonical one.
+
 ---
 
 ## PHASE 5 STEP 1 IS APPLIED — the site has a public URL, 2026-08-26

@@ -357,3 +357,84 @@ describe("wandering cannot manufacture a claim", () => {
     expect(spokes.length).toBeLessThanOrEqual(NEIGHBOURS_PER_OPEN);
   });
 });
+
+describe("what the map is not showing", () => {
+  /**
+   * `hidden` is step 9's half of DoD 7 on the map. Without it a node drawn with one line is
+   * ambiguous between "the corpus records one influence here" and "there are five more you have not
+   * revealed", and a thin region is indistinguishable from an unexplored one.
+   *
+   * **The fixture is the point.** The first version of these tests put the interesting node at a
+   * claim endpoint, which makes it WALKED -- and the automatic pass expands every walked node, so
+   * its count was zero by construction and the assertion proved nothing while passing. Step 7 ended
+   * on that mistake and step 8 hit it again independently. Here the node under test is two hops out,
+   * where the map genuinely does hide something.
+   */
+  const artifact = (): Artifact => ({
+    nodes: ["Q1", "Q2", "Q3", "Q5", "Q6", "Q7"].map((id) => node(id, id)),
+    // Q1 <- Q2 <- Q3, with Q3 also citing Q5 and Q6, and Q5 citing Q7.
+    edges: [
+      edge("Q1", "Q2"),
+      edge("Q2", "Q3"),
+      edge("Q3", "Q5"),
+      edge("Q3", "Q6"),
+      edge("Q5", "Q7"),
+    ],
+  });
+
+  const at = (rendered: { nodes: readonly { id: string; hidden: number }[] }, id: string) =>
+    rendered.nodes.find((n) => n.id === id)!.hidden;
+
+  it("counts the corpus connections a node has that the map did not draw", () => {
+    const graph = indexArtifact("0.0.0", artifact());
+    const rendered = buildRenderGraph(graph, { ...EMPTY, claims: [claim("Q1", "Q2")] });
+
+    // Q1 and Q2 are the claim's endpoints, so both are walked and the automatic pass has already
+    // drawn everything incident to them. A complete picture reads zero.
+    expect(at(rendered, "Q1")).toBe(0);
+    expect(at(rendered, "Q2")).toBe(0);
+
+    // Q3 arrived as context off Q2. Its own edges to Q5 and Q6 were never drawn, so the map shows
+    // one of its three connections and hides two. This is the case the encoding exists for, and the
+    // one that looks identical to a genuinely thin node without it.
+    expect(at(rendered, "Q3")).toBe(2);
+  });
+
+  it("clears once the hidden connections are actually on the map, and moves outward", () => {
+    const graph = indexArtifact("0.0.0", artifact());
+    const rendered = buildRenderGraph(graph, {
+      ...EMPTY,
+      claims: [claim("Q1", "Q2")],
+      openedIds: ["Q3"],
+    });
+
+    // Opening Q3 draws its remaining edges, so the picture at Q3 is complete and the encoding must
+    // stop marking it. A flag that never clears would say every map is incomplete forever.
+    expect(at(rendered, "Q3")).toBe(0);
+
+    // And the frontier moves: Q5 is now on the map with its edge to Q7 still behind it. `hidden` is
+    // a property of the current picture, not of the node.
+    expect(at(rendered, "Q5")).toBe(1);
+    expect(at(rendered, "Q6")).toBe(0);
+  });
+
+  it("does not count an edge as hidden merely because two nodes cite each other", () => {
+    // The pinned corpus contains exactly one reciprocal pair -- two nodes each recorded as
+    // influencing the other. Both directions are separate edges with separate keys and both get
+    // drawn, so the picture is complete and neither end may be marked.
+    //
+    // Stated honestly, because the first version of this comment claimed more than it could: this
+    // does NOT discriminate between counting against `drawn` and subtracting from `degree`. A
+    // break-it pass ran the subtraction and every test here still passed. It is a behaviour guard on
+    // a shape the corpus actually contains, not a proof that one implementation is the right one.
+    const graph = indexArtifact("0.0.0", {
+      nodes: [node("Q1", "one"), node("Q2", "two")],
+      edges: [edge("Q1", "Q2"), edge("Q2", "Q1")],
+    });
+    const rendered = buildRenderGraph(graph, { ...EMPTY, claims: [claim("Q1", "Q2")] });
+
+    expect(graph.degree("Q1")).toBe(2);
+    expect(at(rendered, "Q1")).toBe(0);
+    expect(at(rendered, "Q2")).toBe(0);
+  });
+});

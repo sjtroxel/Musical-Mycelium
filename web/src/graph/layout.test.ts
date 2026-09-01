@@ -8,6 +8,7 @@ const node = (id: string, year: number | null = null): RenderNode => ({
   kind: "genre",
   year,
   role: "walked",
+  hidden: 0,
 });
 
 /** `from` is the object and `to` is the subject: the influence runs from -> to, older -> newer. */

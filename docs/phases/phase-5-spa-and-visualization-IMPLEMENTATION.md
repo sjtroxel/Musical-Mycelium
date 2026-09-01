@@ -1398,3 +1398,104 @@ Fixed with a specific hover rule.
 `make check` **1184 passed, 14 deselected**, mypy clean over 89 files, root **15/18** unchanged, eval
 gates 3 passed / 0 failed / 2 not applicable. Frontend **116**, unchanged — this step added no
 behaviour and no test, which is the correct shape for it.
+
+### Step 9 — coverage rendered honestly, 2026-09-01. DoD 7 closed.
+
+Two halves: a drawn coverage panel, and the map admitting what it is not showing. Both shipped.
+
+#### The placement was wrong, and he found it by using it in under two minutes
+
+The panel went in **above** the results, on the reasoning recorded in `D1`: coverage is the frame an
+answer is read through, so it belongs before the answer. Every test passed. The build was green.
+
+He clicked the acid jazz chip and **thought nothing had happened.** The panel was a screen tall, so
+the answer rendered below the fold, and by the time he scrolled past the coverage figures the
+streaming had finished — the motion work from step 7, the edge-drawing from step 4, all of it played
+to an empty room. *"Why bother."*
+
+**A frame nobody sees the answer inside is not a frame.** The fix is that the panel renders **below
+the results, always**, with no positional switch: before a run `results` is empty so it still lands
+directly under the chips and is the first screen's content; once an answer exists the answer takes
+that slot and the panel follows it down. One rule, nothing jumps. Measured after: the answer now
+appears **613px** into a 900px viewport instead of ~1600px.
+
+This is the fourth time in this phase that a green suite and a confident reading were both wrong
+about something visible, and the second time *in this step alone* — see the layout defects below,
+which no test could have caught either.
+
+#### What the screenshots found that the tests could not
+
+**A headless browser was available the whole time and I said there was not one.** The check was
+`ls node_modules/.bin | grep playwright` plus `which chromium`, both of which missed
+`~/.cache/ms-playwright/` — four chromium builds, including the headless shell that took every
+screenshot below. He pushed back with *"I thought we had one"* and he was right. **A grep miss is not
+proof of absence** is a standing rule in this repo and this is what violating it costs: a whole
+handover written around a limitation that did not exist.
+
+With `playwright-core` pointed at that binary, three defects surfaced immediately, none of them
+reachable from jsdom:
+
+1. **The panel was 988px tall** — a full screen.
+2. **`repeat(auto-fit, minmax(17rem, 1fr))` resolved to TWO columns at the 696px content width, not
+   three.** "How densely" wrapped to a second row and left a dead quarter-panel beside it. Now an
+   explicit `1fr 1fr` with `Where` spanning both rows.
+3. **The long-tail tick row butted against the last bar** and read as another bar. Now separated by a
+   rule.
+
+Plus four notes each two or three lines longer than their point. Panel is now **686px**.
+
+#### The encoding, decided by looking at all three
+
+`RenderNode` gained `hidden`: how many of a node's corpus connections are not drawn. Zero means the
+picture is complete. Three candidates went in behind `?complete=`, the way step 7's `?motion=` did,
+and — the 8/31 lesson applied — a test asserted **all four modes draw four different pictures**
+before any of it was handed over.
+
+- **stub** (short lines radiating outward) lost outright: at 3.5px they render as antialiasing dirt,
+  all fanning the same direction like a smudge.
+- **halo** (faint outer ring) was **the most legible in isolation and lost anyway.** Selecting a
+  haloed node produced **three concentric circles** — node outline, halo, `--ink` selection ring —
+  and selection stopped reading as its own state. That is a channel collision, not a taste call, and
+  it is only visible in a screenshot of a selected node.
+- **dash** ships. Rings mean selection; the node's own outline means completeness. *A closed outline
+  means a closed record.*
+
+The caption is conditional, and the second wording is the better half: where nothing is marked it
+says so outright rather than explaining a mark that is not there. On blues → heavy metal that reads
+**"Every node here is drawn with a solid outline: this is everything the corpus holds around this
+answer, not a portion of it"** — a three-node component where the map is provably the entire corpus
+on the subject. Two of the five canonical chips draw a complete picture.
+
+#### Three things that shipped alongside
+
+- **A third thinness axis, which `Coverage` does not measure.** 85 of 169 genres have no recorded
+  origin at all; 108 have exactly one connection; the busiest has six. Computed into
+  `corpus-facts.json` with `tests/test_corpus_facts.py` asserting it against the pinned artifact —
+  **his call**, over putting it in `graph/coverage.py`, which would have been a backend edit to a
+  serialized contract and is what DoD 9 forbids. `KNOWN-GAPS` records that phase 6 should move it.
+- **A standing defect in the inspector, fixed by the same field.** The reveal button was driven by
+  whether the visitor had clicked, not by whether anything was hidden, so a *walked* node — whose
+  neighbours the automatic pass has already drawn — offered a button that revealed nothing. It now
+  reads `hidden`, and says "All 2 of its recorded connections are on the map" when there is nothing
+  left. The `opened` prop is gone.
+- **`corpus-facts.json` now carries `analyse()`'s output whole**, asserted as one object rather than
+  key by key, so a figure added to the panel and not to the file fails the build.
+
+#### On the tests, and one comment that claimed too much
+
+Eighteen breaks were run across the Python figures, the `hidden` count, the inspector and the
+encoding; every one was caught, and **each break was confirmed to have actually applied to the file
+before the failure was believed** — one pattern silently did not match on the first attempt, which is
+the step 8 trap arriving again.
+
+One break *passed*, and it mattered: counting `hidden` by subtracting from `degree` instead of
+filtering against `drawn` broke nothing. The comment claiming the reciprocal-pair test discriminated
+between the two was **wrong and has been corrected** — `edges` and `drawn` are written in lockstep,
+so the two are equivalent today. The test is a behaviour guard on a shape the corpus contains, not a
+proof that one implementation is right, and it now says exactly that.
+
+Also: the canvas stubs in `explore.test.tsx` and `motion.test.tsx` needed `setLineDash` added. A
+partial mock of a real API is a place where "the test passed" can mean "the draw threw".
+
+`make check` **1189 passed, 14 deselected** (was 1184), mypy clean over 89 files, root **15/18**
+unchanged, eval gates 3 passed / 0 failed / 2 not applicable. Frontend **137** (was 116).

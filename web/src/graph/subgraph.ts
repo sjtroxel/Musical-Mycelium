@@ -32,6 +32,22 @@ export interface RenderNode {
   kind: string;
   year: number | null;
   role: NodeRole;
+  /**
+   * How many of this node's corpus connections are **not** drawn on this map.
+   *
+   * Step 9, DoD 7: without this the map cannot tell a thin region from an unexplored one. A node
+   * drawn with one line might be a genre the corpus records one influence for, or a genre with five
+   * more behind it that the context cap or the traversal never reached -- and those look identical.
+   * Zero here means the picture is complete: everything the corpus holds about this node is on
+   * screen, and its thinness is the corpus's, not the rendering's.
+   *
+   * Counted by walking this node's incident edges and asking which are absent from `drawn`, rather
+   * than by subtracting the drawn count from `degree`. The two agree today -- `drawn` and `edges`
+   * are written in lockstep, and a break-it pass confirmed the subtraction passes every test here --
+   * so this is defensive rather than corrective: it reads one structure instead of assuming two
+   * separately maintained ones stay in step, and it stays right if a later change lets them drift.
+   */
+  hidden: number;
 }
 
 export interface RenderEdge {
@@ -235,6 +251,9 @@ export function buildRenderGraph(
   const nodes: RenderNode[] = [...roles].flatMap(([id, role]) => {
     const node = graph.nodes.get(id);
     if (node === undefined) return [];
+    const hidden = (graph.incident.get(id) ?? []).filter(
+      (edge) => !drawn.has(pairKey(edge.object_id, edge.subject_id)),
+    ).length;
     return [
       {
         id,
@@ -242,6 +261,7 @@ export function buildRenderGraph(
         kind: node.kind,
         year: node.inception_year,
         role,
+        hidden,
       },
     ];
   });

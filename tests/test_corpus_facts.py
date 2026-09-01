@@ -77,3 +77,121 @@ def test_most_of_the_corpus_records_no_influences(
     flips this, the copy has to be rewritten -- so it fails here rather than going quietly false.
     """
     assert facts["nodes_without_recorded_influences"] > len(node_ids) / 2
+
+
+@pytest.fixture(scope="module")
+def genre_degrees(store: GraphStore) -> dict[str, tuple[int, int]]:
+    """Per genre: (total connections, connections recording where it came from).
+
+    Read straight from the artifact rather than through ``GraphStore`` so the fixture cannot inherit
+    a direction bug from the thing it is checking.
+    """
+    graph = json.loads(
+        (ARTIFACTS / f"v{store.artifact_version}" / "graph.json").read_text(encoding="utf-8")
+    )
+    degree: dict[str, int] = {}
+    origins: dict[str, int] = {}
+    for node in graph["nodes"]:
+        degree[node["id"]] = 0
+        origins[node["id"]] = 0
+    for edge in graph["edges"]:
+        degree[edge["subject_id"]] += 1
+        degree[edge["object_id"]] += 1
+        # `subject influenced_by object`: influence runs object -> subject, so an edge where a node
+        # is the SUBJECT is a record of where that node came from. Reversing this is the project's
+        # named failure mode and it would invert every sentence the panel prints.
+        origins[edge["subject_id"]] += 1
+    return {
+        node["id"]: (degree[node["id"]], origins[node["id"]])
+        for node in graph["nodes"]
+        if node["kind"] == "genre"
+    }
+
+
+def test_the_coverage_block_matches_the_pinned_artifact(
+    facts: dict[str, Any], store: GraphStore
+) -> None:
+    """Asserted whole, not key by key.
+
+    The coverage panel renders every one of these figures. Checking them individually invites the
+    next figure to be added to the panel and not to this file, which is how a rendered number goes
+    quietly wrong.
+    """
+    from musical_mycelium.graph.coverage import analyse
+    from musical_mycelium.graph.schema import Artifact
+
+    artifact = Artifact.load(ARTIFACTS / f"v{store.artifact_version}")
+    assert facts["coverage"] == analyse(artifact).as_dict()
+
+
+def test_the_density_figures_are_right(
+    facts: dict[str, Any], genre_degrees: dict[str, tuple[int, int]]
+) -> None:
+    density = facts["density"]
+    assert density["genres_without_recorded_origins"] == sum(
+        1 for _, origins in genre_degrees.values() if origins == 0
+    )
+    assert density["genres_with_one_connection"] == sum(
+        1 for degree, _ in genre_degrees.values() if degree == 1
+    )
+    assert density["busiest_genre_connections"] == max(
+        degree for degree, _ in genre_degrees.values()
+    )
+
+    observed: dict[str, int] = {}
+    for degree, _ in genre_degrees.values():
+        observed[str(degree)] = observed.get(str(degree), 0) + 1
+    assert density["connections"] == observed
+
+    # The histogram is the density row's only visual, so it has to account for every genre. A bucket
+    # quietly dropped would draw a corpus that is denser than the real one.
+    assert sum(density["connections"].values()) == len(genre_degrees)
+
+
+def test_the_corpus_is_thin_in_the_way_the_panel_says_it_is(
+    facts: dict[str, Any], genre_degrees: dict[str, tuple[int, int]]
+) -> None:
+    """The *claim*, not the digits -- the same shape as the refusal figure's second test.
+
+    The panel's density row says three things: that most genres have no recorded origin at all, that
+    the commonest genre in this corpus has exactly one connection, and that even the busiest one is
+    thin in absolute terms. If a future corpus makes any of those false the copy is wrong and has to
+    be rewritten, so it fails here rather than going quietly false on screen.
+    """
+    density = facts["density"]
+    total = len(genre_degrees)
+
+    assert density["genres_without_recorded_origins"] > total / 2
+    assert density["genres_with_one_connection"] > total / 2
+    assert density["busiest_genre_connections"] < 10
+
+
+def test_the_skew_cannot_be_rendered_without_its_counterweight(facts: dict[str, Any]) -> None:
+    """Concentration is not absence, asserted rather than remembered.
+
+    ``CLAUDE.md`` requires the corpus skew to be visible, and a 2026-08-06 correction established
+    that overstating it fails the same honesty bar as hiding it. The panel prints the US and UK
+    counts, so the figures that keep them from being read as the whole story have to be present and
+    non-trivial: genres naming neither, and the number of distinct places.
+    """
+    coverage = facts["coverage"]
+
+    assert coverage["genres_without_us_or_uk"] > 0
+    assert coverage["distinct_countries"] > 10
+    # The counterweight has to be large enough to actually counterweigh: if a future corpus made
+    # this a handful of genres, "43 name neither" would become a fig leaf and the sentence built on
+    # it would need rewriting.
+    assert coverage["genres_without_us_or_uk"] > coverage["genres"] / 5
+
+
+def test_the_unknown_era_bucket_is_present_and_counted(facts: dict[str, Any]) -> None:
+    """The absences ARE the measurement.
+
+    ``eras`` carries an explicit ``unknown`` bucket rather than summing to a tidier number, and the
+    panel draws it as a bar like any other. A histogram that silently dropped the undated genres
+    would be the footnote this step exists to remove, drawn as a chart.
+    """
+    coverage = facts["coverage"]
+
+    assert coverage["eras"]["unknown"] == coverage["without_inception"]
+    assert sum(coverage["eras"].values()) == coverage["genres"]

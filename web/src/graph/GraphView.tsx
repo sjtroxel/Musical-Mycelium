@@ -480,7 +480,21 @@ export function GraphView({
         ctx.strokeStyle =
           node.role === "walked" ? (colors.accent ?? "#3d5a45") : (colors.inkFaint ?? "#7c7c88");
         ctx.lineWidth = 1.5;
+        // **Step 9, DoD 7: a closed outline means a closed record.** A node whose corpus connections
+        // are all on screen is drawn solid; one with more behind it is drawn broken. Without this a
+        // node with one line is ambiguous between "the corpus records one influence here" and "there
+        // are five more you have not revealed", so a THIN region and an UNEXPLORED one look
+        // identical — and making thinness visible is the whole of DoD 7.
+        //
+        // The stroke rather than a ring, decided 2026-09-01 after comparing three candidates in the
+        // running app. A faint outer ring was the most legible in isolation and lost anyway: stacked
+        // under the `--ink` selection ring below it, a selected incomplete node became three
+        // concentric circles and selection stopped being readable as its own state. Rings mean
+        // selection here; the node's own outline means completeness. (The third candidate, short
+        // stubs radiating outward, rendered as antialiasing dirt at 3.5px and was never close.)
+        if (node.hidden > 0) ctx.setLineDash([2, 2]);
         ctx.stroke();
+        ctx.setLineDash([]);
         ctx.globalAlpha = 1;
 
         // The selection ring is drawn in `--ink`, not `--accent`. Step 6 decided the accent means
@@ -744,6 +758,11 @@ export function GraphView({
 
   const walked = graph.nodes.filter((node) => node.role === "walked").length;
 
+  // How many nodes on screen have corpus behind them. Drives the caption's two wordings; the count
+  // itself is deliberately not printed, because the per-node number belongs in the inspector where
+  // it is attached to the node it describes.
+  const incomplete = graph.nodes.filter((node) => node.hidden > 0).length;
+
   return (
     <figure className="map">
       <div className="map__frame">
@@ -817,6 +836,23 @@ export function GraphView({
           </>
         )}
         {graph.truncated && " The neighbourhood is larger than what is drawn here."}
+        {/* Step 9, DoD 7. The encoding needs one sentence or it is decoration, and the sentence has
+            to be conditional: on a map where nothing is marked, explaining a mark nobody can see
+            would teach a visitor to look for something that is not there. When nothing is marked
+            that IS the finding, and it gets said outright — this is a corpus where two of the five
+            canonical chips draw a complete picture. */}{" "}
+        {incomplete > 0 ? (
+          <>
+            Nodes drawn with a <strong>broken outline</strong> have further connections in the
+            corpus that are not on this map; a solid outline means everything the corpus holds about
+            that node is already here.
+          </>
+        ) : (
+          <>
+            Every node here is drawn with a solid outline: this is <em>everything</em> the corpus
+            holds around this answer, not a portion of it.
+          </>
+        )}
       </figcaption>
     </figure>
   );

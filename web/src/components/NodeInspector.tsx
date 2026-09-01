@@ -101,7 +101,6 @@ export function NodeInspector({
   node,
   graph,
   walkedNodes,
-  opened,
   busy,
   onSelect,
   onOpen,
@@ -112,7 +111,6 @@ export function NodeInspector({
   graph: StaticGraph;
   /** The nodes this answer reached, so the map can be entered without pointing at it. */
   walkedNodes: RenderNode[];
-  opened: boolean;
   busy: boolean;
   onSelect: (id: string | null) => void;
   onOpen: (id: string) => void;
@@ -180,10 +178,25 @@ export function NodeInspector({
         </p>
       ) : (
         <>
-          {!opened && (
+          {/* Step 9, DoD 7, and the accessible half of the map's completeness marking (D4). The
+              canvas can say "there is more here" with a stroke; only this can say how much, and a
+              keyboard user gets the same information rather than a hint they cannot see.
+
+              Driven by `hidden` rather than by whether the visitor clicked, which also fixes a
+              small standing defect: `openedIds` holds only nodes someone followed, so a WALKED node
+              — whose neighbours the automatic pass has already drawn — used to offer a button that
+              revealed nothing. */}
+          {node.hidden > 0 ? (
             <button type="button" className="inspector__action" onClick={() => onOpen(node.id)}>
-              Show its {degree} {degree === 1 ? "connection" : "connections"} on the map
+              Show its {node.hidden} further {node.hidden === 1 ? "connection" : "connections"} on
+              the map
             </button>
+          ) : (
+            <p className="inspector__facts">
+              All {degree} of its recorded {degree === 1 ? "connection is" : "connections are"} on
+              the map. That is everything the corpus holds about this node, not everything there is
+              to know about the music.
+            </p>
           )}
 
           <NeighbourList

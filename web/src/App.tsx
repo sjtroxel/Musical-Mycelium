@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Chip } from "./components/ChipRow";
 import { ChipRow } from "./components/ChipRow";
+import { CoveragePanel } from "./components/CoveragePanel";
 import { StepPanel } from "./components/StepPanel";
 import { useStaticGraph } from "./graph/useStaticGraph";
 import { useLineageRun } from "./useLineageRun";
@@ -85,6 +86,24 @@ export function App() {
         </main>
       )}
 
+      {/* Step 9, DoD 7. **Below the results, always, and that placement is a correction.**
+          It was above them at first, on the reasoning that coverage is the frame an answer is read
+          through. sjtroxel ran it and the reasoning collapsed: the panel is a screen tall, so
+          clicking a chip looked like nothing had happened, and by the time you scrolled past it the
+          streaming answer had already finished. A frame nobody sees the answer inside is not a
+          frame.
+
+          There is no positional switch here and deliberately so. With no run yet `results` is empty,
+          so this still lands directly under the chips and is the first screen's content; once an
+          answer exists it takes that slot and this follows it down. One rule, and nothing jumps.
+
+          Still not a footnote, which is what DoD 7 actually forbids: it is a drawn section with a
+          heading, open on arrival, above the footer rather than inside it. It reads
+          `corpus-facts.json`, so it renders at first paint and never waits on the `done` frame's
+          `corpus.coverage` -- DoD 5 keeps the 640 KB artifact fetch off first paint and this must
+          not smuggle one in. */}
+      <CoveragePanel answeredVersion={corpus?.artifact_version ?? null} />
+
       <footer className="footer">
         {corpus === null ? (
           <p>
@@ -97,17 +116,6 @@ export function App() {
               Artifact v{corpus.artifact_version}: {corpus.nodes} nodes, {corpus.edges} edges,
               across {corpus.structure.component_count} disconnected components. Relating two things
               is only possible within a component.
-            </p>
-            {/* CLAUDE.md: the corpus skew is by construction and must be VISIBLE in output, not
-                disclaimed in a footnote. Stated as counts, never a percentage — the retracted
-                2026-08-06 figure came from double-counting genres credited to both the US and the UK.
-                The full coverage treatment is step 9; this is the honest minimum for step 2. */}
-            <p>
-              It skews Western, anglophone and recent by construction:{" "}
-              {corpus.coverage.without_inception} of {corpus.coverage.genres} genres carry no
-              inception date, and {corpus.coverage.genres_without_us_or_uk} name a place that is
-              neither the US nor the UK, across {corpus.coverage.distinct_countries} countries in
-              all.
             </p>
           </>
         )}

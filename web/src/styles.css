@@ -600,6 +600,184 @@ code {
 }
 
 /*
+ * The coverage panel -- step 9, DoD 7.
+ *
+ * Bars are `--ink-soft` on a `--rule` track and NEVER `--accent`. Step 6 fixed the accent's meaning as
+ * gate-approved, and a corpus property has not been approved by anything. The standing trap this sits
+ * next to: the four `verification` tiers must never go on a colour ramp. Nothing here is a ramp -- one
+ * fill, one muted variant, and the muted variant marks a bucket that is an absence rather than a
+ * period, which is a kind difference and not a magnitude one.
+ */
+.cov {
+  margin-bottom: 2.5rem;
+  padding: 0.9rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.cov__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.cov__summaryHint {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+.cov__body {
+  margin-top: 1rem;
+}
+
+.cov__lede {
+  margin: 0 0 1.25rem;
+  max-inline-size: var(--measure);
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+/* Two columns, with `Where` spanning both rows so the third axis fills the space beside it instead
+   of wrapping under and leaving a dead quarter-panel. Measured, not guessed: at the 696px content
+   width an `auto-fit` of three 17rem columns resolves to TWO, and the panel came out 988px tall with
+   a large empty gap. The three axes are independent readings of the same corpus, so none of them is
+   a subheading of another -- this is packing, not hierarchy. */
+.cov__axes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem 2rem;
+  align-items: start;
+}
+
+.cov__axis--tall {
+  grid-row: span 2;
+}
+
+@media (max-width: 44rem) {
+  .cov__axes {
+    grid-template-columns: 1fr;
+  }
+
+  .cov__axis--tall {
+    grid-row: auto;
+  }
+}
+
+.cov__axisTitle {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.cov__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cov__row {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr 2rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.cov__rowLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cov__track {
+  block-size: 0.6rem;
+  background: var(--rule);
+  border-radius: 2px;
+}
+
+.cov__bar {
+  display: block;
+  block-size: 100%;
+  background: var(--ink-soft);
+  border-radius: 2px;
+}
+
+.cov__rowCount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* The `no date recorded` bucket. Outlined rather than filled because it is not a point on the time
+   axis -- it is the count of genres that have no point on it. Same length, different kind. */
+.cov__row--muted .cov__bar {
+  background: repeating-linear-gradient(90deg, var(--ink-faint) 0 2px, transparent 2px 5px);
+}
+
+.cov__row--muted .cov__rowLabel,
+.cov__row--muted .cov__rowCount {
+  color: var(--ink-faint);
+}
+
+/* Separated from the bars above it, because without the rule the row of marks butts against the
+   last bar and reads as another one. It is a different kind of statement: the bars are the places
+   big enough to name, this is the length of the tail behind them. */
+.cov__tail {
+  margin-top: 0.9rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--rule);
+}
+
+.cov__ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 0.4rem;
+}
+
+.cov__tick {
+  inline-size: 3px;
+  block-size: 0.6rem;
+  background: var(--ink-faint);
+  border-radius: 1px;
+}
+
+.cov__tailLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+
+/* No warning colour, same rule as `.map__mismatch` above: a version mismatch is something the
+   interface declines to assert, not a fault the visitor caused. And `--accent` would be exactly the
+   wrong choice twice over -- it means gate-approved. */
+.cov__mismatch {
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  border-inline-start: 2px solid var(--rule);
+}
+
+.cov__note {
+  margin: 0.8rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+/*
  * DoD 6 lands properly at step 7 with the motion previews. The query is here now because the two
  * transitions above are the only motion in the file, and honouring it costs three lines rather than a
  * retrofit.

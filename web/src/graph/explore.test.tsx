@@ -45,6 +45,9 @@ function installCanvas(): { arcs: Arc[]; clear: () => void } {
     moveTo: () => {},
     lineTo: () => {},
     stroke: () => {},
+    // Step 9 marks an incomplete node with a broken stroke, so the stub needs the real API's
+    // dash calls or the whole draw throws and every assertion below fails for the wrong reason.
+    setLineDash: () => {},
     fill: () => {},
     fillText: () => {},
     strokeText: () => {},
@@ -462,5 +465,76 @@ describe("asking the agent about a node", () => {
     // answer the visitor was reading in order to answer a question about it.
     await screen.findByRole("heading", { name: `Where did ${label} come from?` });
     expect(screen.getByRole("heading", { name: /Where did acid jazz come from\?/ })).toBeTruthy();
+  });
+});
+
+describe("saying what the map is not showing", () => {
+  /**
+   * Step 9, DoD 7, on the accessible half of the map (D4).
+   *
+   * The canvas marks a node with connections off screen; only the inspector can say how many, and a
+   * keyboard user has nothing else. The fixture is chosen so both states occur in one picture:
+   * `blues` is drawn as context with its edge to `ragtime` hidden, while every walked node has
+   * already had its whole neighbourhood expanded by the automatic pass.
+   */
+  const contextNode = (arcs: Arc[]): Arc => {
+    const node = arcs.find((arc) => arc.r === 3.5);
+    if (node === undefined) throw new Error("no context node was drawn");
+    return node;
+  };
+
+  const select = (canvas: HTMLCanvasElement, at: Arc) => {
+    fireEvent.pointerDown(canvas, { pointerId: 1, clientX: at.x, clientY: at.y, button: 0 });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: at.x, clientY: at.y, button: 0 });
+  };
+
+  it("offers to reveal only the connections that are actually still hidden", async () => {
+    stubReducedMotion();
+    const recorder = installCanvas();
+    const canvas = await drawnMap(recorder);
+
+    select(canvas, contextNode(recorder.arcs));
+
+    // blues holds two edges — jazz, which is drawn, and ragtime, which is not. So the offer is for
+    // ONE further connection, not for both of them. Before step 9 this button counted the node's
+    // whole degree and offered to reveal edges that were already on screen.
+    const reveal = await screen.findByRole("button", {
+      name: /Show its 1 further connection on the map/,
+    });
+    expect(reveal).toBeDefined();
+  });
+
+  it("says the picture is complete once there is nothing left behind the node", async () => {
+    stubReducedMotion();
+    const recorder = installCanvas();
+    const canvas = await drawnMap(recorder);
+
+    select(canvas, contextNode(recorder.arcs));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Show its 1 further connection on the map/ }),
+    );
+
+    // Now everything the corpus holds about blues is drawn, and the panel has to say so rather than
+    // going silent — silence is what makes a thin node and an unexplored one look the same. The
+    // second sentence is the load-bearing one: complete means complete IN THE CORPUS.
+    const readout = await screen.findByText(/All 2 of its recorded connections are on the map/);
+    expect(readout.textContent).toMatch(/not everything there is to know about the music/);
+    expect(screen.queryByRole("button", { name: /Show its/ })).toBeNull();
+  });
+
+  it("never offers to reveal anything for a node the answer walked", async () => {
+    // A walked node's neighbourhood is drawn by the automatic pass, so its count is zero and the
+    // offer must not appear. This is the standing defect the switch to `hidden` fixed: driven by
+    // whether the visitor had clicked, a walked node showed a button that revealed nothing.
+    stubReducedMotion();
+    const recorder = installCanvas();
+    const canvas = await drawnMap(recorder);
+    const walked = recorder.arcs.find((arc) => arc.r === 6);
+    expect(walked).toBeDefined();
+
+    select(canvas, walked as Arc);
+
+    await screen.findByText(/of its recorded connections? (is|are) on the map/);
+    expect(screen.queryByRole("button", { name: /Show its/ })).toBeNull();
   });
 });

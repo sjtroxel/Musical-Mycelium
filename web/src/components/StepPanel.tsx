@@ -139,7 +139,6 @@ function NeighbourhoodMap({
         node={selected}
         graph={graph}
         walkedNodes={rendered.nodes.filter((node) => node.role === "walked")}
-        opened={selectedId !== null && openedIds.includes(selectedId)}
         busy={busy}
         onSelect={setSelectedId}
         onOpen={open}
