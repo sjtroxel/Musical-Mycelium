@@ -42,7 +42,10 @@ export interface Point {
  * introduce one and a layout that hangs the browser is a worse failure than one that draws a cycle
  * slightly wrong.
  */
-export function layerOf(nodes: readonly RenderNode[], edges: readonly RenderEdge[]): Map<string, number> {
+export function layerOf(
+  nodes: readonly RenderNode[],
+  edges: readonly RenderEdge[],
+): Map<string, number> {
   const known = new Set(nodes.map((node) => node.id));
   const indegree = new Map(nodes.map((node) => [node.id, 0]));
   const outgoing = new Map<string, string[]>(nodes.map((node) => [node.id, []]));

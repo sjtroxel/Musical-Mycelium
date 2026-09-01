@@ -80,6 +80,81 @@ corpus in part 2.
 
 ---
 
+## PHASE 5 STEP 8 — the map is explorable and DoD 4 is closed, 2026-09-01
+
+**Pan, zoom, select, follow an edge, request an annotation.** Built as **8a** (the viewport), **8b**
+(following and annotating) and **8c** (the formatter and the submit button), with the deploy gap closed
+first — four undeployed steps is the wrong foundation to add a fifth to. Full as-built in the phase 5
+IMPLEMENTATION doc §12. What belongs here is what is still open and what generalises.
+
+**Verified state, re-measured 2026-09-01:** `make check` green — **1184 passed, 14 `costs_money` tests
+deselected**, mypy clean over 89 source files, root 15/18, eval gates 3 passed / 0 failed / 2 not
+applicable. Frontend **116** over 10 files, up from 76. **No Python was edited and no backend was
+touched** — DoD 9 intact for the whole of step 8.
+
+**Invariant 1 is now a property rather than a promise.** IMPLEMENTATION §5 required this step to prove
+the SPA cannot render an unqueried edge as a claim. Following an edge grows the `context` set and can
+never grow `walked`, asserted over **all 128 subsets** of a seven-node corpus: the claimed edges come
+back byte-identical and no opened node is ever promoted. Threading `openedIds` into the walked set —
+the exact future edit it guards — fails the test.
+
+### Three defects in the TESTS, not the code, and the tell they shared
+
+The break-it counter-practice was run against every lock. **Two locks did not fail when broken**, and
+both were real defects in the assertion:
+
+1. **`clampView`'s rule had a docstring describing behaviour it did not have, and its test passed with
+   the rule deleted.** It asserted a *minimum overlap* — an inequality that held either way. Replaced
+   with a rule that is provably conflict-free and an assertion that is an equality on where the map
+   comes to rest.
+2. **The Recenter test asserted that the button disappeared, not that the camera reset.** It passed with
+   the reset removed: the control vanished while the map stayed where it had been dragged to.
+3. **Two break patterns silently failed to match** because the file had been reformatted, so reading
+   them as "the test caught it" was unearned. **A break that did not apply is not evidence.**
+
+**The tell in 1 and 2 is the same and it generalises: the assertion was weaker than the behaviour it was
+named after** — a bound instead of a resting place, a label instead of a pixel.
+
+### A design flaw found by a failing test, fixed rather than asserted around
+
+`follow` originally opened the node you came *from*, so following an edge out of a walked node revealed
+nothing — the automatic pass has already expanded every walked node's neighbourhood. The map did exactly
+what was written and the writing was wrong. It opens both ends now. **The fixture had the matching
+problem**: at six nodes nothing was more than one hop from a walked node, so no implementation could
+have discovered anything. *A fixture too small to exercise the behaviour looks exactly like a broken
+implementation* — step 7's closing sentence, reached again independently.
+
+### The formatter, and why it had bitten twice before anyone noticed
+
+**There was no prettier config and no prettier dependency.** Every `npx prettier` fetched it fresh and
+ran at its default 80 columns against a 100-column codebase; one session churned 14 files with no
+functional change, and 8a had already done the same to `GraphView.tsx` unnoticed. Fixed at 8c:
+`prettier@^3.9.6` is a devDependency, the config is in **`package.json`** (same reason ruff and mypy
+live in `pyproject.toml`), and **`npm run check` runs `format:check` first**, so `make web-check` and
+the deploy both enforce it. Verified by breaking it: an unformatted file exits 1.
+
+**`.prettierignore` covers `dist`, `public/graph`, `previews`, `*.md`, and `public/graph` is
+load-bearing** — it holds the staged copy of the pinned artifact, which must stay byte-identical to what
+`stage-graph.mjs` writes (655,641 bytes, 973 nodes, 950 edges). Reformatting a generated 640 KB file
+would be churn in the one place where churn is indistinguishable from corpus drift.
+
+### Open after step 8
+
+- **On touch, panning is horizontal only.** `touch-action: pan-y` leaves vertical page scrolling with
+  the browser. Trapping a phone's scroll on a map that sits above the claims was the worse trade.
+- **Selecting a node on the canvas is pointer-only.** The DOM inspector is the keyboard and screen
+  reader path (D4) and it includes an entry point listing the walked nodes, so nothing is unreachable —
+  but the canvas itself is not focusable.
+- **Recenter is a hard cut, not a glide.** Deliberate: it is a movement someone asked for.
+
+### A deploy trap that nearly landed, 2026-09-01
+
+**A commit that is not pushed cannot deploy.** The Deploy workflow builds from `--ref main` **on
+GitHub**, so dispatching it while a commit sits unpushed rebuilds the *previous* commit and reports
+success — a green run that verifies nothing. Caught at 8c by checking `git rev-list --left-right
+--count origin/main...main` before dispatching. **Check that first, and verify any deploy by fetching
+the served bundle and grepping it rather than by trusting the run.**
+
 ## PHASE 5 STEP 7 — motion is decided and DoD 6 is closed, 2026-08-31
 
 **One motion mode at 850ms per edge, and `prefers-reduced-motion` is honoured in the canvas.** DoD 6

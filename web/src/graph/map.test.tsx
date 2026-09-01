@@ -150,7 +150,9 @@ describe("the corpus download", () => {
     screen.getByRole("button", { name: /Where did acid jazz come from/i }).click();
 
     await waitFor(() => {
-      const asked = fetcher.mock.calls.map(([url]) => String(url)).find((u) => u.includes("/graph/"));
+      const asked = fetcher.mock.calls
+        .map(([url]) => String(url))
+        .find((u) => u.includes("/graph/"));
       expect(asked).toContain("/graph/v0.5.0/graph.json");
     });
   });

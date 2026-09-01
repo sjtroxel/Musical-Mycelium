@@ -1,0 +1,15 @@
+# Build output.
+dist
+
+# The staged copy of the pinned artifact. It must stay byte-identical to what
+# `scripts/stage-graph.mjs` writes out of `artifacts/`, and reformatting a 640 KB generated file
+# would be churn in the one place where churn is indistinguishable from corpus drift.
+public/graph
+
+# The throwaway previews from steps 3, 5 and 6. The IMPLEMENTATION doc records them as disposable
+# and they are kept as the record of how a decision was made, not as maintained code.
+previews
+
+# Prose is hand-wrapped in this repo, deliberately and consistently. Prettier reflows markdown and
+# would rewrite line breaks that were chosen.
+*.md

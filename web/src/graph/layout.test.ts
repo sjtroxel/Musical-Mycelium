@@ -43,10 +43,7 @@ describe("layerOf", () => {
    * is written `edge("blues", "heavy metal")`, and BLUES is the one that must land on the left.
    */
   it("puts the influence earlier than the thing it influenced", () => {
-    const layer = layerOf(
-      [node("blues"), node("heavy metal")],
-      [edge("blues", "heavy metal")],
-    );
+    const layer = layerOf([node("blues"), node("heavy metal")], [edge("blues", "heavy metal")]);
     expect(layer.get("blues")).toBeLessThan(layer.get("heavy metal") as number);
   });
 
@@ -71,10 +68,7 @@ describe("layerOf", () => {
 
   it("terminates on a cycle instead of hanging the browser", () => {
     // v0.5.0 has no cycles; a later corpus cut could. A wrong column beats a locked-up tab.
-    const layer = layerOf(
-      [node("a"), node("b")],
-      [edge("a", "b"), edge("b", "a")],
-    );
+    const layer = layerOf([node("a"), node("b")], [edge("a", "b"), edge("b", "a")]);
     expect(layer.size).toBe(2);
   });
 });

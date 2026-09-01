@@ -1338,9 +1338,63 @@ no Python edited, no backend touched, root entry count unchanged at 15/18. **DoD
 
 #### Open
 
-- **`GraphView.tsx` and `styles.css` are formatted to 80 columns** while the rest of `web/` is not.
-  A formatting-only commit, not this one.
+- ~~**`GraphView.tsx` and `styles.css` are formatted to 80 columns.**~~ **Closed at 8c** — and the
+  claim was half wrong: only `GraphView.tsx` was affected. Prettier's CSS output is identical at 80
+  and 100 columns, so `styles.css` was never damaged. Measured rather than assumed.
 - **On touch, panning is horizontal only.** `touch-action: pan-y` keeps vertical page scrolling with
   the browser, which was worth more than two-axis touch panning.
-- **The "Trace it" button is still solid accent**, the loudest element above the fold. Named at step
-  6, still not done.
+- ~~**The "Trace it" button is still solid accent.**~~ **Closed at 8c.**
+
+### Step 8c — the formatter, and the button step 6 flagged — 2026-09-01
+
+Two items carried forward, done together because both were open loops rather than new work.
+
+#### The formatter, and the actual root cause
+
+The 8a and 8b sessions each ran `prettier --write` and each produced churn in files with no
+functional change — 14 of them the second time. The reason was not carelessness with a flag. **There
+was no prettier config and no prettier dependency**: every invocation was `npx` fetching it fresh and
+running at its default 80 columns, against a codebase written at 100.
+
+Measured before deciding anything: **21 of 29 files in `web/src` already matched prettier at width
+100**, so that was the de-facto standard and the fix was to write it down rather than to pick one.
+
+- `prettier@^3.9.6` is now a **devDependency**, not an ad-hoc download.
+- The config lives in **`package.json`**, not a `.prettierrc`, for the same reason ruff and mypy live
+  in `pyproject.toml`: one manifest per language rather than a config file per tool.
+- `npm run format` and `npm run format:check` exist, and **`check` runs `format:check` first** — a
+  formatting failure is the cheapest one to produce and the cheapest to fix, and finding it after a
+  full typecheck-test-build cycle wastes the difference. `make web-check` and the deploy workflow's
+  "Install and check the SPA" step both inherit it, so this cannot drift again silently.
+- **`.prettierignore` covers `dist`, `public/graph`, `previews`, and `*.md`.** The middle two matter.
+  `public/graph/v0.5.0/graph.json` is the staged copy of the pinned artifact and must stay
+  byte-identical to what `stage-graph.mjs` writes — reformatting a 640 KB generated file would be
+  churn in the one place where churn is indistinguishable from corpus drift. Verified after the run:
+  655,641 bytes, 973 nodes, 950 edges, matching what CloudFront serves. `previews/` is recorded as
+  disposable and is kept as the record of how a decision was made, not as maintained code. Markdown
+  is hand-wrapped throughout this repo, deliberately, and prettier reflows it.
+
+Eight files were reformatted. **The guard was verified by breaking it**: an unformatted file makes
+`npm run check` exit 1, and restoring it returns 0.
+
+#### The button
+
+`.ask__submit` was a solid `--accent` fill, which step 6 named as the loudest element above the fold
+and suggested an outline for. The reason is stronger than loudness: **step 6 gave `--accent` a
+meaning — this was approved by the gate — and a submit button has not been approved by anything.**
+The map already respects that (the step 8a selection ring is drawn in `--ink`, not the accent,
+precisely so clicking a faint node cannot look like the gate passed it), and the chrome was
+contradicting it.
+
+Now an outline: `--accent` text and border on a transparent ground, measured at **6.91:1**, well past
+the 4.5:1 AA bar for normal text, so nothing was traded for the change. It is deliberately the same
+treatment as the inspector's "Ask the agent about X" — **the two controls on the page that spend
+money and come back through the gate now read as one kind of thing.**
+
+One defect found while doing it: `.inspector__action:hover` set `color: var(--ink)`, which won over
+`--ask`'s accent, so the one accent-carrying control lost its accent at the moment it was pointed at.
+Fixed with a specific hover rule.
+
+`make check` **1184 passed, 14 deselected**, mypy clean over 89 files, root **15/18** unchanged, eval
+gates 3 passed / 0 failed / 2 not applicable. Frontend **116**, unchanged — this step added no
+behaviour and no test, which is the correct shape for it.

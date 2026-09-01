@@ -103,7 +103,10 @@ function NeighbourhoodMap({
    * with `opened` stuck at 0. The map was behaving exactly as written and the writing was wrong.
    */
   const follow = (fromId: string, toId: string) => {
-    setOpenedIds((current) => [...current, ...[fromId, toId].filter((id) => !current.includes(id))]);
+    setOpenedIds((current) => [
+      ...current,
+      ...[fromId, toId].filter((id) => !current.includes(id)),
+    ]);
     setSelectedId(toId);
   };
 

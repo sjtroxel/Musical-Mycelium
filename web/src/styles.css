@@ -136,11 +136,33 @@ code {
   padding: 0.7rem 1.15rem;
   font: inherit;
   font-size: 0.95rem;
-  color: var(--ground);
-  background: var(--accent);
-  border: 1px solid transparent;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
   cursor: pointer;
+}
+
+/* Outline, not a solid fill — the step 6 open item, closed at 8c.
+   
+   A solid magenta fill made this the loudest element above the fold: louder than the answer it
+   produces, and competing with the map, which is the one place on this page where the accent is
+   supposed to CARRY MEANING rather than draw attention. Step 6 decided the accent means
+   gate-approved, and a submit button has not been approved by anything.
+
+   Not a contrast compromise: --accent on --ground measures 6.91:1, well past the 4.5:1 AA bar for
+   normal text, so the outline is as legible as the fill was.
+
+   It is deliberately the same treatment as the inspector's "Ask the agent about X". Those are the
+   two controls on this page that spend money and come back through the gate, and they should read
+   as one kind of thing. */
+.ask__submit {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.ask__submit:hover:not([disabled]) {
+  background: var(--accent-soft);
 }
 
 .ask__submit[disabled] {
@@ -150,9 +172,6 @@ code {
 
 .cancel {
   margin-bottom: 1.5rem;
-  background: transparent;
-  color: var(--ink-soft);
-  border-color: var(--rule);
 }
 
 /* --- chips --- */
@@ -457,6 +476,14 @@ code {
 .inspector__action:hover:not(:disabled) {
   color: var(--ink);
   border-color: var(--ink-faint);
+}
+
+/* Without this the rule above wins on hover and repaints the accent as ink — the accent-carrying
+   control losing its accent at the moment it is pointed at. */
+.inspector__action--ask:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 .inspector__action:disabled {

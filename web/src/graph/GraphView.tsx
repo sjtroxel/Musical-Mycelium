@@ -101,8 +101,7 @@ const FALLBACK_WIDTH = 640;
 
 function palette(root: Element): Record<string, string> {
   const style = getComputedStyle(root);
-  const token = (name: string, fallback: string) =>
-    style.getPropertyValue(name).trim() || fallback;
+  const token = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
     ink: token("--ink", "#16161a"),
     inkSoft: token("--ink-soft", "#55555f"),
@@ -136,14 +135,8 @@ function arrowhead(
 
   ctx.beginPath();
   ctx.moveTo(tipX, tipY);
-  ctx.lineTo(
-    tipX - ux * size + -uy * size * 0.5,
-    tipY - uy * size + ux * size * 0.5,
-  );
-  ctx.lineTo(
-    tipX - ux * size - -uy * size * 0.5,
-    tipY - uy * size - ux * size * 0.5,
-  );
+  ctx.lineTo(tipX - ux * size + -uy * size * 0.5, tipY - uy * size + ux * size * 0.5);
+  ctx.lineTo(tipX - ux * size - -uy * size * 0.5, tipY - uy * size - ux * size * 0.5);
   ctx.closePath();
   ctx.fill();
 }
@@ -314,9 +307,7 @@ export function GraphView({
           // Only a claimed edge can enter. A context edge appearing is a side effect of the
           // neighbourhood growing, not a thing the gate decided, and animating it would give the
           // corpus's unwalked lines the same arrival as an approved claim.
-          entering:
-            edge.kind === "claimed" &&
-            !seenEdges.has(edgeKey(edge.from, edge.to)),
+          entering: edge.kind === "claimed" && !seenEdges.has(edgeKey(edge.from, edge.to)),
         },
       ];
     });
@@ -345,8 +336,7 @@ export function GraphView({
       neighbours.set(target.id, [...(neighbours.get(target.id) ?? []), source]);
     }
 
-    const font =
-      '12px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+    const font = '12px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
 
     /**
      * Fit the laid-out positions into the box.
@@ -368,10 +358,7 @@ export function GraphView({
       ctx.font = font;
       const widest = nodes
         .filter((node) => node.role === "walked")
-        .reduce(
-          (wide, node) => Math.max(wide, ctx.measureText(node.label).width),
-          0,
-        );
+        .reduce((wide, node) => Math.max(wide, ctx.measureText(node.label).width), 0);
 
       const padY = 26;
       const padLeft = 20;
@@ -432,10 +419,7 @@ export function GraphView({
         (y - view.cy) * view.k + view.height / 2,
       ];
       const px = (node: SimNode): [number, number] =>
-        at(
-          lerp(node.fromX, node.x, frame.positionT),
-          lerp(node.fromY, node.y, frame.positionT),
-        );
+        at(lerp(node.fromX, node.x, frame.positionT), lerp(node.fromY, node.y, frame.positionT));
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -491,14 +475,10 @@ export function GraphView({
         ctx.beginPath();
         ctx.arc(nx, ny, radius(node), 0, Math.PI * 2);
         ctx.fillStyle =
-          node.role === "walked"
-            ? (colors.accent ?? "#3d5a45")
-            : (colors.card ?? "#ffffff");
+          node.role === "walked" ? (colors.accent ?? "#3d5a45") : (colors.card ?? "#ffffff");
         ctx.fill();
         ctx.strokeStyle =
-          node.role === "walked"
-            ? (colors.accent ?? "#3d5a45")
-            : (colors.inkFaint ?? "#7c7c88");
+          node.role === "walked" ? (colors.accent ?? "#3d5a45") : (colors.inkFaint ?? "#7c7c88");
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -530,8 +510,7 @@ export function GraphView({
         // lines; real label placement is step 5's problem, not this step's.
         const around = neighbours.get(node.id) ?? [];
         const lean =
-          around.reduce((sum, other) => sum + (px(other)[0] - nx), 0) /
-          (around.length || 1);
+          around.reduce((sum, other) => sum + (px(other)[0] - nx), 0) / (around.length || 1);
         const onLeft = lean > 0;
         const lx = nx + (onLeft ? -(radius(node) + 5) : radius(node) + 5);
         ctx.textAlign = onLeft ? "right" : "left";
@@ -597,9 +576,7 @@ export function GraphView({
       before.current = shown.current;
       shown.current = {
         signature,
-        positions: new Map(
-          nodes.map((node) => [node.id, { x: node.x, y: node.y }]),
-        ),
+        positions: new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }])),
         claimed: new Set(
           graph.edges
             .filter((edge) => edge.kind === "claimed")
@@ -659,11 +636,7 @@ export function GraphView({
 
   /** Clamp a proposed camera, keep it, and repaint at the frame the animation had reached. */
   const applyCamera = useCallback((next: View) => {
-    cameraRef.current = clampView(
-      next,
-      scene.current.points,
-      scene.current.width,
-    );
+    cameraRef.current = clampView(next, scene.current.points, scene.current.width);
     drawRef.current?.(lastFrame.current);
   }, []);
 
@@ -685,13 +658,7 @@ export function GraphView({
     (factor: number) => {
       const camera = takeCamera();
       if (camera === null) return;
-      applyCamera(
-        zoomAbout(
-          camera,
-          { x: scene.current.width / 2, y: camera.height / 2 },
-          factor,
-        ),
-      );
+      applyCamera(zoomAbout(camera, { x: scene.current.width / 2, y: camera.height / 2 }, factor));
     },
     [takeCamera, applyCamera],
   );
@@ -745,11 +712,7 @@ export function GraphView({
 
     const view = cameraRef.current ?? drawnView.current;
     if (view === null) return;
-    const hit = hitTest(
-      view,
-      scene.current.candidates,
-      localPoint(event, event.currentTarget),
-    );
+    const hit = hitTest(view, scene.current.candidates, localPoint(event, event.currentTarget));
     // Clicking the selected node again clears it, and clicking empty canvas clears it too.
     onSelectNode?.(hit === selectedId ? null : hit);
   };
@@ -769,9 +732,7 @@ export function GraphView({
       event.preventDefault();
       const camera = takeCamera();
       if (camera === null) return;
-      applyCamera(
-        zoomAbout(camera, localPoint(event, canvas), wheelFactor(event.deltaY)),
-      );
+      applyCamera(zoomAbout(camera, localPoint(event, canvas), wheelFactor(event.deltaY)));
     };
 
     // Registered by hand, non-passive. React attaches wheel listeners at the root as PASSIVE, so
@@ -827,11 +788,7 @@ export function GraphView({
             &minus;
           </button>
           {manual && (
-            <button
-              type="button"
-              className="map__control map__control--wide"
-              onClick={recenter}
-            >
+            <button type="button" className="map__control map__control--wide" onClick={recenter}>
               Recenter
             </button>
           )}
@@ -842,12 +799,11 @@ export function GraphView({
         {/* The claimed/context distinction stated in words. Without this sentence the map implies the
             faint edges are part of the answer, which is the exact slide from "traceable" to "asserted"
             that `.claude/rules/grounding-and-claims.md` forbids. */}
-        <strong>{graph.claimed}</strong> cited{" "}
-        {graph.claimed === 1 ? "connection" : "connections"}, numbered in the
-        order the gate approved them. The faint lines are{" "}
+        <strong>{graph.claimed}</strong> cited {graph.claimed === 1 ? "connection" : "connections"},
+        numbered in the order the gate approved them. The faint lines are{" "}
         <strong>{graph.context}</strong> further{" "}
-        {graph.context === 1 ? "connection" : "connections"} the corpus holds
-        around them, shown for bearings and <em>not</em> part of this answer.
+        {graph.context === 1 ? "connection" : "connections"} the corpus holds around them, shown for
+        bearings and <em>not</em> part of this answer.
         {/* D3. Without this clause the sentence above quietly starts covering ground it does not
             describe: "around them" means around the ANSWER, and a visitor three hops into a wander
             is looking at connections around something else. Still not part of the answer —
@@ -860,8 +816,7 @@ export function GraphView({
             Those are corpus too, and no more part of this answer than the rest.
           </>
         )}
-        {graph.truncated &&
-          " The neighbourhood is larger than what is drawn here."}
+        {graph.truncated && " The neighbourhood is larger than what is drawn here."}
       </figcaption>
     </figure>
   );

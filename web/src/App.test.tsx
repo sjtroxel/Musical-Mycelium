@@ -54,7 +54,9 @@ describe("the first screen", () => {
     render(<App />);
     expect(screen.getByLabelText(/ask about a genre/i)).toBeDefined();
     // DoD 1. Five chips, matching chips.json — the count itself is asserted in tests/test_chips.py.
-    expect(screen.getAllByRole("button", { name: /come from|connected|Kate Bush/i })).toHaveLength(5);
+    expect(screen.getAllByRole("button", { name: /come from|connected|Kate Bush/i })).toHaveLength(
+      5,
+    );
   });
 
   it("makes no network request on load", () => {

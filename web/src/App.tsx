@@ -35,8 +35,8 @@ export function App() {
       <header className="masthead">
         <h1 className="masthead__title">Musical Mycelium</h1>
         <p className="masthead__tagline">
-          Music history is a network, not a timeline. Ask how two genres connect and every step of the
-          answer traces to a checkable source.
+          Music history is a network, not a timeline. Ask how two genres connect and every step of
+          the answer traces to a checkable source.
         </p>
       </header>
 
@@ -88,15 +88,15 @@ export function App() {
       <footer className="footer">
         {corpus === null ? (
           <p>
-            The corpus is a pinned, versioned artifact. Every edge carries its source and the strength
-            of the check that was run on it.
+            The corpus is a pinned, versioned artifact. Every edge carries its source and the
+            strength of the check that was run on it.
           </p>
         ) : (
           <>
             <p>
-              Artifact v{corpus.artifact_version}: {corpus.nodes} nodes, {corpus.edges} edges, across{" "}
-              {corpus.structure.component_count} disconnected components. Relating two things is only
-              possible within a component.
+              Artifact v{corpus.artifact_version}: {corpus.nodes} nodes, {corpus.edges} edges,
+              across {corpus.structure.component_count} disconnected components. Relating two things
+              is only possible within a component.
             </p>
             {/* CLAUDE.md: the corpus skew is by construction and must be VISIBLE in output, not
                 disclaimed in a footnote. Stated as counts, never a percentage — the retracted
@@ -104,16 +104,17 @@ export function App() {
                 The full coverage treatment is step 9; this is the honest minimum for step 2. */}
             <p>
               It skews Western, anglophone and recent by construction:{" "}
-              {corpus.coverage.without_inception} of {corpus.coverage.genres} genres carry no inception
-              date, and {corpus.coverage.genres_without_us_or_uk} name a place that is neither the US
-              nor the UK, across {corpus.coverage.distinct_countries} countries in all.
+              {corpus.coverage.without_inception} of {corpus.coverage.genres} genres carry no
+              inception date, and {corpus.coverage.genres_without_us_or_uk} name a place that is
+              neither the US nor the UK, across {corpus.coverage.distinct_countries} countries in
+              all.
             </p>
           </>
         )}
         <p className="footer__grounded">
           <strong>Grounded means traceable, not true.</strong> Wikidata can be wrong, and musical
-          influence is genuinely contested. Every claim here links to the source it came from and says
-          how hard that one source was checked — which is not the same as sources agreeing.
+          influence is genuinely contested. Every claim here links to the source it came from and
+          says how hard that one source was checked — which is not the same as sources agreeing.
         </p>
       </footer>
     </div>

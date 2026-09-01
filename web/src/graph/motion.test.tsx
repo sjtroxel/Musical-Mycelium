@@ -185,8 +185,7 @@ function stillImage(graph: RenderGraph): string[] {
   // Swapped and put back by hand rather than with `spyOn`. A second spy's `mockRestore` reinstates
   // the ORIGINAL method, which would silently tear down the recorder the test under test is using.
   const outer = HTMLCanvasElement.prototype.getContext;
-  HTMLCanvasElement.prototype.getContext = ((): unknown =>
-    ctx) as HTMLCanvasElement["getContext"];
+  HTMLCanvasElement.prototype.getContext = ((): unknown => ctx) as HTMLCanvasElement["getContext"];
 
   const host = document.createElement("div");
   document.body.appendChild(host);
