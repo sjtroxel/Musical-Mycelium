@@ -55,7 +55,13 @@ body {
      so the page and the map now agree — they disagreed by accident, not by decision. No webfont: a
      portfolio site that has to stay live through a job search does not want a text-rendering
      dependency on someone else's CDN and someone else's connection. */
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -170,7 +176,9 @@ code {
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
 }
 
 .chip:hover:not([disabled]) {
@@ -283,6 +291,10 @@ code {
   margin: 0 0 1.25rem;
 }
 
+.map__frame {
+  position: relative;
+}
+
 .map__canvas {
   display: block;
   width: 100%;
@@ -290,6 +302,62 @@ code {
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: var(--card);
+  cursor: grab;
+  /* Vertical page scrolling is NEVER taken from the visitor — the browser keeps it, so a finger
+     drag down the page still scrolls the page even when it starts on the map. What is left for the
+     map is horizontal dragging, and zoom is on the buttons. A map that traps a phone's scroll is
+     worse than one that pans in one axis, and this sits above the claims. */
+  touch-action: pan-y;
+}
+
+.map__canvas:active {
+  cursor: grabbing;
+}
+
+.map__controls {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.map__control {
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  /* Not `--card`: the buttons sit ON the card and would vanish into it. */
+  background: var(--ground);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.map__control:hover {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+
+.map__control--wide {
+  font-size: 0.78rem;
+}
+
+.map__selection {
+  max-width: var(--measure);
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* No accent here. Step 6 gave `--accent` one job — this was approved by the gate — and a node a
+   visitor merely clicked on has not been. */
+.map__source {
+  color: var(--ink-faint);
 }
 
 .map__caption,

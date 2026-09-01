@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { layout, tallestColumn } from "./layout";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { layout, tallestColumn, type Point } from "./layout";
 import {
   edgeKey,
   frameAt,
@@ -13,6 +13,17 @@ import {
   type View,
 } from "./motion";
 import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
+import {
+  CLICK_SLOP,
+  STEP_IN,
+  STEP_OUT,
+  clampView,
+  hitTest,
+  panBy,
+  wheelFactor,
+  zoomAbout,
+  type HitCandidate,
+} from "./viewport";
 
 /**
  * The map. Canvas 2D, laid out by `layout.ts`.
@@ -26,9 +37,15 @@ import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
  * the column, and there is no simulation at all — see that file for why a chronological axis cannot
  * be drawn on this corpus. This file draws; it does not decide where anything goes.
  *
- * Pan, zoom, drag and follow-an-edge are step 8; the palette is step 6; motion is step 7. The phase's
- * fence is engine, then layout, then palette, then motion, and reaching forward from here is how the
- * fence stops meaning anything.
+ * **Pan, zoom and selection are step 8, and they live in `viewport.ts`.** The camera the visitor
+ * drives and the camera that auto-fits the picture are the same `View`; which one is in charge is the
+ * whole of decision D1. Auto-fit until the visitor touches it, theirs from then on, and a Recenter
+ * control hands it back. Without that, a claim arriving mid-answer would yank a panned map back to
+ * centre — step 7 measured that the camera moves further than the nodes do, so the yank would be the
+ * largest motion on screen and it would fire exactly while someone was reading.
+ *
+ * There is deliberately no node dragging. Step 5 made x mean influence depth and y mean year within
+ * the column, so a node's position is a claim about the music and moving it makes that claim false.
  *
  * Every colour is read from the CSS custom properties in `styles.css` so step 6 has one place to
  * change rather than twenty.
@@ -119,14 +136,68 @@ function arrowhead(
 
   ctx.beginPath();
   ctx.moveTo(tipX, tipY);
-  ctx.lineTo(tipX - ux * size + -uy * size * 0.5, tipY - uy * size + ux * size * 0.5);
-  ctx.lineTo(tipX - ux * size - -uy * size * 0.5, tipY - uy * size - ux * size * 0.5);
+  ctx.lineTo(
+    tipX - ux * size + -uy * size * 0.5,
+    tipY - uy * size + ux * size * 0.5,
+  );
+  ctx.lineTo(
+    tipX - ux * size - -uy * size * 0.5,
+    tipY - uy * size - ux * size * 0.5,
+  );
   ctx.closePath();
   ctx.fill();
 }
 
-export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: MotionMode }) {
+export function GraphView({
+  graph,
+  motion,
+}: {
+  graph: RenderGraph;
+  motion?: MotionMode;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  /**
+   * The visitor's camera, or `null` while the map is still fitting itself.
+   *
+   * A ref rather than state, and that is a performance decision with a visible consequence. A pan
+   * emits a pointer event per frame; holding the camera in state would re-run the draw effect on
+   * every one of them, and that effect recomputes the layout and measures text. The camera is not
+   * something React needs to know about — only the canvas draws it — so it stays out of the render
+   * cycle and the handlers repaint by hand.
+   */
+  const cameraRef = useRef<View | null>(null);
+
+  /** The camera actually used by the last painted frame, which is what a takeover starts from. */
+  const drawnView = useRef<View | null>(null);
+
+  /**
+   * The last frame the animation produced.
+   *
+   * A pan mid-answer has to repaint at whatever point the edge animation had reached, not at its
+   * end. Repainting with `edgeT: 1` would snap a half-drawn claim edge to full length the moment
+   * someone touched the map — the same class of defect step 7 found twice, where an unrelated
+   * interaction silently completed an animation that was still meaningful.
+   */
+  const lastFrame = useRef<MotionFrame>({ positionT: 1, edgeT: 1, done: true });
+
+  /** The draw function of the current effect, so a pointer handler can repaint without React. */
+  const drawRef = useRef<((frame: MotionFrame) => void) | null>(null);
+
+  /** What is on screen, in layout coordinates, for hit-testing and for clamping the pan. */
+  const scene = useRef<{
+    points: Point[];
+    candidates: HitCandidate[];
+    width: number;
+  }>({
+    points: [],
+    candidates: [],
+    width: FALLBACK_WIDTH,
+  });
+
+  /** Whether the visitor has taken the camera. Mirrors `cameraRef`; exists to show Recenter. */
+  const [manual, setManual] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   /**
    * What the map last put on screen, so the next draw can tell what actually changed.
@@ -233,12 +304,27 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
           // Only a claimed edge can enter. A context edge appearing is a side effect of the
           // neighbourhood growing, not a thing the gate decided, and animating it would give the
           // corpus's unwalked lines the same arrival as an approved claim.
-          entering: edge.kind === "claimed" && !seenEdges.has(edgeKey(edge.from, edge.to)),
+          entering:
+            edge.kind === "claimed" &&
+            !seenEdges.has(edgeKey(edge.from, edge.to)),
         },
       ];
     });
 
     const radius = (node: SimNode) => (node.role === "walked" ? 6 : 3.5);
+
+    // Handed to the pointer handlers in LAYOUT coordinates, never screen ones. The camera moves
+    // under them, so anything cached in screen space would be stale the moment a pan started.
+    scene.current = {
+      points: nodes.map((node) => ({ x: node.x, y: node.y })),
+      candidates: nodes.map((node) => ({
+        id: node.id,
+        x: node.x,
+        y: node.y,
+        radius: radius(node),
+      })),
+      width,
+    };
 
     // Which nodes sit next to which, used only to decide which side a label goes on.
     const neighbours = new Map<string, SimNode[]>();
@@ -249,7 +335,8 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
       neighbours.set(target.id, [...(neighbours.get(target.id) ?? []), source]);
     }
 
-    const font = '12px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+    const font =
+      '12px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
 
     /**
      * Fit the laid-out positions into the box.
@@ -271,7 +358,10 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
       ctx.font = font;
       const widest = nodes
         .filter((node) => node.role === "walked")
-        .reduce((wide, node) => Math.max(wide, ctx.measureText(node.label).width), 0);
+        .reduce(
+          (wide, node) => Math.max(wide, ctx.measureText(node.label).width),
+          0,
+        );
 
       const padY = 26;
       const padLeft = 20;
@@ -304,13 +394,20 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
     function draw(frame: MotionFrame) {
       if (ctx === null) return;
 
-      // The camera for THIS frame. In `none` and `reveal`, `positionT` is always 1 and this is
-      // exactly `targetView` — the cut step 6 committed. Only `full` moves the camera, and moving it
-      // is most of what `full` is: the nodes barely travel by comparison.
-      const view =
+      // The camera for THIS frame. In `none`, `positionT` is always 1 and this is exactly
+      // `targetView` — the cut step 6 committed. `animated` moves the camera, and moving it is most
+      // of what `animated` is: the nodes barely travel by comparison.
+      const auto =
         previousView === null || frame.positionT >= 1
           ? targetView
           : lerpView(previousView, targetView, frame.positionT);
+
+      // **D1.** Once the visitor has taken the camera it is theirs, and the claims still arriving
+      // stop moving it. `auto` is still computed above rather than skipped, because it is what the
+      // Recenter control animates back to.
+      const view = cameraRef.current ?? auto;
+      drawnView.current = view;
+      lastFrame.current = frame;
 
       // Resized per frame so the element grows with the picture instead of snapping to its final
       // height on the first one. Reallocating a 640x460 backing store twenty-five times over 420ms
@@ -325,7 +422,10 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
         (y - view.cy) * view.k + view.height / 2,
       ];
       const px = (node: SimNode): [number, number] =>
-        at(lerp(node.fromX, node.x, frame.positionT), lerp(node.fromY, node.y, frame.positionT));
+        at(
+          lerp(node.fromX, node.x, frame.positionT),
+          lerp(node.fromY, node.y, frame.positionT),
+        );
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -381,13 +481,29 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
         ctx.beginPath();
         ctx.arc(nx, ny, radius(node), 0, Math.PI * 2);
         ctx.fillStyle =
-          node.role === "walked" ? (colors.accent ?? "#3d5a45") : (colors.card ?? "#ffffff");
+          node.role === "walked"
+            ? (colors.accent ?? "#3d5a45")
+            : (colors.card ?? "#ffffff");
         ctx.fill();
         ctx.strokeStyle =
-          node.role === "walked" ? (colors.accent ?? "#3d5a45") : (colors.inkFaint ?? "#7c7c88");
+          node.role === "walked"
+            ? (colors.accent ?? "#3d5a45")
+            : (colors.inkFaint ?? "#7c7c88");
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.globalAlpha = 1;
+
+        // The selection ring is drawn in `--ink`, not `--accent`. Step 6 decided the accent means
+        // gate-approved, and a visitor clicking a faint context node must not make it look like one
+        // the gate passed — that is the same slide from "traceable" to "asserted" the caption exists
+        // to prevent, arriving through the palette instead of through words.
+        if (node.id === selectedId) {
+          ctx.beginPath();
+          ctx.arc(nx, ny, radius(node) + 5, 0, Math.PI * 2);
+          ctx.strokeStyle = colors.ink ?? "#16161a";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
       }
 
       // Only walked nodes are labelled. A context node is there to show the answer sits in a
@@ -404,7 +520,8 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
         // lines; real label placement is step 5's problem, not this step's.
         const around = neighbours.get(node.id) ?? [];
         const lean =
-          around.reduce((sum, other) => sum + (px(other)[0] - nx), 0) / (around.length || 1);
+          around.reduce((sum, other) => sum + (px(other)[0] - nx), 0) /
+          (around.length || 1);
         const onLeft = lean > 0;
         const lx = nx + (onLeft ? -(radius(node) + 5) : radius(node) + 5);
         ctx.textAlign = onLeft ? "right" : "left";
@@ -459,6 +576,10 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
       ctx.restore();
     }
 
+    // The handlers repaint through this rather than through React, so a pan never re-runs the
+    // effect. Reassigned on every effect run so it always closes over the current picture.
+    drawRef.current = draw;
+
     // Record what this picture puts on screen, and start its clock — but only when the picture is
     // genuinely a new one. Doing this unconditionally is precisely the bug that made all three modes
     // look the same.
@@ -466,7 +587,9 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
       before.current = shown.current;
       shown.current = {
         signature,
-        positions: new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }])),
+        positions: new Map(
+          nodes.map((node) => [node.id, { x: node.x, y: node.y }]),
+        ),
         claimed: new Set(
           graph.edges
             .filter((edge) => edge.kind === "claimed")
@@ -498,34 +621,249 @@ export function GraphView({ graph, motion }: { graph: RenderGraph; motion?: Moti
     // rather than racing a second one against it — two loops drawing the same canvas is a flicker
     // that only appears under a fast stream, which is exactly when a visitor is watching.
     return () => cancelAnimationFrame(raf);
-  }, [graph, motion]);
+  }, [graph, motion, selectedId]);
+
+  /** Canvas-local coordinates. Both pointer and wheel events arrive in page coordinates. */
+  const localPoint = (
+    event: { clientX: number; clientY: number },
+    element: HTMLCanvasElement,
+  ): Point => {
+    const rect = element.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  };
+
+  /**
+   * Hand the camera over, once, starting from wherever the auto-fit one had reached.
+   *
+   * Seeded from the last PAINTED camera rather than from the target, so taking hold of a map
+   * mid-glide continues from what is on screen instead of jumping to where the glide was heading.
+   */
+  const takeCamera = useCallback((): View | null => {
+    if (cameraRef.current === null) {
+      if (drawnView.current === null) return null;
+      cameraRef.current = drawnView.current;
+      setManual(true);
+    }
+    return cameraRef.current;
+  }, []);
+
+  /** Clamp a proposed camera, keep it, and repaint at the frame the animation had reached. */
+  const applyCamera = useCallback((next: View) => {
+    cameraRef.current = clampView(
+      next,
+      scene.current.points,
+      scene.current.width,
+    );
+    drawRef.current?.(lastFrame.current);
+  }, []);
+
+  /**
+   * Give the camera back. A cut, not a glide.
+   *
+   * Recenter is an explicit request to be returned, and the auto-fit tween exists to absorb changes
+   * the visitor did not ask for. Animating a movement someone deliberately asked for makes them wait
+   * for it.
+   */
+  const recenter = useCallback(() => {
+    cameraRef.current = null;
+    setManual(false);
+    drawRef.current?.({ positionT: 1, edgeT: 1, done: true });
+  }, []);
+
+  /** The buttons and, through them, the keyboard. Zoom about the middle: there is no cursor here. */
+  const stepZoom = useCallback(
+    (factor: number) => {
+      const camera = takeCamera();
+      if (camera === null) return;
+      applyCamera(
+        zoomAbout(
+          camera,
+          { x: scene.current.width / 2, y: camera.height / 2 },
+          factor,
+        ),
+      );
+    },
+    [takeCamera, applyCamera],
+  );
+
+  const drag = useRef<{
+    x: number;
+    y: number;
+    travelled: number;
+    pointerId: number;
+  } | null>(null);
+
+  const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const point = localPoint(event, event.currentTarget);
+    drag.current = {
+      x: point.x,
+      y: point.y,
+      travelled: 0,
+      pointerId: event.pointerId,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const active = drag.current;
+    if (active === null || active.pointerId !== event.pointerId) return;
+    const point = localPoint(event, event.currentTarget);
+    const dx = point.x - active.x;
+    const dy = point.y - active.y;
+    if (dx === 0 && dy === 0) return;
+    active.x = point.x;
+    active.y = point.y;
+    active.travelled += Math.hypot(dx, dy);
+    const camera = takeCamera();
+    if (camera === null) return;
+    applyCamera(panBy(camera, dx, dy));
+  };
+
+  const onPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const active = drag.current;
+    drag.current = null;
+    if (active === null || active.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    // A pan that happened to start on a node must not also select it: a drag ends with the pointer
+    // up, and the pointer is usually still over whatever it started on. `CLICK_SLOP` is the whole
+    // difference between the two gestures.
+    if (active.travelled > CLICK_SLOP) return;
+
+    const view = cameraRef.current ?? drawnView.current;
+    if (view === null) return;
+    const hit = hitTest(
+      view,
+      scene.current.candidates,
+      localPoint(event, event.currentTarget),
+    );
+    // Clicking the selected node again clears it, and clicking empty canvas clears it too.
+    setSelectedId((current) => (current === hit ? null : hit));
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas === null) return;
+
+    const onWheel = (event: WheelEvent) => {
+      // **D6.** A plain wheel scrolls the page, exactly as it would over any other part of it. Only
+      // ctrl/cmd zooms. A map that eats the scroll wheel mid-page is actively hostile, and this one
+      // sits above the claims — the part of the answer a visitor most needs to scroll to.
+      //
+      // Trackpad pinch arrives as ctrl+wheel from the browser itself, so pinch-to-zoom works here
+      // with no gesture handling of its own.
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const camera = takeCamera();
+      if (camera === null) return;
+      applyCamera(
+        zoomAbout(camera, localPoint(event, canvas), wheelFactor(event.deltaY)),
+      );
+    };
+
+    // Registered by hand, non-passive. React attaches wheel listeners at the root as PASSIVE, so
+    // `preventDefault` inside an `onWheel` prop silently does nothing and the page scrolls anyway
+    // while the map also zooms. This is the one listener that cannot be a JSX prop.
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, [takeCamera, applyCamera]);
 
   const walked = graph.nodes.filter((node) => node.role === "walked").length;
+  const selected = graph.nodes.find((node) => node.id === selectedId) ?? null;
 
   return (
     <figure className="map">
-      <canvas
-        className="map__canvas"
-        ref={canvasRef}
-        role="img"
-        aria-label={
-          `A map of ${walked} ${walked === 1 ? "node" : "nodes"} this answer reached, ` +
-          `${graph.claimed} approved ${graph.claimed === 1 ? "connection" : "connections"} ` +
-          `numbered in the order they were approved, and ${graph.context} nearby ` +
-          `${graph.context === 1 ? "connection" : "connections"} from the corpus that were not walked. ` +
-          `The claims themselves are listed below in text.`
-        }
-      />
+      <div className="map__frame">
+        <canvas
+          className="map__canvas"
+          ref={canvasRef}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={() => {
+            drag.current = null;
+          }}
+          role="img"
+          aria-label={
+            `A map of ${walked} ${walked === 1 ? "node" : "nodes"} this answer reached, ` +
+            `${graph.claimed} approved ${graph.claimed === 1 ? "connection" : "connections"} ` +
+            `numbered in the order they were approved, and ${graph.context} nearby ` +
+            `${graph.context === 1 ? "connection" : "connections"} from the corpus that were not walked. ` +
+            `The claims themselves are listed below in text.`
+          }
+        />
+        {/* Real buttons, so zoom is reachable by keyboard and named for a screen reader. The canvas
+            stays `role="img"`: it is a picture with a written description, and the interactions on
+            it are shortcuts for things that are also available here. Selecting a node is NOT yet
+            reachable this way — the neighbour list that makes it so is step 8b, and until it lands
+            this control group is the honest extent of the map's keyboard story. */}
+        <div className="map__controls">
+          <button
+            type="button"
+            className="map__control"
+            onClick={() => stepZoom(STEP_IN)}
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className="map__control"
+            onClick={() => stepZoom(STEP_OUT)}
+            aria-label="Zoom out"
+          >
+            &minus;
+          </button>
+          {manual && (
+            <button
+              type="button"
+              className="map__control map__control--wide"
+              onClick={recenter}
+            >
+              Recenter
+            </button>
+          )}
+        </div>
+      </div>
+
+      {selected !== null && (
+        <p className="map__selection">
+          <strong>{selected.label}</strong>
+          {selected.kind === "" ? "" : ` — ${selected.kind}`}
+          {selected.year === null
+            ? ", no inception date in the corpus"
+            : `, ${selected.year}`}
+          .{" "}
+          {/* Which of the two things this node is, said in words. A visitor who clicks a faint dot
+              must not be left to infer from a ring whether the answer went there. */}
+          {selected.role === "walked"
+            ? "Reached by this answer."
+            : "Held by the corpus around this answer, and not walked by it."}{" "}
+          <a
+            className="map__source"
+            href={`https://www.wikidata.org/wiki/${selected.id}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {selected.id}
+          </a>
+        </p>
+      )}
       <figcaption className="map__caption">
         {/* The claimed/context distinction stated in words. Without this sentence the map implies the
             faint edges are part of the answer, which is the exact slide from "traceable" to "asserted"
             that `.claude/rules/grounding-and-claims.md` forbids. */}
         <strong>{graph.claimed}</strong> cited{" "}
-        {graph.claimed === 1 ? "connection" : "connections"}, numbered in the order the gate approved
-        them. The faint lines are <strong>{graph.context}</strong> further{" "}
-        {graph.context === 1 ? "connection" : "connections"} the corpus holds around them, shown for
-        bearings and <em>not</em> part of this answer.
-        {graph.truncated && " The neighbourhood is larger than what is drawn here."}
+        {graph.claimed === 1 ? "connection" : "connections"}, numbered in the
+        order the gate approved them. The faint lines are{" "}
+        <strong>{graph.context}</strong> further{" "}
+        {graph.context === 1 ? "connection" : "connections"} the corpus holds
+        around them, shown for bearings and <em>not</em> part of this answer.
+        {graph.truncated &&
+          " The neighbourhood is larger than what is drawn here."}
       </figcaption>
     </figure>
   );
