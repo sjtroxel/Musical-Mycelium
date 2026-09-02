@@ -37,7 +37,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -174,6 +174,11 @@ class EntityFacts:
 _RETRYABLE = frozenset({429, 500, 502, 503, 504})
 
 
+#: Comfortably under the cache layer's limit, which is not published. Measured only in the negative:
+#: a ~13,000-character URL was rejected on 2026-09-02 and shorter ones have always been served.
+_MAX_GET_URL = 3000
+
+
 def _get(url: str, timeout: int = 60, attempts: int = 4) -> Any:
     """One polite GET with backoff.
 
@@ -181,9 +186,26 @@ def _get(url: str, timeout: int = 60, attempts: int = 4) -> Any:
     Back off rather than hammering it; this client exists to be a good citizen of a service that is
     materially degraded in 2026.
     """
-    request = urllib.request.Request(
-        url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
-    )
+    return _request(url, None, timeout=timeout, attempts=attempts)
+
+
+def _post(url: str, form: dict[str, str], timeout: int = 180, attempts: int = 5) -> Any:
+    """The same politeness, over POST, for queries whose URL would be too long to GET.
+
+    **Added 2026-09-02, after :func:`sparql` failed on a 973-QID ``VALUES`` clause with
+    ``HTTP 503 VCL failed``.** That is Wikidata's cache layer rejecting an over-long URL, and it is not
+    a retryable condition — the backoff in :func:`_get` retried it three times and then raised, which
+    cost a measurement run. Any query bounded by a large ``VALUES`` set must come through here.
+    """
+    body = urllib.parse.urlencode(form).encode()
+    return _request(url, body, timeout=timeout, attempts=attempts)
+
+
+def _request(url: str, body: bytes | None, *, timeout: int, attempts: int) -> Any:
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+    if body is not None:
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+    request = urllib.request.Request(url, data=body, headers=headers)
     delay = 5.0
     for attempt in range(1, attempts + 1):
         try:
@@ -202,8 +224,16 @@ def _get(url: str, timeout: int = 60, attempts: int = 4) -> Any:
 
 
 def sparql(query: str) -> list[dict[str, Any]]:
-    url = WDQS + "?" + urllib.parse.urlencode({"query": query, "format": "json"})
-    body = _get(url)
+    """Run a SPARQL query, choosing GET or POST by how long the URL would be.
+
+    The switch is not a style preference. WDQS sits behind a cache that rejects over-long URLs with
+    ``HTTP 503 VCL failed``, which is indistinguishable from a transient 503 at the HTTP layer and so
+    gets retried and then raised. Queries carrying a large ``VALUES`` clause exceed it easily; the
+    2026-09-02 P136 measurement did so at 973 QIDs.
+    """
+    form = {"query": query, "format": "json"}
+    url = WDQS + "?" + urllib.parse.urlencode(form)
+    body = _post(WDQS, form) if len(url) > _MAX_GET_URL else _get(url)
     bindings: list[dict[str, Any]] = body["results"]["bindings"]
     return bindings
 
@@ -230,6 +260,34 @@ def fetch_statements(pairs: tuple[tuple[str, str], ...]) -> dict[tuple[str, str]
         obj = row["o"]["value"].rsplit("/", 1)[1]
         out[(subject, obj)] = row["statement"]["value"]
     return out
+
+
+def deprecated_statements(uris: Sequence[str], chunk: int = 250) -> frozenset[str]:
+    """Which of these statement URIs Wikidata currently ranks **deprecated**.
+
+    **Prevention is not repair, and this function is the repair half.** The rank filter added to both
+    discovery queries on 2026-09-02 stops a deprecated statement entering a *new* crawl. It does
+    nothing about one already sitting in a pinned artifact, because a derived artifact carries its
+    predecessor's edges across untouched — which is the whole point of carrying them across. So a cut
+    that inherits edges must re-check them, or the fix silently applies only to rows nobody was worried
+    about.
+
+    Found by building v0.6.0 and reading the verification counts: the P737 tiers still summed to 950
+    after the filter landed, because every one of those edges came from v0.5.0 rather than from a
+    query the filter had touched.
+
+    Chunked, and it goes through :func:`sparql`, which sends a large ``VALUES`` clause by POST.
+    """
+    deprecated: set[str] = set()
+    ordered = sorted(set(uris))
+    for start in range(0, len(ordered), chunk):
+        values = " ".join(f"<{u}>" for u in ordered[start : start + chunk])
+        rows = sparql(
+            f"SELECT ?st WHERE {{ VALUES ?st {{ {values} }} "
+            f"?st wikibase:rank wikibase:DeprecatedRank . }}"
+        )
+        deprecated.update(row["st"]["value"] for row in rows)
+    return frozenset(deprecated)
 
 
 def fetch_entities(qids: list[str]) -> dict[str, EntityFacts]:

@@ -120,6 +120,7 @@ SELECT ?s ?o ?statement ?objInAxis WHERE {{
   VALUES ?subjectType {{ wd:{QID_HUMAN} wd:{QID_MUSICAL_GROUP} }}
   ?s p:{PROPERTY_INFLUENCED_BY} ?statement .
   ?statement ps:{PROPERTY_INFLUENCED_BY} ?o .
+  FILTER NOT EXISTS {{ ?statement wikibase:rank wikibase:DeprecatedRank }}
   BIND(EXISTS {{
     ?o wdt:P31/wdt:P279* ?objectType .
     VALUES ?objectType {{ wd:{QID_HUMAN} wd:{QID_MUSICAL_GROUP} }}

@@ -87,6 +87,77 @@ corpus in part 2.
 
 ---
 
+## PHASE 6 STEPS 1 AND 2 — the corpus is one organism, and artifact v0.6.0 is cut, 2026-09-02
+
+**Verified state:** `make check` green — **1209 passed**, 14 `costs_money` deselected, mypy clean, root
+**15/18**, terraform valid, eval gates 3 passed / 0 failed / 2 not applicable. Frontend suite unchanged
+at 146 (no frontend edit in these steps).
+
+**The pin has NOT moved.** `graph/memory.py:34` and `ingest/wikidata.py:59` still read `0.5.0`. v0.6.0
+exists on disk and nothing reads it except its own tests. Moving the pin and re-running tier 1 is
+**step 3**, and it is the next thing to do.
+
+| | v0.5.0 | **v0.6.0** |
+|---|---|---|
+| nodes / edges | 973 / 950 | **1,313 / 3,731** |
+| genres | 169 | **509** |
+| **components** | **169** | **12** |
+| largest component | 458 | **1,286** of 1,313 |
+| isolated nodes | 0 | 0 |
+
+Full as-built in `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §4 steps 1-2. What belongs
+here is what is open and what generalises.
+
+### Open after these steps
+
+- **Step 3 is the pin bump and the tier 1 re-run.** Until it runs, every published eval number describes
+  v0.5.0 and the artifact the product would serve is v0.6.0. Do not quote an eval number against v0.6.0
+  before that run.
+- **`web/src/corpus-facts.json` is now duplicated by `graph/coverage.py`** and should be deleted at
+  step 8 when the frontend moves to the new pin. It cannot rot silently — `tests/test_corpus_facts.py`
+  asserts it against the pinned artifact — but two sources for one number is a step-8 debt, not a
+  permanent state.
+- **The v0.5.0 manifest records `genres_without_us_or_uk: 44`; the code computes 43.** Written
+  2026-08-06, the guard fix landed 08-07, artifacts are immutable. **Benign and not to be fixed:** the
+  runtime recomputes coverage at load (`graph/memory.py:251`) so 44 never reaches a user, and rewriting
+  a pinned manifest is what the pin exists to prevent. v0.6.0 agrees with the code.
+- **`top_country_share` rose 0.421 -> 0.562.** The corpus is measurably **more** US-concentrated at
+  v0.6.0, even though distinct places went 29 -> 50 and genres naming neither US nor UK went 43 -> 92.
+  All three are true; step 8 must show the uncomfortable one and not only the two that flatter.
+- **340 genres have no sourced origin at all** (`connections["0"]`), against 85 at v0.5.0. They carry
+  membership edges so `isolated_nodes` is still 0. Two different true statements that must not be
+  collapsed into one in copy.
+
+### What generalises
+
+**Prevention is not repair.** The deprecated-rank filter added to both discovery queries excludes bad
+statements from **new** crawls. The first v0.6.0 build then reported P737 tiers still summing to 950 —
+every one of those edges came from v0.5.0 and was carried across untouched, which is the whole point of
+carrying them across. The guard reached only the rows nobody was worried about.
+`wikidata.deprecated_statements` is the repair half. **A guard added to the producer does not reach data
+the consumer inherited**, and a derived artifact is nothing but inherited data.
+
+**A frozen record is not wrong for being older than the schema.** Two new verification tiers failed
+three tests at once — manifest counts, the `/health` payload, the committed eval baseline — all strict
+equality against records that were correct about the corpus and simply predated a widening.
+`schema.counts_agree` encodes the tolerance narrowly: an omitted level must be **zero**, a named level
+must match exactly. Regenerating the baseline instead would have rewritten a historical number for a
+non-event, which that file's own docstring warns against.
+
+**A bound can filter rather than generalise, and the difference is invisible in aggregate.** Keeping
+only P136 objects already in the corpus looked like coarsening. It was arbitrary selection: it kept
+whichever of an artist's genres happened to be among the 169, which is unrelated to which is
+representative. Red Hot Chili Peppers would have shipped as `heavy metal` and nothing else, nine tags
+dropped. The aggregate — "1,313 membership edges" — said nothing at all about this. **The instance said
+everything**, which is the argument for reading rows and not only totals.
+
+**sjtroxel caught the error that produced the finding.** `McFly -> punk rock` was scored a data error in
+the hand-check; Wikidata records `pop-punk` for McFly and it is the corpus bound that drops it. He
+pushed back, the check was testable rather than a matter of taste, and the whole unbounded decision
+traces to that correction. **An agent's hand-check sample is a draft, not a verdict.**
+
+---
+
 ## PHASE 6 STEP 0 — the terraform foot-gun is guarded on both sides, 2026-09-02
 
 The phase opens on the one operational item the phase 5 close left behind. Both halves are closed.

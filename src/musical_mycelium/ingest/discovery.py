@@ -102,11 +102,19 @@ POPULATION_DRIFT_TOLERANCE = 0.25
 #: too and the exclusion rate can be *measured* instead of inferred from a missing count. The BIND
 #: was timed at 2.2s against the 1.8s of the same query without it, so that legibility is close to
 #: free.
+#: **Deprecated statements are excluded, added 2026-09-02.** A deprecated rank is Wikidata's way of
+#: recording that editors judged a statement wrong or superseded; ingesting one puts a known-bad edge
+#: into a corpus whose entire pitch is provenance. This was absent until phase 6 step 2 and the omission
+#: had already fired: an audit of all 950 statement URIs in artifact v0.5.0 found **one** deprecated
+#: today -- ``Nine Inch Nails influenced_by Pink Floyd``. Whether it was deprecated at crawl time or
+#: since is not answerable from WDQS and does not change the fix. The same audit found **every one of
+#: the 950 still resolves**, which is the more representative result.
 DISCOVERY_QUERY = f"""
 SELECT ?s ?o ?statement ?objInAxis WHERE {{
   ?s wdt:P31/wdt:P279* wd:{QID_MUSIC_GENRE} .
   ?s p:{PROPERTY_INFLUENCED_BY} ?statement .
   ?statement ps:{PROPERTY_INFLUENCED_BY} ?o .
+  FILTER NOT EXISTS {{ ?statement wikibase:rank wikibase:DeprecatedRank }}
   BIND(EXISTS {{ ?o wdt:P31/wdt:P279* wd:{QID_MUSIC_GENRE} }} AS ?objInAxis)
 }}
 """

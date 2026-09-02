@@ -263,52 +263,137 @@ sample to rule out. P136's meaning is not in question; its risk is per-row noise
 a genre they barely played — which a small sample bounds and no sample size eliminates. Different failure
 mode, different sample size, stated rather than assumed.
 
-### Step 2 — P136 membership → artifact v0.6.0
+### Step 2 — P136 membership -> artifact v0.6.0 — **DONE 2026-09-02**
 
-The structural half. **This is the step that proves the additive-schema machinery on the easy case**, so
-that step 4 lands a genuinely new source on machinery already exercised.
+**Artifact v0.6.0 is cut. The pin has NOT moved** — `graph/memory.py:34` and `ingest/wikidata.py:59`
+still read `0.5.0`, which is step 3's job. `make check` is green at **1209**.
 
-What gets built:
+| | v0.5.0 | **v0.6.0** |
+|---|---|---|
+| nodes | 973 | **1,313** |
+| edges | 950 | **3,731** |
+| genres | 169 | **509** |
+| **components** | **169** | **12** |
+| largest component | 458 | **1,286** of 1,313 |
+| isolated nodes | 0 | **0** |
+| max path hops | 6 | 7 |
 
-- `PREDICATE_PLAYS_GENRE = "plays_genre"` in `graph/schema.py`, beside `PREDICATE_INFLUENCED_BY`.
-- `ingest/membership.py` — a new module, not an edit to `artists.py`. One bounded SPARQL query over the
-  known artist and genre QIDs. **POST, not GET**: `ingest/wikidata.py:204`'s `sparql()` builds a GET URL
-  and a `VALUES` clause of 973 QIDs overflows Wikidata's Varnish layer with `HTTP 503 VCL failed`. This
-  was hit on 2026-09-02 and cost the first run of the measurement. Either add a POST path to the shared
-  helper or chunk at 200 QIDs; the helper is the better fix and benefits step 4 too.
-- A new verification tier for membership edges. **These did not go through the Wikipedia prose check and
-  must not borrow a tier that implies they did.** `MEMBERSHIP_AUTO` or similar, added to
-  `VERIFICATION_LEVELS`, meaning *this is a sourced membership statement, not a checked influence claim*.
-- `graph/coverage.py` absorbs `genres_without_recorded_origins` (85), `genres_with_one_connection` (108)
-  and `busiest_genre_connections` (6) from `web/src/corpus-facts.json`, which is phase 5's owed item and
-  is done here because this is the first cut and `Coverage` is a serialized contract.
+**169 disjoint islands became 12, and 98% of the corpus is now one component.** That is the phase's
+central claim becoming demonstrable, and §3's wording holds exactly: the organism is connected through
+the people who play across it.
 
-**Why this needs zero edits to `agent/` — DoD #6, and it is satisfied by design rather than by luck.**
-Two independent locks in `agent/claims.py` already do exactly the right thing to a `plays_genre` edge:
+Verification counts: `MEMBERSHIP_CITED` **1,419**, `MEMBERSHIP_BARE` **1,363**, against 949 influence
+edges. **63 P136 objects were rejected `NOT_A_GENRE`** — the type test was a real filter, not a
+formality.
 
-- `ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY})` at `claims.py:47`. A `plays_genre` proposal
-  is rejected `UNSUPPORTED_PREDICATE` without the file being touched. **Do not add the new predicate to
-  this set.** That omission is the feature.
-- The cross-axis check at `claims.py:248` rejects any proposal whose endpoints differ in `kind`. A
-  membership edge is genre-to-artist by definition, so it is refused a second time for a second reason.
+#### The plan said bounded. The measurement said the bound was arbitrary.
 
-So membership edges can exist in the artifact, be traversed by `graph/`, and be drawn by the map, while
-being structurally unnarratable. DoD #6 is met, not excused.
+The written plan kept only P136 objects already among the 169 genres. A measurement killed it, and the
+finding is counter-intuitive enough to be worth keeping: **the bound does not coarsen the data, it
+filters it arbitrarily.** It keeps whichever of an artist's genres happen to fall inside the 169, which
+has no relationship to which is representative. Every P136 Wikidata records for Red Hot Chili Peppers:
 
-**The collision to check rather than assume.** `tests/test_claims.py:253` says *"The ingest bounds each
-axis separately, so this artifact should be impossible"* — a cross-axis edge reaching the artifact is
-described as a corpus bug. After this step it is a deliberate, correct state for one predicate. **No test
-currently asserts the artifact contains no cross-axis edge**, which means this change would land silently
-if it were wrong. Step 2 must therefore *add* the assertion it is qualifying: no cross-axis edge whose
-predicate is `influenced_by`. Tightening the lock while widening the corpus, rather than removing it.
+```
+jazz fusion, alternative rock, rock music, alternative metal, classic rock,
+funk metal, hard rock, funk rock, rap rock              -> all outside the 169
+heavy metal music                                       -> the only one inside
+```
 
-**The adversarial set survives, and this was checked.** `adv_010` and `adv_011` are the two
-`cross_axis_trap` cases. Their `forbidden_triples` are all `influenced_by` and their
-`expected_gate_rejections` is `["cross_axis"]`. A `plays_genre` edge changes neither. **What it does
-change is what the honest answer to "Did jazz influence Miles Davis?" contains** — the gap the case
-requires the agent to name can now be named more precisely, because the corpus knows Miles Davis worked
-in jazz even though it holds no influence edge across the axes. Whether to let the refusal say so is a
-real product decision and it belongs in step 8, not here. The frozen dataset is not edited either way.
+Nine dropped and the survivor is arguably the least representative. Bounded ingestion would have
+published "Red Hot Chili Peppers, heavy metal" and nothing else, on the map, publicly. Across the layer
+the bound discarded **half of all genre precision** (2,605 tags to 1,313) and left **200 artists on a
+single arbitrarily-chosen genre**. `rock music` is not among the 169, nor are alternative rock, pop
+rock, hard rock, indie rock or rock and roll — the 169 are exactly the genres carrying a P737 edge, and
+those carry none.
+
+Decision, sjtroxel 2026-09-02: **unbounded**. The 340 surviving objects arrive as genre nodes. They are
+not dead ends — 305 of 392 candidates align to a DBpedia `MusicGenre` and 185 carry `stylisticOrigin`,
+so step 4 gives many of them sourced origins — and none is isolated.
+
+#### The hand-check, which the rules require and which changed the schema
+
+30 pairs, stratified 15/15 by whether the artist carries one-to-two genres or three or more, seed
+`p136-handcheck-2026-09-02`. **The property passed cleanly: zero of 30 were category errors about the
+relation**, against P279's 47 of 47. What it found instead was per-row noise **predicted by whether the
+Wikidata statement carries a reference** — 17 of 18 referenced pairs read as clean against 5 of 12
+unreferenced.
+
+n=30, judged by an agent rather than from hand-read sources: **a direction, not a rate**, and it ships
+labelled that way. It is enough to justify **two tiers rather than one**, so the row carries the
+difference instead of averaging a 94%-clean population together with a 42%-clean one.
+
+**One call in that sample was wrong and sjtroxel caught it.** `McFly -> punk rock` was scored a data
+error; Wikidata actually records four genres for McFly including `pop-punk`, and it is *our* corpus
+bound that drops the precise tag and keeps the coarse one. Wikidata was right. That correction is what
+surfaced the arbitrary-filter finding above, so the entire unbounded decision traces to it.
+
+#### Prevention is not repair, and the build said so out loud
+
+The rank filter added to both discovery queries excludes deprecated statements from **new** crawls. The
+first v0.6.0 build then reported P737 tiers still summing to **950** — because every one of those edges
+came from v0.5.0 and was carried across untouched, which is the entire point of carrying them across.
+The fix reached only rows nobody was worried about.
+
+`wikidata.deprecated_statements` is the repair half: a cut that inherits edges re-checks them. The
+rebuild dropped `Nine Inch Nails influenced_by Pink Floyd` and `ASSERTS_AUTO` moved 760 to **759**.
+**Generalises: a guard added to the producer does not reach data the consumer inherited.**
+
+#### A frozen record versus a widened schema
+
+Adding two verification tiers failed three tests at once — the manifest counts, the `/health` payload,
+and the committed eval baseline — all comparing a v0.5.0-era frozen record against a v0.6.0-era schema
+by strict equality, and **none of them wrong about the corpus**. `schema.py` already promised this
+("a widening, so every earlier artifact stays valid") and nothing encoded it.
+
+`schema.counts_agree` encodes it once, narrowly: a level the record omits must be **zero**; every level
+it names must match exactly. A record that misreports still fails. The alternative — regenerating the
+baseline — would have rewritten a historical number for a non-event, and that file's own docstring says
+to find out why before regenerating.
+
+#### The density figures moved into `Coverage`, and they exclude membership on purpose
+
+Phase 5's owed item. `genres_without_recorded_origins`, `genres_with_one_connection`,
+`busiest_genre_connections` and the `connections` histogram are now computed in `graph/coverage.py`.
+
+**They count `influenced_by` edges only.** Membership outnumbers influence roughly three to one at
+v0.6.0, so including it would report a corpus three times denser in the one dimension this project
+claims to measure. Verified rather than asserted: the backend reproduces phase 5's independently
+computed frontend figures for v0.5.0 **exactly** — 85 / 108 / 6 and an identical histogram.
+
+At v0.6.0 they read **425 / 108 / 6**, with a new `'0': 340` bucket. Nothing that already existed
+moved; what moved is the honest part — 340 genres now have no sourced origin at all.
+`web/src/corpus-facts.json` still exists and is still asserted against the pinned artifact, so it
+cannot rot silently; **step 8 deletes it** when the frontend moves to the new pin.
+
+#### Coverage got worse in the way that matters, and it is published
+
+| | v0.5.0 | v0.6.0 |
+|---|---|---|
+| genres without inception | 28 | 131 |
+| genres without country | 48 | 164 |
+| distinct places | 29 | **50** |
+| genres naming neither US nor UK | 43 | **92** |
+| **top country share** | **0.421** | **0.562** |
+
+More places and more non-anglophone genres in absolute terms, and **a corpus measurably more
+US-concentrated in relative terms**. Both are true and the last one is the uncomfortable one, so it goes
+in the panel at step 8 rather than the two that flatter.
+
+#### An inconsistency found on the way through, and it is benign
+
+The shipped v0.5.0 manifest records `genres_without_us_or_uk: 44`; the code computes **43**. The
+manifest was written 2026-08-06 and the guard that fixed the count landed 08-07, and artifacts are
+immutable so it was never rewritten. **It never reaches a user** — `graph/memory.py:251` recomputes
+coverage at load rather than reading the manifest, which is the 2026-08-05 recompute-at-load decision
+paying off a second time, now for coverage as well as structure. v0.6.0's manifest and the code agree.
+
+#### DoD #6 held, and it was checked rather than assumed
+
+No file in `agent/` was edited. `tests/test_membership.py` asserts `plays_genre` is absent from
+`ALLOWED_PREDICATES`, so the gate refuses it `UNSUPPORTED_PREDICATE` with no change, and the pre-existing
+cross-axis check refuses it again. **The artifact-level lock `tests/test_claims.py:253` only described in
+a comment is now asserted** — no `influenced_by` edge crosses the axes, in either artifact — and its
+companion asserts every membership edge does, so neither can pass vacuously.
 
 ### Step 3 — Re-pin and re-run tier 1
 

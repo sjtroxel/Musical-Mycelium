@@ -31,6 +31,7 @@ from musical_mycelium.graph.schema import (
     Edge,
     Node,
     ProvenanceError,
+    counts_agree,
 )
 from musical_mycelium.ingest import artifact as artifact_io
 from musical_mycelium.ingest import wikidata
@@ -307,7 +308,9 @@ def test_the_manifest_verification_counts_match_the_edges(pinned: Artifact) -> N
     """The manifest is what the API quotes, so it must be derived from the edges, not asserted."""
     manifest = artifact_io.read_manifest(wikidata.artifact_dir())
 
-    assert manifest.verification_counts == pinned.verification_counts()
+    # Widening-tolerant, narrowly: a level the manifest predates must be zero, and every level it
+    # does name must match exactly. See ``schema.counts_agree``.
+    assert counts_agree(manifest.verification_counts, pinned.verification_counts())
     assert sum(manifest.verification_counts.values()) == manifest.edge_count
 
 

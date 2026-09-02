@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Self
@@ -25,12 +26,38 @@ from typing import Any, Self
 #: a graph that cannot represent it cannot narrate it as derivation. See ``docs/graph-semantics.md`` 2.
 PREDICATE_INFLUENCED_BY = "influenced_by"
 
+#: ``P136`` — the genre an artist works in. Added at v0.6.0, and it is **structural, not narratable**.
+#:
+#: "Miles Davis works in jazz" is a membership fact. It makes no claim about derivation in either
+#: direction, which is exactly why it can join the two axes where ``P279`` could not: ``P279`` said
+#: "bebop is a kind of jazz", one preposition away from "bebop came out of jazz", and the whole graph's
+#: meaning rests on that difference (``docs/graph-semantics.md`` §2). There is no reading of P136 that
+#: becomes an influence statement.
+#:
+#: **It is deliberately absent from ``agent.claims.ALLOWED_PREDICATES``, and that omission is the
+#: feature.** A proposal carrying this predicate is rejected ``UNSUPPORTED_PREDICATE`` without the gate
+#: being edited, and rejected a second time as ``CROSS_AXIS`` because its endpoints are a genre and an
+#: artist. Two independent locks, both pre-existing. Do not add it to that set to make a metric move.
+PREDICATE_PLAYS_GENRE = "plays_genre"
+
+#: Every predicate an artifact may carry. Validated on ``Edge`` because a typo'd predicate is otherwise
+#: a silent edge that no traversal finds and no test misses. Widening this is additive; the gate decides
+#: separately, and far more strictly, what may become a *claim*.
+PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE})
+
 SOURCE_WIKIDATA = "wikidata"
 
 #: Tiers from the Wikipedia disconfirmation check (``docs/graph-semantics.md`` 4.2). Only PROSE is
 #: ingested. The others are recorded in the exclusions file so the exclusion rate stays a displayed
 #: number rather than a silent filter.
-PROSE_TIERS = frozenset({"PROSE", "INFOBOX_ONLY", "ORPHAN"})
+#: ``NOT_APPLICABLE`` is the v0.6.0 addition and it means what it says: a **membership** statement was
+#: never put to the prose check, because the check asks "does the subject's article name the object in
+#: body prose", which is a question about an influence claim. Recording a membership edge as ``ORPHAN``
+#: would say the check ran and found nothing; this says it does not apply. Those are different facts and
+#: the exclusion rate is a published number.
+PROSE_TIERS = frozenset({"PROSE", "INFOBOX_ONLY", "ORPHAN", "NOT_APPLICABLE"})
+
+PROSE_TIER_NOT_APPLICABLE = "NOT_APPLICABLE"
 
 #: A human read the subject's article and judged that its prose **asserts influence**. 22 edges at
 #: v0.2, recorded per-edge with supporting quotations in ``docs/phases/phase-1-edge-verification.md``
@@ -69,13 +96,40 @@ VERIFICATION_EXPOSURE_AUTO = "EXPOSURE_AUTO"
 #: The two ``*_AUTO`` artist tiers were added at v0.4.0. This is a **widening**, so every earlier
 #: artifact stays valid; ``verification_counts`` reports the new levels at zero for a genre-only corpus,
 #: which is the honest reading rather than an omission.
+#: A ``P136`` membership statement that **carries a reference on Wikidata**. Added at v0.6.0.
+#:
+#: This is not a prose check and must not be read as one. It says an editor attached a source to the
+#: statement, which is a weaker and different guarantee than any of the four tiers above — none of which
+#: apply, because none of them were run.
+#:
+#: **Why the reference distinction is on the row at all:** a 30-pair hand-check on 2026-09-02 (15 drawn
+#: from artists carrying 1-2 genres, 15 from artists carrying 3 or more, seed recorded in the step 2
+#: record) found the referenced and unreferenced populations differ sharply in quality — **17 of 18
+#: referenced pairs read as clean against 5 of 12 unreferenced**. n=30, judged by an agent rather than
+#: by hand-read sources, so read it as a **direction, not a rate**. Collapsing the two into one tier
+#: would average a 94%-clean population together with a 42%-clean one behind a single label, which is
+#: the exact failure ``verification`` exists to prevent.
+VERIFICATION_MEMBERSHIP_CITED = "MEMBERSHIP_CITED"
+
+#: A ``P136`` membership statement with **no reference on Wikidata**. 612 of 1,320 at the time of the
+#: v0.6.0 cut. The weakest tier in the artifact: sourced to Wikidata's existence and nothing further.
+VERIFICATION_MEMBERSHIP_BARE = "MEMBERSHIP_BARE"
+
 VERIFICATION_LEVELS = frozenset(
     {
         VERIFICATION_HAND,
         VERIFICATION_PROSE_AUTO,
         VERIFICATION_ASSERTS_AUTO,
         VERIFICATION_EXPOSURE_AUTO,
+        VERIFICATION_MEMBERSHIP_CITED,
+        VERIFICATION_MEMBERSHIP_BARE,
     }
+)
+
+#: The membership tiers, as a set, because several call sites need "is this edge structural rather than
+#: an influence claim" and asking that by predicate and by verification separately drifts apart.
+VERIFICATION_MEMBERSHIP_LEVELS = frozenset(
+    {VERIFICATION_MEMBERSHIP_CITED, VERIFICATION_MEMBERSHIP_BARE}
 )
 
 #: A genre: bebop, trip hop, blues rock. Every node through v0.2 was one, which is why this field did not
@@ -95,6 +149,29 @@ NODE_KIND_ARTIST = "artist"
 #: quietly reads as the wrong axis is exactly the conflation this field exists to prevent. See
 #: ``docs/phases/phase-2-corpus-and-traversal.md`` A6.7.
 NODE_KINDS = frozenset({NODE_KIND_GENRE, NODE_KIND_ARTIST})
+
+
+def counts_agree(recorded: Mapping[str, int], recomputed: Mapping[str, int]) -> bool:
+    """Do two verification-count dicts describe the same corpus, allowing for a later widening?
+
+    ``VERIFICATION_LEVELS`` widens as axes arrive — two ``*_AUTO`` tiers at v0.4.0, two ``MEMBERSHIP_*``
+    tiers at v0.6.0 — and artifacts are **immutable**, so a manifest or a frozen eval baseline written
+    before a widening cannot know the new keys. Strict equality against a freshly computed dict then
+    fails for a record that is not wrong, only older.
+
+    **The tolerance is narrow on purpose.** A level the record omits must be **zero** in the
+    recomputation — which is exactly what "this corpus contains none of those" means. A level omitted
+    at a non-zero count is a real disagreement and still fails, so a manifest that misreports what it
+    describes cannot pass by being out of date. Every level the record *does* name must match exactly.
+
+    Found by adding the membership tiers on 2026-09-02: three tests failed at once, all of them
+    comparing a v0.5.0-era record against a v0.6.0-era schema, none of them wrong about the corpus.
+    """
+    for level, count in recorded.items():
+        if recomputed.get(level, 0) != count:
+            return False
+    return all(count == 0 for level, count in recomputed.items() if level not in recorded)
+
 
 ARTIFACT_FILENAME = "graph.json"
 MANIFEST_FILENAME = "manifest.json"

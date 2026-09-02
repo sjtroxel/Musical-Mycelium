@@ -34,7 +34,11 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
-from musical_mycelium.graph.schema import NODE_KIND_GENRE, Artifact
+from musical_mycelium.graph.schema import (
+    NODE_KIND_GENRE,
+    PREDICATE_INFLUENCED_BY,
+    Artifact,
+)
 
 #: Era buckets, chosen once and fixed so the numbers stay comparable across corpus versions.
 #:
@@ -138,6 +142,26 @@ class Coverage:
     #: the counterweight is the same failure as one that understates the bias.
     genres_without_us_or_uk: int
 
+    #: Genres that are never the **subject** of an ``influenced_by`` edge: the corpus records nothing
+    #: about where they came from. **Direction matters and this is the project's named failure mode** —
+    #: ``subject influenced_by object``, so this is not a count of genres that influenced nothing.
+    #:
+    #: Moved here from ``web/src/corpus-facts.json`` at v0.6.0. It was computed in the frontend during
+    #: phase 5 only because putting it in ``Coverage`` is an edit to a serialized contract every eval
+    #: number reads, which phase 5's DoD 9 forbade.
+    genres_without_recorded_origins: int
+
+    #: Genres touching exactly one ``influenced_by`` edge in either direction. The commonest state.
+    genres_with_one_connection: int
+
+    #: The largest number of ``influenced_by`` edges on any single genre. Small in absolute terms, and
+    #: saying so is the point: this corpus is broad and shallow.
+    busiest_genre_connections: int
+
+    #: Degree histogram over the genre axis, keyed by degree as a string so it survives JSON. Every
+    #: genre appears in exactly one bucket, so the values sum to ``genres``.
+    connections: dict[str, int]
+
     #: The single most-credited country and its share of genres that have any country at all. The
     #: blunt version of "this corpus is not global", expressed without inventing a category like
     #: "Western" that nobody has defined.
@@ -187,6 +211,26 @@ def analyse(artifact: Artifact) -> Coverage:
             if not ANGLOPHONE_CORE & _country_set(node.countries):
                 without_us_or_uk += 1
 
+    # Density, over INFLUENCE edges only. ``plays_genre`` is deliberately excluded and this is the
+    # load-bearing line: membership edges outnumber influence edges roughly three to one at v0.6.0, so
+    # counting them here would report a corpus three times denser in the one dimension this project
+    # claims to measure. Density is about what the corpus knows of derivation, not about how many
+    # artists were tagged.
+    genre_ids = {node.id for node in genres}
+    degree: Counter[str] = Counter()
+    origins: Counter[str] = Counter()
+    for edge in artifact.edges:
+        if edge.predicate != PREDICATE_INFLUENCED_BY:
+            continue
+        if edge.subject_id in genre_ids and edge.object_id in genre_ids:
+            degree[edge.subject_id] += 1
+            degree[edge.object_id] += 1
+            origins[edge.subject_id] += 1
+
+    histogram: Counter[str] = Counter()
+    for node in genres:
+        histogram[str(degree.get(node.id, 0))] += 1
+
     # Every bucket present, including the empty ones. A missing key reads as "not measured" and this
     # is measured — the same rule ``Artifact.verification_counts`` follows.
     era_counts = {name: eras.get(name, 0) for name, _, _ in ERA_BOUNDS}
@@ -200,6 +244,10 @@ def analyse(artifact: Artifact) -> Coverage:
         genres=len(genres),
         distinct_countries=len(countries),
         genres_without_us_or_uk=without_us_or_uk,
+        genres_without_recorded_origins=sum(1 for n in genres if origins.get(n.id, 0) == 0),
+        genres_with_one_connection=sum(1 for n in genres if degree.get(n.id, 0) == 1),
+        busiest_genre_connections=max((degree.get(n.id, 0) for n in genres), default=0),
+        connections=dict(sorted(histogram.items(), key=lambda kv: int(kv[0]))),
         without_inception=without_inception,
         without_country=without_country,
         eras=era_counts,

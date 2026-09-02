@@ -23,7 +23,7 @@ from musical_mycelium.graph.memory import (
     artifact_directory,
     default_store,
 )
-from musical_mycelium.graph.schema import read_manifest
+from musical_mycelium.graph.schema import counts_agree, read_manifest
 
 
 @pytest.fixture(scope="module")
@@ -183,7 +183,7 @@ def test_done_states_how_the_corpus_was_verified(client: TestClient) -> None:
     events = frames(client.get("/lineage", params={"q": "acid jazz"}).text)
     corpus = next(payload for name, payload in events if name == "done")["corpus"]
 
-    assert corpus["verification"] == pinned_manifest_counts()["verification"]
+    assert counts_agree(pinned_manifest_counts()["verification"], corpus["verification"])
     assert sum(corpus["verification"].values()) == corpus["edges"]
     assert corpus["verification"]["HAND"] > 0, "the hand-read edges must not vanish from the corpus"
 

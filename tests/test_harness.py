@@ -231,9 +231,20 @@ def test_the_committed_baseline_still_matches_a_fresh_run(
     import json
 
     from musical_mycelium.eval.harness import BASELINE_FILE
+    from musical_mycelium.graph.schema import counts_agree
 
     committed = json.loads(BASELINE_FILE.read_text(encoding="utf-8"))
-    assert committed == measure(outcomes, store).to_json()
+    fresh = measure(outcomes, store).to_json()
+
+    # ``verification_mix`` is compared widening-tolerantly and everything else exactly. The baseline is
+    # a FROZEN record of a specific build; when ``VERIFICATION_LEVELS`` widens, a fresh run reports the
+    # new levels at zero and strict equality fails for a record that is not wrong, only older. The
+    # tolerance is narrow — a level the baseline omits must be zero — so a mix that genuinely moved
+    # still fails. Regenerating instead would rewrite a historical number for a non-event.
+    assert counts_agree(committed["verification_mix"], fresh["verification_mix"])
+    assert {k: v for k, v in committed.items() if k != "verification_mix"} == {
+        k: v for k, v in fresh.items() if k != "verification_mix"
+    }
 
 
 def test_claims_are_not_double_counted_across_cases(outcomes: tuple) -> None:
