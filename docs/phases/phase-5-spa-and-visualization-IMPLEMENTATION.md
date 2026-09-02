@@ -1499,3 +1499,126 @@ partial mock of a real API is a place where "the test passed" can mean "the draw
 
 `make check` **1189 passed, 14 deselected** (was 1184), mypy clean over 89 files, root **15/18**
 unchanged, eval gates 3 passed / 0 failed / 2 not applicable. Frontend **137** (was 116).
+
+### Step 10 — the mark, the release docs, and DoD 9 — 2026-09-02
+
+The release step. Favicon and logo, the writeup brought up to date, `KNOWN-GAPS`, the `v0.5.0` tag, and
+the two verifications the phase owes: DoD 9 and invariant 5's off-switch.
+
+#### DoD 9 is not merely satisfied, it is checkable in one command
+
+> *The backend was not edited to accommodate the frontend — or the exception is named here.*
+
+There is no exception to name. Across the whole of phase 5, from the phase 4 close at `9e1c82c`:
+
+```
+git diff --stat 9e1c82c..HEAD -- src/          ->  (empty)
+git diff --stat 9e1c82c..HEAD -- tests/        ->  3 files changed, 490 insertions(+), 0 deletions(-)
+```
+
+`src/` is **untouched**. The only Python added is three new test files — `test_chips.py`,
+`test_chips_live.py`, `test_corpus_facts.py` — all of which assert *frontend* data against the pinned
+artifact, with **zero deletions anywhere**. The Python suite has moved 1170 -> 1189 in this phase purely
+by addition.
+
+The nearest miss was step 9's density axis. The natural home for
+`genres_without_recorded_origins` / `genres_with_one_connection` / `busiest_genre_connections` is
+`graph/coverage.py`, and putting them there would have been an edit to a serialized contract that every
+eval number reads. They went into `web/src/corpus-facts.json` with a Python test asserting them against
+the artifact instead — **his call, and it is the reason this section has nothing to confess.**
+`KNOWN-GAPS` records that phase 6 should move them into `Coverage` proper.
+
+#### The mark: three noteheads that are also three nodes
+
+`/favicon.ico` had 404ed for the whole phase — found by the step 4 Chromium checker, named there, and
+explicitly deferred to here.
+
+**What it draws is real.** Three noteheads joined by a beam is three nodes joined by two edges, and the
+three are `blues (1890) -> blues rock (1960) -> heavy metal music (1970)` — `Q9759 -> Q193355 -> Q38848`,
+both edges `influenced_by`, both `verification: HAND`, and the *entire* connected component behind the
+headline chip, which step 3 measured at exactly 3 nodes. It ascends left to right because those years
+ascend. A music identity was his ask; the honesty was not something that had to be traded for it, because
+a beamed eighth-note group and this component are the same shape.
+
+**It is drawn only in `--accent`, and that is semantics rather than taste.** `GraphView.tsx:500` fixes
+the meaning: *"step 6 decided the accent means gate-approved"* — the map paints a walked node and a
+gate-approved edge in the accent and nothing else. All three nodes here are walked and both edges passed
+the gate, so an all-accent drawing is precisely what the map itself renders for this component.
+
+Five candidates were rendered against the real palette and screenshotted at 16/24/32/64. Three lost on
+grounds that are not preferences:
+
+| | why it lost |
+|---|---|
+| ink noteheads on an accent beam | **most legible at 16px, and rejected** — it paints the nodes in `--ink`, which is the *selection* colour. Same channel collision as step 9's halo |
+| hollow noteheads | wrong twice: it is the map's **incomplete-record** encoding, false here; and a beam means an eighth note or shorter, which is never hollow |
+| three circles and two lines, no stems | honest and not musical — reads as beads |
+| a "16px-tuned" heavy-beam variant | **my own tuning made it worse.** Butt caps on a slanted beam produced a wedge and stems overshooting it. Only visible at 170px |
+
+#### Two defects a screenshot found and nothing else could
+
+1. **The beam had a spur.** Drawn as a stroked `<line>`, a beam gets a butt cap **perpendicular to its
+   own direction**, so a slanted beam ends on a diagonal and leaves a point sticking up past the last
+   stem. It survived two rounds of previews. Engraved beams end on a **vertical** cut, so the beam is now
+   a `<polygon>`, and `mark.test.ts` asserts both end edges are vertical.
+2. **The masthead broke at 360px.** With the title at a fixed `2rem`, "Musical Mycelium" no longer fits
+   beside the mark: it wrapped to two lines, the mark centred itself against the two-line block and
+   floated in the middle of the left margin, and the wrapped title sat indented away from the tagline's
+   left edge. Now `clamp(1.5rem, 6vw, 2rem)` with `nowrap`; measured single-line and overflow-free at
+   320 / 360 / 480 / 1000.
+
+**That is the fifth layout failure in this phase that a green suite could not see, and the second caused
+by my own "improvement".** The pattern is stable enough now to state plainly: *anything about this
+frontend that is a picture must be looked at, and my reasoning about pictures is not a substitute.*
+
+#### And one checker that reported success while showing nothing
+
+The first comparison sheet magnified each 16px rendering to judge it. Every panel came back **blank**,
+and the script reported success: it sampled a 16x16 source rect out of a 32-unit `viewBox`, magnifying an
+empty corner, and the ground colour is the same as the page's so blank looked plausible. The magnifier
+now counts lit pixels and **throws** if any panel is near-empty — 7,533 per panel on the run that
+decided this.
+
+This is step 5's lesson for the third time: *a check must be able to distinguish the behaviour it is
+asserting from the nearest thing that looks like it.* "The image loaded" cannot tell a drawing from a
+blank square.
+
+#### One source of truth, because a logo and a favicon drift by default
+
+The geometry is written once in `web/src/components/mark.ts`. `Mark.tsx` injects that same string into
+the masthead; `public/favicon.svg` is generated from it by `npm run mark`; and `mark.test.ts` fails if the
+shipped file is not byte-identical to `faviconSvg()`. Node strips the TypeScript natively (22.18+), so the
+generator needs no new dependency.
+
+The `.ico` and the 180px apple-touch PNG are **rasterised from that same SVG in a headless browser**,
+which is not a repo dependency, so they are committed binaries rather than build output — the piece most
+able to rot quietly. They are therefore checked on their actual bytes: PNG magic and a 180x180 IHDR; the
+ICO's directory parsed for a 16/32/48 set with every entry's offset+size inside the file and every payload
+starting with PNG magic; and `index.html` asserted to reference all three.
+
+**Three locks verified by breaking them**, per the standing counter-practice, each break confirmed to have
+applied before the failure was believed: nudging `R` 4.2 -> 4.3 without regenerating fails only the drift
+guard; truncating the `.ico` fails only the ICO test; deleting the apple-touch `<link>` fails only the
+reference test.
+
+`noUncheckedIndexedAccess` is on and caught what vitest did not — the tests passed while `tsc -b` failed
+on 16 indexed accesses. Fixed by naming `FIRST`/`MIDDLE`/`LAST` rather than by asserting non-null, which
+also says what the geometry means: the beam spans FIRST to LAST.
+
+#### Verified
+
+Live against the dev server in headless Chromium: `/favicon.svg` 200 `image/svg+xml`, `/favicon.ico` 200
+`image/x-icon`, `/apple-touch-icon.png` 200 `image/png`, **and the bare `/favicon.ico` a browser asks for
+by name now 200s** — the phase-long 404 is closed. No failed requests, no 4xx, no console errors. All
+three assets are copied into `dist/` by the production build with their links rewritten intact.
+
+`make check` **1189 passed, 14 deselected — unchanged, because no Python was edited.** mypy clean over 89
+files, root **15/18**, terraform valid, eval gates 3 passed / 0 failed / 2 not applicable. Frontend
+**146** (was 137).
+
+Every figure quoted in the updated `docs/spa-explained.md` was re-derived against the artifact rather
+than copied from the doc it came from. That caught one worth recording: recomputing "genres naming
+neither the US nor the UK" naively gave **44**, and the honest figure is **43** — the naive count
+reproduces exactly the bug `coverage.py:67` records being caught on 2026-08-07, where an exact-string
+test reads `UK drill -> Brixton` as "names no UK". The guard works; a fresh recomputation without it does
+not.

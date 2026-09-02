@@ -79,10 +79,31 @@ code {
 
 /* --- masthead --- */
 
-.masthead__title {
-  font-size: 2rem;
-  letter-spacing: -0.015em;
+/* The mark sits beside the title rather than above it: the masthead is already three stacked
+   blocks and a fourth would push the chips further from the fold, which is the mistake step 9
+   made with the coverage panel. `align-items: center` and not baseline - the mark's optical
+   centre is its beam, not its bottom edge. */
+.masthead__lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   margin: 0 0 0.4rem;
+}
+
+.mark {
+  flex: none;
+}
+
+/* The size CLAMPS, and that is a fix rather than a flourish. At 2rem fixed, "Musical Mycelium" no
+   longer fits beside the mark on a 360px screen: it wrapped to two lines, the mark centred itself
+   against the two-line block and floated in the middle of the left margin, and the wrapped title
+   sat indented away from the tagline's left edge. Shrinking the type keeps it on one line instead,
+   which keeps the lockup a lockup. Found in a 360px screenshot; no test in this repo can see it. */
+.masthead__title {
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  letter-spacing: -0.015em;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .masthead__tagline {

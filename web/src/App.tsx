@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Mark } from "./components/Mark";
 import type { Chip } from "./components/ChipRow";
 import { ChipRow } from "./components/ChipRow";
 import { CoveragePanel } from "./components/CoveragePanel";
@@ -34,7 +35,10 @@ export function App() {
   return (
     <div className="app">
       <header className="masthead">
-        <h1 className="masthead__title">Musical Mycelium</h1>
+        <div className="masthead__lockup">
+          <Mark />
+          <h1 className="masthead__title">Musical Mycelium</h1>
+        </div>
         <p className="masthead__tagline">
           Music history is a network, not a timeline. Ask how two genres connect and every step of
           the answer traces to a checkable source.

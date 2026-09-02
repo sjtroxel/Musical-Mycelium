@@ -52,6 +52,13 @@ every time — and **`llm_provider` defaults to `local`**. A dispatch on default
 deployed stack to the stub LLM and falsifies the resume line. Always pass `-f llm_provider=bedrock -f
 reserved_concurrency=-1`.
 
+**Updated 2026-09-02 at phase 5 steps 9 and 10 — every DoD item is closed in the repo, and the phase
+is not finished until the deploy below lands.** DoD 7 and DoD 9 both closed,
+the favicon 404 that stood for the whole phase closed, and the writeup brought up to date. `make check`
+is **1189**, the frontend suite **146**. Two items remain open and are named in that section: steps 8
+and 9 are committed but not yet deployed, and the `v0.5.0` tag waits on that deploy so the tag and the
+live site agree. See the 2026-09-02 section below.
+
 **The URL question, answered 2026-09-01.** CloudFront has **no vanity hostname at any price**;
 `d2vtdkpgmecreg.cloudfront.net` is what AWS assigns and there is no readable subdomain to claim. A
 nicer URL means registering a real domain. `phase-5 §11` and `frontend.tf:116` both put a custom
@@ -77,6 +84,87 @@ now been executed. ~~What remains is the **Bedrock redeploy, deliberately deferr
 is also why the deployed URL still runs the template stub~~ — **also stale: that redeploy shipped at
 phase 5 step 0 on 2026-08-24.** What remains from this paragraph is only the standing facts about the
 corpus in part 2.
+
+---
+
+## PHASE 5 STEPS 9 AND 10 — coverage is drawn and the mark ships; the phase closes on the deploy, 2026-09-02
+
+Step 9 closed **DoD 7** on 2026-09-01 and never got its own section here; step 10 closed **DoD 9** and
+the release items on 2026-09-02. Both are recorded together. Full as-built in the phase 5 IMPLEMENTATION
+doc §12; what belongs here is what is still open and what generalises.
+
+**Verified state, measured 2026-09-02:** `make check` green — **1189 passed, 14 `costs_money` tests
+deselected**, mypy clean over 89 source files, root **15/18**, terraform valid, eval gates 3 passed / 0
+failed / 2 not applicable. Frontend suite **146** (was 137 at step 9, 116 at step 8). *Any lower count
+written anywhere in this document is stale, not a regression.*
+
+**DoD 9 has no exception to name, and it is checkable in one command.** Across the whole of phase 5,
+`git diff --stat 9e1c82c..HEAD -- src/` is **empty** — production Python is untouched. The only Python
+added is three test files (`test_chips.py`, `test_chips_live.py`, `test_corpus_facts.py`, +490 lines,
+**zero deletions**). The Python suite moved 1170 -> 1189 in this phase purely by addition.
+
+**`/favicon.ico` no longer 404s.** It had 404ed for the entire phase, found by the step 4 Chromium
+checker and deferred to step 10. Now verified live in headless Chromium: `favicon.svg`, `favicon.ico` and
+`apple-touch-icon.png` all 200, **including the bare `/favicon.ico` a browser requests by name**, with no
+failed requests, no 4xx and no console errors, and all three copied into `dist/` by the production build.
+
+### Open after this phase
+
+- **The density figures live in the frontend and should not stay there.** `genres_without_recorded_origins`
+  (85), `genres_with_one_connection` (108) and `busiest_genre_connections` (6) belong in
+  `graph/coverage.py` beside the rest of `analyse()`. They are in `web/src/corpus-facts.json` with a
+  Python test asserting them against the pinned artifact instead, because putting them in `Coverage` is
+  an edit to a serialized contract every eval number reads — which DoD 9 forbids in phase 5. **Phase 6
+  should move them**, at the same time it cuts a new artifact.
+- **Steps 8 and 9 are committed but were NOT deployed at the time this was written.** Verified by
+  fetching the live bundle and grepping it, not by reading a workflow result: `index-p5QCCCZ1.js`
+  contains neither `setLineDash` nor the step 9 coverage caption. The deployed site serves steps 4-7 —
+  the map, but not the explorable map and not the coverage panel. **The deploy traps both still apply:**
+  a commit that is not pushed cannot deploy (the workflow builds `--ref main` on GitHub and will
+  silently rebuild the previous commit and report success), and `llm_provider` **defaults to `local`**,
+  so a dispatch on defaults reverts the stack to the stub LLM and falsifies the resume line. Always
+  `-f llm_provider=bedrock -f reserved_concurrency=-1`.
+- **The `v0.5.0` tag is not cut until the deploy above lands**, so that the tag and the live site agree.
+
+### Invariant 5: the off-switch is real, and it is two steps rather than one
+
+`frontend.tf:22` sets **no `force_destroy` on the SPA bucket, deliberately**, with the reason in a
+comment: a `destroy` that silently empties a bucket is a habit worth not having in a repo where another
+bucket holds the published corpus. The consequence is worth stating rather than discovering — **a
+`terraform destroy` against a populated SPA bucket fails until the bucket is emptied.** That is a real
+off-switch, and it is not a one-command one. Do not write that it is.
+
+**The distribution is deliberately NOT torn down to prove this.** Destroying `aws_cloudfront_distribution.spa`
+means AWS assigns a **new hostname on re-apply** — `d2vtdkpgmecreg.cloudfront.net` would simply stop
+existing, along with any link already shared. The verification chosen instead (sjtroxel, 2026-09-02) is
+`terraform plan -destroy` for completeness of coverage plus a targeted destroy/apply round-trip on a
+resource that costs nothing to recreate. **What that proves and what it does not:** it proves every
+frontend resource is Terraform-managed and would be removed, which is the actual risk invariant 5 guards
+against — a resource created outside Terraform and left standing. It does **not** prove the distribution
+teardown executes cleanly, and that remains unexecuted. Phase 7, which registers a real domain, is where
+a new CloudFront hostname costs nothing and the full cycle can be run for real.
+
+### What generalises
+
+**Five layout failures in this phase were invisible to a green suite, and two of them were caused by my
+own "improvement".** Step 9's coverage panel rendering a screen tall above the answer; its `auto-fit`
+grid resolving to two columns; its tick row reading as a bar; step 10's beam spur; step 10's masthead
+wrapping at 360px. The rule is now stated plainly in the IMPLEMENTATION doc: *anything about this
+frontend that is a picture must be looked at, and reasoning about pictures is not a substitute.*
+
+**A checker reported success while displaying nothing, for the third time in this phase.** Step 10's
+first comparison sheet magnified each 16px rendering and every panel came back blank — it sampled a
+16x16 rect out of a 32-unit `viewBox` and the ground colour matches the page, so blank looked plausible.
+It now counts lit pixels and throws below a floor. Step 3 sampled every thousandth pixel and produced a
+confident false FAIL; step 5's drag check could not distinguish a drag from a pan. Same shape each time:
+**a check must be able to distinguish the behaviour it asserts from the nearest thing that looks like
+it.**
+
+**A number re-derived without its guard reproduced a bug the guard exists to prevent.** Re-checking
+"genres naming neither the US nor the UK" for the writeup gave **44**; the honest figure is **43**. The
+naive count is exactly the 2026-08-07 bug recorded at `coverage.py:67`, where an exact-string test reads
+`UK drill -> Brixton` as "names no UK". Recomputing a figure is not the same as recomputing it correctly,
+and the guard is the part that carries the knowledge.
 
 ---
 
