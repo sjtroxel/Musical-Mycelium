@@ -158,16 +158,65 @@ tf-init: ## Initialise the main root against the bootstrap state bucket
 	@account=$$(aws sts get-caller-identity --query Account --output text); \
 	terraform -chdir=$(TF_MAIN) init -backend-config=bucket=$(PROJECT)-tfstate-$$account
 
-tf-plan: ## Plan the main root (requires TF_VAR_alert_email)
-	terraform -chdir=$(TF_MAIN) plan
+# --- the three variables these targets refuse to guess --------------------------------------------
+# Every one of these has a Terraform default that DISAGREES with the deployed stack:
+#
+#   image_tag            defaults to "latest". CI passes the git sha (deploy.yml:193), so after every
+#                        CI deploy a bare local plan shows `1 to change`, proposing to trade a
+#                        commit-traceable pin for an ambiguous one.
+#   llm_provider         defaults to "local". A bare apply REVERTS THE PUBLIC URL TO THE STUB LLM and
+#                        falsifies the resume line. Same trap deploy.yml:35-38 records costing an
+#                        afternoon on 2026-08-05, arriving through the Makefile instead.
+#   reserved_concurrency defaults to 5, which this account REFUSES outright -- its whole concurrency
+#                        ceiling is ~10 (measured 2026-08-03). The live stack runs -1.
+#
+# So they are demanded, not defaulted. A default that happens to be right today is the same trap one
+# variable later. Found 2026-09-02: .claude/settings.json denied `terraform apply` and
+# `terraform destroy` while allowing `make *`, which left these targets as the unguarded path to
+# exactly that revert. The deny list now covers the wrappers too; this is the other half of the fix.
+define TF_REQUIRE
+@test -n "$(IMAGE_TAG)" && test -n "$(LLM_PROVIDER)" && test -n "$(RESERVED_CONCURRENCY)" || { \
+	echo "Refusing: $@ does not guess deployment variables. All three are required."; \
+	echo; \
+	echo "  IMAGE_TAG            which image in ECR to run. For a CI deploy this is the git sha of"; \
+	echo "                       the commit that built it -- the ECR tag equals \`git rev-parse HEAD\`,"; \
+	echo "                       which is the cheapest proof a deploy built what you think it did."; \
+	echo "  LLM_PROVIDER         bedrock | local. The live stack runs bedrock. local runs the whole"; \
+	echo "                       stack with no model call, and reverts the public URL to the stub."; \
+	echo "  RESERVED_CONCURRENCY -1 on this account. A reservation of 5 is refused; ceiling is ~10."; \
+	echo; \
+	echo "  make $@ IMAGE_TAG=<sha> LLM_PROVIDER=bedrock RESERVED_CONCURRENCY=-1"; \
+	exit 1; \
+}
+endef
 
-tf-apply: ## Apply the main root (requires TF_VAR_alert_email and an image already in ECR)
-	terraform -chdir=$(TF_MAIN) apply
+TF_VARS := -var image_tag=$(IMAGE_TAG) -var llm_provider=$(LLM_PROVIDER) \
+           -var reserved_concurrency=$(RESERVED_CONCURRENCY)
+
+tf-plan: ## Plan the main root (requires TF_VAR_alert_email + IMAGE_TAG, LLM_PROVIDER, RESERVED_CONCURRENCY)
+	$(TF_REQUIRE)
+	terraform -chdir=$(TF_MAIN) plan $(TF_VARS)
+
+tf-apply: ## Apply the main root (requires the three deployment variables and an image already in ECR)
+	$(TF_REQUIRE)
+	terraform -chdir=$(TF_MAIN) apply $(TF_VARS)
 
 # The off-switch, and the ORDER IS NOT OPTIONAL: main first, then bootstrap. Destroying bootstrap
 # first deletes the bucket holding main's state and leaves main's resources running and unmanaged.
+#
+# The second guard is not ceremony. Destroying aws_cloudfront_distribution.spa means AWS assigns a NEW
+# hostname on re-apply, so d2vtdkpgmecreg.cloudfront.net stops existing and every link to it dies.
+# That is unrecoverable, and it is the one thing in this repo a typo should not be able to reach.
 tf-destroy: ## Destroy the main root. Bootstrap is destroyed separately and AFTER this.
-	terraform -chdir=$(TF_MAIN) destroy
+	$(TF_REQUIRE)
+	@test "$(CONFIRM)" = "destroy-the-live-site" || { \
+		echo "Refusing: tf-destroy tears down 26 resources including the CloudFront distribution."; \
+		echo "Its hostname is NOT recoverable -- a re-apply gets a new one and every link dies."; \
+		echo; \
+		echo "  make tf-destroy CONFIRM=destroy-the-live-site IMAGE_TAG=<sha> LLM_PROVIDER=bedrock RESERVED_CONCURRENCY=-1"; \
+		exit 1; \
+	}
+	terraform -chdir=$(TF_MAIN) destroy $(TF_VARS)
 	@echo
 	@echo "main/ is gone. To remove the rest (state bucket, ECR, OIDC role):"
 	@echo "  terraform -chdir=$(BOOTSTRAP) destroy"

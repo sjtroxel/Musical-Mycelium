@@ -232,6 +232,25 @@ exists.
 findings that outlive the step that produced them, which is what this section is for; the status board was
 not.)*
 
+- **2026-09-02 — C1: the connectivity question is answered. Lineage from a second source, structure
+  from membership.** The decision `docs/graph-semantics.md` §5 recorded as open and belonging to sjtroxel
+  since 2026-07-31. What closed it was a measurement, not a preference: **the corpus already holds
+  roughly 95% of every genre on Wikidata carrying a P737 influence edge at all** — 331 such edges exist in
+  the whole of Wikidata and discovery was never bounded — so "ingest more genres" was never available.
+  Density can only come from a second source. **DBpedia's `dbo:stylisticOrigin` has 5,124 genre-to-genre
+  origin edges against Wikidata's 331**, and on the 155 corpus genres that align through `owl:sameAs` it
+  corroborates 80 existing edges, adds 237 new ones, and **reverses the direction of 2 — which is what
+  makes `contested` reachable for the first time.** Separately, `P136` (artist works in genre) joins the
+  two axes that have never touched, at 1,313 pairs. **P279 is still not ingested**; P136 takes the
+  structural role P279 was proposed for because it makes no derivation claim in any reading, where P279's
+  whole risk was that it does. Full record: `graph-semantics.md` §5.2. Reasoning:
+  `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §3.
+- **2026-09-02 — A deny pattern naming a command does not cover a wrapper that runs it.**
+  `.claude/settings.json` denied `terraform apply` and `terraform destroy` while allowing `make *`, and
+  `make tf-apply` / `make tf-destroy` run exactly those. The wrappers are now denied and the Makefile
+  targets refuse to guess `image_tag`, `llm_provider` or `reserved_concurrency` rather than defaulting
+  them — all three defaults disagreed with the live stack. **The guard inside the thing being run is the
+  half that cannot be routed around by invoking it differently**; the deny pattern is defence in depth.
 - **2026-08-09 — Delimiting untrusted text needs a return path.** Marking tool payloads without stripping
   the marks off *incoming* tool arguments breaks the walk it was protecting: a model hands a wrapped node
   id straight back and every id-taking tool answers `unknown node`. Found by building phase 3 step 5.

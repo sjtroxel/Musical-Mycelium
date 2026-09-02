@@ -87,6 +87,47 @@ corpus in part 2.
 
 ---
 
+## PHASE 6 STEP 0 — the terraform foot-gun is guarded on both sides, 2026-09-02
+
+The phase opens on the one operational item the phase 5 close left behind. Both halves are closed.
+
+**The settings half** is recorded in the phase 5 "Open after this phase" section above:
+`Bash(make tf-apply*)`, `Bash(make tf-destroy*)` and `Bash(make heldout-seal*)` are now denied.
+
+**The Makefile half.** `tf-plan`, `tf-apply` and `tf-destroy` now **refuse rather than default**, through
+a shared `TF_REQUIRE` macro that demands `IMAGE_TAG`, `LLM_PROVIDER` and `RESERVED_CONCURRENCY` and
+prints the correct invocation when any is missing. **A default that happens to be right today is the
+same trap one variable later**, which is why none of the three was given a Makefile-level default.
+
+**The third variable was worse than the audit realised.** The audit named `image_tag` and `llm_provider`;
+checking `variables.tf` while writing the guard turned up that `reserved_concurrency` defaults to **5**,
+and `variables.tf:171` records that this account **refuses a reservation of 5** — its whole concurrency
+ceiling is ~10, measured 2026-08-03. So a bare `make tf-apply` had three wrong values, not two, and the
+third would have failed the apply outright after the first two had already been accepted into the plan.
+
+| variable | default | live stack | what the default does |
+|---|---|---|---|
+| `image_tag` | `"latest"` | the git sha | trades a commit-traceable pin for an ambiguous one |
+| `llm_provider` | `"local"` | `bedrock` | **reverts the public URL to the stub LLM** |
+| `reserved_concurrency` | `5` | `-1` | **fails the apply outright on this account** |
+
+**`tf-destroy` carries a second, independent guard: `CONFIRM=destroy-the-live-site`.** Destroying
+`aws_cloudfront_distribution.spa` means AWS assigns a **new hostname on re-apply**, so
+`d2vtdkpgmecreg.cloudfront.net` stops existing and every link to it dies. Unrecoverable, and the one
+thing here a typo should not be able to reach.
+
+**Verified by running it, not by reading it:** a bare `make tf-plan` refuses, a partially-specified one
+refuses, and a fully-specified one expands to the right `terraform ... -var ... -var ... -var ...` line.
+`make check` is unaffected at **1189 passed** — `tf-validate` uses none of these variables.
+
+**What is NOT fully closed, and it generalises.** A deny pattern matches a command string, so
+`Bash(make tf-destroy*)` covers `make tf-destroy` and does not cover `make -C . tf-destroy` or a `cd`
+that precedes it. **The settings deny is defence in depth; the guard inside the Makefile is the half that
+cannot be routed around by invoking make differently.** Put the real check in the thing being run, not
+only in the pattern that describes it.
+
+---
+
 ## PHASE 5 STEPS 9 AND 10 — coverage is drawn and the mark ships; the phase closes on the deploy, 2026-09-02
 
 Step 9 closed **DoD 7** on 2026-09-01 and never got its own section here; step 10 closed **DoD 9** and

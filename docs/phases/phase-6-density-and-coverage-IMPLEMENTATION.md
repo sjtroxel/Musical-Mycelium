@@ -195,32 +195,73 @@ roughly $0.36 each and buys attributable numbers, which is the whole point of ha
 | 9 | Full suite: tier 1 + judged tier 2; the held-out decision | — | 5 | ~$0.40 |
 | 10 | Docs, copy audit, release, `v0.6` tag | — | 1, 8 | ~$0.02 |
 
-### Step 0 — Guard the Makefile terraform targets
+### Step 0 — Guard the Makefile terraform targets — **DONE 2026-09-02**
 
-**Closed already, in part, on 2026-09-02 before this doc was written.** The audit found
-`.claude/settings.json` denied `Bash(terraform apply*)` and `Bash(terraform destroy*)` while allowing
-`Bash(make *)`, and those patterns do not match `make tf-apply` or `make tf-destroy`, which run the bare
-commands. `Bash(make tf-apply*)`, `Bash(make tf-destroy*)` and `Bash(make heldout-seal*)` are now denied.
-`docs/KNOWN-GAPS.md` carries the finding and the generalisation.
+Both halves closed the day the plan was written.
 
-**What is still open is the Makefile itself.** `Makefile:164` and `:169` pass none of `image_tag`,
-`llm_provider` or `reserved_concurrency`, so all three inherit defaults that disagree with the live stack.
-The targets must either carry the three variables or refuse to run without them. **Refuse, do not
-default** — a default that happens to be right today is the same trap one variable later. Concretely:
-require `IMAGE_TAG`, fail with the correct invocation printed, and keep `llm_provider=bedrock` and
-`reserved_concurrency=-1` explicit in the command rather than in a variable default.
+**The settings half.** The audit found `.claude/settings.json` denied `Bash(terraform apply*)` and
+`Bash(terraform destroy*)` while allowing `Bash(make *)`, and those patterns do not match `make tf-apply`
+or `make tf-destroy`, which run the bare commands. `Bash(make tf-apply*)`, `Bash(make tf-destroy*)` and
+`Bash(make heldout-seal*)` are now denied.
 
-Free, small, and it goes first because every later step that touches infrastructure runs behind it.
+**The Makefile half.** `tf-plan`, `tf-apply` and `tf-destroy` now **refuse rather than default**. All
+three of the variables at issue have a Terraform default that disagrees with the deployed stack, and the
+third one was worse than the audit realised:
 
-### Step 1 — Record the connectivity decision
+| variable | Terraform default | live stack | what the default does |
+|---|---|---|---|
+| `image_tag` | `"latest"` | the git sha | trades a commit-traceable pin for an ambiguous one |
+| `llm_provider` | `"local"` | `bedrock` | **reverts the public URL to the stub LLM** |
+| `reserved_concurrency` | `5` | `-1` | **fails outright** — this account's whole ceiling is ~10 |
 
-§3 of this doc is the reasoning. Step 1 lands the *decision* where the product reads it: a short section
-in `docs/graph-semantics.md` (which is where phases 1, 2 and 6 all read graph semantics from), a line in
-`docs/ROADMAP.md`'s decision history, and the amended thesis wording in `CLAUDE.md` and `README.md`.
+A shared `TF_REQUIRE` macro demands all three and prints the correct invocation when any is missing.
+Verified by running it: bare refuses, partially-specified refuses, and fully-specified expands to
+`terraform -chdir=infra/terraform/main plan -var image_tag=... -var llm_provider=... -var reserved_concurrency=...`.
+`make check` unaffected at 1189 — `tf-validate` uses none of these.
 
-**DoD #1 has two halves and the second is the one that gets skipped:** *"the product's claim matches it."*
-The claim audit is step 10, but the wording is decided here so that eight steps of copy are not written
-against the old sentence.
+**`tf-destroy` carries a second, separate guard**, and it is the more important of the two:
+`CONFIRM=destroy-the-live-site`. Destroying `aws_cloudfront_distribution.spa` means AWS assigns a **new
+hostname on re-apply**, so `d2vtdkpgmecreg.cloudfront.net` stops existing and every link to it dies. That
+is unrecoverable and it is the one thing in this repo a typo should not be able to reach.
+
+**What is still not fully closed, stated rather than glossed.** A deny pattern is matched against the
+command string, so `Bash(make tf-destroy*)` covers `make tf-destroy` and not `make -C . tf-destroy` or a
+`cd` that precedes it. **The settings deny is defence in depth; the guard inside the Makefile is the half
+that cannot be routed around by invoking make differently.** That is the argument for putting the real
+check in the thing being run rather than only in the pattern that describes it, and it generalises to
+every future target this phase adds.
+
+### Step 1 — Record the connectivity decision — **DONE 2026-09-02**
+
+§3 of this doc is the reasoning. Step 1 landed the *decision* in the five places the rest of the repo
+reads it from, as **decision C1**:
+
+| file | what landed |
+|---|---|
+| `docs/graph-semantics.md` §5.2 | **the canonical record.** §5 posed the question in July and said it was open and belonged to sjtroxel; §5.2 closes it, with the Wikidata-ceiling finding, the DBpedia counts, the P136-over-P279 argument, and what the decision does *not* settle |
+| `docs/graph-semantics.md` §6 | the phase 6 consequence bullet now names the two properties and points at §5.2 |
+| `docs/ROADMAP.md` §4 | two dated decision-history entries — C1, and the step 0 deny-pattern generalisation |
+| `CLAUDE.md` | the thesis paragraph, amended |
+| `README.md`, `docs/spa-explained.md` | status, and a dated forward-note on the section that goes stale at step 2 |
+
+**The trap this step exists to avoid, and it nearly landed.** The decision is made now; the corpus does
+not move until step 2. So every sentence written here had to be true of **v0.5.0**, not of the corpus this
+phase is going to cut. A first draft of §5.2 read *"the first now becomes demonstrable"*, which is
+ambiguous between "as of this decision" and "as of this corpus" — and the second reading is false. Both
+`CLAUDE.md` and §5.2 now carry the explicit line: **until phase 6 step 2 lands, present-tense copy must
+still say 169 disjoint components.**
+
+That is DoD #8 being enforced against this phase's own optimism rather than against a legacy sentence,
+which is the harder direction and the one it will keep being needed in.
+
+**What was decided about P136 that was not in the plan.** §3 argued P136 passes the semantics test P279
+failed. Writing it up surfaced that `.claude/rules/graph-semantics.md` requires hand validation before
+ingesting a property **with no exemption for easy cases**, so a hand-check is owed and step 2 owes it.
+§5.2 records that it will be smaller than the 47-edge P279 pass and *why the reason is not "because this
+one is obvious"*: P279's risk was a systematic misreading of the property's meaning, which needs a large
+sample to rule out. P136's meaning is not in question; its risk is per-row noise — an artist tagged with
+a genre they barely played — which a small sample bounds and no sample size eliminates. Different failure
+mode, different sample size, stated rather than assumed.
 
 ### Step 2 — P136 membership → artifact v0.6.0
 

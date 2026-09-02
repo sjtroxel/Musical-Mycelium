@@ -351,6 +351,113 @@ that — depth has to come from more edges, not better search. The discovery que
 is no unexplored frontier to crawl; this is what Wikidata's genre-level P737 contains. See the phase-2
 IMPLEMENTATION build log for the options.
 
+### 5.2 The question is ANSWERED — 2026-09-02, phase 6 step 1
+
+**§5 said this decision was open and belonged to sjtroxel. It is now closed. Decision C1, and it should
+not be re-litigated without new measurements.** The full reasoning is
+`docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §3; this is the record the rest of the repo
+reads from.
+
+The scope doc offered three resolutions. **Resolution 3 is adopted for lineage, and resolution 2's
+architecture is adopted for structure with a different property in it.**
+
+#### What decided it: the corpus is at its ceiling on Wikidata
+
+The finding that reframed the question, and it is a fact about the data rather than a preference:
+
+| measure | value |
+|---|---|
+| music genres on Wikidata (`P31 Q188451`) | 6,328 |
+| `P737` edges genre → genre, all of Wikidata | **331** |
+| genres those edges touch | 198 |
+| genres in artifact v0.5.0 | 169 |
+
+`ingest/discovery.py:1` is *"Full P737 discovery: every genre-to-genre influence candidate"* — no seed
+list, no `LIMIT`. **The corpus therefore already holds roughly 95% of every genre on Wikidata that has an
+influence edge at all**, and the remaining ~6,130 genres carry zero P737.
+
+**So "ingest more genres" was never a scheduling question.** Adding those 6,130 would raise
+`isolated_nodes` from 0, raise the refusal rate, and make the coverage panel worse while making the node
+count look better. §5.1 already established that depth has to come from more edges rather than better
+search. This establishes the other half: **on Wikidata P737 alone, more edges do not exist.** Density can
+only come from a second source, which turns resolution 3 from the most interesting option into the only
+one that changes anything.
+
+#### The second source exists and is 15x denser
+
+Measured 2026-09-02 against `https://dbpedia.org/sparql`. The count was owed since the 2026-08-01 review
+§5.1 and flagged again on 08-07.
+
+| measure | Wikidata `P737` | DBpedia `dbo:stylisticOrigin` |
+|---|---|---|
+| genre → genre origin edges | **331** | **5,124** |
+| distinct genres touched | 198 | 1,628 |
+
+Aligned to the corpus through `owl:sameAs` (155 of 169 genres align, 92%), against the corpus's 133
+genre-genre edges: **80 corroborate**, **237 are new**, 53 exist only in the corpus, and **2 are direction
+reversals** — which is what makes `contested` reachable for the first time.
+
+> **A counting trap for anyone re-running this.** `COUNT(*)` over a `?a a dbo:MusicGenre` join against
+> that endpoint multiplies rows across named graphs; the first run returned 35,947, larger than the
+> unfiltered count of the same relation and therefore impossible. **Use `COUNT(DISTINCT ?a ?b)`.** The
+> error inflates, which is the direction that flatters a plan.
+
+#### Why P136 and not P279
+
+§2 is unchanged: **P279 is category membership, zero of 47 hand-read edges carried a historical claim,
+and it is still not ingested.** But the *shape* resolution 2 proposed — one property for structure, a
+different one for lineage, held apart so neither can read as the other — is correct. `P136` is the
+property that fits it and survives the test P279 failed.
+
+- P279 said *"bebop is a kind of jazz"* and the danger was that it reads as *"bebop came out of jazz"*.
+  The two are one preposition apart and the whole graph's meaning rests on the difference.
+- P136 says *"Miles Davis works in jazz"*. It makes **no** claim about derivation, in either direction,
+  and there is no reading of it that becomes an influence statement. It is a membership fact between two
+  different kinds of node, which is precisely why it cannot be confused with an edge between two nodes of
+  the same kind.
+
+Measured for the corpus as it stands: **1,313 P136 pairs from 672 of the 804 artists into 91 of the 169
+genres.** That is the layer that joins the two axes, which nothing currently does — 128 components are
+purely artists, 41 purely genres, and none mixed.
+
+**A hand-check is still owed and step 2 owes it.** `.claude/rules/graph-semantics.md` requires hand
+validation before ingesting a property and that rule does not have an exemption for easy cases. It will be
+**smaller than the 47-edge P279 pass, and the reason is that the failure mode is different rather than
+absent**: P279's risk was a systematic misreading of what the property means, which needed a large sample
+to rule out. P136's meaning is not in question; its risk is per-row noise — an artist tagged with a genre
+they barely touched — which is a data-quality question that a small sample bounds and that no sample size
+eliminates. Sizing and findings go in the step 2 record, not here.
+
+#### The answer, and what the product may therefore claim
+
+**Lineage comes from a second source. Structure comes from membership. The two are different predicates
+and the gate cannot narrate the second one.**
+
+`CLAUDE.md` states the thesis as *"Genres look like separate things; underneath they are one connected
+organism."* §5 recorded that the second clause of that thesis was confirmed emphatically and the first was
+not demonstrable. **Phase 6 makes the first demonstrable too, in one specific form and no other: the
+organism is connected through the people who play across it.** Membership, not an unbroken chain of
+genre-to-genre influence. **That is a statement about the corpus phase 6 cuts, not about v0.5.0** — as of
+this section's date the corpus is still 169 disjoint components and present-tense copy must say so.
+
+That is a better claim than the vague one, and it is worth being clear about why: **what actually connects
+musical genres in history is musicians who move between them.** The corpus is about to say so structurally
+rather than rhetorically.
+
+**What stays forbidden.** Copy implying one continuous chain of sourced influence across the whole graph
+is false and remains false after this phase. So does any wording that lets membership read as derivation.
+Phase 6 step 10 audits every surface for both.
+
+**What this decision does NOT settle**, listed so it is not read as settling more than it does:
+
+- **P279 is still not ingested**, and a future phase that wants it still owes the genre-domain boundary
+  predicate this document has held against it since 2026-07-31.
+- **`contested` is reachable, not built.** Two instances is a floor measured on 317 comparable edges, not
+  a rate, and the machinery lands at phase 6 step 5.
+- **Whether DBpedia's 5,124 edges survive screening** at anything like the Wikidata rate is unknown. The
+  Wikidata genre axis dropped 62% through the prose check. If DBpedia screens down comparably, the 15x is
+  wrong and the phase is smaller than this section implies.
+
 ---
 
 ## 6. Consequences by phase
@@ -364,8 +471,11 @@ IMPLEMENTATION build log for the options.
   as derivation by construction. Reasoning in `docs/phases/phase-1-walking-skeleton-IMPLEMENTATION.md` §2.
 - **Phase 2** — the boundary predicate must catch the vertical *and* lateral escapes (§2.1). Type
   filtering on both ends of both predicates (§3.1). The prose check moves into ingestion (§4.5).
-- **Phase 6** — unblocked as of 2026-07-31. §4.4 and §5 are its raw material; density and coverage are
-  now measured quantities rather than assumptions.
+- **Phase 6** — unblocked as of 2026-07-31, and **§5's open question is answered as of 2026-09-02: see
+  §5.2, decision C1.** §4.4 and §5 are its raw material; density and coverage are measured quantities
+  rather than assumptions. The two properties this phase adds are `dbo:stylisticOrigin` from DBpedia for
+  lineage and `P136` from Wikidata for structure. **P279 remains un-ingested and the boundary predicate
+  remains owed by whatever phase wants it.**
 - **Evals** — §4.4's exclusion rate and §5's component structure are both sliceable metrics. The corpus
   skew in §3.2 is the coverage-honesty case `.claude/rules/grounding-and-claims.md` requires be visible
   in output.

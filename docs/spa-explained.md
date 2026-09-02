@@ -136,6 +136,12 @@ None of this is broken. Only one Wikidata property is ingested — `P737`, *infl
 not link artists to genres. The property that would, `P136`, is not in the corpus, and adding it means
 cutting a new artifact, which would invalidate every published evaluation number.
 
+> **Scheduled to change, and this section is written against v0.5.0.** Phase 6 decided on 2026-09-02 to
+> ingest `P136` as a separate, non-narratable predicate — decision C1, `docs/graph-semantics.md` §5.2 —
+> which joins the two axes and makes the map able to show one component containing both artists and
+> genres for the first time. **Every number in this section is still correct today** and stops being
+> correct at phase 6 step 2. Rewrite it there, against measurements, rather than against this note.
+
 So the map shows a neighbourhood, and says so. The alternative — drawing all 169 islands at once and
 letting it look like one graph — would be a picture that argues for a claim the data does not make.
 

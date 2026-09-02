@@ -13,6 +13,18 @@ a grounded, cited lineage. Built on AWS Lambda + Bedrock, Python-primary, Terraf
 The thesis: music history is a network, not a timeline. Genres look like separate things; underneath they
 are one connected organism, and most of the connections are not written down in one place.
 
+**What the corpus can demonstrate of that thesis is a separate question from the thesis, and the answer is
+dated — decision C1, 2026-09-02.** The second clause is confirmed emphatically by the data. The first was
+never demonstrable from sourced influence edges alone and phase 6 is where that changes, **in one specific
+form and no other: the organism is connected through the people who play across it.** Artist-to-genre
+membership, not an unbroken chain of genre-to-genre influence. That is the better claim anyway, because
+what actually connects genres in history is musicians who move between them.
+
+**Until phase 6 step 2 lands, present-tense copy must still say 169 disjoint components.** The decision is
+made; the corpus has not moved yet. Copy implying one continuous chain of sourced influence is false both
+before and after this phase, and so is any wording that lets membership read as derivation.
+`docs/graph-semantics.md` §5.2 is the record.
+
 ## Where to look
 
 - `docs/ROADMAP.md` — the version spine (v0.1 → v1.0), the scaffolding ledger, decision history.

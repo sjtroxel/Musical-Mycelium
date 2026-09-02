@@ -15,8 +15,9 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 **Deployed, and honestly incomplete.** Last updated 2026-09-02. Phases 0 through 5 are complete and
 tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`). The live URL serves the finished phase 5 SPA: a streaming
 cited answer, an explorable map of the neighbourhood around it, and a coverage panel that states what
-the corpus does not hold. Phase 6 is density and coverage, and it has not started. Every open item is
-enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
+the corpus does not hold. Phase 6 is density and coverage, and it has started: the corpus
+gets a **second, independent source**, which is what makes disagreement between sources detectable at all.
+Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
