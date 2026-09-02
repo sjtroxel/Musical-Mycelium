@@ -116,15 +116,28 @@ failed requests, no 4xx and no console errors, and all three copied into `dist/`
   Python test asserting them against the pinned artifact instead, because putting them in `Coverage` is
   an edit to a serialized contract every eval number reads — which DoD 9 forbids in phase 5. **Phase 6
   should move them**, at the same time it cuts a new artifact.
-- **Steps 8 and 9 are committed but were NOT deployed at the time this was written.** Verified by
-  fetching the live bundle and grepping it, not by reading a workflow result: `index-p5QCCCZ1.js`
-  contains neither `setLineDash` nor the step 9 coverage caption. The deployed site serves steps 4-7 —
-  the map, but not the explorable map and not the coverage panel. **The deploy traps both still apply:**
-  a commit that is not pushed cannot deploy (the workflow builds `--ref main` on GitHub and will
-  silently rebuild the previous commit and report success), and `llm_provider` **defaults to `local`**,
-  so a dispatch on defaults reverts the stack to the stub LLM and falsifies the resume line. Always
-  `-f llm_provider=bedrock -f reserved_concurrency=-1`.
-- **The `v0.5.0` tag is not cut until the deploy above lands**, so that the tag and the live site agree.
+- ~~**Steps 8 and 9 are committed but were NOT deployed.**~~ ~~**The `v0.5.0` tag is not cut until
+  that deploy lands.**~~ **Both CLOSED 2026-09-02**, later the same day this section was written. The
+  deploy landed and was verified the right way — by fetching the live bundle and grepping it, not by
+  reading a workflow result — and the tag was cut against it. **The two deploy traps they named are
+  not closed and never will be**, because they are properties of the workflow rather than of that
+  deploy: a commit that is not pushed cannot deploy (the workflow builds `--ref main` on GitHub and
+  will silently rebuild the previous commit and report success), and `llm_provider` **defaults to
+  `local`**, so a dispatch on defaults reverts the stack to the stub LLM and falsifies the resume
+  line. Always `-f llm_provider=bedrock -f reserved_concurrency=-1`.
+- **The settings file pre-approved the local half of that same trap, and that IS closed.** Found
+  2026-09-02 during the phase 6 planning audit. `.claude/settings.json` denied `Bash(terraform apply*)`
+  and `Bash(terraform destroy*)` while allowing `Bash(make *)` — and those patterns do not match
+  `make tf-apply` or `make tf-destroy`, which run bare `terraform apply` and `terraform destroy`. So an
+  agent could revert the Lambda to the stub LLM, or destroy all 26 resources including the CloudFront
+  distribution whose hostname is unrecoverable, with no prompt. The tell that it was an oversight
+  rather than a decision: the deny list already carried `Bash(make eval-live*)`, so whoever wrote it
+  knew Makefile targets need their own entries and stopped after one. `Bash(make tf-apply*)`,
+  `Bash(make tf-destroy*)` and `Bash(make heldout-seal*)` are now denied — the last because
+  `.claude/rules/heldout-set.md` forbids re-sealing outright and it was reachable by the same route.
+  **The generalisation: a deny pattern naming a command does not cover a wrapper that runs it.** Any
+  new Makefile target that spends money, mutates infrastructure or touches the sealed set needs its
+  own deny line on the day it is written.
 
 ### Invariant 5: VERIFIED 2026-09-02 — the off-switch is complete, and it is two steps rather than one
 

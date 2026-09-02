@@ -73,6 +73,44 @@ The chip row. Of the six aspirational chips in `SPEC.md` §2.2, one answers, one
 deliberately, and **four are blocked on this phase's second source**. Whatever phase 5 decides to put on
 the first screen is a direct statement about what this phase is for, and it should be read here first.
 
+### What phase 5 ANSWERED — added 2026-09-02 at the phase 5 close
+
+Phase 5 is complete and `v0.5.0` is tagged. Five things it settled that this phase inherits:
+
+1. **DoD #2 is now fully met, and it is not this phase's job.** Phase 5 step 9 shipped a drawn coverage
+   panel — when, where, and how densely, in counts, open on arrival, **below** the results so the answer
+   is never pushed off-screen. The half that was outstanding on 2026-08-24 is done. What this phase owes
+   DoD #2 is only that any *new* corpus cut keeps the panel honest.
+2. **The chip row landed at five, not six** (`web/src/chips.json`, the single source of truth, validated
+   against the pinned artifact by `tests/test_chips.py`): four answer outright, and the Kate Bush pair
+   was merged into one chip that refuses and then answers. **The four aspirational chips are still
+   blocked on this phase's second source** — that is unchanged and it is the clearest statement of what
+   this phase is for.
+3. **A third thinness axis was measured and it is the sharpest one: 85 of the 169 genres have no
+   recorded origin at all, 108 have exactly one connection, and the busiest has six.** It lives in
+   `web/src/corpus-facts.json` with `tests/test_corpus_facts.py` asserting it against the pinned
+   artifact, because putting it in `graph/coverage.py` during phase 5 would have been a backend edit to
+   a serialized contract, which phase 5's DoD 9 forbade. **This phase should move it into `Coverage`
+   proper**, at the same time it cuts the new artifact.
+4. **The corpus is 169 disjoint islands and artists and genres NEVER touch** — 128 components are purely
+   artists, 41 purely genres, none mixed, because only P737 is ingested and it does not link the two.
+   The consequence phase 5 had to design around: **"one connected organism" is not drawable on v0.5.0**,
+   and the map can only ever show a neighbourhood and say so. **`P136` is the property that would change
+   this**, and it is a bigger lever on the product's central claim than the second source is. Neither is
+   free: both mean a new cut, and a new cut invalidates every published eval number.
+5. **Six of the 102 datable edges run backwards in time** — the influence recorded as older than its own
+   cause, worst `electroclash (1995) -> electropop (1978)` at 17 years, and one inside a demo chip
+   (`swing (1930) -> Western swing (1928)`). Phase 5 declined to build geometry on those numbers. **If
+   this phase does anything temporal, that is the finding to start from**: a Wikidata `inception year` is
+   a field somebody typed, not a measurement, and a genre does not begin on a date. Relatedly, the three
+   undated genres are the same three every time and they are the non-Western ones — Na mele paleoleo,
+   Pinoy hip hop, sampledelia.
+
+**One operational item, not a corpus one, before any infrastructure work here:** `make tf-plan`,
+`make tf-apply` and `make tf-destroy` pass none of `image_tag`, `llm_provider` or
+`reserved_concurrency`, so **a bare `make tf-apply` reverts the deployed function to the stub LLM.**
+`docs/KNOWN-GAPS.md` carries the detail; guarding those targets belongs in this phase.
+
 ## What this phase is for
 
 Two jobs, and the second one only became visible on 2026-07-31.
@@ -161,9 +199,11 @@ eval number depends on.
 
 ## Definition of done
 
-> **Status as of 2026-08-24 (§0):** **#3 and #5 are already met** by phase 2 step 4 and phase 3 step 7b.
-> **#2 is half met** — the coverage numbers exist and ship on `/health`; rendering them to a user is
-> phase 5's surface. The items are left unedited so the phase is still judged against the whole list.
+> **Status as of 2026-09-02 (§0):** **#2, #3 and #5 are already met.** #3 by phase 2 step 4, #5 by
+> phase 3 step 7b, and **#2 by phase 5 step 9**, which rendered coverage to a user as a drawn panel
+> rather than a footnote. *(This note read "#2 is half met" until the phase 5 close.)* What #2 still
+> asks of this phase is that a new corpus cut keeps that panel honest. The items are left unedited so
+> the phase is still judged against the whole list.
 
 1. The connectivity question has a recorded answer with reasoning, and the product's claim matches it.
 2. Coverage and density are displayed to a user, in numbers, without needing a footnote to be honest.

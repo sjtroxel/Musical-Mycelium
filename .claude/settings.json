@@ -7,6 +7,9 @@
       "Bash(terraform apply*)",
       "Bash(terraform destroy*)",
       "Bash(aws *)",
+      "Bash(make tf-apply*)",
+      "Bash(make tf-destroy*)",
+      "Bash(make heldout-seal*)",
       "Bash(make eval-live*)"
     ],
     "allow": [

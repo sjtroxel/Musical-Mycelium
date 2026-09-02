@@ -12,15 +12,17 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-08-31. Phases 2, 3 and 4 are complete and
-tagged (`v0.3.0-local`, `v0.4.0`); **phase 5 is the SPA and is mid-build, steps 0-7 of 11.** The live
-URL serves the step 2 SPA — the map, its layout, the palette and its motion are built and local only.
-Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
+**Deployed, and honestly incomplete.** Last updated 2026-09-02. Phases 0 through 5 are complete and
+tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`). The live URL serves the finished phase 5 SPA: a streaming
+cited answer, an explorable map of the neighbourhood around it, and a coverage panel that states what
+the corpus does not hold. Phase 6 is density and coverage, and it has not started. Every open item is
+enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 1170 tests, plus 7 that spend real money and are deselected by default.
+generated. 1189 Python tests and 146 frontend tests, plus 14 that spend real money and are
+deselected by default.
 
 **The prose comes from a real model on Bedrock as of 2026-08-24** — Claude Haiku 4.5 on a cross-region
 inference profile, deployed by CI with no long-lived AWS keys. A live query streams first byte in ~0.24s

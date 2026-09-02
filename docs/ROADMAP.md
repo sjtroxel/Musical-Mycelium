@@ -52,7 +52,7 @@ so both columns are labelled. Reading one as the other is the confusion this hea
 | **2** `corpus-and-traversal` **DONE 2026-08-06** | **v0.2** | **v0.5.0** | Full corpus ingested; real multi-hop traversal | `GraphStore` impl + ingestion artifact; agent untouched |
 | **3** `agent-loop` **DONE 2026-08-12** | **v0.3** | **v0.5.0** (unchanged) | Real agent loop: planning, **7** tools, corroboration | Tool registry; loop untouched |
 | **4** `eval-suite` **DONE 2026-08-24** | **v0.4** | **v0.5.0** (unchanged) | The eval suite proper | Independent scorers over a pinned artifact |
-| **5** `spa-and-visualization` | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
+| **5** `spa-and-visualization` **DONE 2026-09-02** | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
 | **6** `density-and-coverage` | **v0.6** | new cut | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |
 
@@ -93,17 +93,27 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-08-31
+### Where the build actually is — 2026-09-02
 
-**Phases 0 through 4 are complete and phase 5 is mid-build: steps 0 through 7 of 11 are done.**
-`v0.3.0-local` and `v0.4.0` are tagged; `v0.5.0` is step 10's and not cut.
+**Phases 0 through 5 are COMPLETE. `v0.5.0` is tagged and pushed, and PHASE 6 IS NEXT.**
+`v0.3.0-local`, `v0.4.0` and `v0.5.0` are all tagged.
 
-**The one thing to know before reading anything else about phase 5:** the deployed CloudFront URL
-serves the **step 2** SPA. Steps 4 through 7 — the map, the layout, the palette and the motion — are
-built, tested and **local only**. Verified 2026-08-31 by fetching the live bundle: it contains the chip
-row and the grounded footer and none of the map's caption strings. Nothing since step 2 has been
-deployed, no AWS resource has been touched since step 0, and the redeploy is not blocked on anything —
-it simply has not been done.
+**The deployed CloudFront URL serves the finished phase 5 SPA** — the streaming cited answer, the
+explorable map, the coverage panel and the mark. Verified 2026-09-02 by fetching the live bundle and
+grepping it rather than by trusting a green workflow run: `index-C2MKRG0e.js` carries `setLineDash`,
+the step 9 "solid outline" caption and the coverage panel, and all three icon assets serve 200.
+~~The deployed URL serves the step 2 SPA~~ and ~~nothing since step 2 has been deployed~~ were true on
+2026-08-31 and are **stale — do not write either again.**
+
+**The cheapest check that a deploy built what you think it did:** the ECR image tag equals
+`git rev-parse HEAD`. Measured `82061589629b` == `8206158` on the phase 5 deploy. A green workflow run
+does not establish this; that comparison does.
+
+**One live foot-gun before any phase 6 infrastructure work.** `make tf-plan`, `make tf-apply` and
+`make tf-destroy` pass none of `image_tag`, `llm_provider` or `reserved_concurrency`, so they inherit
+defaults that disagree with the deployed stack — and `llm_provider` defaults to `local`, so **a bare
+`make tf-apply` reverts the deployed function to the stub LLM and falsifies the resume line.** Guarding
+those targets is an open phase 6 item; `docs/KNOWN-GAPS.md` carries the detail.
 
 > **This section was rewritten on 2026-08-24, and the rewrite is the point.** It used to be a running
 > status board — an eight-row phase 2 step table, a phase 3 step table, a phase 2 definition-of-done
@@ -185,7 +195,7 @@ before a Lambda exists is not preparation, it is clutter.
 | `web/` SPA scaffold | v0.5. Initialized **inside** `web/`, never at the root |
 | Frozen eval datasets | Hand-authored **before** the agent is coded, or they are contaminated |
 | Graph-viz engine choice | v0.5, via throwaway previews |
-| Logo and banner | **After** the first successful Bedrock call, not before — **unblocked 2026-08-11**; phase 5 owns it |
+| ~~Logo and banner~~ | **Done 2026-09-02**, phase 5 step 10. Three noteheads on a beam, which is also the real `blues -> blues rock -> heavy metal` component. `web/src/components/mark.ts` |
 
 ### Local prerequisites
 

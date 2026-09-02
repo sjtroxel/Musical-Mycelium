@@ -1,0 +1,631 @@
+# Phase 6 — Density and Coverage (v0.6) — IMPLEMENTATION
+
+> **As-built plan.** Written 2026-09-02, immediately after the phase 5 close and before any phase 6 code,
+> per `CLAUDE.md`. The scope doc is `phase-6-density-and-coverage.md`; read its §0 first, which records
+> what phases 2-5 already answered. This doc is what gets built and in what order.
+>
+> **It was written against measurements taken the same day, not against estimates.** The scope doc's own
+> instruction is *measure before committing*, and two counts it depends on had been owed since
+> 2026-08-01. Both were run before a line of this plan was drafted. §2 is those numbers.
+
+---
+
+## 1. What this phase delivers, in one sentence
+
+**A corpus deep enough to disagree with itself:** a second, independent source of origin claims, a
+structural layer connecting artists to the genres they work in, and coverage figures that keep telling
+the truth after the corpus triples.
+
+The one-sentence version of *why*: at v0.5.0 the project's central honesty caveat is that `contested`
+is arithmetically unreachable, because every edge has exactly one source. This phase is where that
+stops being true, or is declared permanently true. It was never a question of effort. It was a question
+of whether a second source existed at all, and as of today that is measured rather than assumed.
+
+---
+
+## 2. The measurements this plan was written against
+
+All taken 2026-09-02. Reproduce with the scripts described in §11.
+
+### 2.1 The genre corpus is already at its ceiling on Wikidata
+
+This was the finding that reframed the phase, and it contradicts an assumption made earlier the same day.
+
+| measure | value | source |
+|---|---|---|
+| music genres on Wikidata (`P31 Q188451`) | 6,328 | `docs/graph-semantics.md` §1, 2026-07-31 |
+| `P737` edges genre → genre, all of Wikidata | **331** | same |
+| genres touched by those edges | 198 | same |
+| genres in artifact v0.5.0 | 169 | manifest |
+| genre-genre edges in artifact v0.5.0 | 133 | measured today |
+
+`ingest/discovery.py:1` is explicit that discovery is *"Full P737 discovery: every genre-to-genre
+influence candidate"* — no seed list, no `LIMIT`. **So the corpus already holds roughly 95% of every
+genre on Wikidata that has an influence edge at all.** The remaining ~6,130 genres carry zero P737.
+
+**The consequence, stated plainly because it is easy to get backwards:** "expand to more genres" is not
+a scheduling question and never was. Ingesting the other 6,130 would raise `isolated_nodes` from 0,
+raise the refusal rate, and make the coverage panel worse while making the node count look better. On
+Wikidata P737 alone, this corpus is finished. **More genres exists only through a second source.** That
+is the whole argument for step 4, and it is a measurement rather than a preference.
+
+### 2.2 P136 — the artist-to-genre membership layer
+
+Bounded to the 804 artist nodes already in the artifact.
+
+| measure | value |
+|---|---|
+| P136 pairs, corpus artist → **corpus** genre | **1,313** |
+| distinct artists covered | 672 / 804 |
+| distinct genres covered | 91 / 169 |
+| P136 pairs, corpus artist → any genre object | 2,826 across 483 distinct genres |
+
+1,313 membership edges against a current total of 950 edges of all kinds. This is the layer that makes
+"one connected organism" drawable, because it is the only thing in reach that connects the two axes —
+phase 5 §0.4 measured 128 purely-artist components and 41 purely-genre components with **none mixed**.
+
+**Two cautions carried into step 2 rather than resolved here.** First, 672 of 804 is not 804, and the
+most likely explanation is that artist nodes include P737 *objects* — influencers pulled in from
+outside the P136 bound — which is plausible and **unverified**; step 2 verifies it before the number is
+published. Second, only 91 of 169 genres gain an artist, so 78 genres stay artist-less and the
+connectivity win is partial. Neither figure should be rounded up in copy.
+
+### 2.3 DBpedia `dbo:stylisticOrigin` — the second source
+
+The count owed since the 2026-08-01 review §5.1 and flagged again on 08-07. It is not close.
+
+| measure | Wikidata P737 | DBpedia `stylisticOrigin` |
+|---|---|---|
+| genre → genre origin edges | **331** | **5,124** |
+| distinct subjects | — | 1,215 |
+| distinct genres touched | 198 | 1,628 |
+| `MusicGenre` resources in total | 6,328 (Wikidata genres) | 3,551 |
+| subjects carrying an `owl:sameAs` to Wikidata | — | 983 / 1,215 |
+
+**15.5x denser than Wikidata on the one relation this project exists to trace.** Two adjacent properties
+were also counted and are not planned against: `dbo:derivative` (1,253) and `dbo:musicFusionGenre` (680).
+
+> **A counting trap, recorded because every future query against this endpoint has it.** The first run of
+> the both-ends-typed count returned **35,947**, which is larger than the unfiltered count of the same
+> relation and therefore impossible. DBpedia's public endpoint holds type assertions across several named
+> graphs, so `COUNT(*)` over a `?a a dbo:MusicGenre` join multiplies rows per graph. **5,124 is the
+> `COUNT(DISTINCT ?a ?b)` figure and the raw `COUNT(*)` is meaningless here.** Any DBpedia count in this
+> phase must be a distinct-pair count or it is wrong in the direction that flatters the plan.
+
+### 2.4 The overlap, which is the actual finding
+
+155 of the 169 corpus genres carry a DBpedia `MusicGenre` resource via `owl:sameAs` — **92% alignment**,
+so the two sources can be compared in a shared identifier space without name matching. Their
+`stylisticOrigin` edges against the corpus's 133 genre-genre edges:
+
+| relation | count | what it means for the product |
+|---|---|---|
+| **corroborates** an existing corpus edge | **80** | a genuine second source on 60% of the genre axis |
+| **new** — DBpedia has it, the corpus does not | **237** | ~2.8x the genre edge count inside the current 169 genres alone |
+| corpus has it, DBpedia does not | 53 | stays single-source and must stay labelled as such |
+| **DBpedia asserts the opposite direction** | **2** | **`contested` is reachable** |
+
+671 `stylisticOrigin` edges leave the corpus genres in total; 317 land on another corpus genre and 213
+point at a genre outside the corpus, which is the growth path in §2.1's terms.
+
+**`contested` is reachable, with two concrete instances rather than a theoretical capability:**
+
+```
+New Mexico music  <-> western music
+electropop        <-> electroclash
+```
+
+**The second one converges with a finding phase 5 already had, by a completely different method.** Phase
+5 §0.5 flagged `electroclash (1995) -> electropop (1978)` as the worst of six backwards-in-time edges, 17
+years wrong. DBpedia independently records that pair the other way round, and DBpedia's direction is the
+chronologically coherent one. Two independent signals, arrived at from inception dates and from a second
+corpus respectively, agreeing that one specific Wikidata edge is inverted. That is the strongest possible
+validation that the contested machinery is worth building, and it is the single best story this phase can
+produce.
+
+**Direction was verified, not assumed.** `graph/store.py:32` defines subject `influenced_by` object as
+*the subject came out of the object*. The corpus row is `electropop influenced_by electroclash` — the
+1978 genre out of the 1995 one. DBpedia has `electroclash stylisticOrigin electropop`. The reversal is
+real. `MEMORY.md` records assuming the origins direction as a recurring failure mode with three instances
+in one night, none of which raised; this check exists because of that.
+
+---
+
+## 3. The connectivity decision — DoD #1
+
+The scope doc poses three candidate resolutions and preselects none. **This is the recorded answer, with
+its reasoning, and DoD #1 asks for exactly that.**
+
+**Resolution 3 is adopted for lineage. Resolution 2 is adopted in a modified form for structure. P279 is
+still not ingested and this phase does not change that.**
+
+The reasoning, in the order it actually ran:
+
+1. **Resolution 1 (narrow to component-local lineage) is what the product already does, and it stays
+   true.** It is not a resolution so much as the honest description of current behaviour. It was the
+   strongest option in July when the largest component held 44 genres. It is the weakest now: the largest
+   component holds 458 nodes and refusing across components refuses far less than it used to. Adopting it
+   as *the* answer would mean declaring the corpus finished, which §2.1 shows is true of Wikidata P737 and
+   false of the world.
+
+2. **Resolution 2 was "P279 supplies connectivity". P279 is still the wrong property and this phase does
+   not touch it.** `.claude/rules/graph-semantics.md` is unambiguous: zero of 47 hand-read P279 edges
+   carried a historical claim, and P279 chains climb out of the genre domain both vertically and
+   laterally. **But the shape of resolution 2 — one property for structure, a different one for lineage,
+   held apart so neither can read as the other — is correct, and P136 is the property that fits it.**
+   P136 is `genre` on an artist: a membership fact, not a historical one, and true. Ingested as a
+   distinct predicate that the gate cannot narrate, it connects the graph without adding a single
+   influence claim. That is resolution 2's architecture with a property that survives the semantics test
+   P279 failed.
+
+3. **Resolution 3 (a second source) is adopted, and the reason changed since the scope doc was written.**
+   The scope doc says connectivity was largely solved by the artist axis, so what a second source buys is
+   `contested`. That is still true and §2.4 now shows it is buildable. What the scope doc could not know
+   is §2.1: a second source is also **the only available route to more genres at all**. It buys both, and
+   MusicBrainz cannot be it — MusicBrainz has no influence relationship in its schema, so it can add
+   releases and identifiers and not one lineage edge. DBpedia can, 15.5x over.
+
+**The product claim that follows, and it must match — DoD #1 requires this.** `CLAUDE.md` states the
+thesis as *"Genres look like separate things; underneath they are one connected organism."* After this
+phase that sentence is defensible for the first time, but only in a specific form: **the organism is
+connected through the people who play across it**, via membership, not through a single unbroken chain of
+sourced influence. That is both true and more interesting than the vague version. Copy that implies one
+continuous influence chain remains false and stays forbidden. Step 10 audits every surface for it.
+
+---
+
+## 4. Step plan
+
+Eleven steps, three artifact cuts, two eval re-runs. **The cuts are deliberately separate.** P136 changes
+the predicate count; DBpedia changes the source count. Landing them in one artifact means that when an
+eval number moves, nothing can say which change moved it. Separating them costs two extra re-runs at
+roughly $0.36 each and buys attributable numbers, which is the whole point of having an eval suite.
+
+| step | what | artifact | DoD | spends |
+|---|---|---|---|---|
+| 0 | Guard the Makefile terraform targets | — | operational | $0 |
+| 1 | Record the connectivity decision (§3) into the repo | — | 1 | $0 |
+| 2 | P136 membership predicate; `Coverage` absorbs the density figures | **v0.6.0** | 3, 7 | $0 |
+| 3 | Re-pin, re-run tier 1, republish against v0.6.0 | — | — | ~$0.36 |
+| 4 | DBpedia alignment and ingestion | **v0.7.0** | 4 | $0 |
+| 5 | Corroboration and `contested` | v0.7.0 | 4 | $0 |
+| 6 | Geography and time on the widened corpus | **v0.7.1** | 4 | $0 |
+| 7 | Slicing audit across every metric | — | 5 | $0 |
+| 8 | Frontend: coverage, map, and the CC BY-SA attribution | — | 2, 8 | ~$0.02 |
+| 9 | Full suite: tier 1 + judged tier 2; the held-out decision | — | 5 | ~$0.40 |
+| 10 | Docs, copy audit, release, `v0.6` tag | — | 1, 8 | ~$0.02 |
+
+### Step 0 — Guard the Makefile terraform targets
+
+**Closed already, in part, on 2026-09-02 before this doc was written.** The audit found
+`.claude/settings.json` denied `Bash(terraform apply*)` and `Bash(terraform destroy*)` while allowing
+`Bash(make *)`, and those patterns do not match `make tf-apply` or `make tf-destroy`, which run the bare
+commands. `Bash(make tf-apply*)`, `Bash(make tf-destroy*)` and `Bash(make heldout-seal*)` are now denied.
+`docs/KNOWN-GAPS.md` carries the finding and the generalisation.
+
+**What is still open is the Makefile itself.** `Makefile:164` and `:169` pass none of `image_tag`,
+`llm_provider` or `reserved_concurrency`, so all three inherit defaults that disagree with the live stack.
+The targets must either carry the three variables or refuse to run without them. **Refuse, do not
+default** — a default that happens to be right today is the same trap one variable later. Concretely:
+require `IMAGE_TAG`, fail with the correct invocation printed, and keep `llm_provider=bedrock` and
+`reserved_concurrency=-1` explicit in the command rather than in a variable default.
+
+Free, small, and it goes first because every later step that touches infrastructure runs behind it.
+
+### Step 1 — Record the connectivity decision
+
+§3 of this doc is the reasoning. Step 1 lands the *decision* where the product reads it: a short section
+in `docs/graph-semantics.md` (which is where phases 1, 2 and 6 all read graph semantics from), a line in
+`docs/ROADMAP.md`'s decision history, and the amended thesis wording in `CLAUDE.md` and `README.md`.
+
+**DoD #1 has two halves and the second is the one that gets skipped:** *"the product's claim matches it."*
+The claim audit is step 10, but the wording is decided here so that eight steps of copy are not written
+against the old sentence.
+
+### Step 2 — P136 membership → artifact v0.6.0
+
+The structural half. **This is the step that proves the additive-schema machinery on the easy case**, so
+that step 4 lands a genuinely new source on machinery already exercised.
+
+What gets built:
+
+- `PREDICATE_PLAYS_GENRE = "plays_genre"` in `graph/schema.py`, beside `PREDICATE_INFLUENCED_BY`.
+- `ingest/membership.py` — a new module, not an edit to `artists.py`. One bounded SPARQL query over the
+  known artist and genre QIDs. **POST, not GET**: `ingest/wikidata.py:204`'s `sparql()` builds a GET URL
+  and a `VALUES` clause of 973 QIDs overflows Wikidata's Varnish layer with `HTTP 503 VCL failed`. This
+  was hit on 2026-09-02 and cost the first run of the measurement. Either add a POST path to the shared
+  helper or chunk at 200 QIDs; the helper is the better fix and benefits step 4 too.
+- A new verification tier for membership edges. **These did not go through the Wikipedia prose check and
+  must not borrow a tier that implies they did.** `MEMBERSHIP_AUTO` or similar, added to
+  `VERIFICATION_LEVELS`, meaning *this is a sourced membership statement, not a checked influence claim*.
+- `graph/coverage.py` absorbs `genres_without_recorded_origins` (85), `genres_with_one_connection` (108)
+  and `busiest_genre_connections` (6) from `web/src/corpus-facts.json`, which is phase 5's owed item and
+  is done here because this is the first cut and `Coverage` is a serialized contract.
+
+**Why this needs zero edits to `agent/` — DoD #6, and it is satisfied by design rather than by luck.**
+Two independent locks in `agent/claims.py` already do exactly the right thing to a `plays_genre` edge:
+
+- `ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY})` at `claims.py:47`. A `plays_genre` proposal
+  is rejected `UNSUPPORTED_PREDICATE` without the file being touched. **Do not add the new predicate to
+  this set.** That omission is the feature.
+- The cross-axis check at `claims.py:248` rejects any proposal whose endpoints differ in `kind`. A
+  membership edge is genre-to-artist by definition, so it is refused a second time for a second reason.
+
+So membership edges can exist in the artifact, be traversed by `graph/`, and be drawn by the map, while
+being structurally unnarratable. DoD #6 is met, not excused.
+
+**The collision to check rather than assume.** `tests/test_claims.py:253` says *"The ingest bounds each
+axis separately, so this artifact should be impossible"* — a cross-axis edge reaching the artifact is
+described as a corpus bug. After this step it is a deliberate, correct state for one predicate. **No test
+currently asserts the artifact contains no cross-axis edge**, which means this change would land silently
+if it were wrong. Step 2 must therefore *add* the assertion it is qualifying: no cross-axis edge whose
+predicate is `influenced_by`. Tightening the lock while widening the corpus, rather than removing it.
+
+**The adversarial set survives, and this was checked.** `adv_010` and `adv_011` are the two
+`cross_axis_trap` cases. Their `forbidden_triples` are all `influenced_by` and their
+`expected_gate_rejections` is `["cross_axis"]`. A `plays_genre` edge changes neither. **What it does
+change is what the honest answer to "Did jazz influence Miles Davis?" contains** — the gap the case
+requires the agent to name can now be named more precisely, because the corpus knows Miles Davis worked
+in jazz even though it holds no influence edge across the axes. Whether to let the refusal say so is a
+real product decision and it belongs in step 8, not here. The frozen dataset is not edited either way.
+
+### Step 3 — Re-pin and re-run tier 1
+
+Bump `graph/memory.py:34` and `ingest/wikidata.py:59` together — `tests/test_graph_store.py:251` already
+asserts they agree, which is a lock worth knowing exists. Re-run tier 1, republish the numbers.
+
+**What is expected to move and what is not.** Groundedness and citation resolution should be unchanged at
+100% — membership edges add no claims. `verification_mix` gains a new tier and will move by construction,
+which is a tracked metric and not a gate. Traversal recall is measured against gold cases whose claims are
+all `influenced_by` and should not move; if it does, that is a finding about the traversal, not about the
+corpus, and it gets chased before step 4.
+
+### Step 4 — DBpedia alignment and ingestion → artifact v0.7.0
+
+The source half, and the largest step in the phase.
+
+- `ingest/dbpedia.py`. Alignment through `owl:sameAs` into Wikidata QIDs, so the two sources share an
+  identifier space and comparison is exact rather than fuzzy. 155 of 169 align today; the 14 that do not
+  are a published number, not a silent drop.
+- `SOURCE_DBPEDIA` in `graph/schema.py`. **`Edge.source` stops being "always Wikidata"**, which is a
+  sentence currently written into `CLAUDE.md`, both rules files, `README.md` and `agent/claims.py`'s
+  docstring. Step 10 audits all of them; step 4 lists them as it breaks them.
+- Its own verification tier. DBpedia's `stylisticOrigin` is extracted from the Wikipedia infobox, not from
+  body prose, so it is neither `HAND` nor `PROSE_AUTO` nor `ASSERTS_AUTO`. It is an editor-curated
+  structured field, closest in kind to a Wikidata statement. `INFOBOX_AUTO` names what it is. **Do not
+  reuse a Wikidata tier for it** — the tiers are how this project avoids overstating its own rigour, and
+  the moment two different checks share a label the tier stops meaning anything.
+- The 237 new edges are ingested; the 213 pointing outside the corpus bring their target genres in, which
+  is where corpus growth comes from. Growth is bounded by what `stylisticOrigin` reaches, deliberately —
+  not by a target node count.
+
+**Licensing, which is a hard rule and not a footnote.** DBpedia is Wikipedia-derived and **CC BY-SA**.
+`04-RISK-REGISTER.md` §4.3 names DBpedia explicitly: *"attribution required, share-alike applies... display
+the attribution and link back."* `.claude/rules/graph-semantics.md` says the attribution is displayed, "not
+in a buried credits page." So:
+
+- Every DBpedia-sourced edge carries a resolvable DBpedia resource URI in `source_id`, same as Wikidata
+  edges carry a statement URI. Attribution is structural, which is the same move the project already makes
+  for provenance.
+- The SPA displays the attribution and links back. Step 8.
+- **A `DATA-LICENSES.md` is added**, because the repo `LICENSE` is MIT and that covers the code. The
+  artifact is now a mixture: Wikidata is CC0, DBpedia is CC BY-SA 3.0. Stating which parts are under which
+  licence is cheap now and awkward later, which is exactly what §4.3 predicts.
+- **Named as uncertain in §9:** whether incorporating CC BY-SA data into a committed artifact in an
+  MIT-licensed repo creates a share-alike obligation on the artifact is a real question and I am not
+  qualified to answer it. The plan takes the conservative position — attribute, link back, and state the
+  per-source licence — which is defensible regardless of how the question resolves.
+
+### Step 5 — Corroboration and `contested`
+
+The payload, and the part most worth designing carefully rather than fast.
+
+**The schema move, chosen to be additive because DoD #7 requires it.** `Edge.source` does *not* become a
+list — that would repurpose a field every pinned eval number reads. Instead:
+
+- `Edge.corroboration: str | None`, defaulting to `None`. `None` means single-source and every v0.5.0 edge
+  keeps its exact current meaning. A populated value is the second source's resolvable URI. 80 edges get
+  one on day one.
+- **`contested` is a property of a pair, not of an edge**, and getting this wrong is the easy mistake. It
+  holds when both `(A, B)` and `(B, A)` exist from different sources. It is *derived* over the edge set,
+  not stamped on a row, and it is computed in `graph/`, never proposed by the model.
+- `agent/claims.py:UNREACHABLE` loses `contested` and keeps `checks_disagree` unless step 5 also makes
+  that one real. **The test that locks both as unreachable will fail at this step, and that failure is the
+  system working exactly as designed** — the rules file says a future corpus that could express one should
+  fail the test rather than quietly making it reachable. It is a green-to-red transition to be celebrated
+  and then resolved deliberately, not routed around.
+
+**What must not happen, stated because the temptation is real.** `verification` is *how strongly one source
+was checked*. `corroboration` is *whether a second source agrees*. They are different guarantees and the
+project has already corrected `CLAUDE.md` and two rules files once for blurring exactly this. A
+corroborated `PROSE_AUTO` edge is not thereby a `HAND` edge. Do not collapse the two fields, do not let a
+corroboration promote a verification tier, and do not let the UI show one number where there are two.
+
+### Step 6 — Geography and time → artifact v0.7.1
+
+DoD #4 asks that a traversal name specific people, places and dates rather than only genre labels. After
+step 4 the genre population has grown, so `P571` and `P495` must be re-read for the new genres — the same
+single SPARQL read that produced v0.5.0 from v0.4.0, which is why this is a separate small cut rather than
+folded into step 4.
+
+**Start from phase 5 §0.5's finding, which is that the dates are not measurements.** Six of 102 datable
+edges run backwards in time. Phase 5 declined to build geometry on those numbers and that was correct. What
+this step adds is that **DBpedia now provides an independent check on two of the six**, and the two it
+checks it disagrees with Wikidata about. So the backwards edges stop being an embarrassing artifact and
+become the corpus's most interesting output: a place where two sources disagree and the disagreement is
+visible. Whether the remaining four have a DBpedia opinion is unmeasured and is the first thing this step
+should ask.
+
+**The undated three are the non-Western three** — Na mele paleoleo, Pinoy hip hop, sampledelia — every
+time. Whether DBpedia dates them is the sharpest single test of whether a second source improves the skew
+or reproduces it, and the answer goes in the coverage panel either way.
+
+### Step 7 — Slicing audit
+
+DoD #5 is recorded as already met by `eval/slices.py` from phase 3 step 7b. **Met at v0.5.0 is not met at
+v0.7.1**, which is the whole reason DoD items are re-judged rather than carried. Two new dimensions exist
+that the slicer has never seen: source (Wikidata / DBpedia / both) and predicate (`influenced_by` /
+`plays_genre`). An aggregate that looks healthy while the DBpedia-only slice fails is the default outcome
+without slicing, and it is now possible for the first time.
+
+### Step 8 — Frontend
+
+- The coverage panel keeps telling the truth on a corpus roughly 3x larger. **The panel's figures are
+  computed, so the risk is not that they go stale — it is that a layout tuned for 169 genres reads badly
+  at 500+.** Phase 5 recorded five layout failures invisible to a green suite. Screenshot it in headless
+  Chromium before handing it over; the browser is available and `reference-headless-browser-is-available`
+  records where.
+- The map can finally show artists and genres in one component. **This is the single most visible change
+  in the phase** and it is where the amended thesis wording from step 1 has to appear on screen.
+- Contested pairs get a display. Two of them today. The honest presentation shows both directions and
+  names both sources; it does not pick a winner. `.claude/rules/grounding-and-claims.md`: flag it, do not
+  resolve it.
+- The CC BY-SA attribution and link-back, per step 4.
+
+### Step 9 — The full suite, and the held-out decision
+
+Tier 1 plus a judged tier 2, as agreed. Roughly $0.40 measured.
+
+**The held-out set is a decision for sjtroxel and this plan does not make it.** `heldout_v1.manifest.json`
+carries `artifact_version_pin: "0.5.0"`, as does `gold_v0_1.json`. After step 6 the sealed set describes a
+corpus that no longer exists. The relevant facts, stated so the decision is made on them:
+
+- It has been **run once**, 2026-08-24, 10/10. Every report of it carries the run count.
+- `.claude/rules/heldout-set.md` forbids re-sealing outright, and forbids re-running after anything was
+  tuned in response to what it said.
+- Nothing in this phase is tuned in response to a held-out number, so a re-run would not be disqualified
+  on that ground.
+- But a re-run against a *different corpus* measures something the first run did not, and its 2 refusal
+  cases mean one flip moves refusal accuracy 50 points against a measured noise floor of 12.5.
+
+**The plan's default is to not run it**, and to state in the release that held-out generalisation was
+measured at v0.5.0 and is untested at v0.7.1. That is honest and it costs nothing. Overriding the default
+is his call, made deliberately at the freeze, not incidentally mid-phase.
+
+### Step 10 — Docs, copy audit, release
+
+DoD #8 — *no project copy anywhere claims coverage the graph does not have* — is the one that cannot be
+tested and is the one this phase is most likely to fail, because the corpus genuinely improves and every
+improvement is one adjective from an overstatement.
+
+The specific sentences that become false in this phase and must be found and rewritten:
+
+- *"every edge has exactly one source, always Wikidata"* — `CLAUDE.md`, `.claude/rules/grounding-and-claims.md`,
+  `.claude/rules/evals.md`, `README.md`, `agent/claims.py` docstring, `docs/SPEC.md` §7.
+- *"`contested` is arithmetically unreachable"* / *"decision A1, do not re-litigate"* — same files. **A1
+  was correct when written and this phase is its stated precondition arriving, not a re-litigation.** Say
+  so explicitly in the amendment rather than silently reversing it.
+- *"the corpus is 169 disjoint islands and artists and genres never touch"* — `docs/spa-explained.md`,
+  phase 5 docs, `MEMORY.md`.
+- The four aspirational chips in `SPEC.md` §2.2 blocked on this phase's second source, and the open sixth
+  chip slot at `SPEC.md:163`.
+
+---
+
+## 5. Explicitly not in this phase
+
+The scope fence, which does more work than the feature list.
+
+- **P279 is not ingested.** Unchanged from the scope doc, and §3 explains why P136 replaces the role P279
+  was proposed for. If a later phase wants P279, it owes the genre-domain boundary predicate that
+  `.claude/rules/graph-semantics.md` still holds against it — the one inherited assignment from
+  `planning/09` §6 that is still open.
+- **No MusicBrainz.** It has no influence relationship in its schema. It can add releases and identifiers
+  and not one lineage edge. Adding it would be scope with no bearing on any DoD item here.
+- **No agent loop edits.** DoD #6. §4 step 2 shows why none are needed; if one becomes necessary, that is
+  the finding and it gets written down rather than made quietly.
+- **No new model, provider or prompt changes.** The eval numbers in this phase must move because the
+  corpus moved and for no other reason. Changing two things at once is how a suite stops being evidence.
+- **No SPA rebuild.** Step 8 feeds the existing surface new data and adds a contested display. The layout,
+  palette and motion decided in phase 5 stand.
+- **No re-authoring of any frozen dataset.** The gold set, the adversarial set and the held-out set are
+  not edited to accommodate a bigger corpus. If a gold case becomes wrong because the corpus grew, that is
+  a finding to record, not a case to rewrite.
+- **No `dbo:derivative` or `dbo:musicFusionGenre`.** Counted in §2.3 so the numbers exist; both are
+  deliberately out of scope. One new source is the scope.
+- **No vanity domain.** Phase 7.
+
+---
+
+## 6. One-way doors touched, and how each is satisfied
+
+| # | door | touched? | how it is satisfied |
+|---|---|---|---|
+| 1 | Claims first, prose second | yes | `plays_genre` never becomes a claim (`ALLOWED_PREDICATES`); `contested` is derived in `graph/`, never proposed by the model |
+| 2 | Provenance on every edge from the first row | yes | DBpedia edges carry `source`, `source_id` (resolvable URI), `retrieved_at` from the first row written; `corroboration` is additive |
+| 3 | Validated graph semantics | yes | P136 is a membership fact and is ingested as a distinct predicate that cannot be narrated as influence; this is the whole of §3 |
+| 4 | Explicit agent-to-data tool contract | no | no tool is added; if density required a loop edit, the seam broke — see DoD #6 |
+| 5 | Everything in Terraform | yes, weakly | step 0 hardens the Makefile; no new AWS resource |
+| 6 | Package boundaries | yes | `ingest/membership.py` and `ingest/dbpedia.py` are new modules in `ingest/`; nothing crosses into `agent/` |
+| 7 | LLM provider seam | no | untouched |
+| 8 | Lambda container image | no | untouched, though the artifact grows — see §9 |
+| 9 | Response streaming | no | untouched |
+
+---
+
+## 7. Files by path
+
+**New:**
+
+```
+src/musical_mycelium/ingest/membership.py     P136 artist -> genre, bounded to corpus QIDs
+src/musical_mycelium/ingest/dbpedia.py        stylisticOrigin, aligned through owl:sameAs
+tests/test_membership.py
+tests/test_dbpedia.py
+tests/test_contested.py                       the pair-level derivation, and its guards
+docs/DATA-LICENSES.md                         CC0 / CC BY-SA per source
+src/musical_mycelium/artifacts/v0.6.0/        P136 cut
+src/musical_mycelium/artifacts/v0.7.0/        DBpedia cut
+src/musical_mycelium/artifacts/v0.7.1/        geography and time on the widened corpus
+```
+
+**Changed:**
+
+```
+.claude/settings.json                 DONE 2026-09-02 (step 0, first half)
+Makefile                              tf-* targets demand image_tag / llm_provider / reserved_concurrency
+src/musical_mycelium/graph/schema.py  PREDICATE_PLAYS_GENRE, SOURCE_DBPEDIA, two verification tiers,
+                                      Edge.corroboration
+src/musical_mycelium/graph/coverage.py   absorbs the three density figures; source and predicate mixes
+src/musical_mycelium/graph/structure.py  component counts across two predicates
+src/musical_mycelium/graph/memory.py     PINNED_ARTIFACT_VERSION
+src/musical_mycelium/ingest/wikidata.py  ARTIFACT_VERSION; a POST path for large VALUES clauses
+src/musical_mycelium/agent/claims.py     UNREACHABLE only — contested stops being unreachable
+src/musical_mycelium/eval/slices.py      source and predicate dimensions
+web/src/corpus-facts.json                deleted; its figures move into Coverage
+web/src/  (coverage panel, map, attribution, contested display)
+docs/  (ROADMAP, KNOWN-GAPS, SPEC, graph-semantics, spa-explained, phase-6 scope)
+CLAUDE.md, README.md, .claude/rules/*.md   the A1 amendment
+```
+
+`agent/claims.py` appears in the changed list and DoD #6 says the agent package was not edited. **That is a
+real tension and it is resolved by scope, not by argument:** the only permitted change is removing
+`contested` from the `UNREACHABLE` dictionary, which is a declaration of what the corpus can express, not
+logic. No gate rule, no loop, no tool, no prompt. If any other line in `agent/` needs to change, stop and
+write down why — that is the seam breaking and it is a phase finding.
+
+---
+
+## 8. Testing and evals
+
+- **Every new number is asserted against the pinned artifact**, following `tests/test_chips.py` and
+  `tests/test_corpus_facts.py`, which is the pattern phase 5 established for exactly this.
+- **The metrics get broken on purpose before they are trusted.** `.claude/rules/evals.md` requires the
+  vacuous-truth guard; the new one this phase needs is a **vacuous-corroboration guard**: an edge whose
+  "second source" is the same source under a different URI must not count as corroborated, and a corpus
+  where every edge is corroborated by construction must not score as though disagreement were possible.
+- **The contested derivation is unit-tested on synthetic pairs where the answer is known by
+  construction**, including the direction-inversion case, because `MEMORY.md` records three separate
+  origins-direction bugs that all passed silently.
+- **Gates:** the free every-commit run gates three of five. That is unchanged and no number in this phase
+  changes it. `eval/thresholds.py` is the authority; do not write "blocks on five" anywhere.
+- **Thresholds are not re-tuned to accommodate the new corpus.** If a gate fails after a cut, the corpus
+  change caused it and that is information. Moving the bound to make it pass is how a suite stops
+  measuring. The noise floor in `eval/noise_floor.json` was measured at v0.5.0 and **is not valid for a
+  different corpus** — re-measuring it is a step 9 decision, and until it is re-measured, movement inside
+  the old floor cannot be called noise.
+
+---
+
+## 9. Named uncertainties
+
+Stated as uncertain rather than smoothed over, per the skill.
+
+1. **Whether CC BY-SA data in a committed artifact creates a share-alike obligation on an MIT repo.** Real
+   question, outside my competence. The plan attributes, links back, and states per-source licences, which
+   is conservative and defensible either way. Worth a real answer before v1.0.
+2. **Whether 672 of 804 artists is explained by P737 objects sitting outside the P136 bound.** Plausible,
+   unverified, and it must be verified before the number is published.
+3. **The artifact size against invariant 8.** v0.5.0's `graph.json` is 656KB. A ~3x corpus plus a
+   membership layer plausibly reaches 2-3MB. That is fine for a Lambda container image and fine in memory.
+   **It is not obviously fine to ship to a browser**, and the SPA loads the corpus client-side — phase 5
+   step 4 put it there. The map may need to fetch a neighbourhood rather than the whole graph, which is a
+   step 8 problem that this doc is flagging early rather than discovering at the layout stage.
+4. **Whether DBpedia's 5,124 edges survive screening at anything like the Wikidata rate.** The Wikidata
+   genre axis went 351 candidates to 133 edges — a 62% drop through the prose check. `stylisticOrigin` is
+   an infobox field rather than a prose mention so the failure modes differ, and the retained fraction is
+   genuinely unknown. **If it screens down to a few hundred, the headline "15.5x" is wrong** and the phase
+   is smaller than this plan assumes. Step 4 measures it before any copy quotes a number.
+5. **Whether the two contested pairs are two, or the visible two.** 317 DBpedia edges land inside the
+   corpus and 2 are direction reversals. Whether that rate holds across the 237 new edges and the widened
+   corpus is unmeasured. Two is the floor and it should be quoted as a floor.
+6. **Whether a bigger corpus makes refusal accuracy better or worse.** More edges means fewer true
+   refusals available, and the adversarial set's false-premise cases were authored against a 169-genre
+   corpus. Some of them may stop being false premises. That is a finding to record, not a reason to edit
+   the set.
+
+---
+
+## 10. Cost
+
+| item | cost |
+|---|---|
+| SPARQL and DBpedia queries | $0, read-only public endpoints |
+| Ingestion crawls | $0 — the assertion filter is regex, not a model call (`ingest/assertion.py`) |
+| Two intermediate tier 1 re-runs | ~$0.36 each, measured |
+| Step 9 tier 1 + judged tier 2 | ~$0.40, measured |
+| Deploys | ~$0.02 each |
+| **Phase total** | **under $2** |
+
+Quote the measured numbers, never the ~$5-25/run planning estimate. Fixed infrastructure is unchanged: no
+new AWS resource, no always-on anything. **The one real cost is time** — the crawls run at the mandated 1
+request/second and the DBpedia pass is the largest ingestion this project has done.
+
+**The guardrail:** `make eval-live`, `make tf-apply`, `make tf-destroy` and `make heldout-seal` are all in
+the `deny` list as of step 0. Any new target added in this phase that spends money, mutates infrastructure
+or touches the sealed set gets its own deny line **on the day it is written**, per the generalisation
+recorded in `KNOWN-GAPS.md`: a deny pattern naming a command does not cover a wrapper that runs it.
+
+---
+
+## 11. Reproducing the measurements
+
+The three measurement scripts were written to the session scratchpad rather than the repo, deliberately —
+they are one-shot planning instruments, not project code, and `CLAUDE.md` caps the root at 18 entries for
+this kind of reason. What matters is reproducible from this doc:
+
+- **P136:** `SELECT ?a ?g WHERE { VALUES ?a { <804 artist QIDs> } ?a wdt:P136 ?g }` against WDQS, **by
+  POST**, chunked at 200 QIDs, then filtered locally to the 169 corpus genres.
+- **DBpedia population:** `SELECT (COUNT(*) AS ?n) WHERE { SELECT DISTINCT ?a ?b WHERE { ?a dbo:stylisticOrigin ?b . ?a a dbo:MusicGenre . ?b a dbo:MusicGenre } }`
+  against `https://dbpedia.org/sparql`. **The nested `DISTINCT` is required** — see §2.3.
+- **The overlap:** map the 169 corpus QIDs to DBpedia resources through `owl:sameAs`, pull their
+  `stylisticOrigin`, map back, and compare against the artifact's genre-genre edges as sets. Corroboration
+  is set intersection; contested is intersection with the reversed set.
+
+Both endpoints were flaky on the day — WDQS returned 502 and 429 across the chunked run and DBpedia was
+slow. Retry with exponential backoff and expect to. `.claude/rules/graph-semantics.md` records WDQS as
+materially degraded in 2026, which is also why the agent never queries it live.
+
+---
+
+## 12. Definition of done — how each item is met
+
+| # | scope doc DoD | met by |
+|---|---|---|
+| 1 | Connectivity answered with reasoning, product claim matches | §3, landed in step 1, audited in step 10 |
+| 2 | Coverage and density displayed in numbers, no footnote needed | met at phase 5 step 9; step 8 keeps it honest at 3x corpus |
+| 3 | Component structure queryable | met at phase 2 step 4; step 2 extends it across two predicates |
+| 4 | Traversals name specific people, places, dates | steps 2, 4 and 6 — people via P136, places and dates via the re-read |
+| 5 | Every metric sliced by era, region, density, query type | step 7, plus two new dimensions the slicer has never seen |
+| 6 | The agent package was not edited | step 2 §"why this needs zero edits"; the one permitted change is `UNREACHABLE` |
+| 7 | Schema changes additive | `Edge.corroboration` defaults to `None`; no field removed or repurposed |
+| 8 | No copy claims coverage the graph does not have | step 10, and it is the item most likely to be failed |
+
+---
+
+## 13. Plain-English explanation, written as we go
+
+Per the skill, and because it is the cold-articulation rep that is much harder to reconstruct later. The
+version as of the plan:
+
+> The app traces where music styles came from, and it only says things it can point to a source for. Until
+> now it had exactly one source — Wikidata — which meant it could tell you *how carefully* a fact had been
+> checked but never whether anyone disagreed with it, because there was nobody else in the room. This phase
+> brings in a second source and finds that on the styles both of them know about, they mostly agree, they
+> each know things the other doesn't, and in two cases they flatly contradict each other about which style
+> came first. The app now shows all three of those situations differently instead of pretending they're the
+> same. It also, for the first time, connects the musicians to the styles they play, which is what makes the
+> whole thing look like one connected web rather than a few hundred unrelated fragments — and that turns out
+> to be the honest picture, because what actually connects musical genres is the people who move between them.
+
+Rewrite this at each step close rather than at the end.
