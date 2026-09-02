@@ -126,23 +126,64 @@ failed requests, no 4xx and no console errors, and all three copied into `dist/`
   `-f llm_provider=bedrock -f reserved_concurrency=-1`.
 - **The `v0.5.0` tag is not cut until the deploy above lands**, so that the tag and the live site agree.
 
-### Invariant 5: the off-switch is real, and it is two steps rather than one
+### Invariant 5: VERIFIED 2026-09-02 — the off-switch is complete, and it is two steps rather than one
 
-`frontend.tf:22` sets **no `force_destroy` on the SPA bucket, deliberately**, with the reason in a
-comment: a `destroy` that silently empties a bucket is a habit worth not having in a repo where another
-bucket holds the published corpus. The consequence is worth stating rather than discovering — **a
-`terraform destroy` against a populated SPA bucket fails until the bucket is emptied.** That is a real
-off-switch, and it is not a one-command one. Do not write that it is.
+**Executed, read-only, against the live account after the deploy:** `terraform plan -destroy` returns
+**`0 to add, 0 to change, 26 to destroy`**, and all five frontend resources are in it —
+`aws_cloudfront_distribution.spa`, `aws_cloudfront_origin_access_control.spa`, `aws_s3_bucket.spa`,
+`aws_s3_bucket_policy.spa`, `aws_s3_bucket_public_access_block.spa`. **Nothing is orphaned**, which is
+the actual risk invariant 5 guards against: a resource created outside Terraform and left standing.
+A matching `terraform plan` returns **`No changes`**, so the deployed stack and the repo agree.
 
-**The distribution is deliberately NOT torn down to prove this.** Destroying `aws_cloudfront_distribution.spa`
-means AWS assigns a **new hostname on re-apply** — `d2vtdkpgmecreg.cloudfront.net` would simply stop
-existing, along with any link already shared. The verification chosen instead (sjtroxel, 2026-09-02) is
-`terraform plan -destroy` for completeness of coverage plus a targeted destroy/apply round-trip on a
-resource that costs nothing to recreate. **What that proves and what it does not:** it proves every
-frontend resource is Terraform-managed and would be removed, which is the actual risk invariant 5 guards
-against — a resource created outside Terraform and left standing. It does **not** prove the distribution
-teardown executes cleanly, and that remains unexecuted. Phase 7, which registers a real domain, is where
-a new CloudFront hostname costs nothing and the full cycle can be run for real.
+**It is two steps, not one, and the plan output confirms it.** `frontend.tf:22` sets no `force_destroy`
+on the SPA bucket, deliberately — the plan prints `- force_destroy = false -> null`. A plan cannot see
+that a real destroy then **halts on the non-empty bucket**; it must be emptied first. Do not write that
+`terraform destroy` is a one-command off-switch.
+
+**Two things the destroy plan revealed that were not previously written down:**
+
+- **The cost guardrails go with it.** All three `aws_budgets_budget.monthly` alarms, the
+  `aws_ce_anomaly_monitor` and its subscription live in `main/`, so a teardown removes them. Harmless
+  when everything is going, but they are not a separate safety net surviving the app.
+- **The artifacts bucket outlives a teardown; its CONTENTS do not.** `frontend.tf`'s comment says the
+  artifacts bucket sits in `bootstrap/` because it is "a record that must outlive any teardown" — the
+  *bucket* does, but the **11 `aws_s3_object.artifact` objects inside it are managed by `main/` and are
+  in this destroy list.** They are versioned and every one is re-uploadable from `src/`, so nothing is
+  lost; the comment is simply more optimistic than the resource graph.
+
+**The distribution teardown remains UNEXECUTED and that is deliberate** (sjtroxel, 2026-09-02):
+destroying `aws_cloudfront_distribution.spa` means AWS assigns a **new hostname on re-apply** and
+`d2vtdkpgmecreg.cloudfront.net` would stop existing. The targeted destroy/apply round-trip on
+`aws_s3_bucket_policy.spa` was **also skipped**, on the reasoning that the destroy plan above already
+establishes what it would have shown, at no cost to a live site. Phase 7 registers a domain and is where
+the full cycle can be executed for real.
+
+### A local `terraform apply` would roll the Lambda back, and the Makefile does not guard it
+
+**Found 2026-09-02 by running the plan.** CI passes `-var image_tag=<git sha>` (deploy.yml:193), while
+`variables.tf:23` defaults `image_tag` to `"latest"`. So **after every CI deploy a bare local plan shows
+`1 to change`, proposing to repoint the Lambda from the sha to `:latest`.** The workflow pushes both tags
+to ECR (deploy.yml:122-124) so they resolve to the same image *today* — applying it would not break the
+function, it would trade a commit-traceable pin for an ambiguous one.
+
+`make tf-plan`, `make tf-apply` and `make tf-destroy` pass **none** of `image_tag`, `llm_provider` or
+`reserved_concurrency`, so all three inherit defaults that disagree with the live stack — and
+`llm_provider` defaulting to `local` means a bare `make tf-apply` would **revert the deployed function to
+the stub LLM and falsify the resume line.** This is the same trap deploy.yml:35-38 records costing an
+afternoon on 2026-08-05, arriving through the Makefile instead of the workflow. **Any local terraform
+command must pass all three:**
+
+```
+-var image_tag=<the deployed sha> -var llm_provider=bedrock -var reserved_concurrency=-1
+```
+
+**Making the Makefile targets carry or demand these is an open item for phase 6.** It is a live foot-gun
+for any future session that runs `make tf-apply` without reading this.
+
+**One good thing fell out of the same check.** The deployed image tag is `82061589629b`, which is exactly
+`git rev-parse HEAD` for `8206158` — **positive proof the deploy built the pushed commit** rather than
+silently rebuilding the previous one. That trap is now closed by evidence, not by assumption, and this is
+the cheapest way to check it.
 
 ### What generalises
 

@@ -1622,3 +1622,34 @@ neither the US nor the UK" naively gave **44**, and the honest figure is **43** 
 reproduces exactly the bug `coverage.py:67` records being caught on 2026-08-07, where an exact-string
 test reads `UK drill -> Brixton` as "names no UK". The guard works; a fresh recomputation without it does
 not.
+
+#### The deploy, and invariant 5 — executed 2026-09-02
+
+**Deployed** (run `33646132225`, 2m09s, about 2 cents). Verified by **fetching the live bundle and
+grepping it**, never by the green run: `index-C2MKRG0e.js` (was `index-p5QCCCZ1.js`) carries
+`setLineDash` and the step 9 "solid outline" caption, the coverage panel's "What this corpus covers" and
+"no date recorded", and the inspector's completeness copy. `favicon.svg`, `favicon.ico` and
+`apple-touch-icon.png` all serve **200** with correct content types, and the three `<link>` tags survive
+the build intact. **Steps 8 and 9 are now live**; the gap named at the top of this step is closed.
+
+**The deployed image tag is `82061589629b`, which is exactly `git rev-parse HEAD` for `8206158`.** That
+is positive proof the workflow built the pushed commit rather than silently rebuilding the previous one —
+the trap `KNOWN-GAPS` has carried since step 8, now closed by evidence instead of assumption. Comparing
+the tag to `HEAD` is the cheapest possible check and should be the standard one.
+
+**Invariant 5, verified read-only against the live account.** `terraform plan` returns **`No changes`**
+and `terraform plan -destroy` returns **`0 to add, 0 to change, 26 to destroy`** with all five frontend
+resources present and nothing orphaned — which is the risk the invariant actually guards against. §7's
+"`terraform destroy` then `terraform apply`" is therefore satisfied in the part that carries the
+evidence, and **deliberately not executed in the part that would cost the hostname**: destroying the
+distribution reassigns `d2vtdkpgmecreg.cloudfront.net`. The targeted round-trip on
+`aws_s3_bucket_policy.spa` was planned and then **skipped on the evidence** — the destroy plan already
+establishes what it would have demonstrated, at no cost to a live site. Phase 7 registers a domain and is
+where the full cycle can run for real. Recorded rather than quietly dropped.
+
+Three things the plan surfaced are in `KNOWN-GAPS`: the SPA bucket's `force_destroy = false` making the
+off-switch two steps; the cost guardrails living in `main/` and going with it; the artifacts bucket
+outliving a teardown while its contents do not. And one live foot-gun — **`make tf-plan` / `tf-apply` /
+`tf-destroy` pass none of `image_tag`, `llm_provider` or `reserved_concurrency`, so a bare
+`make tf-apply` would revert the deployed function to the stub LLM.** Guarding those targets is an open
+item for phase 6.
