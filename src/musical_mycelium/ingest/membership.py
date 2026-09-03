@@ -313,6 +313,21 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - CLI, hits 
             edges=merged.edges,
         )
 
+    # Carry the revision snapshot forward, widened to the genres this build added. Omitting it is what
+    # the first v0.6.0 cut did, and the manifest came out with zero entries against 509 genre nodes --
+    # ``retrieved_at`` decorative rather than checkable, which is invariant 2's whole subject.
+    #
+    # Derived from the merged nodes rather than merged from the source manifest, because the node is
+    # where the revision actually lives and a second copy that can disagree with it is the bug being
+    # fixed. Measured on v0.5.0: its 169 snapshot entries equal their nodes' ``revision_id`` exactly.
+    # Genres only -- artist nodes carry no revision id, and ``test_manifest_records_a_revision_for_every
+    # _node`` asserts they stay out until that gap is closed on purpose.
+    snapshot = {
+        node.id: node.revision_id
+        for node in merged.nodes
+        if node.kind == NODE_KIND_GENRE and node.revision_id
+    }
+
     directory = artifact_dir(args.version)
     directory.mkdir(parents=True, exist_ok=True)
     manifest = artifact_io.write(
@@ -322,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - CLI, hits 
         generator="musical_mycelium.ingest.membership",
         predicate=f"P737 (influenced_by) + {PROPERTY_GENRE} (plays_genre)",
         source=SOURCE_WIKIDATA,
+        source_snapshot=snapshot,
         overwrite=args.overwrite,
         verification_record="docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md",
     )

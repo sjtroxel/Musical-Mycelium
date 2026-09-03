@@ -24,6 +24,7 @@ from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
+    PREDICATE_PLAYS_GENRE,
     SOURCE_WIKIDATA,
     VERIFICATION_HAND,
     VERIFICATION_PROSE_AUTO,
@@ -367,10 +368,18 @@ def test_every_edge_endpoint_is_a_declared_node(pinned: Artifact) -> None:
         assert edge.object_id in node_ids
 
 
-def test_only_the_influence_predicate_is_ingested(pinned: Artifact) -> None:
-    """P279 is taxonomic. v0.1 does not ingest it, so it cannot be narrated as derivation by
-    construction rather than by the gate remembering to refuse (``docs/graph-semantics.md`` 2)."""
-    assert {e.predicate for e in pinned.edges} == {PREDICATE_INFLUENCED_BY}
+def test_p279_is_not_ingested_and_the_predicate_set_is_closed(pinned: Artifact) -> None:
+    """P279 is taxonomic. It is not ingested, so it cannot be narrated as derivation by construction
+    rather than by the gate remembering to refuse (``docs/graph-semantics.md`` 2).
+
+    **Renamed at v0.6.0, because the old name became a false description of what this asserts.** The
+    artifact carries two predicates now: P737 influence and P136 membership. The property being locked
+    was never "exactly one predicate" -- it is that the set is *closed and known*, so a third arriving
+    unannounced fails here. P279 is called out by name because it is the one that would read as
+    derivation if it ever slipped in, and ``agent.claims.ALLOWED_PREDICATES`` is the second lock.
+    """
+    assert {e.predicate for e in pinned.edges} == {PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE}
+    assert not any(e.predicate == "subclass_of" for e in pinned.edges)
 
 
 def test_manifest_records_a_revision_for_every_node(pinned: Artifact) -> None:
@@ -390,6 +399,28 @@ def test_manifest_records_a_revision_for_every_node(pinned: Artifact) -> None:
     assert not (artists & set(manifest.source_snapshot)), (
         "artist nodes gained revision ids; delete this assertion and fold them into the check above"
     )
+
+
+def test_the_snapshot_is_exactly_the_revisions_the_genre_nodes_carry(pinned: Artifact) -> None:
+    """Equality, not containment -- and this is the assertion the v0.6.0 cut needed and did not have.
+
+    ``membership.py`` omitted ``source_snapshot`` from its ``artifact_io.write`` call, so the first
+    v0.6.0 manifest recorded **zero** revisions against 509 genre nodes while the test above still
+    passed on ``genres <= set(...)`` for the empty set... which it does not, and that is the only reason
+    the omission was caught at all. Containment is the wrong shape for a check like this: it cannot see
+    a snapshot that has drifted from the nodes, only one missing an id outright.
+
+    The manifest duplicates what each node already carries. That is worth locking rather than
+    de-duplicating, because the manifest is what a reader checks ``retrieved_at`` against without
+    parsing the graph. Two copies are fine; two copies that can disagree are not.
+    """
+    manifest = artifact_io.read_manifest(wikidata.artifact_dir())
+    expected = {
+        node.id: node.revision_id
+        for node in pinned.nodes
+        if node.kind == NODE_KIND_GENRE and node.revision_id
+    }
+    assert manifest.source_snapshot == expected
 
 
 def test_the_refusal_case_node_resolves_but_has_no_parents(pinned: Artifact) -> None:

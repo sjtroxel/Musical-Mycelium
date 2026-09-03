@@ -395,7 +395,7 @@ cross-axis check refuses it again. **The artifact-level lock `tests/test_claims.
 a comment is now asserted** — no `influenced_by` edge crosses the axes, in either artifact — and its
 companion asserts every membership edge does, so neither can pass vacuously.
 
-### Step 3 — Re-pin and re-run tier 1
+### Step 3 — Re-pin and re-run tier 1 — **DONE 2026-09-03**
 
 Bump `graph/memory.py:34` and `ingest/wikidata.py:59` together — `tests/test_graph_store.py:251` already
 asserts they agree, which is a lock worth knowing exists. Re-run tier 1, republish the numbers.
@@ -405,6 +405,59 @@ asserts they agree, which is a lock worth knowing exists. Re-run tier 1, republi
 which is a tracked metric and not a gate. Traversal recall is measured against gold cases whose claims are
 all `influenced_by` and should not move; if it does, that is a finding about the traversal, not about the
 corpus, and it gets chased before step 4.
+
+#### As built, 2026-09-03
+
+`make check` **1215 passed**, 0 failed, 14 `costs_money` deselected. Frontend **146 passed**. Eval gates
+**3 passed / 0 failed / 2 not applicable**, unchanged. Full record in `docs/KNOWN-GAPS.md`; what belongs
+here is how the plan above held up.
+
+**The three predictions, scored honestly.**
+
+| the plan said | outcome |
+|---|---|
+| groundedness and citation resolution unchanged at 100% | **held** — 67/67 both, before and after |
+| `verification_mix` gains a tier by construction, tracked not gated | **held** — two tiers, `MEMBERSHIP_CITED` and `MEMBERSHIP_BARE`, both at zero |
+| traversal recall should not move; if it does, chase it before step 4 | **it moved, and it was chased** |
+
+The third is the one that mattered. The pin bump failed 52 tests and **17 of them were one defect**:
+`neighbors()` and `path()` had no predicate filter, so a corpus with two predicates returned membership
+edges wherever influence was asked for. "Who influenced Michael Jackson" came back with three genres he
+plays; "what came out of rock music" came back 113 artists and no genres; a gold refusal case stopped
+refusing. The clause in the plan — *"that is a finding about the traversal, not about the corpus"* — was
+right, and writing it down in advance is why it was chased rather than absorbed into a number update.
+
+Fixed with a keyword-only `predicates` argument on both methods defaulting to `schema.INFLUENCE_ONLY`.
+No tool and no loop was edited, so invariant 4 held under a seam change. Verified by comparing all 973
+shared nodes in both directions across the two artifacts: influence traversal is now identical, save the
+one edge step 2 deliberately dropped.
+
+**Two v0.6.0 defects found and closed on the way:** 21 uncitable `plays_genre` edges whose statement URIs
+differ from their subject QID only by case, and an empty `source_snapshot` — 0 entries against 509 genre
+nodes — from `membership.py` omitting the argument. Builder fixed, artifact repaired in place from the
+node revisions already inside `graph.json`, `graph.json` itself untouched.
+
+**Three adversarial cases re-authored** (`rock` → `black`, `raga` → `dastgah`, `afrobeat` → `juju`) and
+the gold set re-pinned after the pair-by-pair neighbour check its own file requires. Behind them was a
+quieter bug: the attack scripts in `eval/harness.py` still named the retired subjects, and the only
+symptom was `gate_rejections_consistent` slipping 16 → 15 while every headline metric held.
+
+**Deliberately not done: the frontend.** `web/src/chips.json` stays at `0.5.0` until step 8, because the
+SPA fetches the artifact as a static asset and v0.6.0 is 1.77MB against 640KB — payable three times if
+paid now, with v0.7.0 and v0.7.1 still to come. **The condition attached is DO NOT DEPLOY until step 8**:
+a deployed site would answer from v0.6.0 and draw its map from v0.5.0, omitting nodes the answer cites.
+
+**The live run closed it, 2026-09-03**: 41 cases, **5 of 5 gates passed**, groundedness and citation
+resolution 100% over 69 claims, and **`MEMBERSHIP_CITED` and `MEMBERSHIP_BARE` both zero on a real
+model** — the step's central prediction, confirmed by execution rather than by construction.
+
+`cases_correct` read 39/41 against the previous run's 41/41 and **that is not a regression**: measured
+against `eval/noise_floor.json`, every figure sits at its modal value and the 8/24 run was the outlier
+above the floor. Both failing cases predate v0.6.0 — `gold_v0_1_020` failed all five noise-floor runs on
+v0.5.0, and `adv_008` failed three of five. Detail and the adv_008 transcript are in `KNOWN-GAPS`.
+
+**What the run leaves open:** the noise floor is stale (artifact 0.5.0, revision `f84453a`) and v0.6.0 is
+n=1, so no threshold near these numbers moves until five runs are measured on this corpus.
 
 ### Step 4 — DBpedia alignment and ingestion → artifact v0.7.0
 

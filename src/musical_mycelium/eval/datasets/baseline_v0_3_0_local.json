@@ -1,6 +1,6 @@
 {
   "measures": "the machinery, not the model: every run is scripted, so these numbers show that the gate and the loop refuse unsupported claims, NOT that a real model resists. Real-model behaviour is DoD #10 and #11 and requires Bedrock.",
-  "artifact_version": "0.5.0",
+  "artifact_version": "0.6.0",
   "cases_run": 16,
   "cases_excluded": {
     "adv_014": "synthetic poisoned-label artifact; driven by tests/test_untrusted.py",
@@ -24,10 +24,12 @@
   "edge_groundedness": 1.0,
   "citation_resolution": 1.0,
   "verification_mix": {
+    "MEMBERSHIP_CITED": 0,
     "EXPOSURE_AUTO": 0,
-    "PROSE_AUTO": 0,
+    "MEMBERSHIP_BARE": 0,
     "ASSERTS_AUTO": 0,
-    "HAND": 7
+    "HAND": 7,
+    "PROSE_AUTO": 0
   },
   "claim_bound_respected": 16,
   "gate_rejections_consistent": 16,

@@ -50,11 +50,38 @@ def _steps(chips: list[dict[str, Any]]) -> list[tuple[str, dict[str, Any]]]:
     return [(chip["id"], step) for chip in chips for step in chip["steps"]]
 
 
+#: The pin the SPA's static graph asset is built against, which is DELIBERATELY BEHIND the backend
+#: from 2026-09-03 until phase 6 step 8. Written as a constant so the lag is a value someone has to
+#: change, not a comparison someone has to remember to re-tighten.
+FRONTEND_PIN_LAG_UNTIL_STEP_8 = "0.5.0"
+
+
 def test_the_chip_file_pins_the_artifact_version_the_store_actually_loaded(
     chips_document: dict[str, Any], store: GraphStore
 ) -> None:
-    """A chip set validated against a different corpus than the one deployed proves nothing."""
-    assert chips_document["artifact_version"] == store.artifact_version
+    """A chip set validated against a different corpus than the one deployed proves nothing.
+
+    **The equality is suspended between phase 6 step 3 and step 8, on purpose, and the suspension has
+    a condition attached: DO NOT DEPLOY while it holds.** Step 3 moved the backend to v0.6.0. The SPA
+    does not read the artifact from the backend -- it fetches ``web/public/graph/v<pin>/graph.json`` as
+    a static asset -- so moving this pin means committing a second copy of the corpus to the repo, and
+    v0.6.0 is 1.77MB against v0.5.0's 640KB. Steps 4 and 6 cut v0.7.0 and v0.7.1, so paying that now
+    means paying it three times; step 8 is where the ROADMAP puts the frontend and it is the right
+    place.
+
+    What this costs while it holds: a deployed site would answer from v0.6.0 and draw its map from
+    v0.5.0, so the map would silently omit nodes the answer cites. That is user-visible incoherence
+    rather than a cosmetic lag, which is why the deploy condition is part of the decision and not a
+    footnote to it. Agreed with sjtroxel 2026-09-03.
+
+    When step 8 lands: copy the artifact into ``web/public/graph/``, delete this constant, and restore
+    the plain equality below. ``web/src/corpus-facts.json`` is due for deletion in the same step.
+    """
+    assert chips_document["artifact_version"] == FRONTEND_PIN_LAG_UNTIL_STEP_8
+    assert store.artifact_version == "0.6.0", (
+        "the backend pin moved again; re-read this test's docstring and decide whether the lag "
+        "is still the right call rather than widening it by reflex"
+    )
 
 
 def test_there_are_five_chips(chips: list[dict[str, Any]]) -> None:

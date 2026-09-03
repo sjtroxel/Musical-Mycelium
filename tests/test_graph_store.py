@@ -21,6 +21,9 @@ from musical_mycelium.graph.memory import (
 )
 from musical_mycelium.graph.schema import (
     NODE_KIND_GENRE,
+    PREDICATE_INFLUENCED_BY,
+    PREDICATE_PLAYS_GENRE,
+    PREDICATES,
     VERIFICATION_PROSE_AUTO,
     Artifact,
     ArtifactCorruptError,
@@ -78,7 +81,7 @@ def test_an_unknown_id_is_none_not_a_guess(store: InMemoryGraphStore) -> None:
 
 def test_an_unknown_name_finds_nothing(store: InMemoryGraphStore) -> None:
     assert store.search("griot") == []
-    assert store.search("bebop") == []
+    assert store.search("gamelan") == []  # bebop until v0.6.0, which ingested it
     assert store.search("") == []
     assert store.search("   ") == []
 
@@ -289,3 +292,74 @@ def test_store_works_without_a_manifest() -> None:
     assert store.neighbors("Q1")[0].object_id == "Q2"
     assert store.neighbors("Q2") == []
     assert store.search("test genre")[0].id == "Q1"
+
+
+# --- the predicate filter --------------------------------------------------------------------------
+#
+# Added 2026-09-03, phase 6 step 3, when bumping the pin to v0.6.0 made these fail. Until the membership
+# axis arrived every edge was ``influenced_by``, so a traversal that returned whatever touched a node was
+# right by accident. Unfiltered against v0.6.0, "who influenced Michael Jackson" answered with three
+# genres he plays and "what came out of rock music" answered with 113 artists and no genres at all.
+#
+# The gate would have rejected any claim built from those edges, so groundedness never moved -- which is
+# precisely why this needs its own lock down here. The contamination was invisible to every metric that
+# blocks, and showed up as traversal and refusal instead.
+
+MICHAEL_JACKSON = "Q2831"
+ROCK_MUSIC = "Q11399"
+
+
+def test_neighbors_walks_influence_only_unless_asked_otherwise(store: InMemoryGraphStore) -> None:
+    """The default is restrictive, and an artist is where that bites: Michael Jackson carries both kinds
+    of edge, so an unfiltered walk mixes the genres he plays into the list of people who influenced him."""
+    assert {e.predicate for e in store.neighbors(MICHAEL_JACKSON)} == {PREDICATE_INFLUENCED_BY}
+    assert {e.predicate for e in store.neighbors(MICHAEL_JACKSON, predicates=PREDICATES)} == {
+        PREDICATE_INFLUENCED_BY,
+        PREDICATE_PLAYS_GENRE,
+    }
+
+
+def test_membership_is_reachable_when_a_caller_names_it(store: InMemoryGraphStore) -> None:
+    """Opt-in, not unavailable. Connectivity and the map need this axis; the default merely refuses to
+    hand it to a caller that did not ask."""
+    members = store.neighbors(ROCK_MUSIC, Direction.INFLUENCED, predicates=PREDICATES)
+    assert members != []
+    assert {e.predicate for e in members} == {PREDICATE_PLAYS_GENRE}
+    assert store.neighbors(ROCK_MUSIC, Direction.INFLUENCED) == []
+
+
+def test_a_path_never_crosses_a_membership_edge_by_default(store: InMemoryGraphStore) -> None:
+    """This matters more than the ``neighbors`` case because a chain is narrated hop by hop. Michael
+    Jackson reaches rock music in one membership hop, and that hop must not be available to a lineage:
+    "works in" is not "descends from", and a path is read as derivation.
+    """
+    crossing = store.path(
+        MICHAEL_JACKSON, ROCK_MUSIC, Direction.INFLUENCED_BY, predicates=PREDICATES
+    )
+    assert [e.predicate for e in crossing] == [PREDICATE_PLAYS_GENRE]
+    assert store.path(MICHAEL_JACKSON, ROCK_MUSIC, Direction.INFLUENCED_BY) == []
+
+
+def test_influence_traversal_is_unchanged_by_the_membership_axis() -> None:
+    """The point of the default: every node the two artifacts share answers influence questions
+    identically at v0.6.0 and v0.5.0.
+
+    One edge legitimately differs -- Nine Inch Nails ``influenced_by`` Pink Floyd, dropped by step 2's
+    deprecated-statement repair -- and it is named here rather than tolerated by a fuzzy bound, so a
+    second divergence fails this test instead of hiding behind the first.
+    """
+    previous = InMemoryGraphStore.from_directory(artifact_directory().parent / "v0.5.0")
+    current = InMemoryGraphStore.from_directory(artifact_directory())
+
+    differing = {
+        (node_id, direction)
+        for node_id in previous._nodes
+        if node_id in current._nodes
+        for direction in Direction
+        if {(e.subject_id, e.object_id) for e in previous.neighbors(node_id, direction)}
+        != {(e.subject_id, e.object_id) for e in current.neighbors(node_id, direction)}
+    }
+    assert differing == {
+        ("Q11647", Direction.INFLUENCED_BY),
+        ("Q2306", Direction.INFLUENCED),
+    }

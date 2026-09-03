@@ -151,7 +151,7 @@ def test_a_refusal_streams_as_a_refusal(client: TestClient) -> None:
 
 
 def test_an_unknown_genre_refuses_rather_than_erroring(client: TestClient) -> None:
-    events = frames(client.get("/lineage", params={"q": "bebop"}).text)
+    events = frames(client.get("/lineage", params={"q": "gamelan"}).text)
     refused = next(payload for name, payload in events if name == "refused")
     assert "not in this graph" in refused["reason"]
 

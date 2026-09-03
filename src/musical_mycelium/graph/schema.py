@@ -45,6 +45,20 @@ PREDICATE_PLAYS_GENRE = "plays_genre"
 #: separately, and far more strictly, what may become a *claim*.
 PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE})
 
+#: What a traversal walks unless a caller says otherwise. Added at v0.6.0 alongside
+#: ``PREDICATE_PLAYS_GENRE``, and the default is restrictive on purpose.
+#:
+#: Until v0.6.0 every edge was ``influenced_by``, so ``neighbors`` and ``path`` could return whatever
+#: touched a node and be right by accident. The membership axis ended that: unfiltered, "who influenced
+#: Michael Jackson" answered with three genres he plays, and "what came out of rock music" answered with
+#: 113 artists and no genres at all. Neither is an influence claim, and a traversal that returns them is
+#: the "membership reads as derivation" failure ``CLAUDE.md`` decision C1 exists to prevent — one layer
+#: below where the gate could catch it.
+#:
+#: Widening this at a call site is the explicit act. Changing this default is not a widening, it is
+#: turning the lock off for every caller at once.
+INFLUENCE_ONLY = frozenset({PREDICATE_INFLUENCED_BY})
+
 SOURCE_WIKIDATA = "wikidata"
 
 #: Tiers from the Wikipedia disconfirmation check (``docs/graph-semantics.md`` 4.2). Only PROSE is

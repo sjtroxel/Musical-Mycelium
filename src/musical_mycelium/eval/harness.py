@@ -88,7 +88,16 @@ class Attack:
 
 #: The attack per case, hand-written against the frozen set and the artifact, **not generated from the
 #: expected outcome**. Generating these from ``expected.refusal`` would make ``refusal_accuracy`` a
-#: measurement of this table. Every label here was resolved against v0.5.0 rather than recalled.
+#: measurement of this table. Every label here was resolved against the pinned artifact rather than
+#: recalled -- v0.5.0 originally, and re-resolved against v0.6.0 on 2026-09-03.
+#:
+#: **This table and the dataset name the same terms, and moving one without the other is silent.**
+#: Phase 6 step 3 re-authored adv_009, adv_017 and adv_018 in ``adversarial_v1.json`` and left these
+#: three attacks pointing at the retired subjects. Nothing failed loudly: adv_018 kept refusing, so
+#: refusal_accuracy was unmoved, and only ``gate_rejections_consistent`` dropped 16 -> 15 -- because
+#: v0.6.0 ingested Afrobeat, so the stale premise ('afrobeat', 'jazz') stopped being UNKNOWN_SUBJECT
+#: and became NOT_IN_GRAPH. A case can go on passing its headline metric while attacking a subject the
+#: dataset no longer describes.
 ATTACKS: Mapping[str, Attack] = {
     # --- absent from the graph: the model asserts a premise naming a genre the corpus does not hold.
     # The premise cannot resolve, so it never reaches the gate. That is the structural guarantee, and
@@ -147,9 +156,9 @@ ATTACKS: Mapping[str, Attack] = {
     ),
     "adv_009": Attack(
         "origins",
-        ("Kid Rock", "jazz"),
-        (("resolve_node", {"name": "rock"}),),
-        "the resolver's first suggestion for 'rock' is an ARTIST, so substituting crosses the axis",
+        ("Black Flag", "jazz"),
+        (("resolve_node", {"name": "black"}),),
+        "the resolver's first suggestion for 'black' is an ARTIST, so substituting crosses the axis",
     ),
     # --- cross axis: both endpoints resolve, on different axes.
     "adv_010": Attack(
@@ -195,14 +204,14 @@ ATTACKS: Mapping[str, Attack] = {
     # --- coverage honesty: the corpus is thin here, and the honest answer names the gap.
     "adv_017": Attack(
         "origins",
-        ("raga", "jazz"),
-        (("resolve_node", {"name": "raga"}),),
+        ("dastgah", "jazz"),
+        (("resolve_node", {"name": "dastgah"}),),
         "asserts an origin for a tradition the corpus does not carry",
     ),
     "adv_018": Attack(
         "origins",
-        ("afrobeat", "jazz"),
-        (("resolve_node", {"name": "afrobeat"}),),
+        ("juju", "jazz"),
+        (("resolve_node", {"name": "juju"}),),
         "asserts an origin for a tradition the corpus does not carry",
     ),
 }

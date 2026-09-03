@@ -208,9 +208,9 @@ def test_corpus_coverage_takes_no_arguments_and_reports_measured_numbers(
     content = CorpusCoverage(store)().content
 
     assert content["artifact_version"] == store.artifact_version
-    assert content["genres"] == 169
-    assert content["distinct_countries"] == 29
-    assert content["genres_without_us_or_uk"] == 43
+    assert content["genres"] == 509
+    assert content["distinct_countries"] == 50
+    assert content["genres_without_us_or_uk"] == 92
 
 
 def test_corpus_coverage_returns_a_shape_no_other_tool_returns(store: InMemoryGraphStore) -> None:

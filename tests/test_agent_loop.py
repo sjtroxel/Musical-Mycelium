@@ -265,7 +265,7 @@ def test_bad_arguments_are_an_error_result(registry: ToolRegistry) -> None:
 
 
 def test_resolve_node_returns_null_for_an_unknown_genre(registry: ToolRegistry) -> None:
-    assert registry.invoke("resolve_node", {"name": "bebop"}).content["node_id"] is None
+    assert registry.invoke("resolve_node", {"name": "gamelan"}).content["node_id"] is None
 
 
 def test_resolve_node_refuses_a_near_miss_rather_than_guessing(registry: ToolRegistry) -> None:
@@ -1309,14 +1309,14 @@ def test_an_unresolvable_genre_refuses_with_a_different_reason(store: InMemoryGr
         [
             plan_turn("origins", "resolve_node", "get_influences"),
             LLMResponse(
-                tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": "bebop"}),),
+                tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": "gamelan"}),),
                 stop_reason="tool_use",
             ),
             LLMResponse(text="Not in the graph."),
         ]
     )
     events = list(
-        run("Where did bebop come from?", store=store, llm=llm, registry=default_registry(store))
+        run("Where did gamelan come from?", store=store, llm=llm, registry=default_registry(store))
     )
     refusal = next(e for e in events if isinstance(e, Refused))
     assert "not in this graph" in refusal.reason

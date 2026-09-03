@@ -2,7 +2,7 @@
 
 The tests that matter here are the ones on **synthetic graphs whose answer is known by construction**
 (``.claude/rules/evals.md``: a metric you have not tried to break is not a metric). The assertions
-against the pinned corpus are a second, weaker layer: they pin what v0.4.0 actually measures so that a
+against the pinned corpus are a second, weaker layer: they pin what v0.6.0 actually measures so that a
 corpus change has to be acknowledged rather than absorbed.
 
 Those pinned numbers are **measurements, not targets.** When a re-ingest moves them, the right response
@@ -19,17 +19,22 @@ from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import NODE_KIND_GENRE, Artifact, Edge, Node
 from musical_mycelium.graph.structure import analyse, components
 
-# What the pinned corpus measures, at v0.4.0: 973 nodes over both axes, 169 islands, the biggest
-# holding 458 of them.
+# What the pinned corpus measures, at v0.6.0: 1,313 nodes over both axes, 12 components, the biggest
+# holding 1,286 of them.
 #
-# These moved sharply at v0.4.0 when the artist axis landed, and the movement is the finding rather
-# than a regression. Through v0.3.0 the numbers were 41 / 31 / 10 / 2 over 169 genre nodes; they held
-# identical across the v0.2.0-to-v0.3.0 migration, which is what proved that migration changed the
-# schema and not the corpus.
-V040_COMPONENTS = 169
-V040_LARGEST = 458
-V040_DIAMETER = 16
-V040_MAX_PATH_HOPS = 6
+# The history is the point of keeping these, so it is recorded rather than overwritten. Through v0.3.0:
+# 41 / 31 / 10 / 2 over 169 genre nodes, identical across the v0.2.0-to-v0.3.0 migration, which is what
+# proved that migration changed the schema and not the corpus. At v0.4.0 the artist axis landed and they
+# went to 169 / 458 / 16 / 6 over 973 nodes.
+#
+# **v0.6.0 is the sharpest move of the three: 169 components to 12.** P136 membership joined the axes,
+# and it did so through the people who play across them -- CLAUDE.md decision C1. Read what it means
+# carefully: the corpus became *connected*, not more *derived*. Not one of these 12 components is a
+# chain of sourced influence, and a component count is not evidence that it is.
+V060_COMPONENTS = 12
+V060_LARGEST = 1286
+V060_DIAMETER = 10
+V060_MAX_PATH_HOPS = 7
 
 
 @pytest.fixture(scope="module")
@@ -147,12 +152,12 @@ def test_component_ordering_is_total_and_reproducible() -> None:
 
 
 def test_the_pinned_corpus_structure(store: InMemoryGraphStore) -> None:
-    """v0.4.0 as measured 2026-08-06. Update deliberately when the corpus moves; do not delete."""
+    """v0.6.0 as measured 2026-09-03. Update deliberately when the corpus moves; do not delete."""
     result = store.structure
-    assert result.component_count == V040_COMPONENTS
-    assert result.largest_component == V040_LARGEST
-    assert result.diameter == V040_DIAMETER
-    assert result.max_path_hops == V040_MAX_PATH_HOPS
+    assert result.component_count == V060_COMPONENTS
+    assert result.largest_component == V060_LARGEST
+    assert result.diameter == V060_DIAMETER
+    assert result.max_path_hops == V060_MAX_PATH_HOPS
     assert result.isolated_nodes == 0
 
 
@@ -167,9 +172,14 @@ def test_the_depth_arrived_with_the_artist_axis(store: InMemoryGraphStore) -> No
     v0.4.0 is that somewhere. The artist axis took the deepest chain from **2 hops to 6** and the
     largest component from 31 nodes to 458. The corpus is no longer shallow; it is still broad, and
     169 components over 973 nodes means it is still mostly islands.
+
+    v0.6.0 ended the islands -- 12 components, 1,286 of 1,313 nodes in the largest -- and took the
+    deepest chain to 7. **The islands half is what went stale; the shallowness finding did not.** Depth
+    still does not come from P737 among genres, which is what this test has always been about, and
+    membership adds none: it is one hop wide and carries no derivation.
     """
     assert store.structure.max_path_hops >= 3, "DoD #2 wants three or more hops"
-    assert store.structure.max_path_hops == V040_MAX_PATH_HOPS
+    assert store.structure.max_path_hops == V060_MAX_PATH_HOPS
     assert store.structure.component_count > 1, (
         "one connected blob would be its own kind of surprise"
     )
@@ -194,5 +204,5 @@ def test_structure_is_computed_not_read_from_the_manifest(store: InMemoryGraphSt
     assert store._manifest is not None
     lying = replace(store._manifest, structure={"component_count": 1, "diameter": 999})
     lied_to = InMemoryGraphStore(store._artifact, lying)
-    assert lied_to.structure.component_count == V040_COMPONENTS
-    assert lied_to.structure.diameter == V040_DIAMETER
+    assert lied_to.structure.component_count == V060_COMPONENTS
+    assert lied_to.structure.diameter == V060_DIAMETER

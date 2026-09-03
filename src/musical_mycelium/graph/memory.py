@@ -25,13 +25,13 @@ from pathlib import Path
 
 from musical_mycelium.graph.coverage import Coverage
 from musical_mycelium.graph.coverage import analyse as analyse_coverage
-from musical_mycelium.graph.schema import Artifact, Edge, Manifest, Node, verify
+from musical_mycelium.graph.schema import INFLUENCE_ONLY, Artifact, Edge, Manifest, Node, verify
 from musical_mycelium.graph.store import Direction, GraphStore
 from musical_mycelium.graph.structure import GraphStructure, analyse
 
 #: The pinned version. A **constant in code**, never "latest" — that is what stops a corpus change from
 #: silently invalidating a benchmark (``.claude/rules/evals.md``).
-PINNED_ARTIFACT_VERSION = "0.5.0"
+PINNED_ARTIFACT_VERSION = "0.6.0"
 
 #: Leading words to ignore when resolving a typed name. Exactly one, deliberately: "the blues" must
 #: resolve to ``blues`` (gold case 5 is phrased that way) and that is the whole of the ambition.
@@ -151,9 +151,15 @@ class InMemoryGraphStore:
     def get_node(self, node_id: str) -> Node | None:
         return self._nodes.get(node_id)
 
-    def neighbors(self, node_id: str, direction: Direction = Direction.INFLUENCED_BY) -> list[Edge]:
+    def neighbors(
+        self,
+        node_id: str,
+        direction: Direction = Direction.INFLUENCED_BY,
+        *,
+        predicates: frozenset[str] = INFLUENCE_ONLY,
+    ) -> list[Edge]:
         index = self._by_subject if direction is Direction.INFLUENCED_BY else self._by_object
-        return list(index.get(node_id, ()))
+        return [edge for edge in index.get(node_id, ()) if edge.predicate in predicates]
 
     def search(self, text: str) -> list[Node]:
         """Exact normalised match first, then whole-word substring matches, shortest label first.
@@ -183,6 +189,8 @@ class InMemoryGraphStore:
         start_id: str,
         end_id: str,
         direction: Direction = Direction.INFLUENCED_BY,
+        *,
+        predicates: frozenset[str] = INFLUENCE_ONLY,
     ) -> list[Edge]:
         """Breadth-first, so the chain returned is the **shortest** sourced one.
 
@@ -216,6 +224,8 @@ class InMemoryGraphStore:
         while queue:
             current = queue.popleft()
             for edge in index.get(current, ()):
+                if edge.predicate not in predicates:
+                    continue
                 nxt = forward(edge)
                 if nxt in seen:
                     continue

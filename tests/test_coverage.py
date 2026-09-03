@@ -169,29 +169,41 @@ def store() -> InMemoryGraphStore:
 
 
 def test_the_pinned_corpus_coverage(store: InMemoryGraphStore) -> None:
-    """v0.5.0 as measured 2026-08-06. Update deliberately when the corpus moves; do not delete.
+    """v0.6.0 as measured 2026-09-03. Update deliberately when the corpus moves; do not delete.
 
     **These numbers are the DoD #7 deliverable.** The corpus skews Western, anglophone and recent by
     construction, and this is that skew as arithmetic rather than as a disclaimer.
+
+    v0.5.0, for comparison: 169 / 28 / 48 / 19. The membership crawl roughly tripled the genre count and
+    the gaps grew with it -- ``without_inception`` 28 -> 131, ``without_country`` 48 -> 164. A bigger
+    corpus is not a better-documented one, and these four numbers are where that shows.
     """
     c = store.coverage
 
-    assert c.genres == 169
-    assert c.without_inception == 28
-    assert c.without_country == 48
-    assert c.coarser_than_year == 19
+    assert c.genres == 509
+    assert c.without_inception == 131
+    assert c.without_country == 164
+    assert c.coarser_than_year == 51
     assert c.top_country == "United States"
 
 
 def test_the_corpus_is_recent_and_says_so(store: InMemoryGraphStore) -> None:
-    """Only 13 of 169 genres originate before 1950, against 47 in 1970-1989 alone. A product built on
+    """Only 53 of 509 genres originate before 1950, against 147 in 1970-1989 alone. A product built on
     this corpus cannot speak about early music history, and the number is what makes that checkable
-    rather than a matter of impression."""
+    rather than a matter of impression.
+
+    **The multiple loosened at v0.6.0 and the bound was widened to match, which is the direction that
+    needs saying out loud.** v0.5.0 was 13 against 47, a 3.6x concentration, and the assertion read
+    ``> before_1950 * 3``. v0.6.0 is 53 against 147: still lopsided, but 2.8x. The corpus got *less*
+    concentrated in the era it is worst at, so this bound is being relaxed because the measurement
+    improved, not to accommodate a regression. If it ever has to be relaxed the other way, that is a
+    finding and not a maintenance task.
+    """
     c = store.coverage
     before_1950 = c.eras["pre-1900"] + c.eras["1900-1949"]
 
-    assert before_1950 == 13
-    assert c.eras["1970-1989"] > before_1950 * 3
+    assert before_1950 == 53
+    assert c.eras["1970-1989"] > before_1950 * 2.5
 
 
 def test_the_corpus_is_anglophone_dense_and_says_so(store: InMemoryGraphStore) -> None:
@@ -206,14 +218,25 @@ def test_the_corpus_is_anglophone_dense_and_says_so(store: InMemoryGraphStore) -
     (see ``coverage.PLACE_TO_COUNTRY``). Note the direction: correcting the place normalisation makes
     the corpus look *more* anglophone, not less. That is the point — the fix was applied because it was
     right, not because of which way it moved the number.
+
+    **v0.6.0 moved the share the uncomfortable way: 78/121 = 0.64 became 253/345 = 0.73.** The
+    membership crawl was seeded from the artists already in the corpus, and those artists are
+    anglophone, so the genres it reached are more anglophone than the ones it started from. The corpus
+    grew three times larger and got *more* concentrated, not less. ``top_country_share`` says the same
+    thing from the other side, 0.421 -> 0.562.
+
+    This is the number a coverage panel is most tempted to leave out, because two other figures moved
+    the flattering way at the same time — distinct places 29 -> 50, genres naming neither US nor UK
+    43 -> 92. All three are true and the honest report carries all three. The band below is widened to
+    contain the measurement rather than to contain the claim.
     """
     c = store.coverage
     with_country = c.genres - c.without_country
     naming_us_or_uk = with_country - c.genres_without_us_or_uk
 
-    assert with_country == 121
-    assert naming_us_or_uk == 78
-    assert 0.6 < naming_us_or_uk / with_country < 0.7
+    assert with_country == 345
+    assert naming_us_or_uk == 253
+    assert 0.7 < naming_us_or_uk / with_country < 0.8
 
 
 def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
@@ -221,11 +244,15 @@ def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
 ) -> None:
     """The counterweight, asserted so a bias figure can never ship without it.
 
-    43 genres name no US or UK connection at all, across 29 distinct places — kuduro, bachata,
+    92 genres name no US or UK connection at all, across 50 distinct places — kuduro, bachata,
     cadence-lypso, bossa nova, Mizrahi music, Anatolian rock, Manila sound. **Concentration and absence
     are different claims**, and reporting only the first invites the second to be inferred. That
     inference was made on 2026-08-06 and corrected by sjtroxel, who was reading the corpus rather than
     the aggregate.
+
+    **v0.6.0: 43 -> 92 and 29 -> 50.** Both counterweights grew, and neither cancels the concentration
+    figure in the test above, which grew too. Quoting this pair without that one is the failure mode
+    this docstring already warns about, pointed the other way.
 
     **43, not 44, since 2026-08-07.** ``UK drill``'s P495 is ``Brixton`` — a London district — which an
     exact-string test against ``ANGLOPHONE_CORE`` read as "names no UK". The counterweight figure gets
@@ -233,8 +260,8 @@ def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
     """
     c = store.coverage
 
-    assert c.genres_without_us_or_uk == 43
-    assert c.distinct_countries == 29
+    assert c.genres_without_us_or_uk == 92
+    assert c.distinct_countries == 50
 
 
 def test_a_sub_national_place_still_counts_toward_its_country() -> None:
@@ -271,6 +298,8 @@ def test_a_supranational_place_is_folded_into_neither_country() -> None:
 def test_the_corpus_spans_far_more_than_the_post_war_era(store: InMemoryGraphStore) -> None:
     """The same correction on the time axis. The earliest genres date to 500 — medieval and classical
     music — with opera and Baroque at 1600 and blues at 1890. Thin is not empty, and "post-war" is a
-    description of where the mass sits, never of what the corpus contains."""
+    description of where the mass sits, never of what the corpus contains.
+
+    6 -> 14 at v0.6.0."""
     c = store.coverage
-    assert c.eras["pre-1900"] == 6
+    assert c.eras["pre-1900"] == 14

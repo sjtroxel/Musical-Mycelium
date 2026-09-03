@@ -17,7 +17,7 @@ from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from musical_mycelium.graph.coverage import Coverage
-from musical_mycelium.graph.schema import Edge, Node
+from musical_mycelium.graph.schema import INFLUENCE_ONLY, Edge, Node
 
 
 class Direction(StrEnum):
@@ -56,7 +56,13 @@ class GraphStore(Protocol):
         """The node with this id, or ``None``. Never a fuzzy match — that is ``search``'s job."""
         ...
 
-    def neighbors(self, node_id: str, direction: Direction = Direction.INFLUENCED_BY) -> list[Edge]:
+    def neighbors(
+        self,
+        node_id: str,
+        direction: Direction = Direction.INFLUENCED_BY,
+        *,
+        predicates: frozenset[str] = INFLUENCE_ONLY,
+    ) -> list[Edge]:
         """One hop from ``node_id``, as **edges** rather than nodes.
 
         Edges, because an edge carries the provenance a ``Claim`` has to cite. Returning nodes here
@@ -64,6 +70,12 @@ class GraphStore(Protocol):
 
         An empty list means the graph has no sourced edges in that direction. It does not mean the
         genre has no influences in reality, and nothing downstream may narrate it that way.
+
+        ``predicates`` is the kind of edge to walk, and it defaults to ``INFLUENCE_ONLY`` rather than to
+        everything the artifact holds. See that constant for why the restrictive default is the correct
+        one. A caller that wants the membership axis — connectivity, the coverage panel, the map — asks
+        for it by name; a caller that forgets gets the v0.5.0 behaviour every eval number was measured
+        against, which is the safe way round for a default to be wrong.
         """
         ...
 
@@ -76,6 +88,8 @@ class GraphStore(Protocol):
         start_id: str,
         end_id: str,
         direction: Direction = Direction.INFLUENCED_BY,
+        *,
+        predicates: frozenset[str] = INFLUENCE_ONLY,
     ) -> list[Edge]:
         """The shortest sourced chain from ``start_id`` to ``end_id``, or an empty list if none exists.
 
@@ -102,6 +116,10 @@ class GraphStore(Protocol):
         that needs to tell them apart checks ``get_node`` and equality itself. That is deliberate: a
         traversal method that raised on an unknown id would make refusal an exception path, and refusal
         is correct behaviour here, not an error.
+
+        ``predicates`` filters which edges the walk may cross, defaulting to ``INFLUENCE_ONLY`` for the
+        reason ``neighbors`` gives. It matters more here than there: a chain is narrated hop by hop, so a
+        single membership edge inside one would read as a derivation step in the middle of a lineage.
 
         *(Corrected 2026-08-04: this said "phase 5". It was written while ``path()`` was a phase-1
         deferral, but the ROADMAP assigns "real multi-hop traversal" to phase 2. Phase 5 **consumes**

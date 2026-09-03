@@ -181,13 +181,24 @@ def resolve_sources(edge: Edge) -> tuple[str, ...]:
     edge's **subject**. A source id that points at some other entity is not a citation for this claim
     even if it is a perfectly valid URI, and that is exactly the failure a plausible-looking fabrication
     produces. Verified against all 21 v0.1 edges on 2026-08-02.
+
+    **The QID comparison is case-insensitive, and that gives up nothing.** *(Amended 2026-09-03, phase 6
+    step 3.)* Wikidata writes the entity in a statement URI in either case -- older statements use
+    ``q1299``, newer ones ``Q1299`` -- and v0.6.0 was the first artifact to inherit any of the lowercase
+    form: 21 ``plays_genre`` edges, against 3,710 that matched exactly and **zero** that named a
+    different entity. A QID is ``Q`` followed by digits, so no two distinct QIDs can differ by case
+    alone, and folding case therefore admits no fabrication that the strict comparison would have caught.
+
+    The fix belongs here rather than in the ingestion. ``source_id`` records the URI Wikidata actually
+    returned; normalising its case at write time would make the stored provenance differ from the
+    retrieved provenance, which is a worse bug than the one being fixed.
     """
     if edge.source != SOURCE_WIKIDATA:
         return ()
     if not edge.source_id.startswith(_WIKIDATA_STATEMENT_PREFIX):
         return ()
     entity = edge.source_id.removeprefix(_WIKIDATA_STATEMENT_PREFIX).split("-", 1)[0]
-    if entity != edge.subject_id:
+    if entity.casefold() != edge.subject_id.casefold():
         return ()
     return (edge.source_id,)
 

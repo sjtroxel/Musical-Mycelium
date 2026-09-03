@@ -292,6 +292,23 @@ def test_a_source_from_an_unknown_provider_does_not_resolve() -> None:
     )
 
 
+def test_the_qid_in_a_citation_is_matched_without_regard_to_case() -> None:
+    """Wikidata writes the entity in a statement URI in either case; v0.6.0 inherited 21 lowercase ones.
+
+    Both halves are asserted together on purpose. Folding case is only safe because a QID is ``Q``
+    followed by digits, so the fold cannot make two *different* entities compare equal — and the second
+    assertion is what would fail if someone later widened this into a general fuzzy match.
+    """
+    store = synthetic_store("http://www.wikidata.org/entity/statement/q1-DEADBEEF")
+    assert len(gate([proposal("Q1", "Q2")], store).approved) == 1
+
+    wrong_entity = synthetic_store("http://www.wikidata.org/entity/statement/Q999-DEADBEEF")
+    assert (
+        gate([proposal("Q1", "Q2")], wrong_entity).rejected[0].reason
+        is RejectionReason.UNRESOLVABLE_SOURCE
+    )
+
+
 def test_resolve_sources_on_every_pinned_edge() -> None:
     """Every edge the ingestion wrote must be citable. If this fails the artifact is the problem, not
     the gate — so it reads the artifact directly rather than going through the store."""
