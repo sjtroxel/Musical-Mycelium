@@ -2,7 +2,7 @@
 # `make help` lists targets. `make check` is what CI runs.
 
 .DEFAULT_GOAL := help
-.PHONY: help install fmt lint typecheck test cov check root-check clean dev ingest \
+.PHONY: help install fmt lint typecheck test cov check root-check orient clean dev ingest \
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
         heldout-key heldout-draw heldout-seal heldout-verify heldout-check \
         eval eval-live eval-noise eval-label eval-judge eval-tier2 eval-heldout \
@@ -48,6 +48,9 @@ test: ## Run the test suite
 
 cov: ## Run the test suite with a coverage report
 	uv run pytest --cov --cov-report=term-missing
+
+orient: ## Print session orientation: git state, next phase step, newest KNOWN-GAPS, memory router
+	@./scripts/orient.sh
 
 # Counts tracked AND untracked-but-not-ignored paths, so the cap is enforced before a commit
 # rather than only after one.
