@@ -60,9 +60,11 @@ from musical_mycelium.eval.slices import (
     SliceReport,
     density_slice,
     era_slice,
+    predicate_slice,
     query_kind_slice,
     region_slice,
     slice_rates,
+    source_slice,
 )
 from musical_mycelium.graph.schema import Node
 from musical_mycelium.graph.store import GraphStore
@@ -484,7 +486,11 @@ def _aggregate(
 def slice_by_dimensions(
     results: Sequence[CaseResult], store: GraphStore
 ) -> tuple[SliceReport, ...]:
-    """``CaseResult.correct``, cut four ways. The metric being sliced is deliberately the same one."""
+    """``CaseResult.correct``, cut six ways. The metric being sliced is deliberately the same one.
+
+    ``source`` and ``predicate`` added at phase 6 step 7, because DoD #5 is re-judged rather than
+    carried: the corpus grew a second source and a second predicate that the slicer had never seen.
+    """
 
     def correct(result: CaseResult) -> bool:
         return result.correct
@@ -493,6 +499,8 @@ def slice_by_dimensions(
         slice_rates("era", results, lambda r: era_slice(r.subject), correct),
         slice_rates("region", results, lambda r: region_slice(r.subject), correct),
         slice_rates("density", results, lambda r: density_slice(r.subject, store), correct),
+        slice_rates("source", results, lambda r: source_slice(r.subject, store), correct),
+        slice_rates("predicate", results, lambda r: predicate_slice(r.subject, store), correct),
         slice_rates(
             "query_kind", results, lambda r: query_kind_slice(r.run.plan.query_kind), correct
         ),

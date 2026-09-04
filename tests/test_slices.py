@@ -15,9 +15,11 @@ from musical_mycelium.eval.slices import (
     density_slice,
     dimensions_of,
     era_slice,
+    predicate_slice,
     query_kind_slice,
     region_slice,
     slice_rates,
+    source_slice,
 )
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import NODE_KIND_GENRE, Node
@@ -152,3 +154,77 @@ def test_query_kind_passes_through_and_degrades_to_unknown() -> None:
 def test_slicing_of_nothing_produces_no_slices() -> None:
     """Not a zero, not a 100% — no buckets at all. An empty run has no shape to report."""
     assert slice_rates("d", [], lambda _: "k", lambda _: True).rates == {}
+
+
+# --- the two dimensions phase 6 created ----------------------------------------------------------
+
+
+def test_source_separates_the_two_halves_of_the_corpus(store: InMemoryGraphStore) -> None:
+    """**The dimension phase 6 made possible and therefore has to be sliced by.**
+
+    Until v0.7.0 every edge was Wikidata, so this question had one answer. The corpus is now 949
+    Wikidata influence edges against 1,336 from DBpedia, and an aggregate that looks healthy while the
+    ``dbpedia_only`` slice fails is the default outcome without this.
+    """
+    # blues rock: rock music and electric blues from DBpedia, blues from Wikidata.
+    assert source_slice(store.get_node("Q193355"), store) == "both"
+    # turntablism has no origins at all -- the isolated bucket, not a gap in the slicing.
+    assert source_slice(store.get_node("Q1046801"), store) == "none"
+    assert source_slice(None, store) == "unknown"
+
+
+def test_source_reports_a_single_source_node_as_that_source_only(
+    store: InMemoryGraphStore,
+) -> None:
+    """The two buckets that matter are the pure ones: a node whose whole account of itself comes from
+    one source is where a source-specific failure would show first."""
+    from musical_mycelium.graph.schema import SOURCE_DBPEDIA, SOURCE_WIKIDATA
+    from musical_mycelium.graph.store import Direction
+
+    seen = {}
+    for node in store._artifact.nodes:
+        if node.kind != "genre":
+            continue
+        sources = {e.source for e in store.neighbors(node.id, Direction.INFLUENCED_BY)}
+        if sources == {SOURCE_DBPEDIA}:
+            seen["dbpedia_only"] = node
+        elif sources == {SOURCE_WIKIDATA}:
+            seen["wikidata_only"] = node
+        if len(seen) == 2:
+            break
+
+    assert set(seen) == {"dbpedia_only", "wikidata_only"}, "the corpus must hold both pure cases"
+    for expected, node in seen.items():
+        assert source_slice(node, store) == expected
+
+
+def test_predicate_marks_a_node_the_corpus_cannot_narrate(store: InMemoryGraphStore) -> None:
+    """``membership_only`` is the bucket to watch, and it is the reason this dimension exists.
+
+    ``plays_genre`` is absent from ``agent.claims.ALLOWED_PREDICATES``, so a genre the corpus knows only
+    through the artists who play it **must always refuse**, however many edges touch it. That is correct
+    behaviour, and in an aggregate it looks identical to a system refusing because it is broken. 177 of
+    675 genres are in this state at v0.7.1 -- 26% of the corpus, invisible until now.
+    """
+    from musical_mycelium.graph.store import Direction
+
+    membership_only = next(
+        n
+        for n in store._artifact.nodes
+        if n.kind == "genre"
+        and not store.neighbors(n.id, Direction.INFLUENCED_BY)
+        and not store.neighbors(n.id, Direction.INFLUENCED)
+        and predicate_slice(n, store) == "membership_only"
+    )
+    assert predicate_slice(membership_only, store) == "membership_only"
+    assert predicate_slice(None, store) == "unknown"
+
+
+def test_dimensions_of_returns_all_six_so_a_caller_cannot_forget_one(
+    store: InMemoryGraphStore,
+) -> None:
+    """Four until v0.7.1. DoD #5 is re-judged rather than carried, and a corpus that grew a second
+    source and a second predicate has two axes the slicer had never seen."""
+    dimensions = dimensions_of(store.get_node("Q193355"), store, "origins")
+    assert set(dimensions) == {"era", "region", "density", "source", "predicate", "query_kind"}
+    assert dimensions["source"] == "both"

@@ -474,7 +474,7 @@ v0.5.0, and `adv_008` failed three of five. Detail and the adv_008 transcript ar
 **What the run leaves open:** the noise floor is stale (artifact 0.5.0, revision `f84453a`) and v0.6.0 is
 n=1, so no threshold near these numbers moves until five runs are measured on this corpus.
 
-### Step 4 — DBpedia alignment and ingestion → artifact v0.7.0
+### Step 4 — DBpedia alignment and ingestion → artifact v0.7.0 — **DONE 2026-09-04**
 
 The source half, and the largest step in the phase.
 
@@ -549,7 +549,7 @@ in a buried credits page." So:
   qualified to answer it. The plan takes the conservative position — attribute, link back, and state the
   per-source licence — which is defensible regardless of how the question resolves.
 
-### Step 5 — Corroboration and `contested`
+### Step 5 — Corroboration and `contested` — **DONE 2026-09-04**
 
 The payload, and the part most worth designing carefully rather than fast.
 
@@ -574,7 +574,7 @@ project has already corrected `CLAUDE.md` and two rules files once for blurring 
 corroborated `PROSE_AUTO` edge is not thereby a `HAND` edge. Do not collapse the two fields, do not let a
 corroboration promote a verification tier, and do not let the UI show one number where there are two.
 
-### Step 6 — Geography and time → artifact v0.7.1
+### Step 6 — Geography and time → artifact v0.7.1 — **DONE 2026-09-04**
 
 DoD #4 asks that a traversal name specific people, places and dates rather than only genre labels. After
 step 4 the genre population has grown, so `P571` and `P495` must be re-read for the new genres — the same
@@ -593,7 +593,7 @@ should ask.
 time. Whether DBpedia dates them is the sharpest single test of whether a second source improves the skew
 or reproduces it, and the answer goes in the coverage panel either way.
 
-### Step 7 — Slicing audit
+### Step 7 — Slicing audit — **DONE 2026-09-04**
 
 DoD #5 is recorded as already met by `eval/slices.py` from phase 3 step 7b. **Met at v0.5.0 is not met at
 v0.7.1**, which is the whole reason DoD items are re-judged rather than carried. Two new dimensions exist

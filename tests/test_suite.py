@@ -434,13 +434,21 @@ def test_a_path_case_without_a_terminus_raises(tmp_path: Path) -> None:
 # --- slicing -----------------------------------------------------------------------------------------
 
 
-def test_every_result_is_sliced_four_ways(result: SuiteResult) -> None:
-    """DoD 6. The dimensions are fixed by ``.claude/rules/evals.md`` and a suite that reports three of
-    them has dropped the one that was going to fail."""
+def test_every_result_is_sliced_six_ways(result: SuiteResult) -> None:
+    """DoD 6. The dimensions are fixed by ``.claude/rules/evals.md`` and a suite that reports five of
+    them has dropped the one that was going to fail.
+
+    **Four became six at phase 6 step 7.** The rules file names era, region, density and query type;
+    ``source`` and ``predicate`` are additions the corpus forced, not the rules -- a second source at
+    1.4x the size of the first, and a predicate that can never be narrated. Ordered so the two new ones
+    sit beside ``density``, which is the dimension they are most easily confused with.
+    """
     assert tuple(report.dimension for report in result.slices) == (
         "era",
         "region",
         "density",
+        "source",
+        "predicate",
         "query_kind",
     )
 

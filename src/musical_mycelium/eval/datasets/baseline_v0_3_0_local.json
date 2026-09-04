@@ -24,12 +24,12 @@
   "edge_groundedness": 1.0,
   "citation_resolution": 1.0,
   "verification_mix": {
-    "MEMBERSHIP_CITED": 0,
-    "EXPOSURE_AUTO": 0,
-    "MEMBERSHIP_BARE": 0,
     "ASSERTS_AUTO": 0,
-    "PROSE_AUTO": 0,
+    "MEMBERSHIP_BARE": 0,
+    "EXPOSURE_AUTO": 0,
+    "MEMBERSHIP_CITED": 0,
     "HAND": 7,
+    "PROSE_AUTO": 0,
     "INFOBOX_AUTO": 4
   },
   "claim_bound_respected": 16,
@@ -86,6 +86,46 @@
       "connected": {
         "numerator": 2,
         "denominator": 2
+      }
+    },
+    "source": {
+      "unknown": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "none": {
+        "numerator": 5,
+        "denominator": 5
+      },
+      "wikidata_only": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "both": {
+        "numerator": 2,
+        "denominator": 2
+      }
+    },
+    "predicate": {
+      "unknown": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "membership_only": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "neither": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "both": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "influence_only": {
+        "numerator": 1,
+        "denominator": 1
       }
     },
     "query_kind": {

@@ -545,13 +545,20 @@ def write_baseline(store: GraphStore, path: Path = BASELINE_FILE) -> dict[str, A
 def slice_by_dimensions(
     outcomes: Sequence[CaseOutcome], store: GraphStore
 ) -> tuple[SliceReport, ...]:
-    """Refusal correctness, cut four ways. **The metric being sliced is deliberately the same one** —
-    four different metrics across four dimensions would give sixteen numbers and no comparison."""
+    """Refusal correctness, cut six ways. **The metric being sliced is deliberately the same one** —
+    six different metrics across six dimensions would give thirty-six numbers and no comparison.
+
+    ``source`` and ``predicate`` were added at phase 6 step 7. DoD #5 was recorded as met at v0.5.0, and
+    met then is not met now: the corpus grew a second source at 1.4x the size of the first and a second
+    predicate that can never be narrated, and the slicer had seen neither.
+    """
     from musical_mycelium.eval.slices import (
         density_slice,
         era_slice,
+        predicate_slice,
         query_kind_slice,
         region_slice,
+        source_slice,
     )
 
     def correct(outcome: CaseOutcome) -> bool:
@@ -561,5 +568,7 @@ def slice_by_dimensions(
         slice_rates("era", outcomes, lambda o: era_slice(o.subject), correct),
         slice_rates("region", outcomes, lambda o: region_slice(o.subject), correct),
         slice_rates("density", outcomes, lambda o: density_slice(o.subject, store), correct),
+        slice_rates("source", outcomes, lambda o: source_slice(o.subject, store), correct),
+        slice_rates("predicate", outcomes, lambda o: predicate_slice(o.subject, store), correct),
         slice_rates("query_kind", outcomes, lambda o: query_kind_slice(o.plan.query_kind), correct),
     )

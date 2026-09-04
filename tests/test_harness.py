@@ -198,9 +198,11 @@ def test_the_baseline_pins_the_artifact_version(outcomes: tuple, store: GraphSto
     assert measure(outcomes, store).artifact_version == store.artifact_version
 
 
-def test_the_baseline_carries_all_four_slices(outcomes: tuple, store: GraphStore) -> None:
+def test_the_baseline_carries_all_six_slices(outcomes: tuple, store: GraphStore) -> None:
+    """Four until v0.7.1. ``source`` and ``predicate`` were added at phase 6 step 7 because DoD #5 is
+    re-judged rather than carried: the corpus grew a second source and a second predicate."""
     dimensions = {report.dimension for report in measure(outcomes, store).slices}
-    assert dimensions == {"era", "region", "density", "query_kind"}
+    assert dimensions == {"era", "region", "density", "source", "predicate", "query_kind"}
 
 
 def test_the_run_covers_only_hand_verified_edges_which_is_a_recorded_gap(

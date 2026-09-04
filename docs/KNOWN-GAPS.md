@@ -1,4 +1,45 @@
-# Known gaps at `v0.3.0-local`
+# Known gaps
+
+> ## START HERE — where things stand, 2026-09-04 end of day
+>
+> **Phase 6 steps 0-7 are done. STEP 8 (frontend) IS NEXT.** Artifact **v0.7.1 is pinned** in both
+> places. `make check` **1329 passed**, frontend **146**, eval gates **3 passed / 0 failed / 2 N/A**.
+> Everything below is newest-first; the four sections dated 2026-09-04 are today.
+>
+> **Three things that are easy to get backwards:**
+>
+> 1. **DO NOT DEPLOY.** The frontend pin deliberately lags at `0.5.0` until step 8. A deploy today
+>    answers from v0.7.1 and draws its map from v0.5.0.
+> 2. **`contested` is REACHABLE and means two DIFFERENT sources disagree.** 6 reciprocal pairs, only
+>    **2** contested. "A reciprocal pair exists" overcounts by 3x.
+> 3. **The SPA's copy is now overstated in the OTHER direction** — "most of the corpus records no
+>    influences" is 48.9%, and "even the busiest genre is thin" is 55 connections.
+>
+> ### Decided for tomorrow, in order
+>
+> 1. **Step 8, frontend.** Copy v0.7.1 into `web/public/graph/`, delete `FRONTEND_PIN_LAG_UNTIL_STEP_8`
+>    in `tests/test_chips.py`, restore the plain pin equality, and rewrite the copy listed above.
+>    `web/src/corpus-facts.json` is due for deletion in the same step.
+> 2. **Surface `contested`**, which is the enabling piece for item 3. `graph/corroboration.py` computes
+>    it; no tool exposes it and the SPA does not show it. §7 lists "contested display" under `web/`.
+> 3. **The two contested gold cases** — electropop/electroclash and western music/New Mexico music.
+>    **Deliberately NOT written on 2026-09-04**: the correct answer to "where did electropop come from"
+>    on a contested pair is *"the sources disagree"*, and the agent cannot say that until item 2 lands.
+>    Writing them sooner means either two failing tests or two cases that assert an ordinary origins
+>    answer and therefore test nothing. Decided with sjtroxel.
+>
+> ### Owed, not scheduled
+>
+> - **Gold cases whose subjects are `dbpedia_only`.** The slicing audit measured the gold set
+>   over-sampling the Wikidata half **~12x** — see the step 7 section. Real authoring; five cases were
+>   proposed and deferred on purpose.
+> - **A case exercising the `ambiguous` branch**, now that `big band` / `big band music` made it
+>   reachable.
+> - **The `ResolveSource` tool cannot verify a DBpedia URI** — needs a reverse lookup `GraphStore` does
+>   not expose.
+> - **The noise floor is stale** (v0.5.0, revision `f84453a`) and re-measuring is a step 9 decision.
+> - **The held-out set still pins `0.5.0`** and its run decision is sjtroxel's, at step 9. It was never
+>   read today.
 
 Written 2026-08-12, at the phase 3 release step. Required by
 `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §5.1, which asks that the tag ship with the open items
@@ -84,6 +125,59 @@ now been executed. ~~What remains is the **Bedrock redeploy, deliberately deferr
 is also why the deployed URL still runs the template stub~~ — **also stale: that redeploy shipped at
 phase 5 step 0 on 2026-08-24.** What remains from this paragraph is only the standing facts about the
 corpus in part 2.
+
+---
+
+## PHASE 6 STEP 7 — the slicing audit, and the gold set samples a corpus that no longer exists, 2026-09-04
+
+**Verified state:** `make check` green — **1329 passed**, mypy clean over 97 files, eval gates
+**3 passed / 0 failed / 2 not applicable**. Root 17 of 18.
+
+**Every result is now sliced SIX ways, not four.** DoD #5 was recorded as met by `eval/slices.py` at
+phase 3, and **met at v0.5.0 is not met at v0.7.1** — which is exactly why DoD items are re-judged rather
+than carried. Two dimensions the slicer had never seen:
+
+- **`source`** — `wikidata_only` / `dbpedia_only` / `both` / `none`, read off the node's influence edges.
+  Until v0.7.0 this had one possible answer. The corpus is now 949 Wikidata influence edges against
+  1,336 from DBpedia, and **an aggregate that looks healthy while the `dbpedia_only` slice fails is the
+  default outcome without it.**
+- **`predicate`** — `influence_only` / `membership_only` / `both` / `neither`. `plays_genre` is absent
+  from `ALLOWED_PREDICATES`, so a genre known *only* through the artists who play it **must always
+  refuse**, however many edges touch it. That is correct behaviour and in an aggregate it is
+  indistinguishable from a system refusing because it is broken. **177 of 675 genres (26%) are in that
+  state and were invisible until now.**
+
+### THE FINDING: the gold set over-samples the Wikidata half by ~12x
+
+| source slice | corpus genres | gold cases |
+|---|---|---|
+| `wikidata_only` | 21 (**3%**) | 11 (**37%**) |
+| `dbpedia_only` | 325 (**48%**) | 4 (**13%**) |
+| `both` | 63 (9%) | 8 (27%) |
+| `none` | 266 (39%) | 6 (20%) |
+
+**This is not a defect in the authoring — it is arithmetic.** The 25 original cases were written against
+v0.5.0, which was 100% Wikidata, so the set samples a corpus that no longer exists in proportion. Nearly
+half the corpus now sits in a slice the gold set touches four times.
+
+The predicate axis shows the same shape more mildly: `both` is 37% of the corpus and 65% of gold cases,
+while `neither` is 13% of the corpus and 3% of gold.
+
+**What it means for reading the numbers:** every aggregate in the scripted suite is weighted toward the
+older, better-sourced half of the corpus. The slices are all 100% today, so nothing is hidden *yet* —
+but the headline figure would stay near 100% while a DBpedia-specific failure sat under it, because only
+four cases would feel it.
+
+**The fix is gold cases whose subjects are `dbpedia_only`, and it is real authoring** — each needs an
+independent, non-Wikidata citation. Proposed to sjtroxel 2026-09-04 as five such cases and
+**deliberately deferred**: the refusal slot was the more urgent hole and was rebuilt first. Not a gap
+discovered later; a gap measured, costed and postponed on purpose.
+
+### Ordering note
+
+`source` and `predicate` sit beside `density` in the report rather than at the end, because density is
+the dimension they are most easily confused with — all three describe how much the corpus knows about a
+node, and they answer different questions about it.
 
 ---
 

@@ -53,7 +53,7 @@ so both columns are labelled. Reading one as the other is the confusion this hea
 | **3** `agent-loop` **DONE 2026-08-12** | **v0.3** | **v0.5.0** (unchanged) | Real agent loop: planning, **7** tools, corroboration | Tool registry; loop untouched |
 | **4** `eval-suite` **DONE 2026-08-24** | **v0.4** | **v0.5.0** (unchanged) | The eval suite proper | Independent scorers over a pinned artifact |
 | **5** `spa-and-visualization` **DONE 2026-09-02** | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
-| **6** `density-and-coverage` | **v0.6** | new cut | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
+| **6** `density-and-coverage` **steps 0-7 done** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |
 
 **Phases 3, 4 and 5 do not cut a new artifact.** The corpus does not change, and re-cutting it would
@@ -61,9 +61,11 @@ silently invalidate every prior benchmark for nothing. Phase 5's pin read `pinne
 it is `v0.5.0` for the same reason phase 4's is — a frontend consumes the API, and the API reads whatever
 the backend has pinned. **Phase 6 is the next new cut.**
 
-**Phase 6 gained a named dependency on 2026-08-07:** a **second source per edge**. Every edge in v0.5.0
-has exactly one, always Wikidata, which is why contested-claim detection is unbuildable before then. See
-`phase-3-agent-loop.md` A1 and `phase-2-corpus-and-traversal.md` A7.
+~~**Phase 6 gained a named dependency on 2026-08-07:** a **second source per edge**.~~ **SATISFIED
+2026-09-04, phase 6 step 4.** DBpedia's `dbo:stylisticOrigin` supplies 1,336 influence edges alongside
+Wikidata's 949, so contested-claim detection stopped being unbuildable and **2 pairs are contested**.
+Decision A1 is closed by its stated precondition arriving, not re-litigated. See
+`phase-3-agent-loop.md` A1 and `phase-2-corpus-and-traversal.md` A7 for the original reasoning.
 
 **AWS signup is phase 1's step zero**, not a phase: account on the paid plan, Bedrock model access, and budget
 alarms armed. It is a gate, and one successful `converse` call is task one of the build.
@@ -80,8 +82,8 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | 2 | written; **amended 2026-08-04 (A1–A4)**, **A5–A6.8 during the build**, **A7 retroactively 2026-08-07** | written 2026-08-04; **all 8 steps built, phase complete** |
 | 3 | written; **amended 2026-08-07 (A1–A5)** | written 2026-08-07; **built; phase complete 2026-08-12, tagged `v0.3.0-local`** |
 | 4 | written; **amended 2026-08-12 (§0, at the phase 3 release step)** | written 2026-08-15; **all 9 steps built, phase complete 2026-08-24, tagged `v0.4.0`** |
-| 5 | written; **amended 2026-08-24 (§0) at phase start** | **written and approved 2026-08-24; step 0 next** |
-| 6 | written 2026-07-31, after the validation | at phase start |
+| 5 | written; **amended 2026-08-24 (§0) at phase start** | written 2026-08-24; **all 10 steps built, phase complete 2026-09-02, tagged `v0.5.0`** |
+| 6 | written 2026-07-31, after the validation | written 2026-09-02; **steps 0-7 built 09-02 to 09-04; step 8 next** |
 | 7 | written | at phase start |
 
 Phase 6's scope doc was deliberately last. It is density and coverage, the phase most directly exposed to what
@@ -93,10 +95,29 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-09-02
+### Where the build actually is — 2026-09-04
 
-**Phases 0 through 5 are COMPLETE. `v0.5.0` is tagged and pushed, and PHASE 6 IS NEXT.**
-`v0.3.0-local`, `v0.4.0` and `v0.5.0` are all tagged.
+**Phases 0 through 5 are COMPLETE. PHASE 6 IS IN PROGRESS: steps 0-7 are done, step 8 is next.**
+`v0.3.0-local`, `v0.4.0` and `v0.5.0` are tagged; v0.6.0, v0.7.0 and v0.7.1 are cut but not tagged.
+
+**The corpus has a second source, and `contested` is reachable.** Artifact **v0.7.1 is pinned** —
+`graph/memory.py:34` and `ingest/wikidata.py:59` both read it. 1,479 nodes and 5,066 edges, against
+v0.5.0's 973 and 950. The influence layer went 949 edges to **2,285** (949 Wikidata + 1,336 DBpedia),
+components 169 to **7**, and the deepest chain 6 hops to **12**. Decision **A1 is closed by its own
+stated precondition arriving**: two pairs are now contested between sources.
+
+**Three things a cold session most needs, all of which are easy to get backwards:**
+
+1. **`contested` is REACHABLE and means two DIFFERENT sources disagree** — v0.7.1 holds 6 reciprocal
+   pairs and only **2** are contested. "A reciprocal pair exists" overcounts by 3x.
+2. **DO NOT DEPLOY.** The frontend pin deliberately lags at `0.5.0` until step 8. A deploy today would
+   answer from v0.7.1 and draw its map from v0.5.0.
+3. **The SPA's copy is now overstated in the OTHER direction** — it says most of the corpus records no
+   influences (now 48.9%) and that even the busiest genre is thin (now 55 connections). Step 8 and
+   step 10.
+
+`docs/KNOWN-GAPS.md` newest-first carries the as-built for every step; **read it rather than restating
+it here.**
 
 **The deployed CloudFront URL serves the finished phase 5 SPA** — the streaming cited answer, the
 explorable map, the coverage panel and the mark. Verified 2026-09-02 by fetching the live bundle and
@@ -109,11 +130,9 @@ the step 9 "solid outline" caption and the coverage panel, and all three icon as
 `git rev-parse HEAD`. Measured `82061589629b` == `8206158` on the phase 5 deploy. A green workflow run
 does not establish this; that comparison does.
 
-**One live foot-gun before any phase 6 infrastructure work.** `make tf-plan`, `make tf-apply` and
-`make tf-destroy` pass none of `image_tag`, `llm_provider` or `reserved_concurrency`, so they inherit
-defaults that disagree with the deployed stack — and `llm_provider` defaults to `local`, so **a bare
-`make tf-apply` reverts the deployed function to the stub LLM and falsifies the resume line.** Guarding
-those targets is an open phase 6 item; `docs/KNOWN-GAPS.md` carries the detail.
+~~**One live foot-gun before any phase 6 infrastructure work.**~~ **FIXED 2026-09-02 at phase 6 step 0:**
+the `tf-*` targets now refuse to run without `IMAGE_TAG`, `LLM_PROVIDER` and `RESERVED_CONCURRENCY`, and
+`tf-apply` / `tf-destroy` / `heldout-seal` are denied in `.claude/settings.json`.
 
 > **This section was rewritten on 2026-08-24, and the rewrite is the point.** It used to be a running
 > status board — an eight-row phase 2 step table, a phase 3 step table, a phase 2 definition-of-done
