@@ -3,7 +3,7 @@
 
 .DEFAULT_GOAL := help
 .PHONY: help install fmt lint typecheck test cov check root-check orient clean dev ingest \
-        ingest-dbpedia \
+        ingest-dbpedia ingest-origins \
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
         heldout-key heldout-draw heldout-seal heldout-verify heldout-check \
         eval eval-live eval-noise eval-label eval-judge eval-tier2 eval-heldout \
@@ -237,6 +237,12 @@ ingest: ## Rebuild the pinned graph artifact from Wikidata (local only; requires
 # `ingest/dbpedia.py` docstring -- so the runtime is the point rather than an inefficiency.
 ingest-dbpedia: ## Extend the pinned artifact with DBpedia stylisticOrigin (local only, ~10 min, $0)
 	uv run python -m musical_mycelium.ingest.dbpedia $(ARGS)
+
+# Fills infobox_year / infobox_countries for genres Wikidata has no P571 or P495 for. One Wikipedia
+# article per second, same contract as the prose check. These are NOT Wikidata dates and are stored in
+# their own fields so nothing can read a parsed infobox value as a curated statement.
+ingest-origins: ## Parse Wikipedia cultural_origins into the artifact (local only, ~6 min, $0)
+	uv run python -m musical_mycelium.ingest.culturalorigins $(ARGS)
 
 # --- evaluation ---------------------------------------------------------------
 # Tier 1 over the gold set, driven by ScriptedLLM. Costs $0, needs no AWS, and runs on every commit.

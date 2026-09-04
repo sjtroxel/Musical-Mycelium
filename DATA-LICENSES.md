@@ -15,6 +15,7 @@ Written 2026-09-04, at phase 6 step 4, when DBpedia became the second source.
 | `influenced_by` edges from **P737** | Wikidata | **CC0 1.0** | `source_id` = statement URI |
 | `plays_genre` edges from **P136** | Wikidata | **CC0 1.0** | `source_id` = statement URI |
 | `influenced_by` edges from **`dbo:stylisticOrigin`** (v0.7.0+) | DBpedia | **CC BY-SA 3.0** | `source_id` = resolvable DBpedia resource URI |
+| `infobox_year` / `infobox_countries` on genre nodes (v0.7.1+) | English Wikipedia, `cultural_origins` infobox field | **CC BY-SA 4.0** | `infobox_source` = the article URL |
 
 CC0 imposes no attribution requirement. This project attributes Wikidata anyway, because provenance is
 the product rather than a compliance step.
@@ -25,11 +26,20 @@ statement URI. The attribution is therefore on the row itself and travels with t
 living in a credits page. `.claude/rules/graph-semantics.md` requires the attribution be displayed and
 **not** buried; the SPA's visible attribution and link back is phase 6 step 8.
 
-## Wikipedia text, which is a smaller and separate matter
+## Wikipedia text, which is no longer only a footnote
 
-The ingestion reads English Wikipedia article text to run the prose check (`ingest/prosecheck.py`).
-**Article prose is not stored in the artifact** — `graph.json` holds identifiers, labels, dates and
-countries, and no sentences.
+The ingestion reads English Wikipedia article text for two purposes: the prose check
+(`ingest/prosecheck.py`), and **from v0.7.1, parsing the `cultural_origins` infobox field into
+`infobox_year`, `infobox_precision` and `infobox_countries`** (`ingest/culturalorigins.py`). 107 genres
+carry a date from that field and 91 a country — values Wikidata's `P571` and `P495` do not have.
+
+Those are **facts extracted from CC BY-SA 4.0 text**, not prose copied from it, and each carries the
+article URL in `infobox_source` as the attribution and link back. They are deliberately in their own
+fields rather than merged into `inception_year` / `countries`, which remain Wikidata-only — so the
+licence of any given value is determined by which field it sits in, not by inspection.
+
+**Article prose itself is still not stored in the artifact** — `graph.json` holds identifiers, labels,
+dates and countries, and no sentences.
 
 It is stored in one place: `artifacts/*/exclusions.json` quotes a short excerpt of the subject article's
 infobox `stylistic_origins` field in the `reason` of an `INFOBOX_ONLY` row, so a rejection can be

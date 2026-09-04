@@ -87,6 +87,112 @@ corpus in part 2.
 
 ---
 
+## PHASE 6 STEP 6 — geography and time, artifact v0.7.1, and the skew actually improved, 2026-09-04
+
+**Verified state:** `make check` green — **1289 passed**, 14 `costs_money` deselected, mypy clean over 97
+files, terraform valid, eval gates **3 passed / 0 failed / 2 not applicable**. Root 17 of 18.
+**The pin is STILL `0.6.0`** and moving it is the next decision — see the bottom of this section.
+
+### The plan's scope was already done, and two of its claims were wrong
+
+- **The Wikidata re-read the plan scoped for this step had already happened.** `P571` and `P495` were
+  re-read for every genre in steps 2 and 4. The 198 undated and 222 country-less genres at v0.7.0 are
+  **the source's gap, not the crawl's**, so v0.7.1 needed a different reason to exist.
+- **"DBpedia provides an independent check on two of the six [backwards-in-time] edges, and the two it
+  checks it disagrees with."** Measured: DBpedia has an opinion on **4 of 6 — agrees with 3, disagrees
+  with 1.** The plan conflated the 2 contested pairs with the 6 backwards edges; only `electroclash` is
+  in both sets.
+- **Backwards-in-time edges went 6 → 96, and the decomposition is reassuring rather than alarming:**
+
+  | source | influence edges | datable | backwards |
+  |---|---|---|---|
+  | wikidata | 949 | 102 | **6 (5.9%)** — exactly the phase 5 baseline, unchanged |
+  | dbpedia | 1,336 | 1,091 | 90 (8.2%) |
+
+  DBpedia is modestly worse per edge and contributes **1,091 datable edges against Wikidata's 102** — a
+  10x increase in what DoD #4 can actually use. That Wikidata's rate reproduced the phase 5 number
+  exactly is a consistency check on the whole pipeline.
+
+### DBpedia's own dates are NOT ingestable, confirmed against live article text
+
+DBpedia exposes the same infobox as `dbp:culturalOrigins` and its extraction is lossy in ways that would
+put real errors into the corpus. Measured over the 167 undated genres holding a DBpedia resource: 69 have
+a value; of those **54 numeric with 5 NEGATIVE**, and 20 not numbers at all.
+
+| Wikipedia says | DBpedia gives |
+|---|---|
+| `17th century` | `17` |
+| `Early 2010s, Brooklyn, New York City` | `2010.0` **and** `2020.0` |
+| `late 1980s` (sampledelia) | `-1980.0` |
+| `Ancient, worldwide` | `"Ancient, worldwide"` |
+
+Both Wikipedia readings were fetched from the live articles rather than inferred. So `ingest/
+culturalorigins.py` parses the **raw wikitext**, where "1950s" and "1950" stay distinguishable.
+
+### The precision argument, vindicated by the result
+
+**105 of the 107 new dates are decade or century precision. Only 2 are years.** Had the parser flattened
+them to years — which is exactly what DBpedia's extractor does — it would have asserted precision the
+source never claimed **105 times**. `Node.inception_precision` exists for that reason and the same codes
+are reused: 7 century, 8 decade, 9 year. The century convention was matched to the corpus, not invented:
+`opera` is 1600 at precision 7 meaning the 17th century, so N maps to (N-1)×100.
+
+### The coverage gain, and it improves the skew rather than reproducing it
+
+| | v0.7.0 | v0.7.1 |
+|---|---|---|
+| genres with no date at all | 198 | **137** |
+| genres with no country at all | 222 | **160** |
+
+**Of the 61 genres that gained a date, 29 are non-US/UK against 16 US/UK** (16 have no country either
+way). The gains skew *away* from the corpus's documented bias — Haiti, Cuba, Nigeria, Sierra Leone,
+Liberia, Japan, Indonesia, Philippines, Brazil, Mexico, Israel, Dominica, Trinidad and Tobago.
+
+**All of phase 5's named undated non-Western cases now have dates**: Na mele paleoleo 1980, Pinoy hip hop
+1980, Pinoy rock 1950, sampledelia 1960 — every one at decade precision. That was the plan's *"sharpest
+single test of whether a second source improves the skew or reproduces it"*, and the answer is that it
+improves it.
+
+### Provenance: these are NOT Wikidata dates
+
+`infobox_year`, `infobox_precision`, `infobox_countries`, `infobox_source` are **their own fields**.
+`inception_year` and `countries` still mean `P571` and `P495` and nothing else — **verified on the cut:
+zero nodes had a Wikidata value changed, and the edge set is byte-identical to v0.7.0.** Merging the two
+to make a coverage number look fuller is the laundering that `Edge.source` and `Node.source` are kept
+honest about elsewhere. Wikipedia text is **CC BY-SA 4.0**; `infobox_source` carries the article URL and
+`DATA-LICENSES.md` now states the terms.
+
+### Two defects found by running it against live articles, not by fixtures
+
+- **An empty infobox field swallowed the row below it.** `comedy music` has `| cultural_origins  =` with
+  no value followed by `| instruments = ...`, and `\s*` after the `=` crossed the newline — so it parsed
+  as though its cultural origins were a list of instruments. Every fixture had a value, so only a live
+  run could find it.
+- **Splitting on punctuation missed a country.** `C-pop` states "1920s China" with no comma. Replaced
+  with whole-word search, anchored so `Chinatown` cannot match `China`.
+
+### Known limitation, measured rather than glossed
+
+**The place matcher cannot introduce a country the corpus does not already hold**, which structurally
+caps how far it can improve the geographic skew. Widening it needs a *sourced* country vocabulary and
+Wikidata does not cleanly supply one: `P31/P279* wd:Q6256` yields 654 labels that **exclude "China"** (the
+label is "People's Republic of China"), and adding `skos:altLabel` brings 2,088 strings of which **252 are
+two- and three-letter ISO codes** — `AN`, `BR`, `CA`, `DE` — that would false-positive on prose. A wrong
+country is invisible in an answer while a missing one is merely absent, so the narrow rule was kept. The
+principled upgrade is recorded in the module: resolve each `[[wikilink]]` to a QID and accept it when that
+entity is an instance of a country.
+
+### THE OPEN DECISION: the pin is still on 0.6.0
+
+`graph/memory.py:PINNED_ARTIFACT_VERSION` and `ingest/wikidata.py:ARTIFACT_VERSION` both read `0.6.0`,
+so **every eval number, the deployed answer path and the whole of steps 4-6 are invisible to the
+runtime.** Step 7 slices "every metric" and step 9 runs the full suite; neither means anything until the
+pin moves to `0.7.1`. Not done unilaterally because it changes what the agent answers from, and because
+`gold_v0_1.json` and `heldout_v1.manifest.json` both carry `artifact_version_pin: "0.5.0"` — the held-out
+decision is explicitly sjtroxel's, at step 9, per that step's own section.
+
+---
+
 ## PHASE 6 STEP 5 — `contested` is REACHABLE, and decision A1 is closed by its own precondition, 2026-09-04
 
 **Verified state:** `make check` green — **1261 passed**, 14 `costs_money` deselected, mypy clean over 95

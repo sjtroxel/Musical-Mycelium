@@ -295,11 +295,46 @@ class Node:
     #: why it sits on the node instead of being recomputed at load.
     dbpedia_resource: str = ""
 
+    #: Inception read from the **English Wikipedia** ``cultural_origins`` infobox field, for genres
+    #: Wikidata has no ``P571`` for. Added at v0.7.1, phase 6 step 6.
+    #:
+    #: **A separate field rather than a fallback written into ``inception_year``, and that is the whole
+    #: design.** These are not Wikidata statements: they are parsed from prose in a different source
+    #: under a different licence, and they are weaker — ``P571`` is a curated statement while this is a
+    #: free-text field that also contains the place. Merging them into one column to make the coverage
+    #: number look fuller is exactly the laundering that ``Edge.source`` and ``Node.source`` are kept
+    #: honest about elsewhere. ``inception_year`` still means P571 and only P571.
+    #:
+    #: 198 of 675 genres had no ``P571`` at v0.7.0 and re-reading Wikidata does not help — it was
+    #: already re-read for every genre. The gap is the source's.
+    infobox_year: int | None = None
+
+    #: Precision of :attr:`infobox_year`, in the **same codes ``P571`` uses** — 7 century, 8 decade,
+    #: 9 year — so a consumer needs one vocabulary rather than two.
+    #:
+    #: Carrying it is not optional: ``cultural_origins`` says "1950s" and "17th century" far more often
+    #: than it says a year, and flattening those to a year states something the source does not. That is
+    #: the same error :attr:`inception_precision` exists to prevent, and DBpedia's own extraction of this
+    #: field commits it — "17th century" arrives there as the number ``17``.
+    infobox_precision: int | None = None
+
+    #: Country labels from the same field. **Conservative by construction** — only labels the corpus
+    #: already holds from ``P495`` are accepted, so this cannot introduce an unsourced geography, and it
+    #: correspondingly cannot introduce a *new* country either. See ``ingest.culturalorigins``.
+    infobox_countries: tuple[str, ...] = ()
+
+    #: The English Wikipedia article URL these values were read from. **Wikipedia text is CC BY-SA 4.0**,
+    #: so this is the attribution and the link back, carried structurally on the row exactly as
+    #: ``Edge.source_id`` carries DBpedia's. ``DATA-LICENSES.md`` states the terms.
+    infobox_source: str = ""
+
     def __post_init__(self) -> None:
         # JSON round-trips a tuple as a list, so ``Artifact.from_json`` would otherwise rebuild this
         # field as an unhashable list and break equality against a freshly-built node.
         if not isinstance(self.countries, tuple):
             object.__setattr__(self, "countries", tuple(self.countries))
+        if not isinstance(self.infobox_countries, tuple):
+            object.__setattr__(self, "infobox_countries", tuple(self.infobox_countries))
         _require(self.id, "id", "node")
         _require(self.label, "label", f"node {self.id}")
         _require(self.source, "source", f"node {self.id}")
