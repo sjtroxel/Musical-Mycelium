@@ -188,3 +188,111 @@ def test_summary_reports_reciprocal_beside_contested() -> None:
     assert counts["corroborated"] == 1
     assert counts["single_source"] == 3
     assert counts["influence_edges"] == 4
+
+
+# --- the pinned corpus, not a synthetic one ------------------------------------------------------
+
+
+def test_the_pinned_corpus_holds_exactly_two_contested_pairs() -> None:
+    """**The phase 6 finding itself, asserted against the real artifact rather than a fixture.**
+
+    Everything above proves the *logic* on synthetic graphs, which is the right way to test a definition
+    and says nothing about what the corpus contains. Without this, the DBpedia axis could regress to zero
+    contested pairs -- an ingestion filter tightened, an alignment lost -- and the whole justification for
+    step 5 would evaporate silently while every synthetic test stayed green.
+
+    Named individually rather than counted, so a *different* pair becoming contested fails here instead
+    of hiding behind the total. Both are wikidata-versus-dbpedia by construction: a pair needs two
+    sources to disagree, which is exactly what decision A1 said the corpus could not do until step 4.
+    """
+    from pathlib import Path
+
+    from musical_mycelium.graph.memory import artifact_directory
+
+    artifact = Artifact.load(Path(artifact_directory()))
+    labels = {node.id: node.label for node in artifact.nodes}
+    found = {
+        frozenset((labels[pair.a], labels[pair.b])): set(pair.sources)
+        for pair in contested_pairs(artifact)
+    }
+
+    assert found == {
+        frozenset({"electropop", "electroclash"}): {SOURCE_WIKIDATA, SOURCE_DBPEDIA},
+        frozenset({"western music", "New Mexico music"}): {SOURCE_WIKIDATA, SOURCE_DBPEDIA},
+    }
+
+
+def test_the_electroclash_inversion_is_the_one_two_methods_agreed_on() -> None:
+    """The single best piece of evidence this phase produced, pinned so it cannot quietly disappear.
+
+    Two independent methods, arrived at separately, say one specific Wikidata edge runs backwards:
+
+    - **By date.** Phase 5 §0.5 flagged ``electroclash -> electropop`` as the worst of six
+      backwards-in-time edges. Wikidata records the 1978 genre as coming out of the 1995 one.
+    - **By source.** DBpedia independently records the pair the other way round, and its direction is
+      the chronologically coherent one.
+
+    The corpus **flags the disagreement and does not resolve it** -- both edges survive, which is what
+    ``.claude/rules/grounding-and-claims.md`` requires: musical influence is genuinely disputed, and
+    picking a winner silently is the failure.
+    """
+    from pathlib import Path
+
+    from musical_mycelium.graph.memory import artifact_directory
+
+    artifact = Artifact.load(Path(artifact_directory()))
+    nodes = {node.id: node for node in artifact.nodes}
+    pair = next(
+        p
+        for p in contested_pairs(artifact)
+        if {nodes[p.a].label, nodes[p.b].label} == {"electropop", "electroclash"}
+    )
+
+    wikidata_edge = next(e for e in (pair.a_from_b, pair.b_from_a) if e.source == SOURCE_WIKIDATA)
+    dbpedia_edge = next(e for e in (pair.a_from_b, pair.b_from_a) if e.source == SOURCE_DBPEDIA)
+
+    # Wikidata says the OLDER genre came out of the NEWER one, which is the inversion.
+    assert nodes[wikidata_edge.subject_id].label == "electropop"
+    assert nodes[wikidata_edge.object_id].label == "electroclash"
+    assert nodes[wikidata_edge.subject_id].inception_year == 1978
+    assert nodes[wikidata_edge.object_id].inception_year == 1995
+
+    # DBpedia says the reverse, and it is the direction that runs forwards in time.
+    assert nodes[dbpedia_edge.subject_id].label == "electroclash"
+    assert nodes[dbpedia_edge.object_id].label == "electropop"
+
+    # Both survive. The corpus records the dispute rather than deciding it.
+    assert wikidata_edge in artifact.edges
+    assert dbpedia_edge in artifact.edges
+
+
+def test_the_same_source_reciprocal_pairs_are_not_reported_as_contested() -> None:
+    """The other half of the finding, and the one a loose definition would get wrong.
+
+    v0.7.1 holds **6 reciprocal pairs and only 2 are contested.** The other four are a single source
+    describing mutual influence -- which between genres is frequently a real claim, not an error -- and
+    reporting them as "our sources disagree" would state something false about where the corpus's
+    information came from. ``post-rock <-> shoegaze`` is the sharpest of them: it is Wikidata-only and
+    predates DBpedia entirely, so the corpus has always contained a cycle in its influence graph.
+    """
+    from pathlib import Path
+
+    from musical_mycelium.graph.memory import artifact_directory
+
+    artifact = Artifact.load(Path(artifact_directory()))
+    labels = {node.id: node.label for node in artifact.nodes}
+    contested = {frozenset((p.a, p.b)) for p in contested_pairs(artifact)}
+
+    same_source = {
+        frozenset((labels[forward.subject_id], labels[reverse.subject_id]))
+        for forward, reverse in reciprocal_pairs(artifact)
+        if frozenset((forward.subject_id, reverse.subject_id)) not in contested
+    }
+
+    assert same_source == {
+        frozenset({"jangle pop", "college rock"}),
+        frozenset({"noise rock", "post-hardcore"}),
+        frozenset({"post-rock", "shoegaze"}),
+        frozenset({"tejano music", "country music"}),
+    }
+    assert len(reciprocal_pairs(artifact)) == 6

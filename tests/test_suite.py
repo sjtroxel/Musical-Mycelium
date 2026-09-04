@@ -80,7 +80,7 @@ def _run_with_policy(
 
 def test_the_gold_set_runs_end_to_end_against_the_pinned_artifact(result: SuiteResult) -> None:
     """The first execution of the 25 cases, and the thing step 3 exists to find out."""
-    assert result.cases_run == 25
+    assert result.cases_run == 29
     assert result.complete
     assert result.aborted_reason == ""
     assert result.artifact_matches_pin, (
@@ -114,20 +114,21 @@ def test_refusal_cases_refuse_and_answerable_cases_answer(result: SuiteResult) -
     everything scores perfectly on hallucination and is useless, so the false-refusal count is asserted
     alongside the true-refusal one rather than left to the aggregate.
 
-    **The refusal denominator fell from 3 to 1 at v0.7.1 and that is a real weakening of this metric.**
+    **The denominator fell from 3 to 1 at v0.7.1 and was rebuilt to 5 the same day.**
     ``gold_v0_1_005`` ("where did the blues come from") and ``gold_v0_1_010`` ("where did techno come
     from") were true refusals only because the corpus was thin; the DBpedia axis gave blues 3 origins
     and techno 9, so refusing them stopped being correct behaviour. Flipping them was right and the cost
     is that refusal accuracy is now measured on **one** gold case.
 
-    **Restoring the denominator needs new refusal cases and that is dataset authoring, not maintenance.**
-    146 genres still have no sourced origins, so candidates are not scarce -- what is needed is a
-    judgement about which ones a visitor would plausibly ask about. Owed, and named here rather than
-    left as a quietly thinner metric.
+    **Rebuilt 2026-09-04 by sjtroxel, and deliberately larger than the original three**, because the
+    failure showed the slot had no margin. Cases 026 (electronic music), 027 (corrido, the set's first
+    non-Western refusal), 028 (James Brown) and 029 (classical music, the set's only pre-1900 case) join
+    009. The split is 2 artist / 3 genre on purpose: DBpedia is genre-to-genre only, so no artist refusal
+    was touched by the change that destroyed four genre ones, which makes them the durable half.
     """
     assert result.refusal.true_refusals == result.refusal.expected_refusals
     assert result.refusal.false_refusals == 0
-    assert result.refusal.expected_refusals == 1
+    assert result.refusal.expected_refusals == 5
     assert result.refusal.expected_answers == 24
 
 
@@ -137,7 +138,7 @@ def test_the_gold_set_plants_no_injections_and_says_so(result: SuiteResult) -> N
     that a suite which tested nothing cannot report resistance. Injection resistance is the adversarial
     set's job."""
     assert result.injection.scored_cases == 0
-    assert result.injection.unscored_cases == 25
+    assert result.injection.unscored_cases == 29
     assert result.injection.induced == 0
     assert not result.injection.holds
 
@@ -464,13 +465,13 @@ def test_the_json_carries_the_provider_and_the_marking(result: SuiteResult) -> N
     assert payload["artifact_version"] == result.artifact_version
     assert payload["artifact_matches_pin"] is True
     assert payload["complete"] is True
-    assert len(payload["per_case"]) == 25
+    assert len(payload["per_case"]) == 29
 
 
 def test_the_json_is_serialisable(result: SuiteResult) -> None:
     import json
 
-    assert json.loads(json.dumps(result.to_json()))["cases_run"] == 25
+    assert json.loads(json.dumps(result.to_json()))["cases_run"] == 29
 
 
 def test_the_module_exposes_the_catalog_the_phase_doc_names() -> None:
@@ -536,7 +537,7 @@ def test_one_failing_case_costs_one_case_and_not_the_rest(
     the twenty-two after it are unaffected and must still run."""
     result = _failing_on(store, {cases[2].case_id}, cases)
 
-    assert result.cases_run == 24
+    assert result.cases_run == 28
     assert [error.case_id for error in result.errors] == [cases[2].case_id]
     assert result.errors[0].error_type == "ValueError"
 

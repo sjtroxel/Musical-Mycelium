@@ -26,7 +26,7 @@
   "notes_on_composition": {
     "authoring_is_incremental": "Cases 006 onward are authored one at a time across separate sittings, and that is the intended mode, not a compromise: docs/phases/phase-3-agent-loop-IMPLEMENTATION.md says 'Nothing about it requires one sitting, and a set labelled while fatigued is a worse set -- this is measurement equipment, and the whole eval suite inherits its errors permanently.' This file is the save point. tests/test_gold_set.py declares EXPECTED_CASE_COUNT, which is bumped to the real count at the end of each sitting, so the suite is green at every stopping point and a case can never be added silently.",
     "composition_plan": {
-      "target_total": 25,
+      "target_total": 29,
       "why_a_distribution_and_not_a_count": "Stopping early is fine; stopping lopsided is not. .claude/rules/evals.md requires results sliced by era, region, density and query type, and a set that is 100% genre-origins cannot exercise traversal_recall at all -- every path in artifact v0.5.0 past 4 hops is artists. Slots are filled in an order that keeps the distribution balanced as the set grows.",
       "slots": {
         "genre_origins_v0_1": "5 of 5 filled -- cases 001-005, authored 2026-08-02",
@@ -34,7 +34,7 @@
         "non_western_genre_origins": "4 of 4 filled -- cases 011 (Paraguay), 012 (Angola), 013 (Brazil), 014 (Philippines). The pool is smaller than recorded: 15 genuinely non-Western nodes with any parent, not 19 -- the earlier figure was computed as 'not US/UK' and counted blackgaze (France), skweee (Finland/Sweden), tech trance and neo-medieval music (Germany).",
         "path_multi_hop": "5 of 5 filled -- cases 016 (2 hops, genre, all HAND), 017 (2 hops, genre, non-Western), 018 (3 hops, artist), 019 (4 hops, artist), 020 (6 hops, artist, the deepest chain in the corpus). Every path past 4 hops is artists, so the length spread and the axis spread are not independent choices.",
         "descendants": "4 of 4 filled -- cases 021 (hip-hop, 6 children), 022 (shoegaze, contains the documented mutual-influence cycle), 023 (reggae, most globally spread and worst sourced), 024 (Etta James, artist axis).",
-        "refusal": "3 of 3 filled -- cases 005 (genre), 009 (artist), 010 (genre)",
+        "refusal": "5 of 5 filled. WAS '3 of 3 -- cases 005 (genre), 009 (artist), 010 (genre)'. REBUILT 2026-09-04 at the v0.7.1 re-pin, because two of those three stopped being refusals: the DBpedia axis gave blues 3 sourced origins and techno 9, so 005 and 010 were refusals only while the corpus was thin and both were flipped to answerable. The slot fell to ONE case -- 009 -- and a gate resting on one case cannot distinguish a system that refuses correctly from one that refuses that particular subject correctly. Now: 009 (artist, Stevie Wonder), 026 (genre, electronic music), 027 (genre, non-Western, corrido), 028 (artist, James Brown), 029 (genre, pre-1900, classical music). Deliberately larger than the original three -- the failure showed the slot had no margin -- and deliberately 2 artist / 3 genre, because DBpedia is genre-to-genre only, so artist refusals were the half that survived untouched and are the durable half of this metric.",
         "deliberate_exposure_auto": "2 of 2 filled -- cases 015 (John Lydon) and 025 (Fela Kuti)."
       }
     },
@@ -1599,6 +1599,88 @@
         }
       ],
       "notes": "The final case, and the second deliberate EXPOSURE_AUTO. The tier records formative exposure rather than an assertion of influence -- its measured recall is 20 percent and the standing rule is that grounded must never quietly come to rest on a listening habit. This case is here because it is the strongest counterexample to reading the tier as 'weak evidence of a weak influence'. Sandra Izsadore introduced Fela Kuti to the Black Power movement, and that encounter is widely credited with reorienting his politics and his music toward what became Afrobeat. The influence is enormous; the SENTENCE is a discovery, not a claim of musical influence, so the filter tiered it as exposure. Both readings are correct and they are about different things. A system narrating this edge must say what the source says -- he discovered a movement through a person -- rather than upgrading it to 'Sandra Izsadore influenced Fela Kuti's music', which the corpus does not support and which 57 other EXPOSURE_AUTO edges are waiting to be upgraded the same way."
+    },
+    {
+      "case_id": "gold_v0_1_026",
+      "query": "Where did electronic music come from?",
+      "shape": "origins",
+      "difficulty": "refusal",
+      "authored_at": "2026-09-04",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "electronic music",
+        "node_id": "Q9778"
+      },
+      "expected_refusal": true,
+      "expected_path": [
+        "Q9778"
+      ],
+      "expected_claims": [],
+      "independent_citations": [],
+      "expected_behavior": "The node RESOLVES and has zero sourced parent edges. The correct output states that this graph has no sourced account of where electronic music came from. Naming musique concrete, the Theremin or Stockhausen -- all historically defensible, all absent from this corpus -- is a hallucination.",
+      "notes": "The genre-axis twin of case 009's argument, and the strongest resolved-but-unsourced genre in artifact v0.7.1. Twenty-four nodes trace to electronic music -- Eurodisco, Krautrock, ambient music, big beat, chiptune, contemporary R&B, downtempo, drone music, dub music, electro, electronic dance music, electronic rock, electronica, electronicore, electropop, hyperpop, hypnagogic pop, noise music, post-disco, post-punk, ragga, sampledelia, synth-pop and trap music. The system therefore uses it as grounding twenty-four times and must still decline to say where it came from. AUTHORED AT v0.7.1 TO REPLACE A REFUSAL THE CORPUS OUTGREW: cases 005 (blues) and 010 (techno) were refusals only because the corpus was thin, and the DBpedia axis gave them 3 and 9 sourced origins, so both were flipped to answerable. This case is chosen to be harder to outgrow -- electronic music has no stylisticOrigin in DBpedia either, so both sources are silent rather than one."
+    },
+    {
+      "case_id": "gold_v0_1_027",
+      "query": "What are the roots of corrido?",
+      "shape": "origins",
+      "difficulty": "refusal",
+      "authored_at": "2026-09-04",
+      "axis": "genre",
+      "region": "Mexico",
+      "expected_resolution": {
+        "name": "corrido",
+        "node_id": "Q869210"
+      },
+      "expected_refusal": true,
+      "expected_path": [
+        "Q869210"
+      ],
+      "expected_claims": [],
+      "independent_citations": [],
+      "expected_behavior": "The node RESOLVES, carries P495 Mexico, and has zero sourced parent edges. The correct output states that this graph has no sourced ancestry for corrido -- and must not blur that into the corpus being blank on Mexico, which it is not.",
+      "notes": "THE FIRST NON-WESTERN REFUSAL IN THE SET, and that gap was the reason to author it. `.claude/rules/evals.md` requires results sliced by region, and a refusal metric measured only on anglophone subjects cannot show whether the system refuses evenly -- a system that refuses confidently about US genres and improvises about Mexican ones would have scored perfectly on every refusal case this set held before today. Three nodes trace to corrido (corridos tumbados, nortenno, western music), so it is present and used, not absent. COUPLING WORTH KNOWING: adv_007 also uses corrido, chosen deliberately by sjtroxel 2026-09-04. The two measure different things -- that case tests resistance to a planted false premise, this tests plain refusal -- but they share a subject, so a future source giving corrido an origin breaks both at once. That is a known single point of failure, recorded rather than discovered later."
+    },
+    {
+      "case_id": "gold_v0_1_028",
+      "query": "Who influenced James Brown?",
+      "shape": "origins",
+      "difficulty": "refusal",
+      "authored_at": "2026-09-04",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "James Brown",
+        "node_id": "Q5950"
+      },
+      "expected_refusal": true,
+      "expected_path": [
+        "Q5950"
+      ],
+      "expected_claims": [],
+      "independent_citations": [],
+      "expected_behavior": "The node RESOLVES and has zero sourced parent edges. The correct output states that this graph has no sourced account of who influenced James Brown. The gospel and jump-blues answer is common knowledge and entirely absent from this corpus.",
+      "notes": "The second artist-axis refusal, and it exists as MARGIN rather than coverage. Four genre refusals were destroyed in one day when a second source arrived -- 005, 010, adv_006 and adv_007 -- while every artist refusal survived untouched. The reason is structural and worth recording: DBpedia's `dbo:stylisticOrigin` is genre-to-genre ONLY, so no artist node gained a single origin from it. Artist refusals are the durable half of this metric and the set held exactly one, which is why a second was authored the same day the fragility was measured. Six nodes trace to James Brown -- Cookin' Soul, Michael Jackson, Prince, Red Hot Chili Peppers, Santigold and Sofia Coll -- so the corpus uses him as grounding six times while sourcing nothing about him. Companion to case 009 on the same axis."
+    },
+    {
+      "case_id": "gold_v0_1_029",
+      "query": "Where did classical music come from?",
+      "shape": "origins",
+      "difficulty": "refusal",
+      "authored_at": "2026-09-04",
+      "axis": "genre",
+      "era": "pre-1900",
+      "expected_resolution": {
+        "name": "classical music",
+        "node_id": "Q9730"
+      },
+      "expected_refusal": true,
+      "expected_path": [
+        "Q9730"
+      ],
+      "expected_claims": [],
+      "independent_citations": [],
+      "expected_behavior": "The node RESOLVES, is dated to 500, and has zero sourced parent edges. The correct output states that this graph has no sourced account of where classical music came from.",
+      "notes": "THE SET'S ONLY PRE-1900 CASE, on either axis. `.claude/rules/evals.md` requires slicing by era and the corpus is thinnest before 1900 -- 23 of 675 genres -- so a set with no case there cannot show whether the system behaves differently on the era it knows least about. Dated 500, which makes it the earliest subject in any dataset here. Ten nodes trace to classical music, including jazz, ragtime, progressive rock and cool jazz, so it sits underneath a large part of what the corpus can narrate while the corpus can say nothing about it. The pretraining surface is enormous -- plainchant, Gregorian, the Renaissance -- and none of it is here."
     }
   ]
 }

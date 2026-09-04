@@ -50,10 +50,10 @@ GOLD_PATH = (
 #: The number of cases the gold set is *known* to hold. The set is authored incrementally across
 #: sittings — ``notes_on_composition.authoring_is_incremental`` — so this is bumped to the real count at
 #: the end of each one. That is the point of it: adding a case is a deliberate act that touches this
-#: line, and a case can never appear in the dataset without someone saying so here. The target is 25,
+#: line, and a case can never appear in the dataset without someone saying so here. The target was 25,
 #: distributed across the slots in ``notes_on_composition.composition_plan``. The requirement is
 #: 20 to 30 (``.claude/rules/evals.md``, ``planning/07`` 3.1); 25 is a choice inside it, not the rule.
-EXPECTED_CASE_COUNT = 25
+EXPECTED_CASE_COUNT = 29
 
 #: How many gold claims carry no independent citation and say so via ``citation_status``. Locked for the
 #: same reason as the case count, and it matters more: this one is an escape hatch from the project's

@@ -134,7 +134,7 @@
         "dataset": "gold",
         "provider": "scripted"
       },
-      "case_count": 25,
+      "case_count": 29,
       "derived_from": {
         "source": "the scripted run itself, which is deterministic",
         "decided": "2026-08-18",
@@ -159,18 +159,18 @@
           "why": "Same: decided by the resolver against the pinned artifact, not by a model."
         },
         "refusal_accuracy": {
-          "minimum_true_refusals": 1,
+          "minimum_true_refusals": 5,
           "maximum_false_refusals": 0,
-          "expected_refusals": 1,
+          "expected_refusals": 5,
           "expected_answers": 24,
           "observed_true_refusals": [
-            1
+            5
           ],
           "observed_false_refusals": [
             0
           ],
           "slack": "none",
-          "why": "Gateable on a scripted run, and this is not obvious. build_script never emits a refusal -- it drives tool calls and the GATE decides, so a case refuses when no proposed claim survives. That verdict is a real property of the gate and the corpus. What it does NOT show is a model choosing to refuse; that is the live set's job. Exact bounds because the run is deterministic. DENOMINATOR CHANGED 2026-09-04 AT THE v0.7.1 RE-PIN, AND THIS IS A WEAKENING, NOT A TUNING. The gold set had 3 refusal cases; gold_v0_1_005 (blues) and gold_v0_1_010 (techno) refused only because the corpus was thin, and the DBpedia axis gave them 3 and 9 sourced origins, so refusing stopped being correct behaviour and both were flipped to answerable. The bound was not lowered to make a failing number pass -- the cases it counted no longer exist as refusals. What it costs: this gate now rests on ONE case, so it can no longer distinguish a system that refuses correctly from one that refuses that particular subject correctly. Restoring it needs new refusal cases authored against the 146 genres that still have no sourced origins."
+          "why": "Gateable on a scripted run, and this is not obvious. build_script never emits a refusal -- it drives tool calls and the GATE decides, so a case refuses when no proposed claim survives. That verdict is a real property of the gate and the corpus. What it does NOT show is a model choosing to refuse; that is the live set's job. Exact bounds because the run is deterministic. DENOMINATOR CHANGED 2026-09-04 AT THE v0.7.1 RE-PIN, AND THIS IS A WEAKENING, NOT A TUNING. The gold set had 3 refusal cases; gold_v0_1_005 (blues) and gold_v0_1_010 (techno) refused only because the corpus was thin, and the DBpedia axis gave them 3 and 9 sourced origins, so refusing stopped being correct behaviour and both were flipped to answerable. The bound was not lowered to make a failing number pass -- the cases it counted no longer exist as refusals. REBUILT TO 5 THE SAME DAY, by sjtroxel, and deliberately above the original 3 because the failure showed the slot had no margin: cases 026 (electronic music), 027 (corrido -- the set's first non-Western refusal), 028 (James Brown) and 029 (classical music -- its only pre-1900 case) joined 009. Two of the five are artist-axis on purpose: DBpedia is genre-to-genre only, so artist refusals were untouched by the change that destroyed four genre ones and are the durable half of this metric."
         }
       }
     }
