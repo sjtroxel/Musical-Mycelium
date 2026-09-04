@@ -77,6 +77,12 @@ from musical_mycelium.graph.schema import (
 )
 
 BLUES_ROCK, BLUES = "Q193355", "Q9759"
+
+#: A genre that resolves and is cited as a source, but has no sourced origins of its own -- the shape
+#: every "the graph cannot answer this" test needs. **This was ``blues`` until v0.7.1**, when the
+#: DBpedia axis gave blues three origins and it became answerable, along with gold case 5. 146 genres
+#: are still in this state, so the property is intact; the fixture simply had to move.
+UNSOURCED = "Q1046801"  # turntablism
 ACID_JAZZ, JAZZ = "Q221772", "Q8341"
 HEAVY_METAL = "Q38848"
 INFLUENCED_BY = "influenced_by"
@@ -340,15 +346,16 @@ def test_the_music_fold_still_refuses_a_genuine_near_miss(registry: ToolRegistry
 
 def test_get_influences_returns_edges_and_proposals(registry: ToolRegistry) -> None:
     result = registry.invoke("get_influences", {"node_id": ACID_JAZZ})
-    assert result.content["count"] == 4
-    assert len(result.proposals) == 4
-    assert len(result.sources) == 4
+    # 5 since v0.7.1: jazz fusion joined jazz, funk, soul and hip-hop via the DBpedia axis.
+    assert result.content["count"] == 5
+    assert len(result.proposals) == 5
+    assert len(result.sources) == 5
     assert result.visited[0] == ACID_JAZZ
 
 
 def test_get_influences_on_an_unsourced_node_is_empty_not_an_error(registry: ToolRegistry) -> None:
-    """Gold case 5. Empty means the graph cannot answer, and the tool says so without erroring."""
-    result = registry.invoke("get_influences", {"node_id": BLUES})
+    """Empty means the graph cannot answer, and the tool says so without erroring."""
+    result = registry.invoke("get_influences", {"node_id": UNSOURCED})
     assert result.content["influences"] == []
     assert result.proposals == ()
     assert not result.is_error
@@ -416,7 +423,7 @@ def test_trace_lineage_chain_pairs_are_all_claims_it_proposes(registry: ToolRegi
 def test_trace_lineage_with_no_chain_is_a_refusal_not_an_error(registry: ToolRegistry) -> None:
     """Different components. The graph cannot connect them, and saying so is correct behaviour —
     an empty path proposes nothing, so the gate approves nothing and the run refuses."""
-    result = registry.invoke("trace_lineage", {"from_id": ACID_JAZZ, "to_id": BLUES})
+    result = registry.invoke("trace_lineage", {"from_id": ACID_JAZZ, "to_id": UNSOURCED})
 
     assert result.content["path"] == []
     assert result.content["hops"] == 0
@@ -1126,12 +1133,12 @@ def test_a_full_answer_run(store: InMemoryGraphStore) -> None:
     )
 
     assert len([e for e in events if isinstance(e, ToolCalled)]) == 2
-    assert len([e for e in events if isinstance(e, ClaimApproved)]) == 4
+    assert len([e for e in events if isinstance(e, ClaimApproved)]) == 5
     assert not [e for e in events if isinstance(e, Refused)]
     assert [e for e in events if isinstance(e, Token)]
 
     done = next(e for e in events if isinstance(e, Done))
-    assert done.claim_count == 4
+    assert done.claim_count == 5
     assert done.usage.total_tokens > 0, "token usage must be measured, not estimated"
 
 
@@ -1200,11 +1207,16 @@ def test_an_origins_run_has_no_chain(store: InMemoryGraphStore) -> None:
 
 
 def test_a_lineage_run_across_components_refuses(store: InMemoryGraphStore) -> None:
-    """Two genres in different components have no sourced chain, and the honest answer is that the
-    graph cannot connect them — not a bridge invented to satisfy the question."""
+    """Two genres with no sourced chain between them: the honest answer is that the graph cannot
+    connect them, not a bridge invented to satisfy the question.
+
+    **The pair had to change at v0.7.1.** ``acid jazz`` and ``blues`` were in different components until
+    the DBpedia axis connected them (acid jazz -> jazz -> blues), which is the corpus improving rather
+    than the test being wrong. ``turntablism`` is still unreachable from acid jazz.
+    """
     events = list(
         run(
-            "How is acid jazz connected to blues?",
+            "How is acid jazz connected to turntablism?",
             store=store,
             llm=build_llm("local"),
             registry=default_registry(store),
@@ -1269,23 +1281,30 @@ def test_the_path_is_emitted_in_order(store: InMemoryGraphStore) -> None:
 
     path = next(e for e in events if isinstance(e, PathWalked))
     assert path.node_ids[0] == ACID_JAZZ
-    assert set(path.node_ids[1:]) == {JAZZ, "Q164444", "Q131272", "Q11401"}
+    assert set(path.node_ids[1:]) == {JAZZ, "Q164444", "Q131272", "Q11401", "Q105527"}
     assert path.labels[0] == "acid jazz"
     assert len(path.labels) == len(path.node_ids)
 
 
 def test_a_refusal_run_never_calls_the_model_for_prose(store: InMemoryGraphStore) -> None:
-    """Gold case 5, end to end. ``blues`` resolves and has no sourced parents, so the gate approves
-    nothing and the refusal is a template — reliable rather than probabilistic, and free."""
+    """A refusal, end to end. The subject resolves and has no sourced parents, so the gate approves
+    nothing and the refusal is a template — reliable rather than probabilistic, and free.
+
+    Subject moved off ``blues`` at v0.7.1 for the reason recorded on :data:`UNSOURCED`.
+    """
     llm = ScriptedLLM(
         [
             plan_turn("origins", "resolve_node", "get_influences"),
             LLMResponse(
-                tool_uses=(ToolUse(id="t1", name="resolve_node", arguments={"name": "the blues"}),),
+                tool_uses=(
+                    ToolUse(id="t1", name="resolve_node", arguments={"name": "turntablism"}),
+                ),
                 stop_reason="tool_use",
             ),
             LLMResponse(
-                tool_uses=(ToolUse(id="t2", name="get_influences", arguments={"node_id": BLUES}),),
+                tool_uses=(
+                    ToolUse(id="t2", name="get_influences", arguments={"node_id": UNSOURCED}),
+                ),
                 stop_reason="tool_use",
             ),
             LLMResponse(text="Nothing found."),

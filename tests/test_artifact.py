@@ -25,8 +25,10 @@ from musical_mycelium.graph.schema import (
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
     PREDICATE_PLAYS_GENRE,
+    SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_HAND,
+    VERIFICATION_INFOBOX_AUTO,
     VERIFICATION_PROSE_AUTO,
     Artifact,
     Edge,
@@ -297,6 +299,15 @@ def test_hand_verified_edges_are_labelled_hand_and_the_rest_are_not(pinned: Arti
             # asserting the wrong axis's standard.
             assert edge.verification not in genre_levels, f"{edge.subject_id} <- {edge.object_id}"
             continue
+        # Source-aware since v0.7.1. A DBpedia genre edge carries INFOBOX_AUTO: it cleared the same
+        # prose check as a PROSE_AUTO edge, but its candidate came from the subject article's own
+        # infobox rather than from an independent Wikidata statement, and the tier records that
+        # circularity. Asserting PROSE_AUTO for it would claim an independence it does not have.
+        if edge.source == SOURCE_DBPEDIA:
+            assert edge.verification == VERIFICATION_INFOBOX_AUTO, (
+                f"{edge.subject_id} <- {edge.object_id}"
+            )
+            continue
         expected = (
             VERIFICATION_HAND
             if (edge.subject_id, edge.object_id) in hand
@@ -354,8 +365,17 @@ def test_every_pinned_row_carries_provenance(pinned: Artifact) -> None:
 
 def test_every_edge_cites_a_distinct_wikidata_statement(pinned: Artifact) -> None:
     """``source_id`` is a statement URI, not a QID. Two edges sharing one is a stamping bug that would
-    make citations unresolvable while still looking populated."""
-    statement_ids = [e.source_id for e in pinned.edges]
+    make citations unresolvable while still looking populated.
+
+    **Scoped to the Wikidata axis since v0.7.1, and the distinctness rule genuinely does not carry
+    over.** A DBpedia edge cites the subject article's resource URI, so every edge out of one genre
+    shares a citation by construction -- ``Future_rave`` cites ``.../resource/Future_rave`` for all of
+    its origins. That is not a stamping bug: a Wikidata statement URI identifies one statement, while a
+    DBpedia resource URI identifies the page the infobox sits on, and there is one page. What keeps a
+    DBpedia citation checkable is the alignment on ``Node.dbpedia_resource``, asserted in
+    ``test_claims``, not uniqueness.
+    """
+    statement_ids = [e.source_id for e in pinned.edges if e.source != SOURCE_DBPEDIA]
     assert all(s.startswith("http://www.wikidata.org/entity/statement/") for s in statement_ids)
     assert len(set(statement_ids)) == len(statement_ids)
 
@@ -424,13 +444,28 @@ def test_the_snapshot_is_exactly_the_revisions_the_genre_nodes_carry(pinned: Art
 
 
 def test_the_refusal_case_node_resolves_but_has_no_parents(pinned: Artifact) -> None:
-    """Gold case 5 depends on this exact shape: ``blues`` is in the graph and is cited as the source of
-    ``blues rock``, yet has no sourced origins of its own. If ingestion ever gave it a parent, the gold
-    set would silently start expecting an answer where refusal is correct."""
-    blues = "Q9759"
-    assert blues in {n.id for n in pinned.nodes}
-    assert any(e.object_id == blues for e in pinned.edges)
-    assert not [e for e in pinned.edges if e.subject_id == blues]
+    """A node that is cited as a source yet has no sourced origins of its own -- the shape a refusal
+    case needs, so that refusing is correct behaviour rather than a coverage accident.
+
+    **``blues`` held this role from v0.1 to v0.6.0 and lost it at v0.7.1.** The DBpedia axis gave it
+    three origins (spirituals, folk music, work song), so gold case 5 stopped being a refusal case and
+    was flipped. The docstring here used to warn that "if ingestion ever gave it a parent, the gold set
+    would silently start expecting an answer where refusal is correct" -- that is exactly what
+    happened, and it was not silent: this test and the gold set's own refusal test both failed.
+
+    Re-pointed at ``turntablism``, one of 146 genres still in this state, so the property stays asserted
+    rather than the test being deleted along with its subject.
+    """
+    subject = "Q1046801"  # turntablism
+    assert subject in {n.id for n in pinned.nodes}
+    assert any(e.object_id == subject for e in pinned.edges), (
+        "must be cited as a source by something"
+    )
+    assert not [
+        e
+        for e in pinned.edges
+        if e.subject_id == subject and e.predicate == PREDICATE_INFLUENCED_BY
+    ]
 
 
 def test_manifest_points_at_the_verification_record() -> None:

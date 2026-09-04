@@ -132,9 +132,15 @@ def test_era_reads_off_the_shared_boundaries() -> None:
 
 
 def test_density_separates_isolated_from_connected(store: InMemoryGraphStore) -> None:
-    """``isolated`` is the bucket this dimension exists for: 542 of 973 nodes have no outgoing edges, so
-    a system can look accurate overall while only ever answering the dense questions."""
-    assert density_slice(store.get_node("Q9759"), store) == "isolated"  # blues, no outgoing
+    """``isolated`` is the bucket this dimension exists for: a large share of nodes have no outgoing
+    edges, so a system can look accurate overall while only ever answering the dense questions.
+
+    **``blues`` was the isolated fixture until v0.7.1** and is now connected -- the DBpedia axis gave it
+    spirituals, folk music and work song. ``turntablism`` is one of 146 genres still isolated on the
+    influence axis, so the bucket is as real as it ever was; the corpus simply moved one well-known
+    genre out of it.
+    """
+    assert density_slice(store.get_node("Q1046801"), store) == "isolated"  # turntablism
     assert density_slice(store.get_node("Q221772"), store) == "connected"  # acid jazz, four
 
 

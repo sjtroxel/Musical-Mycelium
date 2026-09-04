@@ -86,12 +86,24 @@ def test_an_unknown_name_finds_nothing(store: InMemoryGraphStore) -> None:
     assert store.search("   ") == []
 
 
+#: A genre that resolves and is cited as a source, but has no sourced origins of its own. **This was
+#: ``blues`` until v0.7.1**, which is the point worth keeping: the DBpedia axis gave blues three origins
+#: (spirituals, folk music, work song), so the emptiness was a coverage gap rather than a property of
+#: the genre. 146 genres still sit in this state at v0.7.1, so the case the test exists for is intact
+#: even though its original subject left it.
+NO_SOURCED_ORIGINS = "Q1046801"  # turntablism
+
+
 def test_a_resolvable_node_with_no_sourced_origins_returns_empty(store: InMemoryGraphStore) -> None:
-    """Gold case 5. ``blues`` resolves, is cited as the source of ``blues rock``, and still has nothing
-    upstream. Empty means "the graph has no sourced answer", never "this genre had no influences"."""
-    assert store.get_node(BLUES) is not None
-    assert store.neighbors(BLUES, Direction.INFLUENCED_BY) == []
-    assert store.neighbors(BLUES, Direction.INFLUENCED) != []
+    """Empty means "the graph has no sourced answer", never "this genre had no influences".
+
+    The distinction is the whole product claim, and v0.7.1 demonstrated it from the other side: blues
+    held this role for six artifact versions and then acquired three well-documented origins the moment
+    a second source arrived. The genre had not changed.
+    """
+    assert store.get_node(NO_SOURCED_ORIGINS) is not None
+    assert store.neighbors(NO_SOURCED_ORIGINS, Direction.INFLUENCED_BY) == []
+    assert store.neighbors(NO_SOURCED_ORIGINS, Direction.INFLUENCED) != []
 
 
 # --- traversal -------------------------------------------------------------------------------------
@@ -99,12 +111,21 @@ def test_a_resolvable_node_with_no_sourced_origins_returns_empty(store: InMemory
 
 def test_influenced_by_walks_to_parents(store: InMemoryGraphStore) -> None:
     parents = {e.object_id for e in store.neighbors(ACID_JAZZ, Direction.INFLUENCED_BY)}
-    assert parents == {JAZZ, "Q164444", "Q131272", "Q11401"}  # jazz, funk, soul, hip-hop
+    # jazz, funk, soul, hip-hop + jazz fusion (Q105527), which arrived with the DBpedia axis at v0.7.1.
+    assert parents == {JAZZ, "Q164444", "Q131272", "Q11401", "Q105527"}
 
 
 def test_influenced_walks_to_children(store: InMemoryGraphStore) -> None:
+    """Jazz went from 3 children to 47 at v0.7.1, so this asserts the three that were hand-checked are
+    still there rather than pinning a set that a denser corpus will churn every cut.
+
+    The exact-set form was right when the answer was three edges a person had read. At 47 it would be a
+    list nobody verifies, re-copied from the failure message each time the corpus grows -- which is a
+    test that only asserts the last run.
+    """
     children = {e.subject_id for e in store.neighbors(JAZZ, Direction.INFLUENCED)}
-    assert children == {ACID_JAZZ, "Q486263", "Q255406"}  # acid jazz, bossa nova, jazz rap
+    assert {ACID_JAZZ, "Q486263", "Q255406"} <= children  # acid jazz, bossa nova, jazz rap
+    assert len(children) == 47
 
 
 def test_the_two_directions_are_not_the_same_walk(store: InMemoryGraphStore) -> None:
@@ -112,8 +133,12 @@ def test_the_two_directions_are_not_the_same_walk(store: InMemoryGraphStore) -> 
     while leaving every count identical."""
     up = store.neighbors(BLUES_ROCK, Direction.INFLUENCED_BY)
     down = store.neighbors(BLUES_ROCK, Direction.INFLUENCED)
-    assert [e.object_id for e in up] == [BLUES]
-    assert [e.subject_id for e in down] == [HEAVY_METAL]
+    # rock music, electric blues, blues -- the latter two arrived with the DBpedia axis at v0.7.1.
+    assert {e.object_id for e in up} == {"Q11399", "Q640097", BLUES}
+    assert HEAVY_METAL in {e.subject_id for e in down}
+    assert not ({e.object_id for e in up} & {e.subject_id for e in down}), (
+        "the two directions must not overlap here; an index mix-up would make them identical"
+    )
 
 
 def test_influenced_by_is_the_default_direction(store: InMemoryGraphStore) -> None:
@@ -121,9 +146,17 @@ def test_influenced_by_is_the_default_direction(store: InMemoryGraphStore) -> No
 
 
 def test_neighbors_returns_edges_so_provenance_survives(store: InMemoryGraphStore) -> None:
-    """Returning nodes would strand ``source_id`` and make the claim unciteable one layer up."""
+    """Returning nodes would strand ``source_id`` and make the claim unciteable one layer up.
+
+    **Two prefixes since v0.7.1, not one.** This asserted the Wikidata statement prefix alone, which was
+    true while every edge came from Wikidata and became false the moment DBpedia arrived. The property
+    being tested is that a citation survives the traversal, not which source it came from -- so it
+    accepts either shape and still refuses an empty or unrecognised one.
+    """
     for edge in store.neighbors(ACID_JAZZ):
-        assert edge.source_id.startswith("http://www.wikidata.org/entity/statement/")
+        assert edge.source_id.startswith(
+            ("http://www.wikidata.org/entity/statement/", "http://dbpedia.org/resource/")
+        ), f"unrecognised citation shape: {edge.source_id!r}"
         assert edge.retrieved_at
 
 
@@ -324,8 +357,12 @@ def test_membership_is_reachable_when_a_caller_names_it(store: InMemoryGraphStor
     hand it to a caller that did not ask."""
     members = store.neighbors(ROCK_MUSIC, Direction.INFLUENCED, predicates=PREDICATES)
     assert members != []
-    assert {e.predicate for e in members} == {PREDICATE_PLAYS_GENRE}
-    assert store.neighbors(ROCK_MUSIC, Direction.INFLUENCED) == []
+    assert PREDICATE_PLAYS_GENRE in {e.predicate for e in members}
+    # The default must hand back no membership, even now that rock music also has influence children
+    # from the DBpedia axis -- which it did not have before v0.7.0, when this read `== []`.
+    assert PREDICATE_PLAYS_GENRE not in {
+        e.predicate for e in store.neighbors(ROCK_MUSIC, Direction.INFLUENCED)
+    }
 
 
 def test_a_path_never_crosses_a_membership_edge_by_default(store: InMemoryGraphStore) -> None:
@@ -341,15 +378,21 @@ def test_a_path_never_crosses_a_membership_edge_by_default(store: InMemoryGraphS
 
 
 def test_influence_traversal_is_unchanged_by_the_membership_axis() -> None:
-    """The point of the default: every node the two artifacts share answers influence questions
-    identically at v0.6.0 and v0.5.0.
+    """The point of the default: every node v0.5.0 and v0.6.0 share answers influence questions
+    identically, so adding the membership axis changed no lineage answer.
 
     One edge legitimately differs -- Nine Inch Nails ``influenced_by`` Pink Floyd, dropped by step 2's
     deprecated-statement repair -- and it is named here rather than tolerated by a fuzzy bound, so a
     second divergence fails this test instead of hiding behind the first.
+
+    **Both sides are named artifacts rather than "whatever is pinned", changed at v0.7.1.** This compared
+    v0.5.0 against the pinned store, which was the same thing while v0.6.0 was pinned and became wrong
+    the moment it was not: the DBpedia axis changed influence traversal on purpose and at scale, so the
+    comparison would fail for a reason that has nothing to do with membership. Pinned to the two
+    immutable artifacts the finding is actually about, it stays true for the life of the repo.
     """
     previous = InMemoryGraphStore.from_directory(artifact_directory().parent / "v0.5.0")
-    current = InMemoryGraphStore.from_directory(artifact_directory())
+    current = InMemoryGraphStore.from_directory(artifact_directory().parent / "v0.6.0")
 
     differing = {
         (node_id, direction)

@@ -62,7 +62,7 @@ EXPECTED_CASE_COUNT = 25
 #: Beatles, where Wikipedia footnotes a fifteen-artist sentence one artist at a time and skips that one.
 #: That one is the useful one: uncited claims track Wikipedia's sourcing habits rather than a region, and
 #: they concentrate where coverage is thin without being confined there.
-UNCITED_CLAIM_COUNT = 8
+UNCITED_CLAIM_COUNT = 7
 
 
 @pytest.fixture(scope="module")
@@ -208,18 +208,44 @@ def test_case_resolves_to_the_node_it_names(
 def test_case_claims_match_the_corpus_exactly(
     case_id: str, gold: dict[str, Any], store: InMemoryGraphStore
 ) -> None:
-    """Not a subset — exactly. A corpus that grew an extra edge under a gold case is as much of a problem
-    as one that lost an edge, because the case would then under-specify the correct answer.
+    """**A required subset since v0.7.1, and this is a deliberate weakening — read why before restoring
+    the old rule.**
 
-    Shape-aware since 2026-08-14; see :func:`corpus_edges_for`. Before that this read
-    ``store.neighbors(node_id)`` unconditionally, which is correct for origins and wrong for the other
-    two shapes — a path case's claims mostly do not originate at its subject at all.
+    This asserted set *equality* until 2026-09-04: a corpus that grew an edge under a gold case was
+    treated as as much of a problem as one that lost an edge, because the case would then under-specify
+    the correct answer. That was right while the corpus was fixed. Phase 6 grew it from one source to
+    two, and **12 of the 25 cases gained 77 edges between them while losing none** — every one of the 67
+    hand-verified claims still exists and is still correct.
+
+    Restoring equality would mean authoring 77 new claims with the independent, non-Wikidata citations
+    this set is built on. Flagging them uncited instead was considered and rejected: ``UNCITED_CLAIM_
+    COUNT`` is an escape hatch from the project's central honesty rule, and taking it from 8-of-67 to
+    85-of-144 would make the set majority-unsourced — which is abusing the hatch, not using it.
+
+    **So the contract is split, sjtroxel's decision 2026-09-04.** Correctness keeps the verified claims
+    and requires every one of them; traversal geometry reads the corpus, so ``traversal_precision`` is
+    not distorted by a gold case listing one of three real origins. The cost is named rather than hidden:
+    this test can no longer catch a corpus that grows a *wrong* edge under a gold case.
+    :func:`test_the_corpus_holds_more_than_the_gold_set_verifies` is what keeps that growth visible.
     """
     case = get_case(gold, case_id)
 
-    expected = {(c["subject_id"], c["object_id"]) for c in case["expected_claims"]}
-    actual = corpus_edges_for(case, store)
-    assert actual == expected, f"{case_id}: the corpus and the gold case disagree"
+    # Edge EXISTENCE, not membership of the corpus's shortest path. A path case's route can shorten
+    # under a denser corpus -- gold_v0_1_017 did at v0.7.1 -- while every claim on the old route stays
+    # true. Asking `corpus_edges_for` here would report those verified claims as lost when they are
+    # merely no longer the quickest way round.
+    missing = [
+        (c["subject_id"], c["object_id"])
+        for c in case["expected_claims"]
+        if not any(
+            e.object_id == c["object_id"] and e.predicate == c["predicate"]
+            for e in store.neighbors(c["subject_id"], Direction.INFLUENCED_BY)
+        )
+    ]
+    assert not missing, (
+        f"{case_id}: the corpus LOST a hand-verified gold edge: {sorted(missing)}. "
+        f"An edge a human checked disappearing is a corpus regression, not gold-set staleness."
+    )
 
 
 @pytest.mark.parametrize("case_id", case_ids())
@@ -250,10 +276,21 @@ def test_case_claims_survive_the_gate_and_measure_as_grounded(
 ) -> None:
     """The end-to-end Tier 1 row: propose exactly what the gold case says, gate it, measure it.
 
-    For the four answerable cases this must be 100% — the blocking threshold from
+    For an answerable case that asserts claims this must be 100% — the blocking threshold from
     ``.claude/rules/evals.md``, which is a real threshold rather than an invented one because the ground
-    truth is a graph we own. For the refusal case the gate must approve nothing and the score must be
+    truth is a graph we own. For a refusal case the gate must approve nothing and the score must be
     **undefined**, not perfect.
+
+    **A third state arrived at v0.7.1: answerable, but asserting no claims.** ``gold_v0_1_005`` and
+    ``gold_v0_1_010`` were refusal cases -- "where did the blues come from", "where did techno come
+    from" -- that refused only because the corpus was thin. DBpedia supplied 3 and 9 well-documented
+    origins respectively, so the refusal stopped being correct behaviour and became a stale coverage
+    gap. They are now answerable and carry **no** ``expected_claims``, because asserting which origins
+    are right needs the independent non-Wikidata citations this set is built on.
+
+    Such a case must score **undefined, not 100%** — an empty claim set is the vacuous-truth guard
+    ``.claude/rules/evals.md`` names explicitly, and it must not read as perfect here either. What the
+    case does assert lives in ``test_case_expectation_of_refusal_still_holds``: the corpus can answer.
     """
     case = get_case(gold, case_id)
     proposals = [
@@ -264,7 +301,10 @@ def test_case_claims_survive_the_gate_and_measure_as_grounded(
     assert not result.rejected, f"{case_id}: the gate rejected a gold claim: {result.rejected}"
 
     measured = edge_groundedness(list(result.approved), store)
-    if case["expected_refusal"]:
+    if case["expected_refusal"] or not case["expected_claims"]:
+        # Refusal, or answerable-but-asserting-nothing. Both must be undefined rather than perfect:
+        # a claim set with no members has no groundedness, and scoring it 100% is exactly the vacuous
+        # truth the rules file forbids.
         assert not result.approved
         assert measured.score is None
         assert not measured.is_fully_grounded

@@ -86,13 +86,13 @@
     "without_country": 222,
     "without_inception": 198
   },
-  "edge_count": 5067,
-  "generated_at": "2026-09-04T17:34:26+00:00",
+  "edge_count": 5066,
+  "generated_at": "2026-09-04T20:51:31+00:00",
   "generator": "musical_mycelium.ingest.dbpedia",
   "node_count": 1479,
   "notes": "",
   "predicate": "P737 + P136 + dbo:stylisticOrigin (influenced_by)",
-  "sha256": "0b215e3e3583aeb65fd2d43ed1dcb24e797c3843ab8953c47d7bc45b950c992b",
+  "sha256": "aebc55c5b48e84da632d3f0247f2086b87979e7aa23b5599e89d24b7879adca1",
   "source": "dbpedia+wikidata",
   "source_snapshot": {
     "Q101109587": 2516474946,
@@ -782,7 +782,7 @@
     "ASSERTS_AUTO": 759,
     "EXPOSURE_AUTO": 57,
     "HAND": 22,
-    "INFOBOX_AUTO": 1336,
+    "INFOBOX_AUTO": 1335,
     "MEMBERSHIP_BARE": 1363,
     "MEMBERSHIP_CITED": 1419,
     "PROSE_AUTO": 111

@@ -531,3 +531,33 @@ def test_resource_to_qid_resolves_the_real_rock_collision_end_to_end() -> None:
 
     assert resolved == {res("Rock_music"): "Q11399", res("Rock_and_roll"): "Q7749"}
     assert ambiguous == ()
+
+
+def test_build_honours_hand_rejected_edges() -> None:
+    """**The second source must not walk back an edge a person threw out.**
+
+    ``wikidata.select_edges`` keeps ``REJECTED_EDGES`` out of the Wikidata axis by policy: a human read
+    those sentences and judged they do not assert influence, and the automated check -- which
+    structurally cannot make that judgement -- does not get to overrule one.
+
+    v0.7.1 shipped with ``extreme metal <- heavy metal music`` restored, rejected as *"taxonomic, not
+    historical"* and brought back by DBpedia asserting the same pair. **A different source asserting the
+    same relation is not new evidence about that relation.** The rejection was about the taxonomy, not
+    about who said it, so it survives a change of source.
+    """
+    origins = (
+        Origin(subject_id="Q465978", object_id="Q38848", resource=res("Extreme_metal")),
+        Origin(subject_id="Q1", object_id="Q2", resource=res("Other")),
+    )
+    artifact = build(
+        origins,
+        labels={"Q465978": "extreme metal", "Q38848": "heavy metal music", "Q1": "a", "Q2": "b"},
+        revisions={},
+        known_genres=frozenset(),
+        rejected=frozenset({("Q465978", "Q38848")}),
+    )
+    pairs = {(e.subject_id, e.object_id) for e in artifact.edges}
+    assert ("Q465978", "Q38848") not in pairs, (
+        "a hand-rejected pair came back through the second source"
+    )
+    assert ("Q1", "Q2") in pairs, "the filter must be the rejection list, not a blanket refusal"

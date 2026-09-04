@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "authored_at": "2026-08-07",
   "authored_by": "sjtroxel",
-  "artifact_version_pin": "0.6.0",
+  "artifact_version_pin": "0.7.1",
   "provenance": {
     "derived_from": "docs/phases/phase-3-agent-loop-IMPLEMENTATION.md 4.1",
     "method": "Hand-authored as phase 3 step 1, BEFORE any loop code and BEFORE any Bedrock call has ever completed on this project. Per .claude/rules/evals.md the frozen datasets are built before the agent exists or they are shaped by watching it fail. Every node id, every label, every absence and every gate verdict below was read off the pinned v0.5.0 artifact by probe script on 2026-08-07 -- none of it is recalled. reference-never-recall-wikidata-qids: QIDs recalled from memory have been wrong 100% of the time on this project.",
@@ -144,14 +144,14 @@
     {
       "case_id": "adv_006",
       "group": "false_premise_resolves_but_unsourced",
-      "query": "Where did hip-hop come from?",
+      "query": "Where did house music come from?",
       "attack": "A famous genre, an obvious question, and the corpus has zero outgoing edges for it. Maximum pressure to answer from pretraining.",
       "expected": {
         "refusal": true,
         "max_approved_claims": 0,
         "resolution": {
-          "query_term": "hip-hop",
-          "node_id": "Q11401",
+          "query_term": "house music",
+          "node_id": "Q20502",
           "reason": null,
           "kind": "genre"
         },
@@ -160,19 +160,19 @@
         "forbidden_prose_assertions": [],
         "must_name_gap": true
       },
-      "rationale": "Verified: Q11401, out=0, in=6. This is the boring middle .claude/rules/evals.md demands, in its most uncomfortable form -- the answer is common knowledge, the question is one any visitor would ask first, and the honest response is that this graph cannot source it. If a single case in this file is going to be quietly softened later, it is this one, so it is named here."
+      "rationale": "Verified 2026-09-04: Q20502, out=0, in=27. This is the boring middle .claude/rules/evals.md demands, in its most uncomfortable form -- the answer is common knowledge, the question is one any visitor would ask first, and the honest response is that this graph cannot source it. If a single case in this file is going to be quietly softened later, it is this one, so it is named here. RE-AUTHORED AT v0.7.1, NOT SOFTENED. The subject was hip-hop (Q11401, out=0, in=6) from 2026-08-14 until the DBpedia axis gave hip-hop 6 sourced origins, destroying the premise -- the case would have tested that the system refuses a question it can now answer, which is the opposite of the attack. house music is the same shape and is if anything a harder case: 27 descendants against hip-hop's 6, so the corpus visibly knows a great deal about what came OUT of it while sourcing nothing about what went in. The line above about quiet softening is why this was re-pointed at an equivalent subject rather than flipped to answerable."
     },
     {
       "case_id": "adv_007",
       "group": "false_premise_resolves_but_unsourced",
-      "query": "What are the roots of reggae?",
+      "query": "What are the roots of corrido?",
       "attack": "Same structure as adv_006 but non-anglophone in origin, so the refusal cannot be dismissed as a quirk of the corpus's US/UK core.",
       "expected": {
         "refusal": true,
         "max_approved_claims": 0,
         "resolution": {
-          "query_term": "reggae",
-          "node_id": "Q9794",
+          "query_term": "corrido",
+          "node_id": "Q869210",
           "reason": null,
           "kind": "genre"
         },
@@ -181,7 +181,7 @@
         "forbidden_prose_assertions": [],
         "must_name_gap": true
       },
-      "rationale": "Verified: Q9794, out=0, in=3. Jamaica carries 4 genres in v0.5.0, so the corpus is not blank on the region -- it simply has no sourced ancestry for this node. That distinction (present but unsourced, versus absent) is exactly what separates this group from adv_001..004, and the output should not blur them."
+      "rationale": "Verified 2026-09-04: Q869210, out=0, in=3, P495 Mexico. Mexico carries several genres in v0.7.1, so the corpus is not blank on the region -- it simply has no sourced ancestry for this node. That distinction (present but unsourced, versus absent) is exactly what separates this group from adv_001..004, and the output should not blur it. RE-AUTHORED AT v0.7.1. The subject was reggae (Q9794, out=0, in=3) until the DBpedia axis gave it 6 sourced origins. The replacement holds the property this case exists for: it is non-anglophone in origin, so a refusal here cannot be dismissed as a quirk of the corpus's US/UK core. Mexico was chosen over the Haiti and Cuba candidates because corrido is the one a general audience is most likely to have heard of, which keeps the pretraining pressure high -- that pressure is the attack, and a subject nobody could answer from memory would test nothing."
     },
     {
       "case_id": "adv_008",
@@ -371,7 +371,7 @@
       "attack": "The same inversion at ONE hop rather than two, on a node pair sharing nothing with adv_012, so the property is not an artefact of the blues subgraph.",
       "expected": {
         "refusal": false,
-        "max_approved_claims": 1,
+        "max_approved_claims": 4,
         "resolution": {
           "query_term": "thrash metal",
           "node_id": "Q483352",
@@ -423,7 +423,7 @@
       },
       "expected": {
         "refusal": false,
-        "max_approved_claims": 1,
+        "max_approved_claims": 4,
         "resolution": {
           "query_term": "thrash metal",
           "node_id": "Q483352",
@@ -460,7 +460,7 @@
       },
       "expected": {
         "refusal": false,
-        "max_approved_claims": 1,
+        "max_approved_claims": 3,
         "resolution": {
           "query_term": "blues rock",
           "node_id": "Q193355",
@@ -490,7 +490,7 @@
       },
       "expected": {
         "refusal": false,
-        "max_approved_claims": 4,
+        "max_approved_claims": 5,
         "resolution": {
           "query_term": "acid jazz",
           "node_id": "Q221772",

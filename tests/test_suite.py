@@ -112,11 +112,23 @@ def test_every_gold_case_reaches_its_whole_expected_path(result: SuiteResult) ->
 def test_refusal_cases_refuse_and_answerable_cases_answer(result: SuiteResult) -> None:
     """Both halves of the pair, per ``.claude/rules/grounding-and-claims.md``. A system that refuses
     everything scores perfectly on hallucination and is useless, so the false-refusal count is asserted
-    alongside the true-refusal one rather than left to the aggregate."""
+    alongside the true-refusal one rather than left to the aggregate.
+
+    **The refusal denominator fell from 3 to 1 at v0.7.1 and that is a real weakening of this metric.**
+    ``gold_v0_1_005`` ("where did the blues come from") and ``gold_v0_1_010`` ("where did techno come
+    from") were true refusals only because the corpus was thin; the DBpedia axis gave blues 3 origins
+    and techno 9, so refusing them stopped being correct behaviour. Flipping them was right and the cost
+    is that refusal accuracy is now measured on **one** gold case.
+
+    **Restoring the denominator needs new refusal cases and that is dataset authoring, not maintenance.**
+    146 genres still have no sourced origins, so candidates are not scarce -- what is needed is a
+    judgement about which ones a visitor would plausibly ask about. Owed, and named here rather than
+    left as a quietly thinner metric.
+    """
     assert result.refusal.true_refusals == result.refusal.expected_refusals
     assert result.refusal.false_refusals == 0
-    assert result.refusal.expected_refusals == 3
-    assert result.refusal.expected_answers == 22
+    assert result.refusal.expected_refusals == 1
+    assert result.refusal.expected_answers == 24
 
 
 def test_the_gold_set_plants_no_injections_and_says_so(result: SuiteResult) -> None:
@@ -218,7 +230,7 @@ def test_dropping_the_shape_tool_collapses_recall_and_empties_the_claim_set(
 
     assert result.recall.score is not None and result.recall.score < 0.5
     assert result.groundedness.score is None, "an empty claim set must not score 100% groundedness"
-    assert result.refusal.false_refusals == 22
+    assert result.refusal.false_refusals == 24
 
 
 def test_a_run_of_zero_cases_reports_no_percentage(store: InMemoryGraphStore) -> None:

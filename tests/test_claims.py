@@ -314,10 +314,20 @@ def test_the_qid_in_a_citation_is_matched_without_regard_to_case() -> None:
 
 def test_resolve_sources_on_every_pinned_edge() -> None:
     """Every edge the ingestion wrote must be citable. If this fails the artifact is the problem, not
-    the gate — so it reads the artifact directly rather than going through the store."""
+    the gate — so it reads the artifact directly rather than going through the store.
+
+    **The subject node is passed since v0.7.1.** A Wikidata statement URI encodes its own subject, so
+    that branch needs nothing else; a DBpedia resource URI names an article and is checked against the
+    node's stored ``owl:sameAs`` alignment. Calling this one-argument would report all 1,336 DBpedia
+    edges as uncitable, which is the state the corpus was actually in for about an hour on 2026-09-04
+    before the gate learned the second source.
+    """
     artifact = Artifact.load(artifact_directory())
+    nodes = {n.id: n for n in artifact.nodes}
     for edge in artifact.edges:
-        assert resolve_sources(edge) == (edge.source_id,), f"uncitable edge: {edge.subject_id}"
+        assert resolve_sources(edge, nodes.get(edge.subject_id)) == (edge.source_id,), (
+            f"uncitable edge: {edge.subject_id} -> {edge.object_id} ({edge.source})"
+        )
 
 
 # --- reporting --------------------------------------------------------------------------------

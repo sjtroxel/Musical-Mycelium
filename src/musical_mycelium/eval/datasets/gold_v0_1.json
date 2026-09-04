@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "authored_at": "2026-08-02",
   "authored_by": "sjtroxel",
-  "artifact_version_pin": "0.6.0",
+  "artifact_version_pin": "0.7.1",
   "provenance": {
     "derived_from": "docs/phases/phase-1-edge-verification.md",
     "method": "Hand-authored from the same verification pass that produced the v0.1 artifact, BEFORE the agent exists. Per .claude/rules/evals.md a gold set written after the agent exists is contaminated by its output.",
@@ -55,6 +55,8 @@
       "expected_refusal": false,
       "expected_path": [
         "Q193355",
+        "Q11399",
+        "Q640097",
         "Q9759"
       ],
       "expected_claims": [
@@ -86,10 +88,11 @@
       "expected_refusal": false,
       "expected_path": [
         "Q221772",
-        "Q8341",
-        "Q164444",
+        "Q105527",
+        "Q11401",
         "Q131272",
-        "Q11401"
+        "Q164444",
+        "Q8341"
       ],
       "expected_claims": [
         {
@@ -208,8 +211,13 @@
       "expected_refusal": false,
       "expected_path": [
         "Q1730388",
+        "Q1425111",
+        "Q153071",
+        "Q203775",
         "Q83440",
-        "Q203775"
+        "Q906647",
+        "Q972424",
+        "Q9759"
       ],
       "expected_claims": [
         {
@@ -252,14 +260,17 @@
         "name": "blues",
         "node_id": "Q9759"
       },
-      "expected_refusal": true,
+      "expected_refusal": false,
       "expected_path": [
-        "Q9759"
+        "Q9759",
+        "Q212024",
+        "Q43343",
+        "Q502658"
       ],
       "expected_claims": [],
       "expected_behavior": "The node RESOLVES -- blues is in the artifact and is cited as the source of blues rock in case 001 -- and has zero sourced parent edges. The correct output states that this graph has no sourced account of the origins of the blues. Naming any influence here is a hallucination, however historically defensible it would be.",
       "independent_citations": [],
-      "notes": "This is the resolved-but-unsourced refusal, not the unknown-string refusal, and it is the stronger of the two: the system demonstrably knows the node, uses it as a citation elsewhere, and still declines to state its origins. 13 of the 28 nodes in the v0.1 artifact are in this position -- blues, jazz, funk, soul, hip-hop, punk rock, country music, swing, electronica, folk music, dub music, 2-step garage, UK garage. That is not a gap in the verification; it is the corpus. The regional coverage-honesty case (a sparse non-Western genre) is deliberately NOT here: v0.1's 21 hand-picked edges have no meaningful non-Western coverage to be honest about. It moves to the full gold set in phase 2, where the corpus contains motswako, kuduro, bouyon and Na mele paleoleo. Recorded so its absence is a decision, not an oversight."
+      "notes": "This is the resolved-but-unsourced refusal, not the unknown-string refusal, and it is the stronger of the two: the system demonstrably knows the node, uses it as a citation elsewhere, and still declines to state its origins. 13 of the 28 nodes in the v0.1 artifact are in this position -- blues, jazz, funk, soul, hip-hop, punk rock, country music, swing, electronica, folk music, dub music, 2-step garage, UK garage. That is not a gap in the verification; it is the corpus. The regional coverage-honesty case (a sparse non-Western genre) is deliberately NOT here: v0.1's 21 hand-picked edges have no meaningful non-Western coverage to be honest about. It moves to the full gold set in phase 2, where the corpus contains motswako, kuduro, bouyon and Na mele paleoleo. Recorded so its absence is a decision, not an oversight. REFUSAL FLIPPED TO ANSWERABLE AT v0.7.1 (phase 6 step 6 re-pin). This case tested that the system refuses when the corpus has no origins for the subject. It refused because the corpus was THIN, not because the answer is unknowable -- and the DBpedia axis supplied 3 well-documented origins (spirituals, folk music, work song). A refusal that only held because of a coverage gap is not a property worth preserving, so the case is now answerable. expected_claims stays EMPTY: under the split contract claims are a required subset, and asserting these particular origins would need the independent non-Wikidata citations this set is built on. The case therefore asserts that the corpus can answer, not what the answer is."
     },
     {
       "case_id": "gold_v0_1_006",
@@ -523,14 +534,23 @@
         "name": "techno",
         "node_id": "Q170611"
       },
-      "expected_refusal": true,
+      "expected_refusal": false,
       "expected_path": [
-        "Q170611"
+        "Q170611",
+        "Q1071961",
+        "Q1298934",
+        "Q1374731",
+        "Q20502",
+        "Q217597",
+        "Q320592",
+        "Q372103",
+        "Q487965",
+        "Q744417"
       ],
       "expected_claims": [],
       "expected_behavior": "The node RESOLVES and has zero sourced parent edges. The correct output states that this graph has no sourced account of the origins of techno. The Belleville Three, Kraftwerk and Detroit are all outside what this corpus can support and must not be narrated.",
       "independent_citations": [],
-      "notes": "The second genre refusal, and it is not hypothetical: this exact gap is why the first live end-to-end Bedrock run on 2026-08-12 had to be retargeted off Detroit techno onto acid jazz. That refusal was discovered by accident during a smoke test; this case makes it deliberate and measured. Five nodes descend from techno -- Afro tech, kuduro, tech house, tech trance and toytown techno -- so, as with case 009, the graph can walk downstream from a node whose own origins it cannot state. Note kuduro among them: one of the nineteen non-Western nodes in the corpus with any parent at all hangs off a parent the system must refuse to explain, which is the corpus skew showing up as a structural fact rather than a disclaimer."
+      "notes": "The second genre refusal, and it is not hypothetical: this exact gap is why the first live end-to-end Bedrock run on 2026-08-12 had to be retargeted off Detroit techno onto acid jazz. That refusal was discovered by accident during a smoke test; this case makes it deliberate and measured. Five nodes descend from techno -- Afro tech, kuduro, tech house, tech trance and toytown techno -- so, as with case 009, the graph can walk downstream from a node whose own origins it cannot state. Note kuduro among them: one of the nineteen non-Western nodes in the corpus with any parent at all hangs off a parent the system must refuse to explain, which is the corpus skew showing up as a structural fact rather than a disclaimer. REFUSAL FLIPPED TO ANSWERABLE AT v0.7.1 (phase 6 step 6 re-pin). This case tested that the system refuses when the corpus has no origins for the subject. It refused because the corpus was THIN, not because the answer is unknowable -- and the DBpedia axis supplied 9 well-documented origins (Chicago house, Krautrock, electro, Italo disco). A refusal that only held because of a coverage gap is not a property worth preserving, so the case is now answerable. expected_claims stays EMPTY: under the split contract claims are a required subset, and asserting these particular origins would need the independent non-Wikidata citations this set is built on. The case therefore asserts that the corpus can answer, not what the answer is."
     },
     {
       "case_id": "gold_v0_1_011",
@@ -625,6 +645,7 @@
         "Q1191544",
         "Q1051735",
         "Q170611",
+        "Q20502",
         "Q227045"
       ],
       "expected_claims": [
@@ -685,6 +706,7 @@
       "expected_refusal": false,
       "expected_path": [
         "Q486263",
+        "Q11403",
         "Q8341"
       ],
       "expected_claims": [
@@ -727,7 +749,9 @@
         "Q6749708",
         "Q164444",
         "Q217191",
-        "Q58339"
+        "Q58339",
+        "Q8341",
+        "Q83440"
       ],
       "expected_claims": [
         {
@@ -893,44 +917,25 @@
       "expected_refusal": false,
       "expected_path": [
         "Q1207347",
-        "Q486263",
         "Q8341"
       ],
       "expected_claims": [
         {
           "subject_id": "Q1207347",
           "predicate": "influenced_by",
-          "object_id": "Q486263",
+          "object_id": "Q8341",
           "subject_label": "Shibuya-kei",
-          "object_label": "bossa nova",
-          "wikidata_statement": "Q1207347 P737 Q486263",
+          "object_label": "jazz",
+          "wikidata_statement": null,
+          "dbpedia_resource": "http://dbpedia.org/resource/Shibuya-kei",
           "supporting_prose": "Red Bull Music Academy contributor Barry Walters described Shibuya-kei as \"an omnivorous fusion of vanguard pop, jazz, lounge, bossa nova, ye-ye, Brill Building girl groups, and West Coast harmony acts\".",
           "supporting_prose_source": "en.wikipedia.org/wiki/Shibuya-kei, read 2026-08-14",
           "independent_citations": [
             "Walters, Barry, \"Pizzicato Five\", Red Bull Music Academy, November 2014"
           ]
-        },
-        {
-          "subject_id": "Q486263",
-          "predicate": "influenced_by",
-          "object_id": "Q8341",
-          "subject_label": "bossa nova",
-          "object_label": "jazz",
-          "wikidata_statement": "Q486263 P737 Q8341",
-          "supporting_prose": "Nevertheless, bossa nova was influenced by jazz, both in the harmonies used and also by the instrumentation of songs, and today many bossa nova songs are considered jazz standards.",
-          "supporting_prose_source": "en.wikipedia.org/wiki/Bossa_nova, read 2026-08-14",
-          "independent_citations": [],
-          "citation_status": {
-            "state": "source_uncited",
-            "searched": [
-              "en.wikipedia.org/wiki/Bossa_nova -- no inline reference on this sentence; the adjacent sfn refs support the parallel-evolution counterargument instead.",
-              "pt.wikipedia.org/wiki/Bossa_nova -- its jazz references cover a song entering the jazz repertory, not jazz influencing bossa nova."
-            ],
-            "finding": "Same claim as case 013 and the same finding. Repeated here rather than cross-referenced so a reader of this case is not required to have read that one."
-          }
         }
       ],
-      "notes": "A three-continent chain in two hops -- Japan to Brazil to the United States -- which is the thesis of this project stated as a traversal rather than as copy: genres look like separate things and underneath they are one connected organism. It is also the case where the verification tiers are most visibly unequal. The first edge is PROSE_AUTO, the weak tier that structurally cannot tell assertion from mention, and it rests on a critic's list of ingredients. The second is HAND, and its source argues with itself. A narrative that renders these two steps in the same voice is claiming a uniformity of evidence that does not exist, which is what per-claim verification is in the schema to prevent. Its second edge is gold case 013, so the same disagreement recorded there applies here."
+      "notes": "A three-continent chain in two hops -- Japan to Brazil to the United States -- which is the thesis of this project stated as a traversal rather than as copy: genres look like separate things and underneath they are one connected organism. It is also the case where the verification tiers are most visibly unequal. The first edge is PROSE_AUTO, the weak tier that structurally cannot tell assertion from mention, and it rests on a critic's list of ingredients. The second is HAND, and its source argues with itself. A narrative that renders these two steps in the same voice is claiming a uniformity of evidence that does not exist, which is what per-claim verification is in the schema to prevent. Its second edge is gold case 013, so the same disagreement recorded there applies here. RE-AUTHORED AT v0.7.1. The corpus gained a DIRECT Shibuya-kei <- jazz edge from DBpedia, so the shortest sourced route is one hop and the two-hop chain via bossa nova is no longer the answer to 'how is Shibuya-kei connected to jazz'. The direct claim needed no new sourcing: the SAME Barry Walters sentence that supported the bossa nova hop names jazz explicitly -- 'an omnivorous fusion of vanguard pop, jazz, lounge, bossa nova...' -- so the independent citation carries across unchanged. Both old edges remain in the corpus and remain verified; they are simply not the shortest path. The bossa nova <- jazz claim was one of the 8 source_uncited claims, so retiring it from this case lowers that count rather than raising it."
     },
     {
       "case_id": "gold_v0_1_018",
@@ -1207,12 +1212,55 @@
       "expected_refusal": false,
       "expected_path": [
         "Q11401",
+        "Q104695865",
+        "Q1071961",
+        "Q107572242",
+        "Q1102161",
+        "Q1207347",
+        "Q1253172",
+        "Q1399695",
+        "Q1585075",
+        "Q1606591",
+        "Q1683348",
+        "Q1754592",
+        "Q1890098",
+        "Q2004156",
+        "Q202930",
+        "Q2043175",
         "Q205560",
+        "Q216961",
+        "Q217597",
         "Q221772",
+        "Q2238236",
         "Q2256407",
+        "Q25040706",
+        "Q251192",
+        "Q2572585",
+        "Q2706919",
+        "Q30638997",
+        "Q3709211",
+        "Q3827483",
+        "Q429264",
+        "Q438503",
+        "Q546206",
+        "Q601235",
+        "Q602561",
+        "Q655514",
+        "Q663519",
+        "Q6918602",
         "Q6956465",
         "Q7196456",
-        "Q7410145"
+        "Q739138",
+        "Q7410145",
+        "Q753679",
+        "Q840065",
+        "Q850412",
+        "Q856872",
+        "Q858579",
+        "Q876171",
+        "Q877693",
+        "Q969663",
+        "Q973150"
       ],
       "expected_claims": [
         {
@@ -1315,7 +1363,9 @@
       "expected_path": [
         "Q272167",
         "Q16855754",
+        "Q1840167",
         "Q209137",
+        "Q3879179",
         "Q41343"
       ],
       "expected_claims": [
@@ -1377,9 +1427,16 @@
       "expected_refusal": false,
       "expected_path": [
         "Q9794",
+        "Q1102161",
+        "Q1606591",
         "Q18393891",
+        "Q20474",
+        "Q212688",
+        "Q474027",
+        "Q6158987",
         "Q6918602",
-        "Q6956465"
+        "Q6956465",
+        "Q740911"
       ],
       "expected_claims": [
         {

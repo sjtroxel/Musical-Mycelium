@@ -87,6 +87,106 @@ corpus in part 2.
 
 ---
 
+## PHASE 6 — THE RE-PIN TO v0.7.1, and what 78 failing tests were actually telling us, 2026-09-04
+
+**Verified state:** `make check` green — **1290 passed**, 14 `costs_money` deselected, mypy clean over 97
+files, terraform valid, eval gates **3 passed / 0 failed / 2 not applicable**. Frontend **146 passed**.
+Root 17 of 18. **`graph/memory.py:34` and `ingest/wikidata.py:59` both read `0.7.1`.** Everything from
+steps 4-6 is now visible to the runtime.
+
+**Checked before starting, which was the right call: the pin broke 78 tests across 20 files.** Step 3's
+re-pin broke 52. This is not a one-line change and should never be scheduled as one again.
+
+### One real defect, found by the suite rather than by review
+
+**`extreme metal <- heavy metal music` was back in the corpus.** A person read that pair in phase 1 and
+rejected it as *"taxonomic, not historical"*; `wikidata.select_edges` keeps `REJECTED_EDGES` out of the
+Wikidata axis by policy, and **`ingest.dbpedia` never consulted the list**, so the second source walked
+it straight back in. A different source asserting the same relation is not new evidence about that
+relation — the rejection was about the taxonomy, not about who said it. `build` now takes `rejected` and
+there is a test. Both artifacts were re-cut; the change is exactly one edge, 1,336 -> 1,335.
+
+### The gold set: a split contract, sjtroxel's decision
+
+12 of 25 cases diverged because the corpus gained **77 edges under them while losing none** — every one
+of the 67 hand-verified claims still exists and is still correct.
+
+- **Correctness keeps the verified claims** and now requires them as a **subset** rather than an exact
+  match. Restoring exactness would mean authoring 77 new claims with independent non-Wikidata citations;
+  flagging them uncited instead was considered and **rejected**, because `UNCITED_CLAIM_COUNT` is an
+  escape hatch from the project's central honesty rule and taking it from 8-of-67 to 85-of-144 would make
+  the set majority-unsourced.
+- **Traversal geometry reads the corpus**, so `traversal_precision` is not distorted by a gold case
+  listing one of three real origins.
+- **What this gives up, stated plainly:** the exact-match test could catch a corpus that grew a *wrong*
+  edge under a gold case. The subset form cannot. That is the cost of the decision.
+
+**`gold_v0_1_017` was re-authored, not repaired.** The corpus gained a direct `Shibuya-kei <- jazz` edge,
+so the two-hop route via bossa nova stopped being the shortest path. It needed no new sourcing: the same
+Barry Walters sentence that supported the bossa nova hop names jazz explicitly. The retired middle hop
+was one of the 8 uncited claims, so **`UNCITED_CLAIM_COUNT` fell 8 -> 7 because a case changed shape, not
+because a source was found** — do not read it as sourcing improving.
+
+### Refusal cases: the corpus outgrew three of them, and one gate is now thin
+
+`gold_v0_1_005` ("where did the blues come from"), `gold_v0_1_010` ("where did techno come from"),
+`adv_006` (hip-hop) and `adv_007` (reggae) were **refusals only because the corpus was thin.** DBpedia
+gave blues 3 origins, techno 9, hip-hop 6, reggae 6.
+
+- The two gold cases were **flipped to answerable** with empty claims — they now assert that the corpus
+  can answer, not what the answer is.
+- The two adversarial cases were **re-authored, not softened**, because adv_006's own rationale says
+  *"if a single case in this file is going to be quietly softened later, it is this one."* Re-pointed at
+  **house music** (out=0, in=27) and **corrido** (out=0, in=3, Mexico) — corrido chosen to preserve
+  adv_007's non-anglophone requirement, since a refusal on a US/UK genre could be dismissed as a quirk of
+  the corpus core.
+
+**THE COST: refusal accuracy is now gated on ONE gold case, down from three.** The threshold denominator
+was changed in `eval/thresholds.json` and **that is a weakening, not a tuning** — the cases it counted no
+longer exist as refusals. The gate can no longer distinguish a system that refuses correctly from one
+that refuses that particular subject correctly. **Restoring it needs new refusal cases**; 146 genres
+still have no sourced origins, so candidates are not scarce.
+
+### `ambiguous` became reachable, like `contested` before it
+
+The corpus grew `big band` (Q207378) alongside `big band music` (Q105756581) — two distinct Wikidata
+items whose labels normalise to one `label_key`. The lock in `test_adversarial_set` was **kept and now
+names that one collision**, so a second fails instead of hiding behind the first. Authoring a case that
+exercises the `ambiguous` branch is now possible and is owed.
+
+### `blues` stopped being the corpus's canonical dead end
+
+It held that role from v0.1 to v0.6.0 — resolves, is cited as a source, has no origins of its own — and
+was the fixture for refusal tests in **six** files. DBpedia gave it spirituals, folk music and work song.
+All six now point at `turntablism`, one of 146 genres still in that state, each with a note recording that
+**the genre did not change; the corpus did.**
+
+### Copy that is now overstated in the OTHER direction — owed at step 8
+
+DoD #8 asks that no copy claim coverage the graph does not have. v0.7.1 produced the inverse problem:
+
+- *"most of the corpus records no influences"* — now **723 of 1,479, 48.9%**, a large minority. The
+  underlying argument survives; the word "most" does not.
+- *"most genres have no recorded origin"* — now **266 of 675, 39%**.
+- *"even the busiest genre is thin"* — the busiest now has **55** connections, not fewer than 10.
+- The modal connection bucket flipped **back to 1** (125 genres), the shape v0.5.0 had.
+
+### Also worth keeping
+
+- **Wikidata's backwards-in-time rate reproduced the phase 5 baseline exactly** — 6 of 102 datable,
+  5.9% — which is a consistency check on the whole pipeline across three corpus expansions.
+- `test_influence_traversal_is_unchanged_by_the_membership_axis` now compares **v0.5.0 against v0.6.0 by
+  name** rather than against "whatever is pinned". The finding is about membership; comparing against a
+  moving pin made it fail for a reason that has nothing to do with membership.
+- The **frontend lag was re-read and re-confirmed**, which is what that assertion exists to force. Had
+  the frontend followed at step 3, the corpus copy would have been paid three times (v0.6.0, v0.7.0,
+  v0.7.1). **DO NOT DEPLOY while the lag holds.**
+- The baseline was regenerated only after diffing it: `edge_groundedness` 1.0, `citation_resolution` 1.0,
+  `injection_resistance` induced 0, claim bounds and gate rejections all held **exactly**. What moved was
+  the artifact version, `INFOBOX_AUTO: 4` entering the mix, and the era slices.
+
+---
+
 ## PHASE 6 STEP 6 — geography and time, artifact v0.7.1, and the skew actually improved, 2026-09-04
 
 **Verified state:** `make check` green — **1289 passed**, 14 `costs_money` deselected, mypy clean over 97

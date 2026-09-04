@@ -174,16 +174,24 @@ def test_the_pinned_corpus_coverage(store: InMemoryGraphStore) -> None:
     **These numbers are the DoD #7 deliverable.** The corpus skews Western, anglophone and recent by
     construction, and this is that skew as arithmetic rather than as a disclaimer.
 
-    v0.5.0, for comparison: 169 / 28 / 48 / 19. The membership crawl roughly tripled the genre count and
-    the gaps grew with it -- ``without_inception`` 28 -> 131, ``without_country`` 48 -> 164. A bigger
-    corpus is not a better-documented one, and these four numbers are where that shows.
+    v0.5.0: 169 / 28 / 48 / 19. v0.6.0: 509 / 131 / 164 / 51. v0.7.1: 675 / 198 / 222 / 64. Each corpus
+    expansion grew the documented gaps roughly in proportion -- a bigger corpus is not a better-documented
+    one, and these four numbers are where that shows.
+
+    **These count P571 and P495 ONLY, and at v0.7.1 that understates what the corpus knows.** Phase 6
+    step 6 parsed the Wikipedia ``cultural_origins`` infobox into ``Node.infobox_year`` and
+    ``infobox_countries`` for 61 genres with no P571 and 62 with no P495. ``Coverage`` does not read
+    those fields, deliberately: mixing a parsed infobox value into a number that has always meant
+    "Wikidata has this" would restate the gap without saying the source changed. The honest report is
+    three numbers rather than one -- 477 with a Wikidata date, 61 more with an infobox date, 137 with
+    none -- and building that is the coverage panel's job at step 8.
     """
     c = store.coverage
 
-    assert c.genres == 509
-    assert c.without_inception == 131
-    assert c.without_country == 164
-    assert c.coarser_than_year == 51
+    assert c.genres == 675
+    assert c.without_inception == 198
+    assert c.without_country == 222
+    assert c.coarser_than_year == 64
     assert c.top_country == "United States"
 
 
@@ -192,18 +200,18 @@ def test_the_corpus_is_recent_and_says_so(store: InMemoryGraphStore) -> None:
     this corpus cannot speak about early music history, and the number is what makes that checkable
     rather than a matter of impression.
 
-    **The multiple loosened at v0.6.0 and the bound was widened to match, which is the direction that
-    needs saying out loud.** v0.5.0 was 13 against 47, a 3.6x concentration, and the assertion read
-    ``> before_1950 * 3``. v0.6.0 is 53 against 147: still lopsided, but 2.8x. The corpus got *less*
-    concentrated in the era it is worst at, so this bound is being relaxed because the measurement
-    improved, not to accommodate a regression. If it ever has to be relaxed the other way, that is a
-    finding and not a maintenance task.
+    **The bound has now been relaxed twice, both times because the measurement improved, and the
+    direction is the thing to check before ever relaxing it again.** v0.5.0: 13 against 47, a 3.6x
+    concentration, asserted ``> before_1950 * 3``. v0.6.0: 53 against 147, 2.8x. **v0.7.1: 79 against
+    186, 2.35x.** Each corpus expansion has made the corpus *less* concentrated in the era it is worst
+    at. Relaxing a bound because the number got better is maintenance; relaxing one because the number
+    got worse is a finding, and this bound has never been touched for the second reason.
     """
     c = store.coverage
     before_1950 = c.eras["pre-1900"] + c.eras["1900-1949"]
 
-    assert before_1950 == 53
-    assert c.eras["1970-1989"] > before_1950 * 2.5
+    assert before_1950 == 79
+    assert c.eras["1970-1989"] > before_1950 * 2.0
 
 
 def test_the_corpus_is_anglophone_dense_and_says_so(store: InMemoryGraphStore) -> None:
@@ -229,14 +237,21 @@ def test_the_corpus_is_anglophone_dense_and_says_so(store: InMemoryGraphStore) -
     the flattering way at the same time — distinct places 29 -> 50, genres naming neither US nor UK
     43 -> 92. All three are true and the honest report carries all three. The band below is widened to
     contain the measurement rather than to contain the claim.
+
+    **v0.7.1 moved it back the other way: 253/345 = 0.73 became 317/453 = 0.70**, and every other skew
+    figure improved with it — ``top_country_share`` 0.562 -> 0.541, distinct places 50 -> 65, genres
+    naming neither US nor UK 92 -> 136. The DBpedia axis and the ``cultural_origins`` parse both reached
+    genres the anglophone-seeded membership crawl had not. **This is the first corpus expansion in the
+    project's history to reduce the concentration rather than raise it**, and it is worth saying plainly
+    because the previous three did the opposite.
     """
     c = store.coverage
     with_country = c.genres - c.without_country
     naming_us_or_uk = with_country - c.genres_without_us_or_uk
 
-    assert with_country == 345
-    assert naming_us_or_uk == 253
-    assert 0.7 < naming_us_or_uk / with_country < 0.8
+    assert with_country == 453
+    assert naming_us_or_uk == 317
+    assert 0.65 < naming_us_or_uk / with_country < 0.75
 
 
 def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
@@ -250,9 +265,11 @@ def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
     inference was made on 2026-08-06 and corrected by sjtroxel, who was reading the corpus rather than
     the aggregate.
 
-    **v0.6.0: 43 -> 92 and 29 -> 50.** Both counterweights grew, and neither cancels the concentration
-    figure in the test above, which grew too. Quoting this pair without that one is the failure mode
-    this docstring already warns about, pointed the other way.
+    **v0.6.0: 43 -> 92 and 29 -> 50. v0.7.1: 92 -> 136 and 50 -> 65.** Both counterweights have grown at
+    every cut. At v0.6.0 that did not cancel the concentration figure in the test above, which grew too;
+    **at v0.7.1 the concentration figure fell as well**, so for the first time all three move together.
+    Quote all three regardless — the pair without the concentration number is the failure mode this
+    docstring warns about, and one good cut does not retire the warning.
 
     **43, not 44, since 2026-08-07.** ``UK drill``'s P495 is ``Brixton`` — a London district — which an
     exact-string test against ``ANGLOPHONE_CORE`` read as "names no UK". The counterweight figure gets
@@ -260,8 +277,8 @@ def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
     """
     c = store.coverage
 
-    assert c.genres_without_us_or_uk == 92
-    assert c.distinct_countries == 50
+    assert c.genres_without_us_or_uk == 136
+    assert c.distinct_countries == 65
 
 
 def test_a_sub_national_place_still_counts_toward_its_country() -> None:
@@ -300,6 +317,9 @@ def test_the_corpus_spans_far_more_than_the_post_war_era(store: InMemoryGraphSto
     music — with opera and Baroque at 1600 and blues at 1890. Thin is not empty, and "post-war" is a
     description of where the mass sits, never of what the corpus contains.
 
-    6 -> 14 at v0.6.0."""
+    6 -> 14 at v0.6.0 -> **23 at v0.7.1**, where the ``cultural_origins`` parse supplied century-precision
+    dates for genres Wikidata had none for — bomba and bélé at the 17th century, son cubano, banda music
+    and méringue at the 19th. Those are exactly the pre-1900, non-anglophone entries the corpus was
+    thinnest on, so this counterweight and the geographic one grew from the same work."""
     c = store.coverage
-    assert c.eras["pre-1900"] == 14
+    assert c.eras["pre-1900"] == 23

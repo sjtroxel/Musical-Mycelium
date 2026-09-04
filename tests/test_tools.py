@@ -25,6 +25,7 @@ from musical_mycelium.agent.tools import (
     default_registry,
 )
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.schema import SOURCE_WIKIDATA
 from musical_mycelium.graph.store import Direction
 
 LOOP_SOURCE = Path(agent_loop.__file__)
@@ -52,8 +53,10 @@ def test_get_descendants_answers_what_came_out_of_a_genre(store: InMemoryGraphSt
     """The gap this tool closes. Before it, this question needed both endpoints named up front."""
     result = GetDescendants(store)(node_id=BLUES)
 
-    assert result.content["count"] == 1
-    assert result.content["descendants"][0]["node_id"] == BLUES_ROCK
+    # blues went from 1 descendant to 28 at v0.7.1, so this asserts the hand-checked one is present
+    # rather than pinning a list that a denser corpus churns every cut.
+    assert result.content["count"] == 28
+    assert BLUES_ROCK in {d["node_id"] for d in result.content["descendants"]}
     assert not result.is_error
 
 
@@ -68,8 +71,12 @@ def test_get_descendants_proposals_are_oriented_by_the_edge_not_the_argument(
     """
     result = GetDescendants(store)(node_id=BLUES)
 
-    (proposal,) = result.proposals
+    proposal = next(p for p in result.proposals if p.subject_id == BLUES_ROCK)
     assert proposal.subject_id == BLUES_ROCK, "the descendant must be the subject"
+    assert all(p.object_id == BLUES for p in result.proposals), (
+        "every proposal from a descendant walk must have the queried node as its OBJECT; "
+        "one built from node_id would narrate influence backwards in time"
+    )
     assert proposal.object_id == BLUES, "the queried node must be the object"
 
 
@@ -168,7 +175,14 @@ def test_describe_node_rejects_an_unknown_node(store: InMemoryGraphStore) -> Non
 def test_resolve_source_turns_a_statement_uri_into_something_checkable(
     store: InMemoryGraphStore,
 ) -> None:
-    edge = store.neighbors(BLUES_ROCK, Direction.INFLUENCED_BY)[0]
+    # Explicitly a WIKIDATA edge. blues rock's first neighbour is DBpedia-sourced since v0.7.1, and a
+    # DBpedia resource URI is deliberately reported unresolvable by this tool -- it names an article
+    # rather than an entity, and verifying it needs a reverse lookup GraphStore does not expose.
+    edge = next(
+        e
+        for e in store.neighbors(BLUES_ROCK, Direction.INFLUENCED_BY)
+        if e.source == SOURCE_WIKIDATA
+    )
     content = ResolveSource(store)(source_id=edge.source_id).content
 
     assert content["resolvable"] is True
@@ -208,9 +222,9 @@ def test_corpus_coverage_takes_no_arguments_and_reports_measured_numbers(
     content = CorpusCoverage(store)().content
 
     assert content["artifact_version"] == store.artifact_version
-    assert content["genres"] == 509
-    assert content["distinct_countries"] == 50
-    assert content["genres_without_us_or_uk"] == 92
+    assert content["genres"] == 675
+    assert content["distinct_countries"] == 65
+    assert content["genres_without_us_or_uk"] == 136
 
 
 def test_corpus_coverage_returns_a_shape_no_other_tool_returns(store: InMemoryGraphStore) -> None:

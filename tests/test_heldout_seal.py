@@ -48,18 +48,27 @@ def dataset(store: InMemoryGraphStore) -> dict[str, Any]:
                 "shape": "origins",
                 "expected_resolution": {"name": "blues rock", "node_id": "Q193355"},
                 "expected_refusal": False,
-                "expected_path": ["Q193355", "Q9759"],
+                "expected_path": ["Q193355", "Q11399", "Q640097", "Q9759"],
+                # blues rock had one sourced origin until v0.7.1 and now has three -- rock music and
+                # electric blues arrived with the DBpedia axis. An `origins` case asserts the full set,
+                # so all three are listed; a synthetic fixture that under-specified would be testing
+                # the checker against a case the checker should reject.
                 "expected_claims": [
-                    {"subject_id": "Q193355", "predicate": "influenced_by", "object_id": "Q9759"}
+                    {"subject_id": "Q193355", "predicate": "influenced_by", "object_id": q}
+                    for q in ("Q11399", "Q640097", "Q9759")
                 ],
             },
             {
                 "case_id": "heldout_synthetic_002",
                 "query": "ANOTHER-SECRET",
                 "shape": "refusal",
-                "expected_resolution": {"name": "blues", "node_id": "Q9759"},
+                # `blues` until v0.7.1, when the DBpedia axis gave it three sourced origins and this
+                # SYNTHETIC case stopped refusing. Worth being precise about what fired here: the real
+                # sealed set was never read, and its own corpus-divergence question is a step 9
+                # decision. `turntablism` is one of 146 genres still with no sourced origins.
+                "expected_resolution": {"name": "turntablism", "node_id": "Q1046801"},
                 "expected_refusal": True,
-                "expected_path": ["Q9759"],
+                "expected_path": ["Q1046801"],
                 "expected_claims": [],
             },
         ],

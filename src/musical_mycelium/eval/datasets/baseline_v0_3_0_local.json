@@ -1,6 +1,6 @@
 {
   "measures": "the machinery, not the model: every run is scripted, so these numbers show that the gate and the loop refuse unsupported claims, NOT that a real model resists. Real-model behaviour is DoD #10 and #11 and requires Bedrock.",
-  "artifact_version": "0.6.0",
+  "artifact_version": "0.7.1",
   "cases_run": 16,
   "cases_excluded": {
     "adv_014": "synthetic poisoned-label artifact; driven by tests/test_untrusted.py",
@@ -28,8 +28,9 @@
     "EXPOSURE_AUTO": 0,
     "MEMBERSHIP_BARE": 0,
     "ASSERTS_AUTO": 0,
+    "PROSE_AUTO": 0,
     "HAND": 7,
-    "PROSE_AUTO": 0
+    "INFOBOX_AUTO": 4
   },
   "claim_bound_respected": 16,
   "gate_rejections_consistent": 16,
@@ -43,16 +44,12 @@
         "denominator": 8
       },
       "undated": {
-        "numerator": 3,
-        "denominator": 3
+        "numerator": 4,
+        "denominator": 4
       },
       "1970-1989": {
         "numerator": 4,
         "denominator": 4
-      },
-      "1950-1969": {
-        "numerator": 1,
-        "denominator": 1
       }
     },
     "region": {
@@ -83,12 +80,12 @@
         "denominator": 5
       },
       "sparse": {
-        "numerator": 2,
-        "denominator": 2
-      },
-      "connected": {
         "numerator": 1,
         "denominator": 1
+      },
+      "connected": {
+        "numerator": 2,
+        "denominator": 2
       }
     },
     "query_kind": {

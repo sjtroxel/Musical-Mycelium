@@ -424,6 +424,7 @@ def build(
     known_genres: frozenset[str],
     retrieved_at: str | None = None,
     known_edges: frozenset[tuple[str, str, str]] = frozenset(),
+    rejected: frozenset[tuple[str, str]] = frozenset(),
 ) -> Artifact:
     """Influence edges from the accepted origins, plus a genre node for every object not already held.
 
@@ -480,6 +481,7 @@ def build(
         if origin.subject_id in holdable
         and origin.object_id in holdable
         and (origin.subject_id, PREDICATE_INFLUENCED_BY, origin.object_id) not in known_edges
+        and (origin.subject_id, origin.object_id) not in rejected
     )
     return Artifact(nodes=nodes, edges=edges)
 
@@ -499,7 +501,7 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - CLI, hits 
     from musical_mycelium.ingest import artifact as artifact_io
     from musical_mycelium.ingest import coverage as coverage_io
     from musical_mycelium.ingest import discovery
-    from musical_mycelium.ingest.wikidata import artifact_dir
+    from musical_mycelium.ingest.wikidata import REJECTED_EDGES, artifact_dir
     from musical_mycelium.ingest.wikidata import fetch_entities as wd_entities
     from musical_mycelium.ingest.wikidata import sparql as wd_sparql
 
@@ -599,12 +601,14 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - CLI, hits 
     new_ids = sorted(({o.subject_id for o in accepted} | {o.object_id for o in accepted}) - known)
     facts = wd_entities([q for q in new_ids if q not in known]) if new_ids else {}
     known_edges = frozenset((e.subject_id, e.predicate, e.object_id) for e in source.edges)
+    hand_rejected = frozenset((subject, obj) for subject, obj, _ in REJECTED_EDGES)
     layer = build(
         accepted,
         {q: f.label for q, f in facts.items()},
         {q: f.revision_id for q, f in facts.items()},
         known,
         known_edges=known_edges,
+        rejected=hand_rejected,
     )
     # Phase 6 step 5. An accepted origin whose triple the corpus ALREADY holds is not a new edge --
     # emitting it would let `merge_axes` overwrite the Wikidata row (step 4's defect). It is a second

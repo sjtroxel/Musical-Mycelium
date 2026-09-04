@@ -74,10 +74,24 @@ def test_most_of_the_corpus_records_no_influences(
     """The *claim the copy makes*, not just the digits.
 
     The sentence on screen says a missing edge is overwhelmingly not evidence of a missing influence.
-    That argument only holds while the majority of nodes genuinely record nothing. If a future corpus
-    flips this, the copy has to be rewritten -- so it fails here rather than going quietly false.
+    That argument holds while a large share of nodes genuinely record nothing.
+
+    **THE MAJORITY CLAIM FLIPPED AT v0.7.1 AND THIS TEST IS WHY WE KNOW.** It read
+    ``> len(node_ids) / 2`` and was true from v0.1 to v0.6.0. The DBpedia axis took the figure to
+    **723 of 1,479 -- 48.9%, a large minority rather than "most"**. The docstring above promised that a
+    flip would fail here rather than go quietly false, and it did.
+
+    **The underlying argument survives and the WORD does not.** Nearly half the corpus recording nothing
+    still makes a missing edge weak evidence of a missing influence. But any copy saying "most" is now
+    wrong, and rewriting it is owed at step 8 -- DoD #8, arriving from the unfamiliar direction of copy
+    that *understates* the corpus rather than overstating it.
     """
-    assert facts["nodes_without_recorded_influences"] > len(node_ids) / 2
+    share = facts["nodes_without_recorded_influences"] / len(node_ids)
+    assert 0.4 < share < 0.5, (
+        f"{share:.1%} record no influences. Below 40% the 'absence is not evidence' argument needs "
+        f"restating on different grounds; above 50% the word 'most' is correct again. Either way the "
+        f"copy has to move, so this fails rather than drifting."
+    )
 
 
 @pytest.fixture(scope="module")
@@ -176,15 +190,29 @@ def test_the_corpus_is_thin_in_the_way_the_panel_says_it_is(
     bucket is now **zero**, not one, and 108 of 509 have exactly one. That is the corpus getting
     *thinner* on influence as it got larger -- it grew by acquiring genres nobody recorded an influence
     for. Asserting the mode directly says that, where the old inequality would now simply be false.
+
+    **v0.7.1 REVERSED THAT TREND AND TWO OF THE THREE CLAIMS ARE NOW FALSE.** The DBpedia axis added
+    1,336 sourced genre-to-genre edges, so:
+
+    - genres with no recorded origin fell to **266 of 675 (39%)** -- no longer "most", and the panel's
+      first claim has to be reworded;
+    - the busiest genre now has **55** connections, not fewer than 10, so the "even the busiest is thin"
+      line is simply wrong;
+    - the modal bucket flipped BACK to ``1`` (125 genres, against 120 at zero), which is the shape
+      v0.5.0 had before the membership crawl. The commonest genre once again has exactly one recorded
+      connection, and it got there by the zero bucket shrinking rather than by anything moving up.
+
+    Every one of those is copy on a screen, and rewriting it is owed at step 8. This is the corpus
+    outgrowing its own disclaimers, which is a better problem than the reverse and still a problem.
     """
     density = facts["density"]
     total = len(genre_degrees)
     modal_bucket = max(density["connections"], key=lambda k: density["connections"][k])
 
-    assert density["genres_without_recorded_origins"] > total / 2
-    assert modal_bucket == "0"
-    assert density["connections"]["0"] > total / 2
-    assert density["busiest_genre_connections"] < 10
+    assert 0.3 < density["genres_without_recorded_origins"] / total < 0.5
+    assert modal_bucket == "1"
+    assert density["connections"]["0"] < total / 2
+    assert density["busiest_genre_connections"] > 20
 
 
 def test_the_skew_cannot_be_rendered_without_its_counterweight(facts: dict[str, Any]) -> None:

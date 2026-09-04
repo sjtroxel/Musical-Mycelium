@@ -76,9 +76,15 @@ def test_the_chip_file_pins_the_artifact_version_the_store_actually_loaded(
 
     When step 8 lands: copy the artifact into ``web/public/graph/``, delete this constant, and restore
     the plain equality below. ``web/src/corpus-facts.json`` is due for deletion in the same step.
+
+    **Re-read and re-confirmed 2026-09-04 when the backend moved to v0.7.1, which is what this
+    assertion exists to force.** The reasoning above has now played out exactly as written: had the
+    frontend followed at step 3, the corpus copy would have been paid three times over (v0.6.0, v0.7.0,
+    v0.7.1). v0.7.1 is the phase's final artifact, so step 8 copies once. The deploy condition is
+    unchanged and still binding -- DO NOT DEPLOY while this lag holds.
     """
     assert chips_document["artifact_version"] == FRONTEND_PIN_LAG_UNTIL_STEP_8
-    assert store.artifact_version == "0.6.0", (
+    assert store.artifact_version == "0.7.1", (
         "the backend pin moved again; re-read this test's docstring and decide whether the lag "
         "is still the right call rather than widening it by reflex"
     )

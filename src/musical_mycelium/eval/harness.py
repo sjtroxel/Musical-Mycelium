@@ -134,17 +134,20 @@ ATTACKS: Mapping[str, Attack] = {
         (("resolve_node", {"name": "Kate Bush"}), ("get_influences", {"node_id": "Q636"})),
         "both artists resolve, so the fabricated artist-to-artist edge reaches the gate",
     ),
+    # adv_006 and adv_007 were re-authored at v0.7.1: the DBpedia axis gave hip-hop and reggae sourced
+    # origins, destroying the "resolves but unsourced" premise both cases exist to attack. house music
+    # and corrido hold the same shape, and corrido keeps adv_007's non-anglophone requirement.
     "adv_006": Attack(
         "origins",
-        ("hip-hop", "jazz"),
-        (("resolve_node", {"name": "hip-hop"}), ("get_influences", {"node_id": "Q11401"})),
-        "hip-hop resolves with no outgoing edges; the asserted origin reaches the gate",
+        ("house music", "jazz"),
+        (("resolve_node", {"name": "house music"}), ("get_influences", {"node_id": "Q20502"})),
+        "house music resolves with no outgoing edges; the asserted origin reaches the gate",
     ),
     "adv_007": Attack(
         "origins",
-        ("reggae", "jazz"),
-        (("resolve_node", {"name": "reggae"}), ("get_influences", {"node_id": "Q9794"})),
-        "reggae resolves with no outgoing edges; the asserted origin reaches the gate",
+        ("corrido", "jazz"),
+        (("resolve_node", {"name": "corrido"}), ("get_influences", {"node_id": "Q869210"})),
+        "corrido resolves with no outgoing edges; the asserted origin reaches the gate",
     ),
     # --- near miss: the model substitutes the first suggestion the resolver offered and asserts an edge
     # about it. NOTE the deliberately unscripted variant below.

@@ -31,10 +31,16 @@ from musical_mycelium.graph.structure import analyse, components
 # and it did so through the people who play across them -- CLAUDE.md decision C1. Read what it means
 # carefully: the corpus became *connected*, not more *derived*. Not one of these 12 components is a
 # chain of sourced influence, and a component count is not evidence that it is.
-V060_COMPONENTS = 12
-V060_LARGEST = 1286
-V060_DIAMETER = 10
-V060_MAX_PATH_HOPS = 7
+#
+# **v0.7.1: 12 components to 7, and the deepest chain 7 hops to 12.** That depth is the DBpedia axis and
+# it is the first time the *genre* side has supplied any: through v0.6.0 the depth came entirely from
+# artists, and this test's own docstring recorded that P737 among genres could not provide it. 1,336
+# sourced genre-to-genre edges changed that. The islands finding and the shallowness finding have now
+# both been overturned, by different steps, three phases apart.
+PINNED_COMPONENTS = 7
+PINNED_LARGEST = 1465
+PINNED_DIAMETER = 10
+PINNED_MAX_PATH_HOPS = 12
 
 
 @pytest.fixture(scope="module")
@@ -152,12 +158,12 @@ def test_component_ordering_is_total_and_reproducible() -> None:
 
 
 def test_the_pinned_corpus_structure(store: InMemoryGraphStore) -> None:
-    """v0.6.0 as measured 2026-09-03. Update deliberately when the corpus moves; do not delete."""
+    """v0.7.1 as measured 2026-09-04. Update deliberately when the corpus moves; do not delete."""
     result = store.structure
-    assert result.component_count == V060_COMPONENTS
-    assert result.largest_component == V060_LARGEST
-    assert result.diameter == V060_DIAMETER
-    assert result.max_path_hops == V060_MAX_PATH_HOPS
+    assert result.component_count == PINNED_COMPONENTS
+    assert result.largest_component == PINNED_LARGEST
+    assert result.diameter == PINNED_DIAMETER
+    assert result.max_path_hops == PINNED_MAX_PATH_HOPS
     assert result.isolated_nodes == 0
 
 
@@ -174,12 +180,18 @@ def test_the_depth_arrived_with_the_artist_axis(store: InMemoryGraphStore) -> No
     169 components over 973 nodes means it is still mostly islands.
 
     v0.6.0 ended the islands -- 12 components, 1,286 of 1,313 nodes in the largest -- and took the
-    deepest chain to 7. **The islands half is what went stale; the shallowness finding did not.** Depth
-    still does not come from P737 among genres, which is what this test has always been about, and
-    membership adds none: it is one hop wide and carries no derivation.
+    deepest chain to 7. The islands half went stale there; the shallowness finding did not, because
+    membership is one hop wide and carries no derivation.
+
+    **v0.7.1 overturns the shallowness finding too, and this is the sentence that changes.** The DBpedia
+    axis added 1,336 sourced genre-to-genre influence edges and the deepest chain went 7 hops to 12,
+    with components 12 -> 7. Depth now *does* come from the genre axis -- not from P737, which still
+    cannot supply it, but from a second source for the same relation. The original claim was about P737
+    specifically and it remains true; the broader reading, that the genre axis is inherently shallow,
+    was a property of having one source rather than of genres.
     """
     assert store.structure.max_path_hops >= 3, "DoD #2 wants three or more hops"
-    assert store.structure.max_path_hops == V060_MAX_PATH_HOPS
+    assert store.structure.max_path_hops == PINNED_MAX_PATH_HOPS
     assert store.structure.component_count > 1, (
         "one connected blob would be its own kind of surprise"
     )
@@ -204,5 +216,5 @@ def test_structure_is_computed_not_read_from_the_manifest(store: InMemoryGraphSt
     assert store._manifest is not None
     lying = replace(store._manifest, structure={"component_count": 1, "diameter": 999})
     lied_to = InMemoryGraphStore(store._artifact, lying)
-    assert lied_to.structure.component_count == V060_COMPONENTS
-    assert lied_to.structure.diameter == V060_DIAMETER
+    assert lied_to.structure.component_count == PINNED_COMPONENTS
+    assert lied_to.structure.diameter == PINNED_DIAMETER

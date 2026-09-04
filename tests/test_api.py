@@ -121,8 +121,11 @@ def test_claims_arrive_with_their_citations(client: TestClient) -> None:
     assert claims
     for claim in claims:
         assert claim["claim"]["source_ids"]
+        # Two citation shapes since v0.7.1. A Wikidata statement URI or a DBpedia resource URI --
+        # the property under test is that a citation survives the stream, not which source it came
+        # from. Pinning one prefix asserted a single-source corpus that no longer exists.
         assert claim["claim"]["source_ids"][0].startswith(
-            "http://www.wikidata.org/entity/statement/"
+            ("http://www.wikidata.org/entity/statement/", "http://dbpedia.org/resource/")
         )
 
 
@@ -136,9 +139,13 @@ def test_the_path_is_on_the_wire_in_order(client: TestClient) -> None:
 
 
 def test_a_refusal_streams_as_a_refusal(client: TestClient) -> None:
-    """Gold case 5 over HTTP. A refusal is a 200 with a ``refused`` frame — it is a correct answer, not
-    an error, and returning 4xx would tell a client the request was malformed."""
-    response = client.get("/lineage", params={"q": "the blues"})
+    """A refusal over HTTP. A refusal is a 200 with a ``refused`` frame — it is a correct answer, not
+    an error, and returning 4xx would tell a client the request was malformed.
+
+    Subject moved off ``the blues`` at v0.7.1: the DBpedia axis gave blues three sourced origins, so
+    the query stopped being a refusal. ``turntablism`` is one of 146 genres still without any.
+    """
+    response = client.get("/lineage", params={"q": "turntablism"})
     assert response.status_code == 200
 
     events = frames(response.text)

@@ -202,7 +202,7 @@ def test_gated_output_for_a_refusal_case_is_undefined_not_perfect() -> None:
     nothing and the gate will approve nothing — and the metric must report undefined rather than handing
     a refusal a perfect score."""
     store = InMemoryGraphStore.from_directory(artifact_directory())
-    assert store.neighbors("Q9759") == []
+    assert store.neighbors("Q1046801") == []  # turntablism
 
     result = edge_groundedness(list(gate([], store).approved), store)
     assert result.score is None

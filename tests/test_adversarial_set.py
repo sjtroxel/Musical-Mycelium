@@ -329,17 +329,29 @@ def test_the_ambiguous_branch_is_still_unreachable(store: InMemoryGraphStore) ->
 
     This test is the lock. It is not asserting that ambiguity is impossible in principle; it is
     asserting that the corpus has not quietly grown a collision while two adversarial cases are written
-    against the reachable ``no exact match`` branch instead. If this ever fails, that is not a bug --
-    it is the signal to author real ambiguity cases and retire this lock.
+    against the reachable ``no exact match`` branch instead.
+
+    **IT FIRED AT v0.7.1 AND `ambiguous` IS NOW REACHABLE.** The DBpedia growth brought in
+    ``big band music`` (Q105756581) alongside the existing ``big band`` (Q207378) -- two genuinely
+    distinct Wikidata items whose labels normalise to the same ``label_key``. The docstring above
+    promised this would be a signal rather than a bug, so:
+
+    - the lock is **kept, not deleted**, and now names the one collision the corpus actually has, so a
+      *second* one fails here instead of hiding behind the first -- the same shape as the named Nine
+      Inch Nails edge in ``test_graph_store``;
+    - **authoring real ambiguity cases is now possible and is owed.** The two ``near_miss_substitution``
+      cases are still written against the reachable "no exact match" branch and remain valid; what is
+      missing is a case that exercises the ``ambiguous`` branch with a query a real user would type.
+      That is dataset authoring and it belongs to sjtroxel.
     """
     by_key: dict[str, list[str]] = defaultdict(list)
     for node in Artifact.load(artifact_directory()).nodes:
         by_key[label_key(node.label)].append(node.label)
 
-    collisions = {key: labels for key, labels in by_key.items() if len(labels) > 1}
-    assert not collisions, (
-        f"the corpus grew {len(collisions)} label_key collision(s), so `ambiguous` is now reachable "
-        f"and the near_miss_substitution group should be revisited: {collisions}"
+    collisions = {key: sorted(labels) for key, labels in by_key.items() if len(labels) > 1}
+    assert collisions == {"big band": ["big band", "big band music"]}, (
+        f"the label_key collisions moved: {collisions}. `ambiguous` reachability is a dataset "
+        f"decision -- re-read this docstring rather than widening the expected set by reflex."
     )
 
 
