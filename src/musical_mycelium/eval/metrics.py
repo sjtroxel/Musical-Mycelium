@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from musical_mycelium.agent.claims import Claim
 from musical_mycelium.agent.loop import Done
 from musical_mycelium.graph.schema import (
+    SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_LEVELS,
     Edge,
@@ -170,13 +171,37 @@ def citation_resolution(claims: Sequence[Claim], store: GraphStore) -> Rate:
 
 
 def _citation_resolves(source_id: str, subject_id: str, claim: Claim, store: GraphStore) -> bool:
+    """Re-derived deliberately — see :func:`citation_resolution`. Two agreeing implementations are
+    evidence; one is not.
+
+    **Two corrections landed here at v0.7.0, and one of them was a live disagreement with the gate.**
+
+    1. *DBpedia.* The corpus grew a second source kind, which is the case
+       :func:`citation_resolution`'s docstring predicted this metric would notice. A DBpedia resource
+       URI names an article, not a QID, so it is checked against the subject node's stored
+       ``owl:sameAs`` alignment — the same exact rule ``agent.claims.resolve_sources`` uses, arrived at
+       independently rather than by calling it.
+    2. *Case folding.* This compared ``entity == subject_id`` while the gate has folded case since
+       2026-09-03 (phase 6 step 3, where 21 v0.6.0 edges carried a lowercase ``q1299`` form). **That is
+       exactly the divergence this function's re-derivation exists to surface**, and it had not fired
+       only because every affected edge is ``plays_genre``, which is not an allowed predicate and so
+       never becomes a claim. Latent, not harmless: one widening of ``ALLOWED_PREDICATES`` and the
+       metric would have contradicted the gate.
+    """
     edge = _matching_edge(claim, store)
-    if edge is None or edge.source != SOURCE_WIKIDATA:
+    if edge is None:
+        return False
+    if edge.source == SOURCE_DBPEDIA:
+        subject = store.get_node(subject_id)
+        if subject is None or not subject.dbpedia_resource:
+            return False
+        return source_id == subject.dbpedia_resource
+    if edge.source != SOURCE_WIKIDATA:
         return False
     if not source_id.startswith(_STATEMENT_PREFIX):
         return False
     entity = source_id.removeprefix(_STATEMENT_PREFIX).split("-", 1)[0]
-    return entity == subject_id
+    return entity.casefold() == subject_id.casefold()
 
 
 # --- refusal accuracy ------------------------------------------------------------------------------

@@ -29,7 +29,7 @@ from musical_mycelium.graph.coverage import (
     era_of,
 )
 from musical_mycelium.graph.memory import exact_matches
-from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY
+from musical_mycelium.graph.schema import DBPEDIA_RESOURCE_PREFIX, PREDICATE_INFLUENCED_BY
 from musical_mycelium.graph.store import Direction, GraphStore
 
 #: Wikidata statement URIs encode the QID of the entity the statement belongs to. Same prefix
@@ -576,12 +576,39 @@ class ResolveSource:
     def __call__(self, **kwargs: Any) -> ToolResult:
         source_id = kwargs["source_id"]
 
+        # DBpedia arrived at v0.7.0. A resource URI names an article rather than a QID, so unlike a
+        # statement URI it cannot be *parsed* for the entity it belongs to -- resolving one needs a
+        # reverse lookup from resource to node, and `GraphStore` exposes no way to scan nodes.
+        #
+        # **Reported as unresolved-by-this-tool rather than resolved-on-faith.** The gate DOES verify
+        # these exactly, against `Node.dbpedia_resource`, so a DBpedia citation on an approved claim is
+        # checked; what is missing is only this tool's ability to re-check it for a reader. Saying
+        # `resolvable: True` here without performing the check would make the word mean something
+        # weaker for DBpedia than for Wikidata, which is the failure this tool exists to prevent.
+        # Widening `GraphStore` for it is a real design change and belongs in a step that owns the
+        # seam -- recorded in KNOWN-GAPS, step 4.
+        if source_id.startswith(DBPEDIA_RESOURCE_PREFIX):
+            return ToolResult(
+                content={
+                    "source_id": source_id,
+                    "resolvable": False,
+                    "url": source_id,
+                    # CC BY-SA 3.0 requires attribution and a link back; DATA-LICENSES.md is the
+                    # full statement. The link is given even though the check could not be run.
+                    "license": "CC BY-SA 3.0 (DBpedia)",
+                    "reason": (
+                        "a DBpedia resource URI names an article, not an entity id; this tool cannot "
+                        "verify the alignment, though the gate did before approving the claim"
+                    ),
+                }
+            )
+
         if not source_id.startswith(_WIKIDATA_STATEMENT_PREFIX):
             return ToolResult(
                 content={
                     "source_id": source_id,
                     "resolvable": False,
-                    "reason": "not a Wikidata statement URI",
+                    "reason": "not a Wikidata statement URI or a DBpedia resource URI",
                 }
             )
 

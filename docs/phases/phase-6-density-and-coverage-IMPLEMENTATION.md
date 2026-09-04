@@ -94,19 +94,34 @@ were also counted and are not planned against: `dbo:derivative` (1,253) and `dbo
 
 ### 2.4 The overlap, which is the actual finding
 
-155 of the 169 corpus genres carry a DBpedia `MusicGenre` resource via `owl:sameAs` — **92% alignment**,
+**Re-measured against v0.6.0 on 2026-09-04, and the growth rows moved by more than 4x.** The figures
+below are the current ones. The originals were measured against the 169-genre v0.5.0 corpus **before
+step 2 raised the genre count to 509**, and step 4 was scoped on them; the superseded table is kept
+underneath because the difference between the two is itself the finding.
+
+459 of the 509 corpus genres carry a DBpedia `MusicGenre` resource via `owl:sameAs` — **90% alignment**,
 so the two sources can be compared in a shared identifier space without name matching. Their
 `stylisticOrigin` edges against the corpus's 133 genre-genre edges:
 
-| relation | count | what it means for the product |
-|---|---|---|
-| **corroborates** an existing corpus edge | **80** | a genuine second source on 60% of the genre axis |
-| **new** — DBpedia has it, the corpus does not | **237** | ~2.8x the genre edge count inside the current 169 genres alone |
-| corpus has it, DBpedia does not | 53 | stays single-source and must stay labelled as such |
-| **DBpedia asserts the opposite direction** | **2** | **`contested` is reachable** |
+| relation | count | was (v0.5.0) | what it means for the product |
+|---|---|---|---|
+| **corroborates** an existing corpus edge | **80** | 80 | a genuine second source on 60% of the genre axis |
+| **new** — DBpedia has it, the corpus does not | **1,100** | 237 | **8.2x the corpus's own genre edge count**, and 1.2x its entire influence layer |
+| corpus has it, DBpedia does not | 53 | 53 | stays single-source and must stay labelled as such |
+| **DBpedia asserts the opposite direction** | **2** | 2 | **`contested` is reachable** |
 
-671 `stylisticOrigin` edges leave the corpus genres in total; 317 land on another corpus genre and 213
-point at a genre outside the corpus, which is the growth path in §2.1's terms.
+**Three of the four rows did not move, and that is a consistency check rather than a coincidence.**
+Corroboration, corpus-only and contested are all measured against the corpus's 133 genre-to-genre
+influence edges, and step 2 added membership without adding a single P737 edge. They *could* not have
+moved. Only the rows scoped by how many genres exist to be a target did — which is exactly the
+signature a real corpus expansion should leave, and its absence would have meant the probe was wrong.
+
+1,523 `stylisticOrigin` edges leave the corpus genres in total; 1,180 land on another corpus genre and
+343 point at a genre outside the corpus, which is the growth path in §2.1's terms.
+
+**The alignment rate held across the expansion — 92% to 90% — which was not guaranteed.** The 340
+genres step 2 brought in arrived from P136 artist tags rather than from P737, so there was no prior
+reason to expect DBpedia to cover them as well as it covers the original 169. It does.
 
 **`contested` is reachable, with two concrete instances rather than a theoretical capability:**
 
@@ -464,8 +479,9 @@ n=1, so no threshold near these numbers moves until five runs are measured on th
 The source half, and the largest step in the phase.
 
 - `ingest/dbpedia.py`. Alignment through `owl:sameAs` into Wikidata QIDs, so the two sources share an
-  identifier space and comparison is exact rather than fuzzy. 155 of 169 align today; the 14 that do not
-  are a published number, not a silent drop.
+  identifier space and comparison is exact rather than fuzzy. **459 of 509 align; the 50 that do not
+  are a published number, not a silent drop.** *(Was 155 of 169, measured pre-step-2. Re-measured
+  2026-09-04 — see §2.4.)*
 - `SOURCE_DBPEDIA` in `graph/schema.py`. **`Edge.source` stops being "always Wikidata"**, which is a
   sentence currently written into `CLAUDE.md`, both rules files, `README.md` and `agent/claims.py`'s
   docstring. Step 10 audits all of them; step 4 lists them as it breaks them.
@@ -474,9 +490,47 @@ The source half, and the largest step in the phase.
   structured field, closest in kind to a Wikidata statement. `INFOBOX_AUTO` names what it is. **Do not
   reuse a Wikidata tier for it** — the tiers are how this project avoids overstating its own rigour, and
   the moment two different checks share a label the tier stops meaning anything.
-- The 237 new edges are ingested; the 213 pointing outside the corpus bring their target genres in, which
-  is where corpus growth comes from. Growth is bounded by what `stylisticOrigin` reaches, deliberately —
-  not by a target node count.
+- ~~**`Node.source` stops being "always Wikidata" too.**~~ **Withdrawn while building, same day.** It
+  looked true from the probe and is false in the build: every genre this axis discovers is resolved to a
+  Wikidata QID and has its label, revision and coverage read *from Wikidata*, so the node's provenance
+  genuinely is Wikidata and marking it `dbpedia` would overstate what DBpedia supplied. **Only
+  `Edge.source` changes**, which is what the original plan said. The 13 resources with no `owl:sameAs`
+  are excluded rather than admitted as DBpedia-native nodes — admitting them needs a node whose
+  `revision_id` cannot exist, and that is a decision this step does not make.
+- The **1,100** new edges are ingested; the **343** pointing outside the corpus bring their target genres
+  in, which is where corpus growth comes from. Growth is bounded by what `stylisticOrigin` reaches,
+  deliberately — not by a target node count.
+
+#### How far growth follows — measured, and the ambiguity is now closed
+
+*"Bounded by what `stylisticOrigin` reaches"* was ambiguous between following the out-of-corpus edges
+**one hop** and following them **to closure**. At the old figure of 213 that ambiguity was cheap. At 343
+it is not, so it was measured rather than argued (2026-09-04, against the full 5,124-pair DBpedia origin
+graph — which reproduced the §2.3 count exactly):
+
+| | new genres | cumulative genres | origin edges |
+|---|---|---|---|
+| hop 1 | +167 | 621 | 1,804 |
+| hop 2 | +49 | 670 | 1,942 |
+| hop 3 | +8 | 678 | 1,956 |
+| hop 4 | — terminates | | |
+
+**Decision: take the closure.** It terminates on its own after three hops, and the entire difference
+between stopping at one hop and going to closure is **57 genres and 152 edges**. Paying 57 nodes to
+delete an arbitrary cutoff is the same trade step 2 made when it went unbounded, except an order of
+magnitude cheaper. A one-hop bound would have to be defended as meaning something, and it does not mean
+anything — it is just where we happened to stop looking. The ceiling is knowable and gets published
+alongside the number: the whole DBpedia genre-origin graph is 1,601 genres, and the closure reaches 678
+of them, so growth is bounded by the source's own extent and not by a rule of ours.
+
+**211 of the 224 arriving genres carry a Wikidata QID; 13 do not.** Those 13 are hand-checked before
+ingestion rather than admitted or dropped in bulk, because the sample immediately produced
+`List_of_break-in_records` — a Wikipedia *list article* typed as `dbo:MusicGenre`. **DBpedia's typing is
+noisier than Wikidata's, and this is the first hard evidence of it in the phase.** It is also an argument
+*for* `INFOBOX_AUTO` being its own tier rather than a nicety: a source that types a list article as a
+genre has visibly different rigour from one that does not, and the tier is where that difference is
+recorded. A DBpedia-only node also cannot be given a Wikidata `revision_id`, so provenance for those 13
+would have a different shape from every other node in the corpus — a second reason not to bulk-admit them.
 
 **Licensing, which is a hard rule and not a footnote.** DBpedia is Wikipedia-derived and **CC BY-SA**.
 `04-RISK-REGISTER.md` §4.3 names DBpedia explicitly: *"attribution required, share-alike applies... display
@@ -715,19 +769,47 @@ Stated as uncertain rather than smoothed over, per the skill.
    is conservative and defensible either way. Worth a real answer before v1.0.
 2. **Whether 672 of 804 artists is explained by P737 objects sitting outside the P136 bound.** Plausible,
    unverified, and it must be verified before the number is published.
-3. **The artifact size against invariant 8.** v0.5.0's `graph.json` is 656KB. A ~3x corpus plus a
-   membership layer plausibly reaches 2-3MB. That is fine for a Lambda container image and fine in memory.
-   **It is not obviously fine to ship to a browser**, and the SPA loads the corpus client-side — phase 5
-   step 4 put it there. The map may need to fetch a neighbourhood rather than the whole graph, which is a
-   step 8 problem that this doc is flagging early rather than discovering at the layout stage.
+3. ~~**The artifact size against invariant 8.**~~ **MEASURED 2026-09-04 — this is no longer an
+   uncertainty, and the estimate was right.** v0.5.0's `graph.json` is 640KB; **v0.6.0 is already
+   1.7MB**, and v0.7.0 at closure projects to **~2.0MB** (1,537 nodes at 250 B, 5,607 edges at 313 B,
+   both rates measured off v0.6.0 rather than assumed). The original guess of 2-3MB was accurate.
+   - **Invariant 8 is not threatened and was never the real question.** 2MB against a 250MB image limit
+     is noise. In-memory is fine.
+   - **The browser is the real question, and the answer is that the SPA currently ships the artifact
+     byte-for-byte.** Verified, not assumed: `web/public/graph/v0.5.0/graph.json` has the *identical*
+     key and field set as the artifact — `retrieved_at`, `revision_id`, `source_id` and all. There is no
+     projection step today. At v0.7.0 that is a ~2MB client-side download.
+   - **Where the bytes are, measured:** edges are 1,140KB of v0.6.0's 1,768KB, and provenance dominates
+     them — `source_id` alone is **372KB (32% of the edge payload)** and `retrieved_at` another 164KB.
+     Close to half the edge bytes are fields the *map* never draws.
+   - **Decision: the SPA gets a projection, and the decision is recorded now while the build stays in
+     step 8.** The map needs ids, labels, kinds, predicates and endpoints to draw and to be clickable;
+     it does not need every source URI and timestamp on first paint, because those are needed only for
+     the one edge a visitor actually inspects. Dropping `source_id` and `retrieved_at` from the map
+     payload alone cuts roughly 45% of the edge bytes.
+   - **What step 4 owes this decision is only to not foreclose it, and it does not.** The artifact
+     writer already emits a flat shape a projection can be derived from mechanically, so no step 4 code
+     changes on account of this. **Deciding it now costs nothing and rules out discovering it at the
+     layout stage**, which is what this entry was flagged early to prevent.
+   - **Not yet decided and deliberately left open:** whether the projection is a second generated file
+     or the map fetches a neighbourhood on demand. That is a genuine step 8 design question, it does not
+     block step 4, and picking it now would be guessing at frontend needs a month early.
 4. **Whether DBpedia's 5,124 edges survive screening at anything like the Wikidata rate.** The Wikidata
    genre axis went 351 candidates to 133 edges — a 62% drop through the prose check. `stylisticOrigin` is
    an infobox field rather than a prose mention so the failure modes differ, and the retained fraction is
    genuinely unknown. **If it screens down to a few hundred, the headline "15.5x" is wrong** and the phase
    is smaller than this plan assumes. Step 4 measures it before any copy quotes a number.
-5. **Whether the two contested pairs are two, or the visible two.** 317 DBpedia edges land inside the
-   corpus and 2 are direction reversals. Whether that rate holds across the 237 new edges and the widened
-   corpus is unmeasured. Two is the floor and it should be quoted as a floor.
+5. **Whether the two contested pairs are two, or the visible two.** **Sharpened 2026-09-04 and still
+   open, but the odds moved.** The widened corpus was the obvious place for more reversals to appear and
+   they did not: **1,180** DBpedia edges now land inside the corpus, up from 317, and the reversal count
+   is **still exactly 2**. That is a 3.7x larger comparison surface returning the same two pairs.
+   - It is genuine evidence that 2 is close to the real number rather than a sampling floor, and it is
+     **not** evidence that the machinery is unnecessary — a reversal is detectable at all only because
+     both sources are present, which is the entire point of the second source.
+   - The reason the rate cannot rise the way the edge count did: a reversal requires the corpus to
+     *already hold* the edge, so the denominator is the corpus's 133 genre edges, not DBpedia's 1,180.
+     The comparison surface that matters never grew. Quote 2 as a floor still, but the floor is now
+     measured against a much wider net.
 6. **Whether a bigger corpus makes refusal accuracy better or worse.** More edges means fewer true
    refusals available, and the adversarial set's false-premise cases were authored against a 169-genre
    corpus. Some of them may stop being false premises. That is a finding to record, not a reason to edit

@@ -87,6 +87,189 @@ corpus in part 2.
 
 ---
 
+## PHASE 6 STEP 4 — artifact v0.7.0 is cut, and it needs a decision before the pin can move, 2026-09-04
+
+**Verified state:** `make check` green — **1252 passed**, 14 `costs_money` deselected, mypy clean over 93
+files, terraform valid, eval gates **3 passed / 0 failed / 2 not applicable** (unchanged). Root 17 of 18.
+**The pin is deliberately still `0.6.0`** — steps 5 and 6 produce v0.7.1 and moving it twice is churn.
+
+**Artifact v0.7.0, manifest hash verified:**
+
+| | v0.6.0 | v0.7.0 |
+|---|---|---|
+| nodes | 1,313 | **1,479** (804 artist, 675 genre) |
+| `influenced_by` edges | 949 | **2,285** — 949 Wikidata + **1,336 DBpedia** |
+| `plays_genre` edges | 2,782 | 2,782 |
+| components / largest / isolated | 12 / — / 0 | **7 / 1,465 / 0** |
+| `graph.json` | 1.7 MB | **2.18 MB** |
+
+### The screening result, which answers named uncertainty §9.4
+
+**1,418 of 1,907 candidates passed the prose check — 74%.** Against Wikidata's 45% that looks far better,
+and the honest comparison is not that one: Wikidata's 45% counted 124 candidates whose subject has no
+English article at all. On *checkable* candidates Wikidata scored 158/227, **about 70%**. DBpedia's edges
+clear the same bar at very nearly the same rate, so the density gain mostly survives screening and
+"15.5x" does not collapse.
+
+**427 of the 489 exclusions are `INFOBOX_ONLY`.** That is the decision working exactly as intended: those
+are DBpedia candidates named in the subject's infobox and nowhere in its prose, which is precisely the
+evidence class the Wikidata axis already refuses. Had they been ingested unscreened, the corpus would
+have held 427 edges admitted on evidence it rejects from its other source.
+
+### The gate rejected all 1,336 DBpedia edges — found, escalated, and RESOLVED with sjtroxel's approval
+
+**`agent/claims.py:resolve_sources` returned `()` for any edge whose `source` was not `wikidata`, so
+every DBpedia edge failed gate rule 5 and was rejected `UNRESOLVABLE_SOURCE`.** Measured, not inferred:
+1,336 of 1,336 failed. The corpus would have gained an axis the agent could traverse and never cite.
+
+**This was the seam breaking, so it was escalated rather than patched.** §7 freezes `agent/` this phase
+apart from the `UNREACHABLE` change and says any other line needing to change must be written down. It
+was, and **sjtroxel approved the widening on 2026-09-04** as a recorded exception. Verified after the
+fix: **1,336 of 1,336 DBpedia and 949 of 949 Wikidata citations resolve**, and three real DBpedia edges
+were run end-to-end through the real gate against the real store — approved, tiered `INFOBOX_AUTO`,
+citing a resolvable resource URI.
+
+**The obvious implementation was measured and rejected.** A Wikidata statement URI encodes its subject's
+QID, which is what makes that check exact. A DBpedia resource URI encodes an *article title*, and folding
+that title against the subject's label **fails on 125 of 1,336 correct edges (9%)** — Wikipedia
+disambiguates (`Glitch_(music)`) and titles legitimately differ from labels (`Jungle_music` for `jungle`,
+`Hip_hop_music` for `hip-hop`). A fuzzy rule inside a groundedness gate is the wrong instinct. So the
+exact `owl:sameAs` alignment the ingestion already resolved is stored on the node as
+**`Node.dbpedia_resource`** (624 nodes carry one) and the check is string equality.
+
+**The rule lives in three places deliberately, and fixing one would have been worse than fixing none.**
+`eval/metrics.py` re-derives it because two agreeing implementations are evidence and one is not — and
+its docstring had predicted this exact case, *"the corpus grew a source kind this rule does not know
+about."* Updating it surfaced **a live divergence that predates this step**: `metrics.py` compared
+case-**sensitively** while the gate has folded case since step 3. It had never fired because all 21
+affected edges are `plays_genre`, which is not an allowed predicate and so never becomes a claim.
+**Latent, not harmless** — one widening of `ALLOWED_PREDICATES` and the metric would have contradicted
+the gate. Both now agree.
+
+**A build-time guard was added rather than trusting the fix:** `ingest.dbpedia` now **refuses to write**
+an artifact containing any DBpedia edge the gate would reject, so a future alignment failure stops the
+build instead of producing a corpus with uncitable edges.
+
+**Still owed, deliberately not done here.** `agent/tools.py:ResolveSource` cannot verify a DBpedia URI,
+because that needs a reverse lookup from resource to node and `GraphStore` exposes no way to scan nodes.
+Widening that protocol is a real design change beyond the approved exception. The tool returns the link
+and the CC BY-SA attribution with **`resolvable: false`** and says why, rather than reporting `true`
+without performing the check — which would make the word mean something weaker for DBpedia than for
+Wikidata, the exact failure that tool exists to prevent. **This is a genuine product gap: a reader asking
+"where does this come from?" about a DBpedia-sourced claim gets a link but no graph-verified
+confirmation.** Owed to whichever step owns the store seam.
+
+### Two defects found and fixed during the build, both silent
+
+- **`merge_axes` would have destroyed the corroborating edges.** It keys on
+  `(subject_id, predicate, object_id)` and later inputs win, and the DBpedia layer merges last — so the
+  82 edges where DBpedia agrees with Wikidata would have had their statement URI replaced by a resource
+  URI and their `HAND`/`PROSE_AUTO` verification overwritten with `INFOBOX_AUTO`. **Demonstrated, not
+  argued:** a `HAND` edge came out of a two-artifact merge as `INFOBOX_AUTO`. Fixed by holding those
+  origins back — which matches the plan, since §7 already lists `Edge.corroboration` as step 5's work and
+  a one-source-per-edge schema cannot express agreement. Verified on the final cut: **zero v0.6.0 edges
+  changed, zero missing.**
+- **`owl:sameAs` is many-to-many in BOTH directions and the first implementation assumed one-to-one in
+  each.** Two dicts, each silently keeping whichever row iterated last:
+  - *One resource, several QIDs.* `Rock_and_roll` is `sameAs` both `rock music` (Q11399) and `rock and
+    roll` (Q7749) — different genres, not duplicate items.
+  - *One QID, several resources.* Those same QIDs are also `sameAs` `Rock_music`. Keying by QID dropped
+    one resource, which pushed a genre the corpus already held into the "newly discovered" path where
+    there are no labels to disambiguate with, and it was dropped whole.
+
+  In the first cut **46 edges landed on `rock and roll` that belong to `rock music`** — iteration order
+  deciding what the corpus says about one of its most central nodes. Two of five collisions happened to
+  land correctly, which is why nothing failed. **The first fix was half a fix**: it made the collision
+  visible (6 resources reported ambiguous) without making it right. The structural fix is `align()`
+  returning `(qid, resource)` **pairs** rather than a dict, so a collision has nowhere to be absorbed
+  before the resolver sees it, plus an exact-label tie-break. Result: ambiguous drops fell 6 → **2**
+  (`Bolero`, `Light_music`, both genuinely unresolvable), and `Rock_music`/`Rock_and_roll` each now sit
+  on the right genre — verified per-edge, not assumed.
+
+  This is the failure mode `MEMORY.md` names with three instances in one night, none of which raised.
+  Found by chasing a **six-edge discrepancy** between what the layer emitted and what the artifact held.
+
+### Verified by breaking, per the standing counter-practice
+
+- Reverse the closure walk → 3 tests fail, including one naming the expected genres, because a reversed
+  walk returns a perfectly plausible set of real music genres.
+- Accept every candidate instead of only `PROSE` → 2 tests fail.
+- The `merge_axes` overwrite and the `owl:sameAs` collision each have a regression test built from the
+  **actual rows** that broke them, not a stand-in.
+
+**Also in this step:** `DATA-LICENSES.md` (the corpus stops being uniformly CC0; DBpedia is CC BY-SA 3.0,
+attribution carried structurally in `source_id`), `make ingest-dbpedia`, `Node.dbpedia_resource` and
+`SOURCE_DBPEDIA`/`DBPEDIA_RESOURCE_PREFIX`/`VERIFICATION_INFOBOX_AUTO` in `graph/schema.py`, 32 tests in
+`tests/test_dbpedia.py` and 5 gate tests in `tests/test_claims.py`.
+
+**The artifact was cut FOUR times and only the fourth was kept.** Cuts 1-3 were discarded on the merge
+overwrite, the `owl:sameAs` collision, and the missing node alignment respectively. Each discard came
+from checking a small discrepancy rather than from a failing test, which is the point worth carrying
+forward: **every defect in this step was silent, and the suite was green for all three bad cuts.**
+
+**§9.3 note:** the 2.18 MB measured here lands almost exactly on the ~2.0 MB projection, and the SPA still
+ships the artifact byte-for-byte. The projection decision stands and remains step 8's build.
+
+---
+
+## PHASE 6 STEP 4 PRE-FLIGHT — the DBpedia probe was stale and the scope is 4x larger, 2026-09-04
+
+**Nothing was built. This is a measurement pass run before step 4, and it changed step 4's scope enough
+that the plan was amended before any code was written.**
+
+**The finding: every DBpedia figure step 4 was scoped on had been measured against the 169-genre v0.5.0
+corpus, and step 2 had since raised the genre count to 509.** Nobody had re-run the probe across that
+change. Re-measured against v0.6.0:
+
+| measure | plan (v0.5.0) | measured (v0.6.0) |
+|---|---|---|
+| genres aligning via `owl:sameAs` | 155 of 169 (92%) | **459 of 509 (90%)** |
+| corroborates a corpus edge | 80 | 80 — unchanged |
+| **new — DBpedia has it, corpus does not** | **237** | **1,100** |
+| corpus has it, DBpedia does not | 53 | 53 — unchanged |
+| opposite direction (`contested`) | 2 | 2 — unchanged |
+| `stylisticOrigin` edges pointing outside the corpus | 213 | **343** |
+
+**The three unchanged rows are the check that the probe is right, not a coincidence.** All three are
+scoped by the corpus's 133 genre-to-genre influence edges, and step 2 added membership without adding one
+P737 edge, so they *could not* move. Only the rows scoped by how many genres exist to be a target did.
+Had corroboration moved, the probe would have been wrong.
+
+**The full-graph counts reproduced exactly** — 5,124 distinct `stylisticOrigin` pairs and 3,551
+`MusicGenre` resources, both matching the figures recorded on 2026-09-02. The endpoint answered in 0.43s
+and shows none of WDQS's degradation. Distinct-pair counts throughout, per the named counting trap.
+
+### Two open plan questions were closed with measurements rather than judgement
+
+- **How far growth follows was ambiguous, and is now decided: take the closure.** *"Bounded by what
+  `stylisticOrigin` reaches"* did not distinguish one hop from closure. Measured: hop 1 adds 167 genres,
+  hop 2 adds 49, hop 3 adds 8, **and it terminates**. The entire cost of closure over a one-hop bound is
+  **57 genres and 152 edges**, so the arbitrary cutoff buys nothing. Ceiling published alongside it: the
+  whole DBpedia genre-origin graph is 1,601 genres and the closure reaches 678.
+- **The artifact-size uncertainty (§9.3) is answered and the original estimate was right.** v0.6.0 is
+  already **1.7MB** against v0.5.0's 640KB; v0.7.0 projects to **~2.0MB** at measured byte rates. Fine for
+  Lambda, fine in memory. **The browser is the real exposure: the SPA ships the artifact byte-for-byte
+  today** — verified by comparing key and field sets, not assumed — with no projection step. `source_id`
+  alone is 32% of the edge payload and `retrieved_at` another 14%. The projection is decided now and
+  **built in step 8**; step 4 needs no change to keep it possible.
+
+### Two things the plan did not say, found by probing
+
+- ~~**`Node.source` stops being "always Wikidata" as well.**~~ **Withdrawn the same day, while building.**
+  True from the probe, false in the build: discovered genres are resolved to Wikidata QIDs and read from
+  Wikidata, so their provenance is Wikidata. **Only `Edge.source` changes.** Recorded rather than quietly
+  deleted because it is a clean example of a plan-stage inference that a build disproved.
+- **DBpedia's typing is measurably noisier than Wikidata's.** 211 of the 224 arriving genres carry a
+  Wikidata QID; of the 13 that do not, one is `List_of_break-in_records` — a Wikipedia *list article*
+  typed `dbo:MusicGenre`. Those 13 get hand-checked rather than bulk-admitted or bulk-dropped. This is
+  also an argument for `INFOBOX_AUTO` being a real tier rather than a formality.
+
+**Amended in this pass:** `phase-6-density-and-coverage-IMPLEMENTATION.md` §2.4, step 4, §9.3 and §9.5;
+`ROADMAP.md`; `docs/graph-semantics.md` §5.2. Superseded figures are struck through and dated in place
+rather than deleted, so the difference stays legible.
+
+---
+
 ## PHASE 6 STEP 3 — the pin is on v0.6.0, the traversal needed a predicate filter, and the live run is in, 2026-09-03
 
 **Verified state:** `make check` green — **1215 passed**, 14 `costs_money` deselected, mypy clean,

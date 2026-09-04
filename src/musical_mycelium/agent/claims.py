@@ -35,9 +35,11 @@ from enum import StrEnum
 
 from musical_mycelium.graph.schema import (
     PREDICATE_INFLUENCED_BY,
+    SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_LEVELS,
     Edge,
+    Node,
 )
 from musical_mycelium.graph.store import Direction, GraphStore
 
@@ -173,8 +175,29 @@ class GateResult:
         return bool(self.rejected) and not self.approved
 
 
-def resolve_sources(edge: Edge) -> tuple[str, ...]:
+def resolve_sources(edge: Edge, subject: Node | None = None) -> tuple[str, ...]:
     """The citations for an edge, if they resolve. Empty tuple when they do not.
+
+    **The DBpedia branch was added at v0.7.0, and it is the one permitted widening of this function in
+    phase 6 — a deliberate, recorded exception rather than a slip.** `phase-6-...-IMPLEMENTATION.md` §7
+    freezes ``agent/`` apart from the ``UNREACHABLE`` change and says any other line needing to change
+    is the seam breaking and must be written down. It was: `KNOWN-GAPS`, step 4. The finding was that
+    every one of the 1,336 DBpedia edges failed here and the gate rejected all of them
+    ``UNRESOLVABLE_SOURCE``, so the corpus would have gained an axis the agent could walk and never
+    cite.
+
+    **What "resolves" means for DBpedia, and why it is not a label comparison.** A Wikidata statement
+    URI encodes its subject's QID, so the check below is exact. A DBpedia resource URI encodes an
+    *article title*, and the obvious equivalent — folding that title against the subject's label — was
+    **measured against the real corpus and rejected: it fails on 125 of 1,336 correct edges**, because
+    Wikipedia disambiguates (``Glitch_(music)``) and titles legitimately differ from labels
+    (``Jungle_music`` for ``jungle``). A fuzzy rule inside a groundedness gate is the wrong instinct.
+    So the exact ``owl:sameAs`` alignment the ingestion already resolved is stored on the node as
+    ``Node.dbpedia_resource``, and this is string equality against it.
+
+    ``subject`` is optional so that the ~950 Wikidata rows keep a one-argument call, and a DBpedia edge
+    passed without its node resolves to **nothing** rather than being waved through — an unresolvable
+    source must fail closed.
 
     "Resolves" is deliberately checkable rather than aspirational. A Wikidata statement URI encodes the
     QID of the entity the statement belongs to, so a citation on an ``influenced_by`` edge must name that
@@ -193,6 +216,10 @@ def resolve_sources(edge: Edge) -> tuple[str, ...]:
     returned; normalising its case at write time would make the stored provenance differ from the
     retrieved provenance, which is a worse bug than the one being fixed.
     """
+    if edge.source == SOURCE_DBPEDIA:
+        if subject is None or not subject.dbpedia_resource:
+            return ()
+        return (edge.source_id,) if edge.source_id == subject.dbpedia_resource else ()
     if edge.source != SOURCE_WIKIDATA:
         return ()
     if not edge.source_id.startswith(_WIKIDATA_STATEMENT_PREFIX):
@@ -278,7 +305,7 @@ def gate(proposals: list[ClaimProposal], store: GraphStore) -> GateResult:
             )
             continue
 
-        sources = resolve_sources(edge)
+        sources = resolve_sources(edge, subject)
         if not sources:
             rejected.append(
                 Rejection(

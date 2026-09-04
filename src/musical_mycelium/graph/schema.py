@@ -61,6 +61,23 @@ INFLUENCE_ONLY = frozenset({PREDICATE_INFLUENCED_BY})
 
 SOURCE_WIKIDATA = "wikidata"
 
+#: DBpedia, via ``dbo:stylisticOrigin``. Added at v0.7.0, phase 6 step 4, and it is the first time
+#: ``Edge.source`` is not ``SOURCE_WIKIDATA`` — a sentence written into ``CLAUDE.md``, both rules files,
+#: ``README.md`` and ``agent.claims``'s docstring, all of which step 10 audits.
+#:
+#: **Nodes are deliberately not affected.** Every genre this axis discovers is resolved to a Wikidata QID
+#: and its label, revision and coverage read from Wikidata, so the node's provenance genuinely is
+#: Wikidata and saying otherwise would overstate what DBpedia supplied. A DBpedia resource with no
+#: ``owl:sameAs`` to Wikidata is **excluded** rather than admitted as a DBpedia-native node
+#: (``dbpedia.NO_WIKIDATA_MATCH``); 13 of 224 at the step 4 cut. Admitting those needs a node whose
+#: ``revision_id`` cannot exist and is a decision this step does not make.
+SOURCE_DBPEDIA = "dbpedia"
+
+#: Every DBpedia-sourced ``source_id`` starts with this. Lives here rather than in ``ingest.dbpedia``
+#: because the shape of a ``source_id`` is part of the artifact contract, and both ``agent`` and
+#: ``eval`` have to parse it without importing the ingestion package.
+DBPEDIA_RESOURCE_PREFIX = "http://dbpedia.org/resource/"
+
 #: Tiers from the Wikipedia disconfirmation check (``docs/graph-semantics.md`` 4.2). Only PROSE is
 #: ingested. The others are recorded in the exclusions file so the exclusion rate stays a displayed
 #: number rather than a silent filter.
@@ -129,6 +146,27 @@ VERIFICATION_MEMBERSHIP_CITED = "MEMBERSHIP_CITED"
 #: v0.6.0 cut. The weakest tier in the artifact: sourced to Wikidata's existence and nothing further.
 VERIFICATION_MEMBERSHIP_BARE = "MEMBERSHIP_BARE"
 
+#: A DBpedia ``dbo:stylisticOrigin`` edge **that also passed the Wikipedia prose check**. Added at
+#: v0.7.0, phase 6 step 4.
+#:
+#: **Read this as weaker than ``PROSE_AUTO``, not as a second source.** The two run the identical prose
+#: check and differ in where the candidate came from, which is exactly the difference that matters:
+#:
+#: - A ``PROSE_AUTO`` edge was asserted as a Wikidata statement and then confirmed by the subject's
+#:   Wikipedia article. Those are largely independent acts, and §4.3 of ``docs/graph-semantics.md``
+#:   tested that independence rather than assuming it — 11 of 227 edges (5%) were infobox-only, so
+#:   Wikidata's genre statements are not simply harvested from Wikipedia infoboxes.
+#: - An ``INFOBOX_AUTO`` edge was extracted by DBpedia from the subject article's **infobox**, and then
+#:   confirmed by that **same article's body prose**. One page, two fields of it. The confirmation is
+#:   real — it is the strongest check this project has — but it is **not independent of the candidate**,
+#:   and the corroboration a second *source* would give is precisely what it does not supply.
+#:
+#: So this tier exists to record a circularity that ``PROSE_AUTO`` does not carry, and collapsing the
+#: two would say the corpus has independent confirmation where it has one Wikipedia page agreeing with
+#: itself. Do not use it as evidence of corroboration; step 5's ``contested`` machinery is what compares
+#: sources, and it compares them by ``Edge.source``, never by this field.
+VERIFICATION_INFOBOX_AUTO = "INFOBOX_AUTO"
+
 VERIFICATION_LEVELS = frozenset(
     {
         VERIFICATION_HAND,
@@ -137,6 +175,7 @@ VERIFICATION_LEVELS = frozenset(
         VERIFICATION_EXPOSURE_AUTO,
         VERIFICATION_MEMBERSHIP_CITED,
         VERIFICATION_MEMBERSHIP_BARE,
+        VERIFICATION_INFOBOX_AUTO,
     }
 )
 
@@ -236,6 +275,25 @@ class Node:
     #: rather than QIDs, consistent with this node already storing its own label; the node's
     #: ``source_id`` and ``retrieved_at`` are what keep the row checkable.
     countries: tuple[str, ...] = ()
+
+    #: The DBpedia resource this entity is ``owl:sameAs``, where the v0.7.0 alignment resolved one.
+    #: Added at v0.7.0, phase 6 step 4. Empty for artists, for genres DBpedia does not hold, and for
+    #: every artifact written before the field existed.
+    #:
+    #: **It is here so that a DBpedia citation can be checked exactly rather than approximately.** A
+    #: Wikidata statement URI encodes its subject's QID, which is what lets
+    #: ``agent.claims.resolve_sources`` verify that a citation names the claim it supports. A DBpedia
+    #: resource URI encodes an *article title* instead, and the naive equivalent — folding the title
+    #: against this node's label — was **measured against the real corpus and rejected: it fails on 125
+    #: of 1,336 correct edges (9%)**, because Wikipedia disambiguates (``Glitch_(music)``) and titles
+    #: legitimately differ from labels (``Jungle_music`` for ``jungle``, ``Hip_hop_music`` for
+    #: ``hip-hop``). A fuzzy rule inside a groundedness gate is the wrong instinct; storing the exact
+    #: alignment the ingestion already resolved makes the check string equality.
+    #:
+    #: It is also the node-level CC BY-SA attribution target, and it is a *fact about the entity* —
+    #: DBpedia says this resource and this QID are the same thing — rather than derived state, which is
+    #: why it sits on the node instead of being recomputed at load.
+    dbpedia_resource: str = ""
 
     def __post_init__(self) -> None:
         # JSON round-trips a tuple as a list, so ``Artifact.from_json`` would otherwise rebuild this

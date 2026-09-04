@@ -238,9 +238,12 @@ not.)*
   roughly 95% of every genre on Wikidata carrying a P737 influence edge at all** — 331 such edges exist in
   the whole of Wikidata and discovery was never bounded — so "ingest more genres" was never available.
   Density can only come from a second source. **DBpedia's `dbo:stylisticOrigin` has 5,124 genre-to-genre
-  origin edges against Wikidata's 331**, and on the 155 corpus genres that align through `owl:sameAs` it
-  corroborates 80 existing edges, adds 237 new ones, and **reverses the direction of 2 — which is what
-  makes `contested` reachable for the first time.** Separately, `P136` (artist works in genre) joins the
+  origin edges against Wikidata's 331**, and on the 459 corpus genres that align through `owl:sameAs` it
+  corroborates 80 existing edges, adds **1,100** new ones, and **reverses the direction of 2 — which is
+  what makes `contested` reachable for the first time.** *(Re-measured 2026-09-04 against v0.6.0. The
+  alignment and new-edge figures read 155 and 237 until then, both measured on the 169-genre v0.5.0
+  corpus before step 2 tripled the genre count; corroborated, corpus-only and reversed are unchanged
+  because all three are scoped by the corpus's own 133 genre edges, which step 2 did not touch.)* Separately, `P136` (artist works in genre) joins the
   two axes that have never touched, at 1,313 pairs. **P279 is still not ingested**; P136 takes the
   structural role P279 was proposed for because it makes no derivation claim in any reading, where P279's
   whole risk was that it does. Full record: `graph-semantics.md` §5.2. Reasoning:

@@ -25,7 +25,10 @@ from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
+    SOURCE_DBPEDIA,
+    SOURCE_WIKIDATA,
     VERIFICATION_HAND,
+    VERIFICATION_INFOBOX_AUTO,
     VERIFICATION_LEVELS,
     VERIFICATION_PROSE_AUTO,
     Artifact,
@@ -432,3 +435,81 @@ def test_verification_is_not_documented_as_agreement() -> None:
         assert overclaim not in doc.lower(), (
             f"Claim's docstring implies {overclaim!r}; verification is not corroboration"
         )
+
+
+# --- the DBpedia branch, added at v0.7.0 (phase 6 step 4) ----------------------------------------
+
+
+def _dbpedia_edge(source_id: str = "http://dbpedia.org/resource/Bebop") -> Edge:
+    return Edge(
+        subject_id="Q1",
+        predicate="influenced_by",
+        object_id="Q2",
+        source=SOURCE_DBPEDIA,
+        source_id=source_id,
+        retrieved_at="2026-09-04T00:00:00+00:00",
+        prose_tier="PROSE",
+        verification=VERIFICATION_INFOBOX_AUTO,
+    )
+
+
+def _genre(qid: str, label: str, resource: str = "") -> Node:
+    return Node(
+        id=qid,
+        label=label,
+        kind=NODE_KIND_GENRE,
+        source=SOURCE_WIKIDATA,
+        source_id=qid,
+        retrieved_at="2026-09-04T00:00:00+00:00",
+        dbpedia_resource=resource,
+    )
+
+
+def test_dbpedia_citation_resolves_against_the_nodes_stored_alignment() -> None:
+    """A DBpedia citation is checked by exact equality with the node's ``owl:sameAs`` resource.
+
+    Not by folding the resource's article title against the node's label. That was measured against the
+    real corpus and **fails on 125 of 1,336 correct edges** — Wikipedia disambiguates
+    (``Glitch_(music)``) and titles legitimately differ from labels (``Jungle_music`` for ``jungle``).
+    A fuzzy rule inside a groundedness gate is the wrong instinct.
+    """
+    edge = _dbpedia_edge()
+    subject = _genre("Q1", "bebop", "http://dbpedia.org/resource/Bebop")
+    assert resolve_sources(edge, subject) == (edge.source_id,)
+
+
+def test_dbpedia_citation_naming_a_different_resource_does_not_resolve() -> None:
+    """The whole point of the check: a syntactically perfect URI for the wrong entity is not a citation."""
+    edge = _dbpedia_edge("http://dbpedia.org/resource/Jazz")
+    subject = _genre("Q1", "bebop", "http://dbpedia.org/resource/Bebop")
+    assert resolve_sources(edge, subject) == ()
+
+
+def test_dbpedia_citation_fails_closed_when_the_subject_is_not_supplied() -> None:
+    """``subject`` is optional so Wikidata keeps a one-argument call. DBpedia must not be waved through.
+
+    An unresolvable source has to fail closed; the alternative is a caller who forgot an argument
+    silently widening what the gate accepts.
+    """
+    assert resolve_sources(_dbpedia_edge()) == ()
+
+
+def test_dbpedia_citation_fails_when_the_node_carries_no_alignment() -> None:
+    edge = _dbpedia_edge()
+    assert resolve_sources(edge, _genre("Q1", "bebop")) == ()
+
+
+def test_the_wikidata_branch_is_unchanged_by_the_widening() -> None:
+    """The 949 Wikidata influence edges must keep resolving on a one-argument call."""
+    edge = Edge(
+        subject_id="Q1",
+        predicate="influenced_by",
+        object_id="Q2",
+        source=SOURCE_WIKIDATA,
+        source_id="http://www.wikidata.org/entity/statement/Q1-abc",
+        retrieved_at="2026-09-04T00:00:00+00:00",
+        prose_tier="PROSE",
+        verification=VERIFICATION_PROSE_AUTO,
+    )
+    assert resolve_sources(edge) == (edge.source_id,)
+    assert resolve_sources(edge, _genre("Q1", "bebop")) == (edge.source_id,)

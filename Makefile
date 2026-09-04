@@ -3,6 +3,7 @@
 
 .DEFAULT_GOAL := help
 .PHONY: help install fmt lint typecheck test cov check root-check orient clean dev ingest \
+        ingest-dbpedia \
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
         heldout-key heldout-draw heldout-seal heldout-verify heldout-check \
         eval eval-live eval-noise eval-label eval-judge eval-tier2 eval-heldout \
@@ -229,6 +230,13 @@ tf-destroy: ## Destroy the main root. Bootstrap is destroyed separately and AFTE
 # against a service that is degraded in 2026, so run it when the corpus changes, not on every loop.
 ingest: ## Rebuild the pinned graph artifact from Wikidata (local only; requires --force to overwrite)
 	uv run python -m musical_mycelium.ingest.wikidata $(ARGS)
+
+# Also $0, also never in CI, and slower than it looks: it crawls one Wikipedia article per second for
+# every candidate subject, because DBpedia's infobox-derived edges are put to the SAME prose check
+# every Wikidata edge cleared. That screening is the whole justification for the axis -- see the
+# `ingest/dbpedia.py` docstring -- so the runtime is the point rather than an inefficiency.
+ingest-dbpedia: ## Extend the pinned artifact with DBpedia stylisticOrigin (local only, ~10 min, $0)
+	uv run python -m musical_mycelium.ingest.dbpedia $(ARGS)
 
 # --- evaluation ---------------------------------------------------------------
 # Tier 1 over the gold set, driven by ScriptedLLM. Costs $0, needs no AWS, and runs on every commit.

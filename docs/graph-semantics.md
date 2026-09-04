@@ -393,9 +393,16 @@ Measured 2026-09-02 against `https://dbpedia.org/sparql`. The count was owed sin
 | genre → genre origin edges | **331** | **5,124** |
 | distinct genres touched | 198 | 1,628 |
 
-Aligned to the corpus through `owl:sameAs` (155 of 169 genres align, 92%), against the corpus's 133
-genre-genre edges: **80 corroborate**, **237 are new**, 53 exist only in the corpus, and **2 are direction
-reversals** — which is what makes `contested` reachable for the first time.
+Aligned to the corpus through `owl:sameAs` (**459 of 509** genres align, **90%**), against the corpus's
+133 genre-genre edges: **80 corroborate**, **1,100 are new**, 53 exist only in the corpus, and **2 are
+direction reversals** — which is what makes `contested` reachable for the first time.
+
+> **Re-measured 2026-09-04 against artifact v0.6.0.** This paragraph read *"155 of 169 genres align, 92%"*
+> and *"237 are new"* until then. Both were measured on the 169-genre v0.5.0 corpus, before phase 6 step 2
+> raised the genre count to 509, and step 4 had been scoped on them. The corroborated, corpus-only and
+> reversal counts are **unchanged**, because all three are scoped by the corpus's own 133 genre-to-genre
+> influence edges and step 2 added membership without adding one P737 edge. Only the two figures scoped by
+> how many genres exist to be a target moved. The full-graph counts in the table above reproduced exactly.
 
 > **A counting trap for anyone re-running this.** `COUNT(*)` over a `?a a dbo:MusicGenre` join against
 > that endpoint multiplies rows across named graphs; the first run returned 35,947, larger than the
