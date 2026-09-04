@@ -387,9 +387,16 @@ def test_every_approved_claim_carries_a_real_level(store: InMemoryGraphStore) ->
 
 
 def test_the_unreachable_states_are_declared_with_their_preconditions() -> None:
-    """Declared rather than silently absent. Someone reading ``contested`` in the rules doc and grepping
-    for it must find this, not nothing — and must find *why* it is not built."""
-    assert set(UNREACHABLE) == {"contested", "checks_disagree"}
+    """Declared rather than silently absent. Someone reading a state name in the rules doc and grepping
+    for it must find this, not nothing — and must find *why* it is not built.
+
+    **``contested`` left this set at v0.7.0 (phase 6 step 5) and that is the point of the mechanism, not
+    a weakening of it.** The declaration existed so that a corpus which *could* express the state would
+    fail a test rather than quietly making it reachable. Step 4 added DBpedia, two sources now disagree
+    on 2 pairs, and this test went red exactly when it should have. Decision A1 was correct when it was
+    written; its stated precondition arrived.
+    """
+    assert set(UNREACHABLE) == {"checks_disagree"}
     for state, precondition in UNREACHABLE.items():
         assert precondition.strip(), (
             f"{state} is declared with no precondition, which explains nothing"
@@ -399,10 +406,15 @@ def test_the_unreachable_states_are_declared_with_their_preconditions() -> None:
 def test_no_artifact_edge_can_produce_an_unreachable_state() -> None:
     """**This test is the lock**, and without it the declaration above rots.
 
-    ``contested`` needs two sources to disagree; every edge here has exactly one. ``checks_disagree``
-    needs an edge whose checks conflict; ``select_edges()`` keeps those out by policy. Both are checked
-    against the artifact rather than asserted, so a future corpus that *could* express one of them fails
-    here — which is the notification, rather than the state quietly becoming reachable in silence.
+    ``checks_disagree`` needs an edge whose checks conflict; ``select_edges()`` keeps those out by
+    policy. Checked against the artifact rather than asserted, so a future corpus that *could* express
+    it fails here — which is the notification, rather than the state quietly becoming reachable in
+    silence.
+
+    **``contested`` is no longer checked here because it is no longer unreachable.** It is a property of
+    a pair rather than of an edge, so a per-edge loop was never the right shape for it in the first
+    place; ``tests/test_corroboration.py`` is where it is now asserted, from the other direction —
+    that it IS reachable and on exactly the pairs it should be.
     """
     # Loaded straight from the pinned directory rather than walked through the store: the claim is
     # about **every edge in the corpus**, and a walk only ever reaches the edges it happens to visit.
@@ -410,10 +422,6 @@ def test_no_artifact_edge_can_produce_an_unreachable_state() -> None:
     assert artifact.edges
 
     for edge in artifact.edges:
-        assert len(resolve_sources(edge)) <= 1, (
-            f"{edge.subject_id} -> {edge.object_id} resolves to more than one source. "
-            f"'contested' may now be reachable: {UNREACHABLE['contested']}"
-        )
         assert edge.verification in VERIFICATION_LEVELS, (
             f"{edge.subject_id} -> {edge.object_id} carries {edge.verification!r}, which is not a "
             f"declared level. 'checks_disagree' may now be reachable: {UNREACHABLE['checks_disagree']}"

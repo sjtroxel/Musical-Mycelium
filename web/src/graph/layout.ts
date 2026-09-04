@@ -38,9 +38,13 @@ export interface Point {
  * newer and a node sits one column past the deepest thing that influenced it.
  *
  * Kahn's algorithm, and a node inside a cycle simply keeps the layer it had when the queue drained.
- * There are no cycles in artifact v0.5.0 — measured, not assumed — but a later corpus cut could
- * introduce one and a layout that hangs the browser is a worse failure than one that draws a cycle
- * slightly wrong.
+ *
+ * **The cycle tolerance is load-bearing, and the claim that used to be here was wrong.** This read
+ * "there are no cycles in artifact v0.5.0 — measured, not assumed" until 2026-09-04. Re-measured at
+ * phase 6 step 5: v0.5.0 contains `post-rock <-> shoegaze`, a two-cycle, both edges from Wikidata, and
+ * it has been there since the first genre cut. v0.7.0 has six such reciprocal pairs, two of which are
+ * genuinely contested between sources. Nothing rendered wrongly, because the defensive branch below was
+ * already correct — but it was defending against something the comment said could not happen.
  */
 export function layerOf(
   nodes: readonly RenderNode[],

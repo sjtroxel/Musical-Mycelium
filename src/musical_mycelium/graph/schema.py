@@ -335,6 +335,20 @@ class Edge:
     prose_tier: str
     verification: str
 
+    #: A **second source's** resolvable URI for this same edge, or ``None`` for single-source. Added at
+    #: v0.7.0, phase 6 step 5.
+    #:
+    #: **Additive on purpose.** ``Edge.source`` did not become a list, because every pinned eval number
+    #: reads that field and repurposing it would silently change what those numbers mean. ``None`` means
+    #: single-source, so every edge written before this field existed keeps its exact prior meaning.
+    #:
+    #: **This is NOT ``verification`` and the two must never be collapsed.** ``verification`` says how
+    #: strongly *one* source was checked; this says *whether a second source agrees*. They are different
+    #: guarantees. A corroborated ``PROSE_AUTO`` edge is not thereby a ``HAND`` edge, a corroboration
+    #: must never promote a verification tier, and a UI must never show one number where there are two.
+    #: ``CLAUDE.md`` and two rules files were already corrected once for blurring exactly this.
+    corroboration: str | None = None
+
     def __post_init__(self) -> None:
         row = f"edge {self.subject_id} -{self.predicate}-> {self.object_id}"
         _require(self.subject_id, "subject_id", row)

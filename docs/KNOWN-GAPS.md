@@ -87,6 +87,92 @@ corpus in part 2.
 
 ---
 
+## PHASE 6 STEP 5 — `contested` is REACHABLE, and decision A1 is closed by its own precondition, 2026-09-04
+
+**Verified state:** `make check` green — **1261 passed**, 14 `costs_money` deselected, mypy clean over 95
+files, terraform valid, eval gates **3 passed / 0 failed / 2 not applicable**. Frontend **146 passed**.
+Root 17 of 18. **The pin is still `0.6.0`** — step 6 produces v0.7.1.
+
+**`contested` has left `agent/claims.py:UNREACHABLE`.** This is decision **A1's stated precondition
+arriving, not a re-litigation of it.** A1 was correct when written: on a one-source corpus, disagreement
+is arithmetically impossible rather than merely unbuilt. Step 4 added DBpedia; two sources now disagree
+about 2 pairs. `UNREACHABLE` still declares `checks_disagree`.
+
+**The declaration mechanism worked exactly as designed and should be trusted next time.**
+`test_the_unreachable_states_are_declared_with_their_preconditions` went **red the moment the state
+became reachable**, which is what `.claude/rules/grounding-and-claims.md` says should happen instead of
+the state quietly becoming reachable in silence. A green-to-red transition to be resolved deliberately,
+not routed around.
+
+### The finding that shaped the definition: reciprocal is NOT contested
+
+Measured on v0.7.0 — **6 reciprocal pairs, of which only 2 are contested:**
+
+| pair | sources | |
+|---|---|---|
+| western music ↔ New Mexico music | wikidata / dbpedia | **CONTESTED** |
+| electropop ↔ electroclash | wikidata / dbpedia | **CONTESTED** |
+| jangle pop ↔ college rock | dbpedia / dbpedia | mutual, one source |
+| noise rock ↔ post-hardcore | dbpedia / dbpedia | mutual, one source |
+| tejano music ↔ country music | dbpedia / dbpedia | mutual, one source |
+| post-rock ↔ shoegaze | wikidata / wikidata | mutual, one source |
+
+**Defining `contested` as "a reciprocal pair exists" would overcount by 3x** and would claim the corpus's
+sources disagree about four pairs where a single source is describing mutual influence — which between
+genres is frequently a real claim, not an error. The plan's "from different sources" wording is what
+makes the definition correct, and the 2-versus-6 gap is why it is load-bearing rather than pedantic.
+`graph/corroboration.py` reports **both numbers, never one alone**: a contested count on its own cannot
+be read, because a reader cannot tell whether the corpus holds no mutual pairs or four.
+
+### `post-rock ↔ shoegaze` predates DBpedia, and it falsified a comment
+
+That pair is in **v0.5.0**, both edges from Wikidata, and had gone unnoticed — so **the corpus has always
+contained a cycle in its influence graph.** That makes `web/src/graph/layout.ts`'s *"there are no cycles
+in artifact v0.5.0 — measured, not assumed"* **false as written**. Nothing ever rendered wrongly: the
+Kahn's-algorithm branch below that comment was already defensive about cycles. But it was defending
+against something the comment asserted could not happen. Corrected and dated in place.
+
+### The electroclash inversion is now real rather than predicted
+
+`docs/phases/phase-6-...-IMPLEMENTATION.md` §2.4 called this the single best story the phase could
+produce, and it is now in the artifact. **Two independent methods, arrived at separately, agree that one
+specific Wikidata edge is inverted:**
+
+- Phase 5 §0.5 flagged `electroclash → electropop` as the worst of six backwards-in-time edges, by
+  **inception date**. Confirmed on v0.7.0: electroclash 1995, electropop 1978, both year-precision.
+  Wikidata records the 1978 genre as coming out of the 1995 one.
+- DBpedia independently records that pair **the other way round**, and its direction is the
+  chronologically coherent one.
+
+The corpus **flags the disagreement and does not resolve it**, which is what
+`.claude/rules/grounding-and-claims.md` requires: musical influence is genuinely disputed, and picking a
+winner silently is the failure. Both edges survive and both are reachable from the pair.
+
+### Corroboration: 82 edges, and verification was NOT promoted
+
+`Edge.corroboration: str | None`, additive and defaulting to `None`, so **every edge written before this
+field keeps its exact prior meaning** and `Edge.source` was not repurposed into a list — a field every
+pinned eval number reads. Verified on the cut artifact:
+
+- **82 corroborated**, all Wikidata edges, every `corroboration` value a resolvable DBpedia resource URI.
+- Their verification tiers are **67 `PROSE_AUTO` + 15 `HAND` — unchanged**. A corroborated `PROSE_AUTO`
+  edge is still `PROSE_AUTO`. `verification` is *how strongly one source was checked*; `corroboration` is
+  *whether a second source agrees*. Different guarantees, and this project has already corrected
+  `CLAUDE.md` and two rules files once for blurring exactly this. There is a test.
+- 2,203 influence edges remain single-source and are labelled as such.
+
+### Owed, deliberately not done here
+
+- **Nothing surfaces `contested` to a reader yet.** `graph/corroboration.py` computes it; the API,
+  `Coverage` and the SPA do not carry it. That is **step 8** (§7 lists "contested display" under `web/`),
+  and doing it here would change the API contract while the frontend pin deliberately lags at `0.5.0`.
+- **v0.7.0 was rewritten in place** rather than cut as a new version, which is what the plan's step table
+  specifies (steps 4 and 5 share the v0.7.0 row). Immutability's *purpose* — that no benchmark shifts
+  underneath itself — is intact: nothing has been evaluated against v0.7.0, the pin is `0.6.0`, and the
+  sha256 changed so any stale manifest reference fails loudly rather than silently.
+
+---
+
 ## PHASE 6 STEP 4 — artifact v0.7.0 is cut, and it needs a decision before the pin can move, 2026-09-04
 
 **Verified state:** `make check` green — **1252 passed**, 14 `costs_money` deselected, mypy clean over 93

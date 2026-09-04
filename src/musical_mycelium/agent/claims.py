@@ -53,16 +53,15 @@ ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY})
 #: populated. A test asserts no artifact edge can produce either; that test is the lock. Without it a
 #: future corpus change makes one reachable and nothing notices.
 #:
-#: ``contested`` is the one that matters, because ``.claude/rules/grounding-and-claims.md`` makes it a
-#: first-class state and it is genuinely owed. It is not buildable here and the reason is arithmetic
-#: rather than effort: **disagreement needs two sources and every v0.5.0 edge has exactly one.** What
-#: replaced it is ``Claim.verification`` — how strongly the one source was checked — which is a
-#: different and weaker guarantee, stated as such rather than dressed up as corroboration.
+#: ``contested`` was removed from this dict at v0.7.0 (phase 6 step 5), and the removal is the
+#: precondition arriving rather than a change of mind. **Decision A1 was correct when it was written**:
+#: on a one-source corpus disagreement is arithmetically impossible, not merely unbuilt. Step 4 added
+#: DBpedia, so two sources can now disagree, and 2 pairs actually do.
+#:
+#: It is **not** replaced by an entry here, because it is no longer a state this corpus cannot express.
+#: It lives in ``graph.corroboration.contested_pairs`` — derived over the edge set, never stamped on a
+#: row and never proposed by a model, because it is a property of a **pair** rather than of an edge.
 UNREACHABLE: dict[str, str] = {
-    "contested": (
-        "needs a SECOND SOURCE to disagree with the first; every v0.5.0 edge has exactly one, "
-        "always Wikidata"
-    ),
     "checks_disagree": (
         "needs an edge whose checks conflict; select_edges() excludes hand-rejected edges by "
         "policy, so no edge in any corpus carries a disagreement to report"

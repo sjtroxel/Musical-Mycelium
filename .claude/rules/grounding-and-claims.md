@@ -18,22 +18,32 @@ Canonical detail: `docs/planning/07-EVAL-SPEC.md` §2 (as amended) and `08-REVIE
   Wikidata can still be wrong. Never let project copy, docs, or interview answers slide from "traceable" to
   "correct." The honest follow-up answer is: traceable to a checkable source, the strength of that check
   published per claim, and the gold set cites sources *independent of Wikidata* so divergence surfaces.
-- **`contested` is UNREACHABLE on this corpus, and saying otherwise is the error.** *(Amended 2026-08-24.
-  This bullet read "Contested is a first-class state, not an error. Musical influence is genuinely
-  disputed. Flag it; do not resolve it, and do not silently drop it." — an instruction to build something
-  the corpus cannot support.)* Musical influence **is** genuinely disputed; what this corpus cannot do is
-  detect the dispute. Every v0.5.0 edge has exactly one source, always Wikidata, so nothing can disagree
-  with anything. That is arithmetic, not effort — **decision A1, do not re-litigate.**
-  - `contested` and `checks_disagree` are **declared and test-locked-unreachable** in
-    `agent/claims.py:UNREACHABLE`. Named rather than silently absent, so a future corpus that could
-    express one fails the test instead of quietly making it reachable. Do not delete them and do not
-    make them reachable to satisfy a metric.
-  - What ships instead is **`verification`** — `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`, `EXPOSURE_AUTO` —
-    on every edge and copied onto every approved claim by the gate, never supplied by the model. It says
-    **how strongly one source was checked. It is not a count of agreeing sources and not a disputed
-    flag.** In the eval catalog, `verification_mix` replaces the "contested flagging" metric.
-  - Phase 6's second source is the precondition. Until it lands, a doc, a metric, or an interview answer
-    that implies this system detects disagreement is overstating it.
+- **`contested` is REACHABLE as of artifact v0.7.0, and 2 pairs are contested.** *(Amended 2026-09-04,
+  phase 6 step 5. This bullet read "`contested` is UNREACHABLE on this corpus, and saying otherwise is
+  the error" from 2026-08-24 until then, and before that it read the opposite again — see the history
+  below, because the direction of travel is the point.)*
+  - **Decision A1 is CLOSED by its own stated precondition arriving, not re-litigated.** A1 said
+    disagreement needs two sources and every edge had exactly one; that was **arithmetic and it was
+    correct**. Phase 6 step 4 ingested DBpedia. Two sources can now disagree, and two do. Do not read
+    this as A1 having been wrong, and do not re-open the question.
+  - **`contested` means TWO DIFFERENT SOURCES assert opposite directions for one pair. It does not mean
+    a reciprocal pair exists.** Measured on v0.7.0: **6 reciprocal pairs, 2 contested.** The other four
+    are one source describing mutual influence, which between genres is frequently a real claim. The
+    loose definition overcounts by 3x and would state something false about where the corpus's
+    information came from. `graph/corroboration.py` reports both counts and never one alone.
+  - **It is a property of a PAIR, derived in `graph/`** — never stamped on an edge, never proposed by
+    the model. `checks_disagree` remains declared in `agent/claims.py:UNREACHABLE`; do not delete it and
+    do not make it reachable to satisfy a metric.
+  - **`verification` and `corroboration` are different fields and must never be collapsed.**
+    `verification` — `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`, `EXPOSURE_AUTO`, `INFOBOX_AUTO`, the two
+    `MEMBERSHIP_*` — says **how strongly ONE source was checked**. `Edge.corroboration` says **whether a
+    second source agrees**. A corroborated `PROSE_AUTO` edge is **not** thereby a `HAND` edge; a
+    corroboration must never promote a tier; a UI must never show one number where there are two. This
+    project has already corrected three files once for blurring these, from the other direction.
+  - **Still true and still the constraint:** 2,203 of 2,285 influence edges are single-source, so the
+    corpus detects disagreement only where DBpedia has an opinion at all. "This system surfaces
+    disagreement between two sources on the 82 edges where both speak" is honest; "this system knows
+    which influence claims are disputed" is not.
 - **Refusal is correct behavior.** An unsourced influence edge must be refused rather than narrated.
   Report refusal accuracy as a **pair** — true refusals and false refusals — always. A system that refuses
   everything scores perfectly on hallucination and is useless.

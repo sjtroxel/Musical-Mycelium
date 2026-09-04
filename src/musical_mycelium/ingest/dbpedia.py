@@ -606,12 +606,32 @@ def main(argv: list[str] | None = None) -> int:  # pragma: no cover - CLI, hits 
         known,
         known_edges=known_edges,
     )
-    corroborated = sum(
-        1 for o in accepted if (o.subject_id, PREDICATE_INFLUENCED_BY, o.object_id) in known_edges
+    # Phase 6 step 5. An accepted origin whose triple the corpus ALREADY holds is not a new edge --
+    # emitting it would let `merge_axes` overwrite the Wikidata row (step 4's defect). It is a second
+    # source agreeing, which is a fact about the existing edge, so it is recorded ON that edge as
+    # `corroboration` rather than added beside it or dropped.
+    #
+    # Note what this is not: corroboration does NOT promote `verification`. A corroborated PROSE_AUTO
+    # edge stays PROSE_AUTO. "How strongly one source was checked" and "whether a second source agrees"
+    # are different guarantees, and this project has already corrected three files once for blurring
+    # them -- see `graph.schema.Edge.corroboration`.
+    agreeing = {
+        (o.subject_id, PREDICATE_INFLUENCED_BY, o.object_id): o.resource
+        for o in accepted
+        if (o.subject_id, PREDICATE_INFLUENCED_BY, o.object_id) in known_edges
+    }
+    source = Artifact(
+        nodes=source.nodes,
+        edges=tuple(
+            replace(edge, corroboration=agreeing[triple])
+            if (triple := (edge.subject_id, edge.predicate, edge.object_id)) in agreeing
+            else edge
+            for edge in source.edges
+        ),
     )
     print(
-        f"  {len(layer.edges)} new edges, {corroborated} corroborate an existing Wikidata edge "
-        f"and are held back for step 5 rather than overwriting it",
+        f"  {len(layer.edges)} new edges, {len(agreeing)} corroborate an existing Wikidata edge "
+        f"and are recorded as Edge.corroboration on it",
         file=sys.stderr,
     )
 

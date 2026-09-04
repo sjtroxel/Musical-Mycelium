@@ -138,16 +138,22 @@ traces to a checkable source. It does **not** mean the edge is true. Wikidata ca
 influence is genuinely contested. When writing copy, docs, or interview material about this project,
 never let "grounded" slide into "correct."
 
-**What the corpus can and cannot say about disagreement — decision A1, do not re-litigate.** This section
-read *"contested claims are flagged as contested, not resolved"* until 2026-08-24, which described a
-capability the corpus cannot have. **Every edge in artifact v0.5.0 carries exactly one source, always
-Wikidata**, so there is nothing that could disagree with anything: `contested` is arithmetically
-unreachable, not merely unbuilt. It is *declared* in `agent/claims.py:UNREACHABLE` alongside
-`checks_disagree`, with a test asserting no artifact edge can produce either — named rather than silently
-absent, so a future corpus that could express one fails the test instead of quietly making it reachable.
+**What the corpus can and cannot say about disagreement — decision A1 is CLOSED, do not re-open it.**
+*(Updated 2026-09-04, phase 6 step 5.)* A1 said `contested` was **arithmetically** unreachable because
+disagreement needs two sources and every edge had exactly one. That was correct. **Step 4 ingested
+DBpedia, so the precondition A1 named has arrived**: `contested` left `agent/claims.py:UNREACHABLE` at
+artifact v0.7.0 and **2 pairs are contested**. `checks_disagree` is still declared there.
 
-What ships instead is **`verification`**, on every edge and copied onto every approved claim by the gate:
-`HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`, `EXPOSURE_AUTO`. It says **how strongly this claim's one source was
-checked. It is not a count of agreeing sources and not a disputed flag** — reading these tiers as
-corroboration is reading the opposite of the truth. Phase 6's second source is what would make `contested`
-reachable; `SPEC.md` §7 and `phase-3-agent-loop.md` A1.1 carry the detail.
+**`contested` means two DIFFERENT sources assert opposite directions for one pair.** It does **not** mean
+a reciprocal pair exists — v0.7.0 holds **6 reciprocal pairs and only 2 are contested**; the other four
+are a single source describing mutual influence, which between genres is often a real claim. The loose
+definition overcounts by 3x. It is a property of a **pair**, derived in `graph/corroboration.py`, never
+stamped on a row and never proposed by the model.
+
+**Two fields, two different guarantees, never collapsed.** `verification` — `HAND`, `PROSE_AUTO`,
+`ASSERTS_AUTO`, `EXPOSURE_AUTO`, `INFOBOX_AUTO`, two `MEMBERSHIP_*` — says **how strongly ONE source was
+checked**. `Edge.corroboration` says **whether a second source agrees** (82 edges). A corroborated
+`PROSE_AUTO` edge is not thereby a `HAND` edge, and reading a verification tier as corroboration is still
+reading the opposite of the truth. **2,203 of 2,285 influence edges remain single-source**, so the corpus
+surfaces disagreement only where DBpedia has an opinion at all — say that, not "it knows what is
+disputed." `SPEC.md` §7 and `phase-3-agent-loop.md` A1.1 carry the detail.

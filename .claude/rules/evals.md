@@ -8,8 +8,13 @@ marketing word. Hard rules:
   the headline correctness metrics are dictionary lookups: does edge (subject, predicate, object) exist in
   the pinned artifact. Groundedness, citation resolution, traversal recall/precision, refusal accuracy,
   **`verification_mix`**, coverage honesty, injection resistance, cost and latency. No approval needed, $0.
-  *(This list said "contested flagging" until 2026-08-24. Contested is unreachable on a one-source corpus —
-  see `.claude/rules/grounding-and-claims.md`, decision A1 — and `verification_mix` is what replaced it.)*
+  *(This list said "contested flagging" until 2026-08-24, when contested was unreachable on a one-source
+  corpus and `verification_mix` replaced it. **Amended 2026-09-04: contested is REACHABLE at artifact
+  v0.7.0** — 2 pairs — so a contested metric is now buildable. It is NOT yet in this catalog, and adding
+  one is a deliberate act with a threshold decision attached, not a gap to be quietly filled. Note the
+  denominator problem before proposing one: 2,203 of 2,285 influence edges are single-source, so a
+  contested rate over all edges measures DBpedia's coverage far more than it measures disagreement. See
+  `.claude/rules/grounding-and-claims.md`.)*
 - **Tier 2 is judged, sampled, and gated.** Citation *support* and narrative quality only. 20–30 samples,
   release candidates only, behind an explicit spend confirmation.
 - **Block on correctness properties, track quality preferences.** Blocking: edge groundedness 100%,
