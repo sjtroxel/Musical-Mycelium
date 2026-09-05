@@ -12,6 +12,7 @@ import {
   type MotionMode,
   type View,
 } from "./motion";
+import { PREDICATE_INFLUENCED_BY } from "./staticGraph";
 import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
 import {
   CLICK_SLOP,
@@ -81,6 +82,8 @@ interface SimLink {
   source: SimNode;
   target: SimNode;
   kind: RenderEdge["kind"];
+  /** Influence or membership. Carried through so the draw loop never has to guess. */
+  predicate: string;
   order: number | null;
   /** True when the gate approved this edge since the last draw. Only ever true for a claimed edge. */
   entering: boolean;
@@ -110,6 +113,10 @@ function palette(root: Element): Record<string, string> {
     // The map's context edges read `--edge-context`, not `--rule`. Same colour until step 6; two
     // different jobs, and only one of them is content the caption counts out loud.
     edgeContext: token("--edge-context", "#b0b0a7"),
+    // Membership, added at phase 6 step 8. Its own token rather than a reuse of `--edge-context`,
+    // for the same reason step 6 split `--edge-context` off `--rule`: two meanings sharing one
+    // value is a collision waiting for the next redesign to make visible.
+    edgeMembership: token("--edge-membership", "#c9c4d8"),
     card: token("--card", "#ffffff"),
     accent: token("--accent", "#3d5a45"),
   };
@@ -303,6 +310,7 @@ export function GraphView({
           source,
           target,
           kind: edge.kind,
+          predicate: edge.predicate,
           order: edge.order,
           // Only a claimed edge can enter. A context edge appearing is a side effect of the
           // neighbourhood growing, not a thing the gate decided, and animating it would give the
@@ -426,18 +434,35 @@ export function GraphView({
       ctx.clearRect(0, 0, width, frameHeight);
 
       // Context first, so an unclaimed corpus edge can never be drawn over an approved one.
+      //
+      // **Membership is drawn differently from influence, and that is a correctness requirement
+      // rather than a style choice.** `plays_genre` says an artist worked in a genre; it says
+      // nothing about what came first. Drawn identically to an influence edge it would assert
+      // derivation the corpus never recorded -- `CLAUDE.md`: membership must never read as
+      // derivation. Three separate things keep them apart, because one would be a thin defence:
+      // `layerOf` refuses membership any influence depth, this loop draws it dotted rather than
+      // solid, and `NodeInspector` names the relation in words.
+      //
+      // Dotted `[1, 3]`, deliberately NOT the `[2, 2]` dash a node's ring uses for an incomplete
+      // record. Two dash patterns carrying two unrelated meanings in one picture is how an encoding
+      // starts lying; these are different elements AND different patterns.
       for (const link of links) {
         const source = link.source as SimNode;
         const target = link.target as SimNode;
         if (link.kind !== "context") continue;
+        const membership = link.predicate !== PREDICATE_INFLUENCED_BY;
         const [sx, sy] = px(source);
         const [tx, ty] = px(target);
-        ctx.strokeStyle = colors.edgeContext ?? "#b0b0a7";
+        ctx.strokeStyle = membership
+          ? (colors.edgeMembership ?? "#c9c4d8")
+          : (colors.edgeContext ?? "#b0b0a7");
         ctx.lineWidth = 1;
+        if (membership) ctx.setLineDash([1, 3]);
         ctx.beginPath();
         ctx.moveTo(sx, sy);
         ctx.lineTo(tx, ty);
         ctx.stroke();
+        if (membership) ctx.setLineDash([]);
       }
 
       for (const link of links) {

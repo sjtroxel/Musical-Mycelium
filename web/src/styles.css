@@ -680,6 +680,19 @@ code {
   grid-row: span 2;
 }
 
+/*
+ * Full width, phase 6 step 8.
+ *
+ * **Measured, not styled by eye.** `Where` spans two rows, so a fourth axis lands in row 3 column 1
+ * and leaves **639px of empty column 2** beside it -- the dead-quarter-panel defect headless
+ * Chromium caught on 2026-09-01, invisible to 159 passing tests because jsdom has no layout. A
+ * full-width band uses the space instead of leaving a hole, and the contested rows are prose, which
+ * reads better across one wide measure than down a narrow one.
+ */
+.cov__axis--wide {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 44rem) {
   .cov__axes {
     grid-template-columns: 1fr;
@@ -759,14 +772,30 @@ code {
   border-top: 1px solid var(--rule);
 }
 
+/*
+ * The long tail, drawn as one mark per further place.
+ *
+ * **`flex-wrap` was `wrap` until phase 6 step 8 and it had to go.** At 29 places the tail was 21
+ * marks and sat comfortably on one line. At v0.7.1 it is 57, which wrapped onto a second line of
+ * four — and a full-width row of marks above a short stub reads as a BROKEN BAR, i.e. as another
+ * data row, rather than as "and a long tail of small ones". That is the same defect class headless
+ * Chromium caught on 2026-09-01, when a tick row butted against a bar and read as one.
+ *
+ * `nowrap` plus a flexible gap keeps them on a single line at any tail length: the marks compress
+ * instead of spilling. They carry no quantity themselves — the count and the names are both in the
+ * sentence below — so compressing them loses nothing, while wrapping them invented a row.
+ */
 .cov__ticks {
   display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  gap: 0;
   margin-bottom: 0.4rem;
+  overflow: hidden;
 }
 
 .cov__tick {
+  flex: 0 0 3px;
   inline-size: 3px;
   block-size: 0.6rem;
   background: var(--ink-faint);
@@ -799,6 +828,47 @@ code {
 }
 
 /*
+ * Where two sources disagree, phase 6 step 8.
+ *
+ * **Both sides get identical styling and that is the point, not an economy.** Any difference in
+ * weight, order emphasis or colour between the two would pick a winner in CSS, which is exactly what
+ * `.claude/rules/grounding-and-claims.md` forbids the product from doing. They are separated by a
+ * rule, not ranked.
+ *
+ * `--ink-soft`, never `--accent`: the accent means gate-approved, and a contested pair is the one
+ * thing on this panel that is emphatically not settled.
+ */
+.cov__contested {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: 0.75rem 2rem;
+}
+
+.cov__contestedPair {
+  padding-inline-start: 0.7rem;
+  border-inline-start: 2px solid var(--rule);
+}
+
+.cov__contestedSide {
+  margin: 0 0 0.15rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.cov__contestedSide:last-child {
+  margin-bottom: 0;
+}
+
+.cov__contestedTier {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+/*
  * DoD 6 lands properly at step 7 with the motion previews. The query is here now because the two
  * transitions above are the only motion in the file, and honouring it costs three lines rather than a
  * retrofit.
@@ -809,4 +879,21 @@ code {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/*
+ * The CC BY-SA attribution, phase 6 step 8. Sized like the grounded note above it rather than like
+ * fine print: `.claude/rules/graph-semantics.md` asks for the attribution to be displayed and not
+ * buried, and setting it two steps smaller than everything around it would be burying it in
+ * typography while claiming it is on the page.
+ */
+.footer__licences {
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.footer__licences a {
+  color: inherit;
 }

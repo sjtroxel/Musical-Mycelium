@@ -77,7 +77,7 @@ describe("clicking a chip", () => {
     screen.getByRole("button", { name: /Where did acid jazz come from/i }).click();
 
     await waitFor(() => {
-      expect(screen.getByText(/4 cited claims/i)).toBeDefined();
+      expect(screen.getByText(/5 cited claims/i)).toBeDefined();
     });
 
     // Every rendered claim carries at least one source link. "Citation resolution" is a blocking eval

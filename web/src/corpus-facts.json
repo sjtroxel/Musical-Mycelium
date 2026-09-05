@@ -1,28 +1,32 @@
 {
   "_comment": [
-    "Corpus figures the SPA RENDERS -- as copy on the first screen and as the coverage panel's bars.",
-    "They are kept as data, not as literals in a component, so tests/test_corpus_facts.py can assert",
-    "them against the pinned artifact. A number typed into a paragraph is a number that rots silently;",
-    "this project has already retracted one published percentage (the 2026-08-06 77% figure, which",
-    "double-counted genres credited to both the US and the UK).",
+    "GENERATED FILE -- do not edit by hand. Regenerate with `make facts`.",
+    "Source of truth: src/musical_mycelium/graph/facts.py, over the pinned artifact.",
+    "tests/test_corpus_facts.py fails if the committed file has drifted from what the generator",
+    "produces, so a corpus cut fails the build rather than a demo.",
+    "",
+    "These are the corpus figures the SPA RENDERS -- as copy on the first screen and as the coverage",
+    "panel's bars. A number typed into a paragraph is a number that rots silently; this project has",
+    "already retracted one published percentage (the 2026-08-06 77% figure, which double-counted",
+    "genres credited to both the US and the UK).",
     "",
     "nodes_without_recorded_influences underwrites IMPLEMENTATION 4.5 requirement 5: a refusal must",
-    "never become the negative claim 'nobody influenced X'. Most of the corpus has no recorded",
-    "influences, so a missing edge is overwhelmingly not evidence of a missing influence.",
+    "never become the negative claim 'nobody influenced X'. A large share of the corpus has no",
+    "recorded influences, so a missing edge is usually not evidence of a missing influence.",
     "",
-    "`coverage` is graph/coverage.py's analyse() verbatim, asserted whole rather than key by key, so a",
-    "corpus cut that moves any figure fails the build rather than a demo. It measures the 169 GENRES",
-    "only -- artist nodes are deliberately unmeasured (P571/P495 are genre properties, and one figure",
-    "across both axes would let 804 never-asked artist nodes dilute it toward zero). Its `countries`",
-    "values are Wikidata P495's, which include Brixton, Hawaii, Scandinavia and Europe: the panel says",
-    "PLACES, not countries, because that is what the property actually returns.",
+    "`coverage` is Coverage.as_dict() verbatim -- the WIRE CONTRACT, what /health and the `done`",
+    "frame serve. It measures GENRES only; artist nodes are deliberately unmeasured, because P571",
+    "and P495 are genre properties and one figure across both axes would let artist nodes dilute it",
+    "toward zero. Its `countries` values are Wikidata P495's, which include Brixton, Hawaii,",
+    "Scandinavia and Europe: the panel says PLACES, not countries, because that is what the property",
+    "actually returns.",
     "",
-    "`density` is step 9's third axis and it is the one analyse() does not measure. It belongs in",
-    "Coverage proper; putting it there is a backend edit to a serialized contract, which DoD 9 forbids",
-    "in phase 5, so it is computed here and KNOWN-GAPS records that phase 6 should move it.",
-    "DIRECTION MATTERS and it is this project's named failure mode: `subject influenced_by object`, so",
-    "genres_without_recorded_origins counts genres that are never a SUBJECT -- the corpus records",
-    "nothing about where they came from. It is not a count of genres that influenced nothing."
+    "`density` is the rest of the Coverage dataclass, which as_dict() does not serialise. It moved",
+    "into Coverage proper at phase 6; the split from `coverage` is kept because merging them would",
+    "widen the API payload as a side effect. DIRECTION MATTERS and it is this project's named failure",
+    "mode: `subject influenced_by object`, so genres_without_recorded_origins counts genres that are",
+    "never a SUBJECT -- the corpus records nothing about where they came from. It is not a count of",
+    "genres that influenced nothing."
   ],
   "artifact_version": "0.7.1",
   "nodes": 1479,
@@ -112,6 +116,63 @@
     "genres_without_us_or_uk": 136,
     "top_country": "United States",
     "top_country_share": 0.541
+  },
+  "corroboration": {
+    "influence_edges": 2284,
+    "corroborated": 82,
+    "single_source": 2202,
+    "reciprocal_pairs": 6,
+    "contested_pairs": 2,
+    "contested": [
+      {
+        "a": {
+          "id": "Q1425111",
+          "label": "western music"
+        },
+        "b": {
+          "id": "Q18217098",
+          "label": "New Mexico music"
+        },
+        "a_from_b": {
+          "subject_id": "Q1425111",
+          "object_id": "Q18217098",
+          "source": "dbpedia",
+          "source_id": "http://dbpedia.org/resource/Western_music_(North_America)",
+          "verification": "INFOBOX_AUTO"
+        },
+        "b_from_a": {
+          "subject_id": "Q18217098",
+          "object_id": "Q1425111",
+          "source": "wikidata",
+          "source_id": "http://www.wikidata.org/entity/statement/Q18217098-30EFBDDD-53B2-4936-B81A-8697928719AD",
+          "verification": "PROSE_AUTO"
+        }
+      },
+      {
+        "a": {
+          "id": "Q188450",
+          "label": "electropop"
+        },
+        "b": {
+          "id": "Q861823",
+          "label": "electroclash"
+        },
+        "a_from_b": {
+          "subject_id": "Q188450",
+          "object_id": "Q861823",
+          "source": "wikidata",
+          "source_id": "http://www.wikidata.org/entity/statement/Q188450-C28D697F-A8F8-48F1-930A-7A2382621F84",
+          "verification": "PROSE_AUTO"
+        },
+        "b_from_a": {
+          "subject_id": "Q861823",
+          "object_id": "Q188450",
+          "source": "dbpedia",
+          "source_id": "http://dbpedia.org/resource/Electroclash",
+          "verification": "INFOBOX_AUTO"
+        }
+      }
+    ]
   },
   "density": {
     "genres_without_recorded_origins": 266,

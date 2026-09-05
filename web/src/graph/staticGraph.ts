@@ -28,6 +28,22 @@ export interface ArtifactNode {
   revision_id: number | null;
 }
 
+/**
+ * The two predicates this corpus holds, named once so nothing compares against a bare string.
+ *
+ * **They are different KINDS of statement and the map must never let one read as the other.**
+ * `influenced_by` is a claim about derivation: this came out of that, and it runs in time.
+ * `plays_genre` is a claim about membership: this artist worked in that genre, which says nothing
+ * about what came first. At artifact v0.7.1 membership is the MAJORITY of the edge set (2,782 of
+ * 5,066), so a renderer that treats every edge as influence is wrong about most of the picture.
+ *
+ * Mirrors `graph/schema.py`'s `PREDICATE_INFLUENCED_BY` / `PREDICATE_PLAYS_GENRE`. Only the first is
+ * in `agent/claims.py:ALLOWED_PREDICATES`, so a *claimed* edge is always influence and a membership
+ * edge can only ever reach the map as context.
+ */
+export const PREDICATE_INFLUENCED_BY = "influenced_by";
+export const PREDICATE_PLAYS_GENRE = "plays_genre";
+
 export interface ArtifactEdge {
   subject_id: string;
   object_id: string;

@@ -42,6 +42,7 @@ from musical_mycelium.agent.loop import (
 from musical_mycelium.agent.tools import default_registry
 from musical_mycelium.api.telemetry import emit_query_cost
 from musical_mycelium.graph.memory import default_store
+from musical_mycelium.graph.schema import Edge
 
 #: Paid during Lambda INIT, not during the first request. See the module docstring.
 STORE = default_store()
@@ -137,22 +138,33 @@ def corpus_summary() -> dict[str, Any]:
     a minority was read by a human. Publishing the split is what keeps "grounded" meaning traceable
     rather than correct.
 
-    ``coverage`` is the third honest half and the bluntest one: 28 of 169 genres carry no inception date
-    at all, only 13 originate before 1950, and **78 of the 121 genres that name any place name the US or
-    the UK**. The corpus skews Western, anglophone and recent **by construction**, and ``CLAUDE.md``
-    requires that to be visible in output rather than footnoted.
+    ``coverage`` is the third honest half and the bluntest one. **Re-measured at artifact v0.7.1,
+    2026-09-05:** 198 of 675 genres carry no inception date at all, and the top place accounts for 245
+    of them. The corpus skews Western, anglophone and recent **by construction**, and ``CLAUDE.md``
+    requires that to be visible in output rather than footnoted. *(These read "28 of 169" and "78 of
+    the 121" until step 8; the shape of the skew is unchanged and the corpus under it is four times
+    larger.)*
 
     That figure is stated as a **count, not a percentage, deliberately.** It read "77%" here until
     2026-08-07 — the retracted 2026-08-06 number, which came from adding the US and UK country totals
     and double-counting every genre credited to both. The count is the form that made the error visible,
-    so the count is the form that ships. **43 genres name neither**, across 29 distinct places, and that
-    counterweight is not optional garnish: a concentration figure published without it misdescribes the
-    corpus in the other direction.
+    so the count is the form that ships. **136 genres name neither the US nor the UK**, across 65
+    distinct places, and that counterweight is not optional garnish: a concentration figure published
+    without it misdescribes the corpus in the other direction.
 
     ``structure`` is the other honest half, and it is the one a visitor cannot infer from an edge count.
-    The graph is not one organism yet — it is many disconnected islands — so relating two genres is a
-    capability *within* a component, and ``max_path_hops`` is the deepest chain the corpus can actually
-    return. Stating both is what stops an empty answer from reading as a failure when it is a boundary.
+    Relating two things is a capability *within* a component, and ``max_path_hops`` is the deepest chain
+    the corpus can actually return. Stating both is what stops an empty answer from reading as a failure
+    when it is a boundary. *(This said "the graph is not one organism yet — it is many disconnected
+    islands" through v0.5.0's 169 components. At v0.7.1 there are **7**, with 1,465 of 1,479 nodes in
+    the largest, because P136 membership connects the artist and genre axes. The sentence was true and
+    is not; what remains true is that reachability is a per-component question.)*
+
+    ``corroboration`` is the fourth, and the newest. ``verification`` says how hard **one** source was
+    checked; this says whether a **second** agrees. They are different guarantees and collapsing them
+    reads as the opposite of the truth. Both ``reciprocal_pairs`` and ``contested_pairs`` are served,
+    never one alone — 6 against 2 at v0.7.1 — and ``contested`` carries each disagreement in full so a
+    reader is shown both directions and both sources rather than a winner.
     """
     return {
         "artifact_version": STORE.artifact_version,
@@ -161,7 +173,40 @@ def corpus_summary() -> dict[str, Any]:
         "verification": STORE.verification_counts,
         "structure": STORE.structure.as_dict(),
         "coverage": STORE.coverage.as_dict(),
+        "corroboration": {
+            **STORE.corroboration,
+            # Each disagreement in full. The honest presentation shows BOTH directions and names
+            # BOTH sources and picks no winner -- `.claude/rules/grounding-and-claims.md`: flag it,
+            # do not resolve it. `verification` rides along on each edge because it is a different
+            # question from corroboration and the interface must be able to show two numbers where
+            # there are two, never one.
+            "contested": [
+                {
+                    "a": {"id": pair.a, "label": _label(pair.a)},
+                    "b": {"id": pair.b, "label": _label(pair.b)},
+                    "a_from_b": _contested_edge(pair.a_from_b),
+                    "b_from_a": _contested_edge(pair.b_from_a),
+                }
+                for pair in STORE.contested
+            ],
+        },
         "predicate": "influenced_by",
+    }
+
+
+def _label(node_id: str) -> str:
+    node = STORE.get_node(node_id)
+    return node.label if node else node_id
+
+
+def _contested_edge(edge: Edge) -> dict[str, Any]:
+    """One side of a disagreement, as the interface needs to state it."""
+    return {
+        "subject_id": edge.subject_id,
+        "object_id": edge.object_id,
+        "source": edge.source,
+        "source_id": edge.source_id,
+        "verification": edge.verification,
     }
 
 

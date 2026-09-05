@@ -1,3 +1,4 @@
+import { PREDICATE_INFLUENCED_BY } from "./staticGraph";
 import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
 
 /**
@@ -55,6 +56,13 @@ export function layerOf(
   const outgoing = new Map<string, string[]>(nodes.map((node) => [node.id, []]));
 
   for (const edge of edges) {
+    // **Membership creates no depth, and this line is the whole reason the map can show artists and
+    // genres together honestly.** x is influence depth, so a node's column asserts "everything to my
+    // left came before me". `plays_genre` carries no such claim: an artist who played bebop is not
+    // downstream of bebop, and laying them out as though they were would draw derivation the corpus
+    // never recorded -- the exact thing `CLAUDE.md` forbids when it says membership must never read
+    // as derivation. Skipped here rather than filtered by the caller so every caller gets it.
+    if (edge.predicate !== PREDICATE_INFLUENCED_BY) continue;
     if (!known.has(edge.from) || !known.has(edge.to)) continue;
     indegree.set(edge.to, (indegree.get(edge.to) ?? 0) + 1);
     outgoing.get(edge.from)?.push(edge.to);

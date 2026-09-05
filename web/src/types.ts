@@ -5,7 +5,28 @@
 // deployed separately, and a generated type would hide a backend change behind a rebuild instead of
 // surfacing it as a type error here.
 
-export type Verification = "HAND" | "PROSE_AUTO" | "ASSERTS_AUTO" | "EXPOSURE_AUTO";
+/**
+ * How strongly the ONE source behind an edge was checked. Mirrors `graph/schema.py`.
+ *
+ * **Widened at phase 6 step 8, and it was stale before that.** Artifact v0.7.0 added `INFOBOX_AUTO`
+ * and v0.6.0 the two `MEMBERSHIP_*` tiers, while this union still listed the original four — so a
+ * real claim carrying `INFOBOX_AUTO` had no type for it and `ClaimList` fell through to printing the
+ * raw constant at a reader. `contract.test.ts` caught it on the re-pin, which is exactly the job that
+ * file exists to do.
+ *
+ * **`INFOBOX_AUTO` is weaker than `PROSE_AUTO`, not stronger, and never a second source.** It means
+ * DBpedia took the edge from an article's infobox and the same article's prose confirmed it: one page
+ * agreeing with itself. The `MEMBERSHIP_*` pair applies to `plays_genre` edges, which the gate never
+ * approves, so they reach the interface only on context edges the map draws.
+ */
+export type Verification =
+  | "HAND"
+  | "PROSE_AUTO"
+  | "ASSERTS_AUTO"
+  | "EXPOSURE_AUTO"
+  | "INFOBOX_AUTO"
+  | "MEMBERSHIP_CITED"
+  | "MEMBERSHIP_BARE";
 
 export interface Span {
   start: number;
@@ -19,9 +40,15 @@ export interface Claim {
   source_ids: string[];
   /**
    * How strongly this claim's ONE source was checked. **Not a count of agreeing sources and not a
-   * disputed flag.** Every edge in this corpus has exactly one source, always Wikidata, so nothing
-   * here could corroborate anything. Any UI that renders this as consensus is stating the opposite
-   * of the truth — see `.claude/rules/grounding-and-claims.md`.
+   * disputed flag.** Corroboration is a separate field on the edge and the two must never be
+   * collapsed: a corroborated `PROSE_AUTO` edge is not thereby a `HAND` edge. Any UI that renders
+   * this as consensus is stating the opposite of the truth — see
+   * `.claude/rules/grounding-and-claims.md`.
+   *
+   * *(This said "every edge in this corpus has exactly one source, always Wikidata" until phase 6
+   * step 8. That was true through artifact v0.5.0 and false from v0.7.0, which ingested DBpedia:
+   * 82 influence edges now carry a second source. The great majority — 2,202 of 2,284 — are still
+   * single-source, so the correction is to the absolute, not to the emphasis.)*
    */
   verification: Verification;
   span: Span | null;

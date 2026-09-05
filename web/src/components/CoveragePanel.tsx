@@ -12,7 +12,9 @@ import facts from "../corpus-facts.json";
  * The corpus is dense in post-war anglophone material and thin elsewhere. Collapsing that into "it is
  * only recent Western music" is the same overclaiming failure as hiding the skew -- it just errs
  * toward false modesty, and it is false about a corpus holding medieval music dated 500, samba,
- * kuduro, Anatolian rock and 43 genres that name neither the US nor the UK. So every concentration
+ * kuduro, Anatolian rock and 136 genres that name neither the US nor the UK. *(That figure read 43
+ * until phase 6 step 8; the corpus went from 169 genres to 675 and the counterweight grew with it.)*
+ * So every concentration
  * figure here renders next to its counterweight, in the same block, and
  * `tests/test_corpus_facts.py::test_the_skew_cannot_be_rendered_without_its_counterweight` fails if a
  * future corpus makes that counterweight a fig leaf.
@@ -23,14 +25,15 @@ import facts from "../corpus-facts.json";
  *
  * **Bars are `--ink-soft`, never `--accent`.** Step 6 decided the accent means gate-approved. Nothing
  * on this panel has been approved by anything -- these are properties of the corpus, not findings
- * about music -- and the standing trap is that the four `verification` tiers must never appear on a
- * colour ramp. This panel is counts and must not drift into looking like that.
+ * about music -- and the standing trap is that the `verification` tiers must never appear on a
+ * colour ramp. *(There are seven of them now, not four: v0.6.0 added the two `MEMBERSHIP_*` tiers
+ * and v0.7.0 `INFOBOX_AUTO`.)* This panel is counts and must not drift into looking like that.
  *
  * All figures come from `corpus-facts.json`, which `tests/test_corpus_facts.py` asserts against the
  * pinned artifact whole. Nothing here is typed into the markup.
  */
 
-const { coverage, density } = facts;
+const { coverage, density, corroboration } = facts;
 
 /** How many places get their own bar before the tail is drawn as marks instead. */
 export const NAMED_PLACES = 8;
@@ -155,24 +158,53 @@ function Where() {
   );
 }
 
+/**
+ * The density histogram's buckets.
+ *
+ * **Measured and decided at phase 6 step 8, after screenshotting it.** One bar per distinct
+ * connection count was right at v0.5.0, where genres topped out at 6 connections and the axis was
+ * six bars. At v0.7.1 the busiest genre has 55 and the corpus produces **35 distinct counts**, which
+ * rendered as 35 bars in **974px** -- a full screen, on a panel already 1,961px tall against a
+ * 900px viewport. Twenty-six of those bars counted five genres or fewer. An axis where two thirds of
+ * the rows are a near-identical tail does not show a distribution, it buries one.
+ *
+ * **Counts, never percentages -- the bucketing must not become a rate through the back door.** Each
+ * bar still shows how many genres, and the buckets still sum to every genre; grouping adjacent
+ * counts is not the failure that retracted the 2026-08-07 percentage, which came from *dividing*.
+ * `tests/test_corpus_facts.py` asserts the raw `connections` map against the artifact and this
+ * function does not touch it -- bucketing is a display decision over data that stays whole.
+ *
+ * **0 through 9 stay individual because that is where the corpus is**: 613 of 675 genres. The thin
+ * end is the finding, so it keeps its resolution; the long sparse end is grouped.
+ */
+const DENSITY_BUCKETS: { label: string; from: number; to: number }[] = [
+  ...Array.from({ length: 10 }, (_, i) => ({
+    label: `${i} ${i === 1 ? "connection" : "connections"}`,
+    from: i,
+    to: i,
+  })),
+  { label: "10 to 19", from: 10, to: 19 },
+  { label: "20 to 29", from: 20, to: 29 },
+  { label: "30 to 39", from: 30, to: 39 },
+  { label: "40 or more", from: 40, to: Infinity },
+];
+
 function HowDensely() {
   const connections = density.connections as Record<string, number>;
-  const buckets = Object.entries(connections).sort(
-    (left, right) => Number(left[0]) - Number(right[0]),
-  );
+  const buckets = DENSITY_BUCKETS.map((bucket) => {
+    const total = Object.entries(connections)
+      .filter(([key]) => Number(key) >= bucket.from && Number(key) <= bucket.to)
+      .reduce((sum, [, count]) => sum + count, 0);
+    return [bucket.label, total] as const;
+  }).filter(([, count]) => count > 0);
   const max = Math.max(...buckets.map(([, count]) => count));
 
   return (
     <section className="cov__axis">
       <h3 className="cov__axisTitle">How densely</h3>
       <div className="cov__rows">
-        {buckets.map(([connections_, count]) => (
-          <Bar
-            key={connections_}
-            label={`${connections_} ${connections_ === "1" ? "connection" : "connections"}`}
-            count={count}
-            max={max}
-          />
+        {buckets.map(([label, count]) => (
+          <Bar key={label} label={label} count={count} max={max} />
         ))}
       </div>
       {/* The direction sentence. `subject influenced_by object`, so a genre that is never a subject
@@ -182,6 +214,73 @@ function HowDensely() {
         {density.genres_without_recorded_origins} of the {coverage.genres} genres have no recorded
         origin at all &mdash; the corpus holds nothing about where they came from. That is the state
         of the sources, not a finding about the music.
+      </p>
+    </section>
+  );
+}
+
+/**
+ * Where two sources disagree, shown as a disagreement rather than resolved into an answer.
+ *
+ * **This is the first thing on this panel that is not a count of the corpus but a statement about
+ * its sources, and the wording is load-bearing.** `.claude/rules/grounding-and-claims.md`: flag it,
+ * do not resolve it. Both directions are printed and both sources named; the panel picks no winner,
+ * because the project has no basis to.
+ *
+ * **Two counts, never one.** `reciprocal_pairs` is pairs of edges pointing both ways;
+ * `contested_pairs` is pairs pointing both ways FROM DIFFERENT SOURCES. At v0.7.1 that is 6 and 2.
+ * Printing only the second invites "so the corpus agrees everywhere else"; printing only the first
+ * overstates disagreement by 3x. Both, side by side, or neither.
+ *
+ * **And the denominator is stated, because it is the honest limit.** 2,202 of 2,284 influence edges
+ * have exactly one source, so this corpus can only surface disagreement on the 82 where a second
+ * source speaks at all. "This system surfaces disagreement between two sources where both speak" is
+ * true; "this system knows which influence claims are disputed" is not, and the difference is the
+ * sentence below.
+ */
+function WhereSourcesDisagree() {
+  if (corroboration.contested.length === 0) return null;
+
+  return (
+    <section className="cov__axis cov__axis--wide">
+      <h3 className="cov__axisTitle">Where the sources disagree</h3>
+
+      <ul className="cov__contested">
+        {corroboration.contested.map((pair) => (
+          <li key={`${pair.a.id}-${pair.b.id}`} className="cov__contestedPair">
+            {/* Both directions, each with the source that says it. Deliberately not a sentence
+                like "X came out of Y, but Z disagrees" -- that shape makes the first clause the
+                claim and the second the objection, which is picking a winner in grammar. */}
+            <p className="cov__contestedSide">
+              <strong>{pair.a.label}</strong> came out of <strong>{pair.b.label}</strong>, according
+              to {pair.a_from_b.source}
+              <span className="cov__contestedTier"> ({pair.a_from_b.verification})</span>
+            </p>
+            <p className="cov__contestedSide">
+              <strong>{pair.b.label}</strong> came out of <strong>{pair.a.label}</strong>, according
+              to {pair.b_from_a.source}
+              <span className="cov__contestedTier"> ({pair.b_from_a.verification})</span>
+            </p>
+          </li>
+        ))}
+      </ul>
+
+      <p className="cov__note">
+        {corroboration.contested.length} of the {corroboration.reciprocal_pairs} pairs that point
+        both ways are contested — two different sources asserting opposite directions. The other{" "}
+        {corroboration.reciprocal_pairs - corroboration.contested.length} are a single source
+        describing mutual influence, which between genres is often a real claim rather than a
+        contradiction.
+      </p>
+      <p className="cov__note">
+        {corroboration.single_source} of the {corroboration.influence_edges} influence connections
+        have exactly one source, so disagreement can only surface on the{" "}
+        {corroboration.corroborated} where a second source speaks at all. This is not a list of what
+        is disputed about music; it is what two sources here happen to contradict each other about.
+      </p>
+      <p className="cov__note">
+        The tier in brackets says how hard <em>that one source</em> was checked. It is not a measure
+        of who is right, and a stronger tier on one side does not settle the pair.
       </p>
     </section>
   );
@@ -226,6 +325,7 @@ export function CoveragePanel({ answeredVersion }: { answeredVersion: string | n
           <When />
           <Where />
           <HowDensely />
+          <WhereSourcesDisagree />
         </div>
       </div>
     </details>

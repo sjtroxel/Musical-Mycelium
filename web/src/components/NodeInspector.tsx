@@ -1,3 +1,4 @@
+import { PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE } from "../graph/staticGraph";
 import type { ArtifactEdge, StaticGraph } from "../graph/staticGraph";
 import type { RenderNode } from "../graph/subgraph";
 
@@ -21,18 +22,33 @@ import type { RenderNode } from "../graph/subgraph";
  * and it does it the long way round — a real `/lineage` query, a real traversal, the same gate.
  */
 
-/** Which way the influence runs, from this node's point of view. */
-function split(
+/**
+ * This node's neighbours, separated by what the corpus actually says about each one.
+ *
+ * **Three lists, not two, and the third is why this function changed at phase 6 step 8.** Until
+ * artifact v0.7.1 every incident edge was `influenced_by`, so subject/object was the only question
+ * worth asking. v0.7.1 added 2,782 `plays_genre` edges, stored as `artist plays_genre genre` — and
+ * run through the old two-way split they landed in the influence lists by their subject/object
+ * position alone. The panel would have said Miles Davis **came out of** jazz, and jazz **led to**
+ * Fred Astaire. That is derivation asserted in plain English about a membership fact, which is the
+ * failure `CLAUDE.md` names and the map's dotted line exists to prevent in ink.
+ *
+ * Membership is therefore filtered out of both influence lists and returned as its own, with its own
+ * heading. Playing a genre is not descent from it in either direction.
+ */
+export function split(
   graph: StaticGraph,
   id: string,
-): { parents: ArtifactEdge[]; children: ArtifactEdge[] } {
+): { parents: ArtifactEdge[]; children: ArtifactEdge[]; membership: ArtifactEdge[] } {
   const incident = [...(graph.incident.get(id) ?? [])];
+  const influence = incident.filter((edge) => edge.predicate === PREDICATE_INFLUENCED_BY);
   return {
     // `subject influenced_by object`: influence runs object -> subject. So an edge where THIS node
     // is the subject is one of its parents. Getting this backwards is the project's named failure
     // mode and it would label the whole panel the wrong way round.
-    parents: incident.filter((edge) => edge.subject_id === id),
-    children: incident.filter((edge) => edge.object_id === id),
+    parents: influence.filter((edge) => edge.subject_id === id),
+    children: influence.filter((edge) => edge.object_id === id),
+    membership: incident.filter((edge) => edge.predicate === PREDICATE_PLAYS_GENRE),
   };
 }
 
@@ -135,8 +151,8 @@ export function NodeInspector({
     );
   }
 
-  const { parents, children } = split(graph, node.id);
-  const degree = parents.length + children.length;
+  const { parents, children, membership } = split(graph, node.id);
+  const degree = parents.length + children.length + membership.length;
 
   return (
     <aside className="inspector" aria-label={`About ${node.label}`}>
@@ -173,8 +189,8 @@ export function NodeInspector({
       {degree === 0 ? (
         <p className="inspector__facts">
           {/* Never a negative claim about the music — the same rule the refusal panel follows. */}
-          The corpus records no influences for this node in either direction. That is the state of
-          the sources, not a finding about the music.
+          The corpus records no influences and no genre membership for this node in either
+          direction. That is the state of the sources, not a finding about the music.
         </p>
       ) : (
         <>
@@ -209,6 +225,18 @@ export function NodeInspector({
           <NeighbourList
             title="Led to"
             edges={children}
+            id={node.id}
+            graph={graph}
+            onFollow={onFollow}
+          />
+          {/* Membership, and the heading carries the whole distinction. "Came out of" and "Led to"
+              are claims about descent; this one is a claim about who worked where, and it is
+              deliberately worded so it cannot be read as either. It reads differently depending on
+              which end you are standing at, because the relation is not symmetric in English even
+              though it is one edge. */}
+          <NeighbourList
+            title={node.kind === "artist" ? "Played in" : "Artists recorded in it"}
+            edges={membership}
             id={node.id}
             graph={graph}
             onFollow={onFollow}

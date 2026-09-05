@@ -16,6 +16,7 @@ const edge = (from: string, to: string): RenderEdge => ({
   from,
   to,
   kind: "claimed",
+  predicate: "influenced_by",
   order: 1,
   verification: "HAND",
 });

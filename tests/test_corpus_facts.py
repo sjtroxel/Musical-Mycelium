@@ -43,6 +43,24 @@ def node_ids(store: GraphStore) -> list[str]:
     return [node["id"] for node in graph["nodes"]]
 
 
+def test_the_committed_file_is_what_the_generator_produces() -> None:
+    """The file is GENERATED. This is the lock that keeps the committed copy honest.
+
+    Decided by sjtroxel 2026-09-05, phase 6 step 8: ``web/src/corpus-facts.json`` stopped being
+    hand-maintained and became output of ``graph/facts.py``. The tests below still check the figures
+    against the artifact individually, and they are kept -- they say what each number MEANS, which a
+    byte comparison cannot. This one says nobody edited the output.
+
+    If it fails, run ``make facts``. If the diff surprises you, that is the point: a corpus cut has
+    moved a number the SPA prints as prose.
+    """
+    from musical_mycelium.graph.facts import render
+
+    assert FACTS_PATH.read_text(encoding="utf-8") == render(default_store()), (
+        "web/src/corpus-facts.json has drifted from graph/facts.py -- run `make facts`"
+    )
+
+
 def test_the_facts_file_pins_the_artifact_the_store_loaded(
     facts: dict[str, Any], store: GraphStore
 ) -> None:

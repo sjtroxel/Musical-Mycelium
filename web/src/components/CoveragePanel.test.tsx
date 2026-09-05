@@ -139,3 +139,61 @@ describe("the coverage panel", () => {
     expect(screen.queryByText(/describe corpus v/)).toBeNull();
   });
 });
+
+describe("where the sources disagree", () => {
+  it("shows both directions of every contested pair and names both sources", () => {
+    // The honest presentation, and the rule it comes from: flag disagreement, do not resolve it.
+    // A display showing one direction would be the product picking a winner it has no basis to.
+    const { container } = render(<CoveragePanel answeredVersion={null} />);
+    const pairs = container.querySelectorAll<HTMLElement>(".cov__contestedPair");
+
+    expect(pairs.length).toBe(facts.corroboration.contested.length);
+
+    facts.corroboration.contested.forEach((pair, index) => {
+      const rendered = pairs[index]!;
+      const sides = rendered.querySelectorAll(".cov__contestedSide");
+      expect(sides.length).toBe(2);
+
+      // Both labels appear on both lines, in opposite roles.
+      expect(rendered.textContent).toContain(pair.a.label);
+      expect(rendered.textContent).toContain(pair.b.label);
+      // And both sources are named, so a reader can see the disagreement is BETWEEN sources rather
+      // than an inconsistency inside one.
+      expect(rendered.textContent).toContain(pair.a_from_b.source);
+      expect(rendered.textContent).toContain(pair.b_from_a.source);
+      expect(pair.a_from_b.source).not.toBe(pair.b_from_a.source);
+    });
+  });
+
+  it("reports the reciprocal count beside the contested one, never alone", () => {
+    // 6 reciprocal, 2 contested at v0.7.1. The contested number alone reads as "everything else
+    // agrees"; the reciprocal number alone overstates disagreement by 3x. The gap between them is
+    // the finding, so both have to be on screen.
+    render(<CoveragePanel answeredVersion={null} />);
+
+    const note = screen.getByText(/pairs that point/);
+    expect(note.textContent).toContain(String(facts.corroboration.reciprocal_pairs));
+    expect(note.textContent).toContain(String(facts.corroboration.contested.length));
+  });
+
+  it("states the single-source denominator, because it is the limit of the claim", () => {
+    // 2,202 of 2,284 influence edges have one source. Without this, "the sources disagree here"
+    // reads as a survey of what is disputed about music rather than as what two sources happen to
+    // contradict on the 82 edges where both speak.
+    render(<CoveragePanel answeredVersion={null} />);
+
+    const note = screen.getByText(/have exactly one source/);
+    expect(note.textContent).toContain(String(facts.corroboration.single_source));
+    expect(note.textContent).toContain(String(facts.corroboration.influence_edges));
+    expect(note.textContent).toContain(String(facts.corroboration.corroborated));
+  });
+
+  it("does not put the accent on a contested pair", () => {
+    // The accent means gate-approved. A contested pair is the one thing on this panel that is
+    // emphatically not settled, so it must not borrow the colour that says something is.
+    const { container } = render(<CoveragePanel answeredVersion={null} />);
+    for (const pair of container.querySelectorAll<HTMLElement>(".cov__contestedPair")) {
+      expect(pair.getAttribute("style") ?? "").not.toContain("--accent");
+    }
+  });
+});

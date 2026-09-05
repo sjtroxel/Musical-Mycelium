@@ -116,10 +116,28 @@ export function App() {
           </p>
         ) : (
           <>
+            {/* **The sentence and the number both moved at phase 6 step 8.** The count is computed
+                from the `done` frame, so it self-corrected from 169 to 7 without an edit — but the
+                sentence around it was written for 169 islands and said something different there.
+                At 7 components, with the largest holding almost everything, "disconnected
+                components" would read as a caveat about a graph that is now mostly connected.
+
+                **What connects it is the amended thesis from step 1, and this is where it has to
+                appear on screen.** The organism is connected through the PEOPLE WHO PLAY ACROSS IT
+                — artist-to-genre membership — not through an unbroken chain of genre-to-genre
+                influence. The second clause is doing real work: wording that lets membership read
+                as derivation is the failure `CLAUDE.md` names, and it is as easy to commit in a
+                footer as on a canvas. */}
             <p>
-              Artifact v{corpus.artifact_version}: {corpus.nodes} nodes, {corpus.edges} edges,
-              across {corpus.structure.component_count} disconnected components. Relating two things
-              is only possible within a component.
+              Artifact v{corpus.artifact_version}: {corpus.nodes} nodes, {corpus.edges} edges, in{" "}
+              {corpus.structure.component_count}{" "}
+              {corpus.structure.component_count === 1 ? "component" : "components"}. Relating two
+              things is only possible within a component.
+            </p>
+            <p>
+              What holds it together is the musicians who worked across it: an artist is recorded as
+              playing a genre, which is not a claim that either came out of the other. Influence and
+              membership are different statements here, and the map draws them differently.
             </p>
           </>
         )}
@@ -127,6 +145,48 @@ export function App() {
           <strong>Grounded means traceable, not true.</strong> Wikidata can be wrong, and musical
           influence is genuinely contested. Every claim here links to the source it came from and
           says how hard that one source was checked — which is not the same as sources agreeing.
+        </p>
+        {/* **CC BY-SA attribution, phase 6 step 8, and it is an obligation rather than a courtesy.**
+            `DATA-LICENSES.md` records that from artifact v0.7.0 the corpus is a MIXTURE of licences:
+            Wikidata is CC0 and imposes nothing, DBpedia's `dbo:stylisticOrigin` edges are CC BY-SA
+            3.0, and the `cultural_origins` infobox values parsed from Wikipedia are CC BY-SA 4.0.
+            Both BY-SA versions are named because they are different licences, not one rounded off.
+
+            `.claude/rules/graph-semantics.md` requires this be DISPLAYED and "not in a buried
+            credits page", which is why it is here, in the footer of the page that renders the data,
+            rather than in an About route. The per-row half of the obligation is already met
+            structurally: every DBpedia edge carries a resolvable resource URI as its `source_id`,
+            so the link back travels with the data. This is the visible half. */}
+        <p className="footer__licences">
+          Corpus data:{" "}
+          <a href="https://www.wikidata.org/" target="_blank" rel="noreferrer">
+            Wikidata
+          </a>{" "}
+          under{" "}
+          <a
+            href="https://creativecommons.org/publicdomain/zero/1.0/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            CC0 1.0
+          </a>
+          ;{" "}
+          <a href="https://www.dbpedia.org/" target="_blank" rel="noreferrer">
+            DBpedia
+          </a>{" "}
+          under{" "}
+          <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noreferrer">
+            CC BY-SA 3.0
+          </a>
+          ; and origin details parsed from{" "}
+          <a href="https://en.wikipedia.org/" target="_blank" rel="noreferrer">
+            English Wikipedia
+          </a>{" "}
+          under{" "}
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">
+            CC BY-SA 4.0
+          </a>
+          . Every edge carries a link back to the source it came from.
         </p>
       </footer>
     </div>

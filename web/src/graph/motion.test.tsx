@@ -44,8 +44,8 @@ const GRAPH: RenderGraph = {
     { id: "Q8341", label: "jazz", kind: "genre", year: 1900, role: "context", hidden: 0 },
   ],
   edges: [
-    { from: "Q11401", to: "Q221772", kind: "claimed", order: 1, verification: "HAND" },
-    { from: "Q8341", to: "Q11401", kind: "context", order: null, verification: null },
+    { from: "Q11401", to: "Q221772", kind: "claimed", predicate: "influenced_by", order: 1, verification: "HAND" },
+    { from: "Q8341", to: "Q11401", kind: "context", predicate: "influenced_by", order: null, verification: null },
   ],
   claimed: 1,
   context: 1,
@@ -81,6 +81,7 @@ const GROWN: RenderGraph = {
       from: `Q90${i}`,
       to: "Q221772",
       kind: "claimed" as const,
+      predicate: "influenced_by",
       order: i + 2,
       verification: "HAND" as const,
     })),

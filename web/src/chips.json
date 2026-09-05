@@ -10,7 +10,7 @@
     "without re-reading 4.3 — the count landed at the floor of SPEC.md 2.1's 5-7 range as a side effect",
     "of merging the Kate Bush pair, and the open slot is discussed there."
   ],
-  "artifact_version": "0.5.0",
+  "artifact_version": "0.7.1",
   "chips": [
     {
       "id": "blues-to-heavy-metal",

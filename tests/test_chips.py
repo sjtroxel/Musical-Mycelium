@@ -50,44 +50,33 @@ def _steps(chips: list[dict[str, Any]]) -> list[tuple[str, dict[str, Any]]]:
     return [(chip["id"], step) for chip in chips for step in chip["steps"]]
 
 
-#: The pin the SPA's static graph asset is built against, which is DELIBERATELY BEHIND the backend
-#: from 2026-09-03 until phase 6 step 8. Written as a constant so the lag is a value someone has to
-#: change, not a comparison someone has to remember to re-tighten.
-FRONTEND_PIN_LAG_UNTIL_STEP_8 = "0.5.0"
-
-
 def test_the_chip_file_pins_the_artifact_version_the_store_actually_loaded(
     chips_document: dict[str, Any], store: GraphStore
 ) -> None:
     """A chip set validated against a different corpus than the one deployed proves nothing.
 
-    **The equality is suspended between phase 6 step 3 and step 8, on purpose, and the suspension has
-    a condition attached: DO NOT DEPLOY while it holds.** Step 3 moved the backend to v0.6.0. The SPA
-    does not read the artifact from the backend -- it fetches ``web/public/graph/v<pin>/graph.json`` as
-    a static asset -- so moving this pin means committing a second copy of the corpus to the repo, and
-    v0.6.0 is 1.77MB against v0.5.0's 640KB. Steps 4 and 6 cut v0.7.0 and v0.7.1, so paying that now
-    means paying it three times; step 8 is where the ROADMAP puts the frontend and it is the right
-    place.
+    **The equality was suspended between phase 6 step 3 and step 8, on purpose, and it is restored
+    here because step 8 landed.** For that stretch the SPA fetched
+    ``web/public/graph/v<pin>/graph.json`` as a static asset while the backend moved to v0.6.0 and
+    then v0.7.1.
 
-    What this costs while it holds: a deployed site would answer from v0.6.0 and draw its map from
-    v0.5.0, so the map would silently omit nodes the answer cites. That is user-visible incoherence
-    rather than a cosmetic lag, which is why the deploy condition is part of the decision and not a
-    footnote to it. Agreed with sjtroxel 2026-09-03.
+    **The reason recorded for the lag was partly wrong and is corrected here rather than repeated.** It
+    said moving the pin meant "committing a second copy of the corpus to the repo" each time. It does
+    not: ``.gitignore`` excludes ``web/public/graph/`` and ``web/package.json``'s ``prebuild`` stages it
+    from the artifact already in git, so the frontend pin costs **zero** repository bytes. What the lag
+    actually deferred was a *decision* and three rounds of test churn -- the re-pin moved 16 frontend
+    assertions and surfaced two real defects -- which is a good reason to have done it once, but a
+    different one from the one written down.
 
-    When step 8 lands: copy the artifact into ``web/public/graph/``, delete this constant, and restore
-    the plain equality below. ``web/src/corpus-facts.json`` is due for deletion in the same step.
+    What the suspension cost while it held: a deployed site would have answered from v0.7.1 and drawn
+    its map from v0.5.0, so the map would silently omit nodes the answer cites. That is user-visible
+    incoherence rather than a cosmetic lag, which is why **DO NOT DEPLOY** was part of the decision
+    and not a footnote to it. That condition is now lifted.
 
-    **Re-read and re-confirmed 2026-09-04 when the backend moved to v0.7.1, which is what this
-    assertion exists to force.** The reasoning above has now played out exactly as written: had the
-    frontend followed at step 3, the corpus copy would have been paid three times over (v0.6.0, v0.7.0,
-    v0.7.1). v0.7.1 is the phase's final artifact, so step 8 copies once. The deploy condition is
-    unchanged and still binding -- DO NOT DEPLOY while this lag holds.
+    Restoring the equality is what makes the next corpus cut fail the build rather than a demo, which
+    is the standing rule from 2026-08-02.
     """
-    assert chips_document["artifact_version"] == FRONTEND_PIN_LAG_UNTIL_STEP_8
-    assert store.artifact_version == "0.7.1", (
-        "the backend pin moved again; re-read this test's docstring and decide whether the lag "
-        "is still the right call rather than widening it by reflex"
-    )
+    assert chips_document["artifact_version"] == store.artifact_version
 
 
 def test_there_are_five_chips(chips: list[dict[str, Any]]) -> None:

@@ -8,6 +8,9 @@ event: tool
 data: {"name": "get_influences", "arguments": {"node_id": "Q221772"}, "is_error": false}
 
 event: claim
+data: {"claim": {"subject_id": "Q221772", "predicate": "influenced_by", "object_id": "Q105527", "source_ids": ["http://dbpedia.org/resource/Acid_jazz"], "verification": "INFOBOX_AUTO", "span": null}}
+
+event: claim
 data: {"claim": {"subject_id": "Q221772", "predicate": "influenced_by", "object_id": "Q11401", "source_ids": ["http://www.wikidata.org/entity/statement/Q221772-ccbc3469-47af-68c8-12bb-80777c53a297"], "verification": "HAND", "span": null}}
 
 event: claim
@@ -20,14 +23,14 @@ event: claim
 data: {"claim": {"subject_id": "Q221772", "predicate": "influenced_by", "object_id": "Q8341", "source_ids": ["http://www.wikidata.org/entity/statement/Q221772-a7f0dc04-48e4-919d-15fe-dca4f45579b1"], "verification": "HAND", "span": null}}
 
 event: path
-data: {"node_ids": ["Q221772", "Q11401", "Q131272", "Q164444", "Q8341"], "labels": ["acid jazz", "hip-hop", "soul", "funk", "jazz"], "chain": [], "chain_labels": []}
+data: {"node_ids": ["Q221772", "Q105527", "Q11401", "Q131272", "Q164444", "Q8341"], "labels": ["acid jazz", "jazz fusion", "hip-hop", "soul", "funk", "jazz"], "chain": [], "chain_labels": []}
 
 event: token
-data: {"text": "Acid jazz came out of hip-hop, soul, funk and jazz. "}
+data: {"text": "Acid jazz came out of jazz fusion, hip-hop, soul, funk and jazz. "}
 
 event: token
 data: {"text": "Every link above traces to a cited source."}
 
 event: done
-data: {"usage": {"input_tokens": 516, "output_tokens": 96}, "claim_count": 4, "rejection_count": 0, "model_id": "local-stub", "planned_steps": 2, "executed_steps": 2, "synthesis_usage": {"input_tokens": 104, "output_tokens": 24}, "synthesis_model_id": "local-stub", "stop_reason": "complete", "elapsed_seconds": 0.003, "artifact_version": "0.5.0", "corpus": {"artifact_version": "0.5.0", "nodes": 973, "edges": 950, "verification": {"ASSERTS_AUTO": 760, "EXPOSURE_AUTO": 57, "HAND": 22, "PROSE_AUTO": 111}, "structure": {"component_count": 169, "largest_component": 458, "diameter": 16, "isolated_nodes": 0, "max_path_hops": 6}, "coverage": {"genres": 169, "without_inception": 28, "without_country": 48, "eras": {"pre-1900": 6, "1900-1949": 7, "1950-1969": 29, "1970-1989": 47, "1990-2009": 39, "2010-": 13, "unknown": 28}, "coarser_than_year": 19, "countries": {"United States": 51, "United Kingdom": 42, "Japan": 14, "Germany": 9, "Mexico": 6, "Canada": 5, "Europe": 4, "Jamaica": 4, "Brazil": 3, "France": 3, "Trinidad and Tobago": 2, "Belgium": 2, "Spain": 2, "Turkey": 2, "Dominica": 2, "Philippines": 2, "Angola": 1, "Italy": 1, "French West Indies": 1, "Israel": 1, "Haiti": 1, "Dominican Republic": 1, "Paraguay": 1, "Brixton": 1, "Hawaii": 1, "Scandinavia": 1, "Netherlands": 1, "Finland": 1, "Sweden": 1}, "distinct_countries": 29, "genres_without_us_or_uk": 43, "top_country": "United States", "top_country_share": 0.421}, "predicate": "influenced_by"}}
+data: {"usage": {"input_tokens": 555, "output_tokens": 96}, "claim_count": 5, "rejection_count": 0, "model_id": "local-stub", "planned_steps": 2, "executed_steps": 2, "synthesis_usage": {"input_tokens": 108, "output_tokens": 24}, "synthesis_model_id": "local-stub", "stop_reason": "complete", "elapsed_seconds": 0.004, "artifact_version": "0.7.1", "corpus": {"artifact_version": "0.7.1", "nodes": 1479, "edges": 5066, "verification": {"ASSERTS_AUTO": 759, "EXPOSURE_AUTO": 57, "HAND": 22, "INFOBOX_AUTO": 1335, "MEMBERSHIP_BARE": 1363, "MEMBERSHIP_CITED": 1419, "PROSE_AUTO": 111}, "structure": {"component_count": 7, "largest_component": 1465, "diameter": 10, "isolated_nodes": 0, "max_path_hops": 12}, "coverage": {"genres": 675, "without_inception": 198, "without_country": 222, "eras": {"pre-1900": 23, "1900-1949": 56, "1950-1969": 97, "1970-1989": 186, "1990-2009": 96, "2010-": 19, "unknown": 198}, "coarser_than_year": 64, "countries": {"United States": 245, "United Kingdom": 121, "Europe": 27, "Japan": 24, "Germany": 20, "Brazil": 14, "Canada": 12, "Mexico": 11, "Jamaica": 9, "Belgium": 7, "France": 7, "Netherlands": 7, "Spain": 7, "Italy": 5, "Trinidad and Tobago": 4, "Cuba": 4, "Latin America": 4, "Haiti": 4, "Sweden": 3, "Philippines": 3, "Finland": 2, "Poland": 2, "Democratic Republic of the Congo": 2, "Republic of the Congo": 2, "Turkey": 2, "Australia": 2, "Portugal": 2, "Switzerland": 2, "Dominica": 2, "Dominican Republic": 2, "Scandinavia": 2, "Angola": 1, "Sinophone": 1, "England": 1, "Norway": 1, "Bohemia": 1, "Ibero-America": 1, "Indonesia": 1, "Puerto Rico": 1, "French West Indies": 1, "Austria": 1, "Slovenia": 1, "Celtic nations": 1, "New Zealand": 1, "Israel": 1, "Thailand": 1, "Czech Republic": 1, "South America": 1, "Wales": 1, "Panama": 1, "India": 1, "Pakistan": 1, "British Raj": 1, "Liberia": 1, "Sierra Leone": 1, "Paraguay": 1, "Brixton": 1, "Hawaii": 1, "Peru": 1, "North America": 1, "Nigeria": 1, "Ireland": 1, "Detroit": 1, "Karnataka": 1, "Ghana": 1}, "distinct_countries": 65, "genres_without_us_or_uk": 136, "top_country": "United States", "top_country_share": 0.541}, "predicate": "influenced_by"}}
 

@@ -6,10 +6,17 @@
  *
  *     blues (1890) -> blues rock (1960) -> heavy metal music (1970)
  *
- * Q9759 -> Q193355 -> Q38848, both edges `influenced_by`, both `verification: HAND`, and the whole
- * connected component in artifact v0.5.0 - step 3 measured it at exactly 3 nodes. It ascends left to
- * right because those years ascend. Nothing here is invented, which is the only kind of decoration
- * this project is entitled to.
+ * Q9759 -> Q193355 -> Q38848, both edges `influenced_by`, both `verification: HAND`. It ascends left
+ * to right because those years ascend. Nothing here is invented, which is the only kind of
+ * decoration this project is entitled to.
+ *
+ * **Re-verified at artifact v0.7.1, 2026-09-05, and one clause of this had to go.** Both edges still
+ * exist, still from Wikidata, still `HAND` - the drawing is unchanged and still real. What is no
+ * longer true is the sentence that used to end that first line: *"and the whole connected component
+ * in artifact v0.5.0 - step 3 measured it at exactly 3 nodes."* At v0.7.1 blues, blues rock and
+ * heavy metal sit inside a component of **1,465 nodes** with degrees of 73, 20 and 56. The mark
+ * draws three real nodes and two real edges; it no longer draws a whole component, and claiming it
+ * did would be the mark's one premise - that nothing here is invented - quietly failing.
  *
  * It is drawn entirely in `--accent`. GraphView draws a walked node and a gate-approved edge in the
  * accent and nothing else, and step 6 fixed the accent's meaning as GATE-APPROVED - so an all-accent

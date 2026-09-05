@@ -1,4 +1,5 @@
 import type { Claim, Verification } from "../types";
+import { PREDICATE_INFLUENCED_BY } from "./staticGraph";
 import type { StaticGraph } from "./staticGraph";
 
 /**
@@ -52,14 +53,32 @@ export interface RenderNode {
 
 export interface RenderEdge {
   /**
-   * The arrow of history. `subject influenced_by object` means the influence runs **object to
-   * subject**, so `from` is the object and `to` is the subject. `web/previews/build-data.py` writes
-   * the same conversion out longhand; getting it backwards is this project's named failure mode and
-   * would draw time running the wrong way.
+   * The arrow of history **when `predicate` is `influenced_by`**. `subject influenced_by object`
+   * means the influence runs **object to subject**, so `from` is the object and `to` is the subject.
+   * `web/previews/build-data.py` writes the same conversion out longhand; getting it backwards is
+   * this project's named failure mode and would draw time running the wrong way.
+   *
+   * **For `plays_genre` these are still subject-to-object in the artifact's sense — `from` is the
+   * genre, `to` is the artist — but that is NOT an arrow of history and must never be drawn as one.**
+   * An artist is not descended from a genre they played.
    */
   from: string;
   to: string;
   kind: "claimed" | "context";
+  /**
+   * Which kind of statement this edge is, carried from the artifact rather than inferred.
+   *
+   * **Added at phase 6 step 8, and the map was wrong without it.** Until artifact v0.7.1 every edge
+   * in the corpus was `influenced_by`, so "every edge is influence" was a true assumption and this
+   * field would have been dead weight. v0.7.1 added 2,782 `plays_genre` edges against 2,284
+   * `influenced_by` — membership became the majority — and every consumer that had quietly assumed
+   * influence started stating derivation about musicians. See `layout.ts:layerOf` and `GraphView`.
+   *
+   * A `claimed` edge is always `influenced_by`: the gate's `ALLOWED_PREDICATES` holds nothing else,
+   * so a membership edge cannot become a claim. It is set explicitly rather than left implicit
+   * because "it cannot happen" is how it happens.
+   */
+  predicate: string;
   /** 1-based gate-approval order for a claimed edge, `null` for context. DoD 3's "in the order it was walked". */
   order: number | null;
   verification: Verification | null;
@@ -103,17 +122,38 @@ export interface RunView {
  * Measured at step 3: the largest component is 458 nodes and the median degree is 1, so the
  * neighbourhood of a hub such as The Beatles (degree 25) would swamp a three-node answer without a
  * bound. 40 is a legibility number, not a performance one; canvas is comfortable far above it.
+ *
+ * **Re-measured at v0.7.1, 2026-09-05: the reasoning holds and the figures under it do not.** The
+ * largest component is now **1,465 of 1,479 nodes**, not 458, and the hub degree that motivated the
+ * bound is **204**, not 25. Both changes argue for the cap more strongly than the original numbers
+ * did, so 40 is unchanged — but it now bounds a corpus four times denser, and the numbers are
+ * restated rather than left describing a corpus that no longer exists.
  */
 export const MAX_CONTEXT_NODES = 40;
 
 /**
  * How many further context nodes each deliberately opened node is allowed to bring with it.
  *
- * **Measured, not chosen.** The highest degree in artifact v0.5.0 is 25 and no node at all exceeds
- * 30, so this budget cannot truncate any single node's neighbourhood: opening a node shows all of
- * its connections or the corpus does not hold them. The automatic neighbourhood keeps its own
- * separate cap of 40, which is a legibility number for a picture nobody asked for — a deliberate
- * click is a different thing and gets a different budget.
+ * **The promise this carried was measured against v0.5.0 and became false at v0.7.1. Re-measured
+ * 2026-09-05, phase 6 step 8.** It read: *"the highest degree in artifact v0.5.0 is 25 and no node
+ * at all exceeds 30, so this budget cannot truncate any single node's neighbourhood: opening a node
+ * shows all of its connections or the corpus does not hold them."* That was true and is not. At
+ * v0.7.1 the highest undirected degree is **204** (`pop music`; then jazz 157, rock music 152,
+ * hip-hop 127) and **37 nodes exceed 30**, so the budget now truncates rather than cannot.
+ *
+ * **The number stays at 30 and the PROMISE changes, which is the honest direction.** Raising it to
+ * clear 204 would empty a hub's entire neighbourhood onto the map and make the picture unreadable,
+ * which is the failure the cap exists to prevent; it would also chase a ceiling that moves with
+ * every corpus cut. Truncation here is safe *because it is already visible*: `RenderNode.hidden`
+ * counts incident edges absent from `drawn`, so a truncated neighbour stays counted and the
+ * inspector still offers to reveal it. A cap that silently hid things would be the defect; a cap
+ * that says how much it held back is the design.
+ *
+ * Membership is what moved the number. Max degree counting influence edges alone is **55**, so most
+ * of a hub's 204 is artists who played it rather than genres it came from.
+ *
+ * The automatic neighbourhood keeps its own separate cap of 40, which is a legibility number for a
+ * picture nobody asked for — a deliberate click is a different thing and gets a different budget.
  */
 export const NEIGHBOURS_PER_OPEN = 30;
 
@@ -181,6 +221,10 @@ export function buildRenderGraph(
       from: claim.object_id,
       to: claim.subject_id,
       kind: "claimed",
+      // Not `claim.predicate`: the gate approves nothing else, and reading it from the frame would
+      // make a backend widening of ALLOWED_PREDICATES silently start drawing membership as an
+      // approved arrow of history. If that widening ever happens it should break here, loudly.
+      predicate: PREDICATE_INFLUENCED_BY,
       order: index + 1,
       verification: claim.verification,
     });
@@ -228,6 +272,7 @@ export function buildRenderGraph(
           from: edge.object_id,
           to: edge.subject_id,
           kind: "context",
+          predicate: edge.predicate,
           order: null,
           verification: edge.verification,
         });

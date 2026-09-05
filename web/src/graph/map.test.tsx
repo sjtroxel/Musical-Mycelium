@@ -153,7 +153,7 @@ describe("the corpus download", () => {
       const asked = fetcher.mock.calls
         .map(([url]) => String(url))
         .find((u) => u.includes("/graph/"));
-      expect(asked).toContain("/graph/v0.5.0/graph.json");
+      expect(asked).toContain("/graph/v0.7.1/graph.json");
     });
   });
 });

@@ -601,19 +601,431 @@ that the slicer has never seen: source (Wikidata / DBpedia / both) and predicate
 `plays_genre`). An aggregate that looks healthy while the DBpedia-only slice fails is the default outcome
 without slicing, and it is now possible for the first time.
 
-### Step 8 — Frontend
+### Step 8 — Frontend — **DONE 2026-09-05**
 
-- The coverage panel keeps telling the truth on a corpus roughly 3x larger. **The panel's figures are
-  computed, so the risk is not that they go stale — it is that a layout tuned for 169 genres reads badly
-  at 500+.** Phase 5 recorded five layout failures invisible to a green suite. Screenshot it in headless
-  Chromium before handing it over; the browser is available and `reference-headless-browser-is-available`
-  records where.
-- The map can finally show artists and genres in one component. **This is the single most visible change
-  in the phase** and it is where the amended thesis wording from step 1 has to appear on screen.
-- Contested pairs get a display. Two of them today. The honest presentation shows both directions and
-  names both sources; it does not pick a winner. `.claude/rules/grounding-and-claims.md`: flag it, do not
-  resolve it.
-- The CC BY-SA attribution and link-back, per step 4.
+**Written 2026-09-05, immediately before building, against measurements taken the same morning.** The
+four bullets this section held until now were the up-front sketch; they are kept as 8.11 at the end and
+every one of them survived. What the sketch did not know is that **one item on this list is a
+correctness issue rather than a presentation one** — the map draws membership as derivation — and it is
+now 8.2 rather than a sub-clause of "show artists and genres together".
+
+**Baseline, measured this morning, not recalled:** `make check` **1329 passed**, 14 deselected, mypy
+clean over 97 source files, root 17 of 18, eval gates **3 passed / 0 failed / 2 N/A**. Frontend
+**146 passed** across 13 files. Everything below is a delta from that.
+
+#### 8.0 As built — what the plan did not know
+
+**Verified on completion:** `make check` **1330 passed** (was 1329), 14 deselected, mypy clean over 98
+source files, root 17 of 18, eval gates **3 passed / 0 failed / 2 N/A**. Frontend **159 passed** across
+15 files (was 146 across 13). **DO NOT DEPLOY is lifted** — both pins read `0.7.1`.
+
+Six things the plan got wrong or could not see, recorded because the corrections are the useful part:
+
+1. **The inspector had the same defect as the map, in plain English, and 8.2 did not name it.** `split()`
+   classified every incident edge by subject/object position, so with `artist plays_genre genre` the
+   panel would have read *"Miles Davis — Came out of — jazz"* and *"jazz — Led to — Fred Astaire"*.
+   Membership is now a third list with its own heading. Locked in `components/inspector.test.ts`, and the
+   lock was verified by breaking it: `expected [ 'Q_jazz' ] to deeply equal []`.
+2. **`NEIGHBOURS_PER_OPEN` was worse than 8.3 estimated.** The plan said max degree 204 and 37 nodes over
+   30 — correct — but the docstring's promise ("cannot truncate") was load-bearing for
+   `RenderNode.hidden`'s meaning. Resolution: the number stays at 30 and the promise changes, because
+   truncation here is already *visible* by design.
+3. **`Verification` in `types.ts` had gone stale against the backend, and a real claim carried the
+   missing tier.** The union listed the original four; v0.6.0 added two `MEMBERSHIP_*` and v0.7.0
+   `INFOBOX_AUTO`. `ClaimList`'s wording map was short the same three, so an `INFOBOX_AUTO` claim printed
+   the **raw constant** at a reader. `contract.test.ts` caught it on the re-pin — exactly its job.
+4. **The three SSE fixtures were NOT captured the same way, and re-recording all three would have
+   destroyed one.** `acid-jazz-answer` and `kate-bush-refusal` are `local-stub` captures and re-recorded
+   faithfully. **`kate-bush-descendants` was captured on real Haiku 4.5 with 7 claims**; the stub returns
+   a refusal, because it passes the whole question to `resolve_node` as the name. It is left at v0.5.0
+   and **owed a decision** — see 8.9.
+5. **`corpus-facts.json`'s `coverage`/`density` split is not stale** and the plan said it was.
+   `Coverage.as_dict()` deliberately serialises 10 of 14 fields; it is the wire contract. Corrected in
+   8.5 rather than silently.
+6. **The first draft of the generator got the influence DIRECTION backwards** — counting nodes untouched
+   in either direction (120) instead of nodes that are never a subject (723). That is the project's named
+   second failure mode, and `tests/test_corpus_facts.py` caught it immediately. The generator now reads
+   through `Direction.INFLUENCED_BY` so it cannot drift from the test's definition.
+
+**What the screenshot pass found, which no test could.** The panel measured **1,961px against a 900px
+viewport** — twice the 988px phase 5 treated as the defect. Three causes, all fixed, nothing removed:
+`How densely` rendered one bar per distinct connection count, 35 bars in 974px with 26 of them counting
+five genres or fewer (now 14 bucketed bars, 457px, and the buckets still sum to every genre); the
+places tail wrapped 57 tick marks onto a second line of four, **reading as a broken bar** — the exact
+2026-09-01 defect (now `nowrap`, one line, all 57); and the new contested section left **639px of empty
+column 2** beside it, the dead-quarter-panel defect (now a full-width band, 296px). **Final: 1,203px,
+down 39%, no horizontal overflow at 1280px or 420px.**
+
+**Not done in this step and not owed by it:** the §9.3 projection, deferred by decision (8.1), and the
+`ResolveSource` DBpedia lookup, routed out under DoD #6 (§7).
+
+#### 8.1 The re-pin, and what it actually costs
+
+`web/src/chips.json:artifact_version` goes `0.5.0` -> `0.7.1`. It is the only place the frontend pin is
+written: `staticGraph.ts:65` reads it into `GRAPH_PIN` and `web/scripts/stage-graph.mjs` reads the same
+field to decide what to copy. Then `tests/test_chips.py:56`'s `FRONTEND_PIN_LAG_UNTIL_STEP_8` constant is
+deleted and the plain equality restored, which is what lifts **DO NOT DEPLOY**.
+
+**The size question the lag was deferring, answered with numbers rather than adjectives.** v0.5.0's
+`graph.json` is 655,641 bytes raw / **56,778 gzipped**. v0.7.1 is 2,694,624 raw / **187,294 gzipped**.
+So it is 4.1x on disk and **3.3x over the wire — 183 KB, not 2.6 MB** — because `frontend.tf` already
+sets `compress = true`.
+
+**Corrected while building, 2026-09-05: there is NO git cost, and the sentence here claimed one.** This
+read *"the 2.6 MB is a git cost, paid once"*. It is not: `.gitignore:98` excludes `web/public/graph/`,
+and `web/package.json`'s `prebuild` runs `stage-graph.mjs` on every build, so the staged copy is
+generated from the artifact already committed under `src/musical_mycelium/artifacts/v0.7.1/`. The
+re-pin adds **zero** bytes to the repository. The lag was still the right call — it deferred a
+*decision* and three rounds of test churn, not a download — but the reason recorded for it in
+`tests/test_chips.py` ("committing a second copy of the corpus to the repo") was also wrong, and is
+corrected there too.
+
+**But §9.3 already decided the SPA gets a projection, and left its FORM as a step 8 question. That
+question is live and it is not answered by the gzip number above.** §9.3 reasoned from raw megabytes;
+gzip absorbs a lot of what it was worried about, so the decision deserves the measured figures rather
+than the projected ones it was made on. Measured this morning against v0.7.1, keeping only what the map
+actually draws — `id`, `label`, `kind`, `inception_year` on nodes; `subject_id`, `object_id`,
+`predicate`, `verification` on edges:
+
+| | raw | gzipped |
+|---|---|---|
+| v0.7.1 full (what ships today, byte-for-byte) | 2,694,624 | **187,294** |
+| v0.7.1 projected | 650,503 | **52,411** |
+| v0.5.0 full, for reference | 655,641 | 56,778 |
+
+**A projected v0.7.1 costs the browser almost exactly what the full v0.5.0 costs it today** — 52 KB
+against 56 KB — and the projection removes 72% of the transfer. The fields it drops are `source_id`,
+`retrieved_at`, `revision_id`, `source`, `prose_tier`, `corroboration` and the infobox columns; nearly
+all of that is provenance the map never draws.
+
+**The catch, and it is why this is a decision and not a cleanup.** `source_id` is the citation itself.
+`NodeInspector` renders edges read from the static graph, so dropping `source_id` means an inspected
+edge either loses its link back or needs a second fetch to recover it — and 8.7 has this step adding a
+*visible CC BY-SA attribution and link-back*, which is the same bytes. §9.3's two options were "a second
+generated file" or "fetch a neighbourhood on demand"; there is a third that did not exist when §9.3 was
+written, which is **ship the projection and keep provenance on the claim stream only**, since a
+gate-approved claim already carries its `source_ids` through the SSE frames.
+
+**DECIDED 2026-09-05 by sjtroxel: take the 183 KB and defer the projection.** The numbers above are
+the reason, recorded so the deferral is a measurement rather than a silence. 183 KB gzipped is not a
+user-visible problem on a page that already streams a model response, and the projection interacts
+directly with 8.7's attribution requirement — building both in the same step is how one quietly breaks
+the other. **This closes the open half of §9.3.** The projection remains available and its measured
+saving is on the table above; what is settled is that it is not this step's work.
+
+**Blast radius, checked before writing this rather than discovered during it.** Step 3's re-pin broke 52
+tests and the v0.7.1 re-pin broke 78; he said explicitly that checking first is what made those
+manageable, and that a re-pin is never scheduled as a one-liner. Twelve files under `web/src` name
+`0.5.0`:
+
+| file | occurrences | what it is |
+|---|---|---|
+| `graph/subgraph.test.ts` | 4 | fixture pins |
+| `graph/map.test.tsx` | 4 | includes an asserted fetch URL `/graph/v0.5.0/graph.json` |
+| `useLineageRun.test.ts` | 2 | `done` frame version |
+| `contract.test.ts` | 2 | fixture provenance + `done` assertion |
+| `graph/layout.test.ts` | 2 | comments |
+| `graph/layout.ts` | 2 | **a measured claim, see 8.3** |
+| `graph/subgraph.ts` | 1 | **a measured claim, see 8.3** |
+| `components/mark.ts` | 1 | **a measured claim, see 8.3** |
+| `fixtures/*.sse` (3 files) | 3 | recorded bytes, see 8.9 |
+| `chips.json` | 1 | the pin itself |
+
+The three source files are the ones that matter. The test files are mechanical.
+
+#### 8.2 THE CENTRAL ISSUE: the map is predicate-blind, so membership renders as derivation
+
+This is the item to build first and the one most likely to be got wrong quietly.
+
+**Measured at v0.7.1: 5,066 edges are 2,782 `plays_genre` and 2,284 `influenced_by`.** Membership is
+**55% of the edge set**. And:
+
+- `subgraph.ts` builds `incident` from **every** edge regardless of predicate, and `RenderEdge` carries
+  `from`, `to`, `kind: "claimed" | "context"`, `order`, `verification` — **no predicate field at all**.
+  `kind` is an approval distinction, not a semantic one.
+- `RenderEdge`'s own docstring reads *"The arrow of history. `subject influenced_by object`"*. It is
+  written on the assumption that every edge in the map is an influence edge. At v0.5.0 that was true.
+  At v0.7.1 it is false for the majority of them.
+- `layout.ts` layers by longest path, and `GraphView` was told by step 5 that **x is influence depth**.
+  Feed it membership edges and it will place an artist one column "downstream" of a genre and draw the
+  arrow of history through it.
+
+**So the re-pin alone, with no other change, makes the map state that Miles Davis was derived from
+jazz.** `CLAUDE.md` forbids exactly this — *"never let membership read as derivation"* — and
+`.claude/rules/grounding-and-claims.md` puts the same rule on the gate. The gate is safe:
+`ALLOWED_PREDICATES` is `frozenset({PREDICATE_INFLUENCED_BY})`, so no `plays_genre` proposal can ever
+become a claim, and `ClaimList.tsx:39` (which hardcodes the words " influenced by ") never sees one.
+**The map is the hole, because the map reads the static artifact directly and never passes through the
+gate.**
+
+**What must happen, and the order is not arbitrary:**
+
+1. `RenderEdge` gains `predicate`, carried from the artifact rather than inferred. This is the
+   enabling change and nothing else in 8.2 is safe without it.
+2. `layerOf` layers on **influence edges only**. Membership must not create depth, because depth means
+   "came after" and membership means no such thing.
+3. Membership renders **visibly differently** from influence — a different stroke, and no arrowhead.
+   The arrowhead is the assertion of direction; a membership edge has a direction in the data
+   (`artist plays_genre genre`) that is not a direction in *time*, and drawing it with the same
+   arrowhead is the whole failure restated in ink.
+4. The legend and the node inspector say which is which in words, not only in ink. `NodeInspector.tsx:31`
+   already carries the direction comment for influence; it needs the membership case beside it.
+
+**The trap, stated so it is not walked into:** it is tempting to solve this by filtering `plays_genre`
+out of the map entirely. That would be correct and it would also **delete the phase's headline result**
+— artists and genres in one component is the amended thesis, and the thesis is that the organism is
+connected *through the people who play across it*. Filtering membership out returns the map to 169
+islands while the corpus has 7 components. Draw both, distinguish them.
+
+#### 8.3 Three measured constants that go false at the re-pin
+
+Each of these is a comment or a constant justified by a measurement of v0.5.0. All three were verified
+against v0.7.1 this morning.
+
+**`subgraph.ts:112` — `NEIGHBOURS_PER_OPEN = 30`. This is a live defect, not a stale comment.** Its
+docstring promises: *"the highest degree in artifact v0.5.0 is 25 and no node at all exceeds 30, so this
+budget cannot truncate any single node's neighbourhood: opening a node shows all of its connections or
+the corpus does not hold them."* Measured at v0.7.1, undirected degree over all predicates:
+
+```
+   204  pop music        157  jazz            152  rock music       127  hip-hop
+    97  soul              93  alternative rock 86  punk rock         83  rhythm and blues
+```
+
+**Max degree is 204 and 37 nodes exceed 30.** The budget now silently truncates 37 nodes while the code
+promises it cannot. Either the number moves or the promise does — and the promise is the valuable half,
+because `RenderNode.hidden` exists precisely so a reader can tell a thin region from an unexplored one.
+Note that max *influence-only* degree is **55**, so if 8.2 splits the budgets by predicate the influence
+side is far cheaper to keep honest than the combined one.
+
+**`subgraph.ts:104` — `MAX_CONTEXT_NODES = 40`.** Justified by "the largest component is 458 nodes and
+the median degree is 1, so the neighbourhood of a hub such as The Beatles (degree 25) would swamp a
+three-node answer". Largest component is now **1,465 of 1,479 nodes**. 40 remains a legibility number
+and probably remains right; the reasoning under it is stale and must be re-derived rather than left.
+
+**`components/mark.ts:9` — the mark's claim.** It draws `blues -> blues rock -> heavy metal music` and
+says that is *"the whole connected component in artifact v0.5.0 - step 3 measured it at exactly 3
+nodes."* At v0.7.1 there are 7 components and the largest holds 1,465 nodes, so those three are
+certainly not a component any more. **The drawing is still real** — verify the two edges still exist and
+are still `HAND` — but the sentence justifying it is false and `mark.ts` is the one file in the repo
+whose entire premise is "nothing here is invented".
+
+#### 8.4 The coverage panel: the layout risk is LIVE NOW, not introduced by this step
+
+The sketch said the panel's figures are computed so the risk is layout, not staleness. That is right,
+and it is more urgent than it reads: **`corpus-facts.json` already carries `artifact_version: 0.7.1`** —
+step 6 moved it — and `tests/test_corpus_facts.py` already asserts it against the pinned artifact. So
+the panel is **already rendering v0.7.1 numbers today**, unscreenshotted. Only the map's `graph.json` is
+still on v0.5.0.
+
+Measured growth, v0.5.0 -> v0.7.1:
+
+| | v0.5.0 | v0.7.1 |
+|---|---|---|
+| genres | 169 | **675** |
+| distinct places | 29 | **65** |
+| place bars after `NAMED_PLACES = 8` | 21 marks | **57 marks**, plus a **642-character** comma-joined name string |
+| `How densely` histogram bars | **6** | **35** (23 of them counting 5 or fewer) |
+| busiest genre connections | 6 | **55** |
+| genres with no recorded origin | 85 | **266** |
+
+`HowDensely` renders one `Bar` per distinct connection count with no cap, so that section alone goes
+from 6 bars to 35, and two thirds of the new ones are a long tail of near-empty buckets. The places
+tail renders both as marks and as `tail.map(([place]) => place).join(", ")` — a single 642-character
+run of text.
+
+**This is precisely the failure class `reference-headless-browser-is-available` records**: on work where
+139 frontend tests passed, headless Chromium caught a panel 988px tall on a 900px viewport, a grid
+silently resolving to two columns, and a tick row reading as another bar. jsdom cannot see any of it,
+and `npx vitest` currently logs `HTMLCanvasElement's getContext() is not implemented` four times, which
+is the same blindness stated out loud.
+
+**So: screenshot and measure before deciding anything.** Launch
+`~/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell`
+with `playwright-core` installed **into the scratchpad, never the repo**, at
+`deviceScaleFactor: 2`, screenshot the `.cov` element rather than the page, and read
+`getBoundingClientRect().height` rather than eyeballing it. A histogram needing a bucketing decision is
+a finding to bring back, not a thing to fix silently — the panel's standing rule is **counts, never
+percentages**, and any bucketing must not become a rate through the back door.
+
+#### 8.5 Deleting `corpus-facts.json` without breaking first paint
+
+§7 says the file is deleted and its figures move into `Coverage`. **The backend half is already done** —
+`graph/coverage.py`'s `Coverage` dataclass now carries `genres_without_recorded_origins`,
+`genres_with_one_connection`, `busiest_genre_connections` and `connections` alongside the original
+fields, so the split into `coverage` / `density` inside `corpus-facts.json` is already stale against its
+own source of truth.
+
+**The constraint that makes the deletion non-trivial, and it is a real one.** `App.tsx:106` records the
+decision that the panel reads `corpus-facts.json` *"so it renders at first paint and never waits on the
+`done` frame's `corpus.coverage` — DoD 5 keeps the artifact fetch off first paint and this must not
+smuggle one in."* Deleting the file and reading the `done` frame instead would violate that on purpose,
+which is a regression dressed as a cleanup.
+
+**DECIDED 2026-09-05 by sjtroxel: the file is GENERATED, not deleted.** §7's "deleted" is superseded —
+deleting it and reading the `done` frame instead would trade a hand-maintained duplicate for a first-paint
+regression, which is a worse repo for a tidier file list. Instead it stops being hand-maintained and
+becomes **generated from `graph/coverage.py`**, the same way `stage-graph.mjs` stages `graph.json` and
+`mark.test.ts` regenerates `favicon.svg`. One generator, wired into `make check` so a corpus cut fails
+the build rather than a demo. That keeps first paint synchronous, removes the hand-maintained duplicate,
+and preserves the existing property that `tests/test_corpus_facts.py` asserts it whole against the
+pinned artifact. What it does **not** do is reduce the root entry count or the file count — it is the
+same file, with nobody typing into it.
+
+~~**The generator is the source of truth for the SHAPE too.** `Coverage` already absorbed the three
+density figures, so the generated file should carry `analyse()`'s fields as one object rather than
+reproducing `corpus-facts.json`'s stale `coverage` / `density` split.~~
+
+**Corrected 2026-09-05 while building it: the split is NOT stale and must be kept.** `Coverage`
+carries 14 fields but `Coverage.as_dict()` deliberately serialises only 10 — the density three plus
+`connections` are excluded. `as_dict()` is the **wire contract**: it is what `corpus_summary()` puts
+on `/health` and on the `done` frame. So `corpus-facts.json`'s `coverage` block is "what the API
+serves" and its `density` block is "what the panel computes beyond that", which is a real boundary
+rather than a leftover. Merging them would silently widen the API payload. The generator reproduces
+the split; the paragraph above is kept as the record of a wrong assumption caught by reading the
+code instead of the field list.
+
+#### 8.6 Contested display — the enabling piece for the two deferred gold cases
+
+`graph/corroboration.py` computes this and **nothing exposes it**: no tool, no API field, no SPA
+surface. Verified at v0.7.1:
+
+```
+summary: influence_edges 2284, corroborated 82, single_source 2202,
+         reciprocal_pairs 6, contested_pairs 2
+```
+
+The two, with their sources and verification tiers, since the honest display names both:
+
+| pair | edge | source | verification |
+|---|---|---|---|
+| western music / New Mexico music | western music `influenced_by` New Mexico music | dbpedia | `INFOBOX_AUTO` |
+| | New Mexico music `influenced_by` western music | wikidata | `PROSE_AUTO` |
+| electropop / electroclash | electropop `influenced_by` electroclash | wikidata | `PROSE_AUTO` |
+| | electroclash `influenced_by` electropop | dbpedia | `INFOBOX_AUTO` |
+
+**Show both directions, name both sources, pick no winner.** And the standing trap applies with full
+force here: `verification` and `corroboration` are different guarantees and **must never be collapsed**.
+A contested display that shows `PROSE_AUTO` next to `INFOBOX_AUTO` is showing *how hard each single
+source was checked*, which is not *whether they agree*. The UI must never show one number where there
+are two.
+
+**Where the derivation runs is a decision.** Both edges of every contested pair are present in the
+static `graph.json`, so the SPA *can* compute it client-side. It should not. `contested` is a property
+of the corpus derived in `graph/`, and duplicating the derivation in TypeScript creates a second
+implementation of a definition this project has already corrected once for being loose — the reciprocal
+/ contested distinction overcounts by 3x if the source comparison is dropped, and a second copy is a
+second chance to drop it. **Carry it from the backend** (`corpus_summary()` is the existing seam) and
+let the SPA render what it is given.
+
+**What this unblocks and what it does not.** It unblocks the two deferred gold cases as a *display*.
+It does **not** on its own let the agent say "the sources disagree" in prose, because that would need a
+tool, and a tool is an `agent/` edit — see 8.10. Do not let the gold cases quietly pull the agent change
+in behind them.
+
+#### 8.7 The CC BY-SA attribution
+
+`DATA-LICENSES.md:27` names this step by name: *"the SPA's visible attribution and link back is phase 6
+step 8."* Grepping `web/src` for `CC BY-SA`, `creativecommons`, `Wikipedia`, `DBpedia` or `attribution`
+returns **nothing** — it is genuinely absent, not merely thin.
+
+The obligations, from `DATA-LICENSES.md` §conclusion, are that per-source licences are stated, every
+CC BY-SA row carries a resolvable link back, and **the attribution is displayed in the product rather
+than buried**. `.claude/rules/graph-semantics.md` adds: *"not in a buried credits page."* Two sources
+now carry it — `dbo:stylisticOrigin` edges under **CC BY-SA 3.0**, and `infobox_year` /
+`infobox_countries` under **CC BY-SA 4.0** with `infobox_source` as the link. Both versions get named;
+they are different licences.
+
+#### 8.8 The copy audit that belongs to this step
+
+Step 10 owns the full DoD #8 sweep. These are the ones step 8 itself falsifies or touches, so they are
+fixed here rather than left for a sweep to find:
+
+- **`StepPanel.tsx:223`** renders `nodes_without_recorded_influences` of `nodes` — **723 of 1,479**, which
+  is 48.9%. The surrounding argument ("a missing edge is not evidence of a missing influence") is still
+  sound and still load-bearing for requirement 5; the word "most" is not available any more.
+- **`CoveragePanel.tsx:16`** says *"43 genres that name neither the US nor the UK"*. Measured now:
+  **136**.
+- **`api/app.py:140`**, `corpus_summary()`'s docstring: *"28 of 169 genres carry no inception date"*.
+  Measured now: **198 of 675**. A backend docstring, but it is copy and DoD #8 does not exempt
+  docstrings.
+- **`App.tsx:42`**, the masthead tagline — *"Music history is a network, not a timeline"* — stays true
+  and stays. The amended thesis wording from step 1 is what has to *appear*, and it has a specific
+  shape: the organism is connected **through the people who play across it**, artist-to-genre
+  membership, **not** an unbroken chain of genre-to-genre influence. Wording that lets membership read
+  as derivation is the same defect as 8.2, in prose.
+- **`App.tsx:120`**'s footer sentence — *"across N disconnected components. Relating two things is only
+  possible within a component"* — is computed from the `done` frame, so the number self-corrects from
+  169 to 7. Re-read the sentence anyway: at 7 components with 1,465 of 1,479 nodes in the largest, the
+  clause is still true but no longer says what it was written to say.
+
+**A discrepancy found while measuring, which belongs to step 10 but is recorded here because this is
+where it was found.** `CLAUDE.md`, `.claude/rules/grounding-and-claims.md` and `.claude/rules/evals.md`
+all state **"2,203 of 2,285 influence edges are single-source"**. The store reports **2,284 influence
+edges and 2,202 single-source** at both v0.7.0 and v0.7.1. Commit `c697712` ("honour hand-rejected
+edges") rewrote v0.7.0's `graph.json` after those sentences were written and dropped one edge. The
+figures to carry forward are **2,284 and 2,202**; corroborated stays **82**. Round down, as always.
+
+#### 8.9 The three recorded SSE fixtures
+
+`contract.test.ts`, `useLineageRun.test.ts` and `map.test.tsx` replay `fixtures/*.sse` — **real bytes
+captured from `/lineage` against a local `api/app.py` on artifact v0.5.0**, not hand-written strings.
+That is the point of them: they test the parser against the protocol rather than against an idea of it.
+
+After the re-pin they describe a corpus the backend no longer holds. Regenerating is **free and
+offline** — `make dev` runs `MYCELIUM_LLM_PROVIDER=local`, the stub, with no AWS — so there is no cost
+argument for leaving them stale. Re-record all three, and **re-read the resulting frames rather than
+assuming they replay**: a fixture that parses is not a fixture that still exercises the branch it was
+captured for, and `kate-bush-refusal.sse` in particular was captured to exercise a refusal that the
+widened corpus may no longer produce. If it no longer refuses, that is a finding about the corpus, not a
+fixture to force.
+
+#### 8.10 What must not happen in this step
+
+- **No `agent/` edits.** DoD #6, and §7 of this doc already fixes the rule: the only permitted change in
+  the whole phase is removing `contested` from `UNREACHABLE`, and that is spent. **`ResolveSource`
+  cannot verify a DBpedia URI** (`agent/tools.py:590`) and fixing it needs a reverse lookup
+  `GraphStore` does not expose — a `graph/` seam widening *plus* an `agent/` edit. §7 says: if any other
+  line in `agent/` needs to change, stop and write down why. **So it is written down and routed out of
+  this step.** It is also less severe than the gap list implies: the tool returns `resolvable: false`
+  with a stated reason, and **the gate does verify DBpedia citations against `Node.dbpedia_resource`
+  before approving a claim**, so this is a reader-facing capability gap, not a hole under the
+  citation-resolution gate. It is sjtroxel's call whether it becomes a phase 7 item.
+- **No deploy inside this step.** Lifting `FRONTEND_PIN_LAG_UNTIL_STEP_8` removes the *reason* not to
+  deploy; step 9 and step 10 are still ahead, and the deploy is step 10's.
+- **No new one-way doors, no agent loop edits, no SPA rebuild.** The scope doc's fence: this phase feeds
+  the visualization data, it does not redesign it. 8.2 is a correction to a rendering that became wrong,
+  not a redesign.
+- **No percentages on the coverage panel.** A published percentage was retracted on 2026-08-07 for
+  double-counting; counts are what replaced it, and a bucketing decision in 8.4 must not reintroduce a
+  rate.
+
+#### 8.11 Done means
+
+1. `chips.json` pins `0.7.1`, `web/public/graph/v0.7.1/graph.json` is staged, and
+   `FRONTEND_PIN_LAG_UNTIL_STEP_8` is gone with the plain equality restored.
+2. **The map distinguishes influence from membership** in layout, in ink, and in words, and an artist
+   and a genre appear in one component without membership reading as derivation.
+3. The three measured constants in 8.3 are re-derived against v0.7.1 or their promises are rewritten to
+   match what they now do — `NEIGHBOURS_PER_OPEN` explicitly resolved, not left silently truncating.
+4. The coverage panel has been **screenshotted and measured in headless Chromium** at v0.7.1, and the
+   places tail and the 35-bucket histogram have a recorded decision behind them.
+5. `corpus-facts.json` is generated rather than hand-maintained, and first paint still does not wait on
+   the `done` frame.
+6. Contested is carried from the backend and displayed showing both directions and both sources, with
+   `verification` and `corroboration` visibly distinct.
+7. CC BY-SA 3.0 and 4.0 attribution and link-back are visible in the product, not in a credits page.
+8. The copy in 8.8 is corrected.
+9. The three SSE fixtures are re-recorded against v0.7.1 and their branches re-read.
+10. The §9.3 projection is **deferred by decision, not by omission**, with 8.1's measured table as the
+    recorded reason.
+11. `make check` and `npx vitest` both green, with the new counts recorded here rather than in memory.
+
+**The original four-bullet sketch, kept as written on 2026-09-04:** the coverage panel keeps telling the
+truth on a corpus roughly 3x larger and the risk is layout, not staleness, so screenshot it in headless
+Chromium; the map can finally show artists and genres in one component and it is the single most visible
+change in the phase; contested pairs get a display that shows both directions and names both sources
+without picking a winner; and the CC BY-SA attribution and link-back per step 4.
 
 ### Step 9 — The full suite, and the held-out decision
 
@@ -725,8 +1137,19 @@ src/musical_mycelium/graph/memory.py     PINNED_ARTIFACT_VERSION
 src/musical_mycelium/ingest/wikidata.py  ARTIFACT_VERSION; a POST path for large VALUES clauses
 src/musical_mycelium/agent/claims.py     UNREACHABLE only — contested stops being unreachable
 src/musical_mycelium/eval/slices.py      source and predicate dimensions
-web/src/corpus-facts.json                deleted; its figures move into Coverage
-web/src/  (coverage panel, map, attribution, contested display)
+web/src/chips.json                       artifact_version 0.5.0 -> 0.7.1 (the only frontend pin)
+web/src/corpus-facts.json                GENERATED from graph/coverage.py (supersedes "deleted")
+web/src/graph/subgraph.ts                RenderEdge gains `predicate`; NEIGHBOURS_PER_OPEN re-derived
+web/src/graph/layout.ts                  layers on influence edges only
+web/src/graph/GraphView.tsx              membership drawn distinctly, and without an arrowhead
+web/src/components/mark.ts               the "whole component" claim, false at v0.7.1
+web/src/components/CoveragePanel.tsx     places tail and the 35-bucket histogram; the 43 -> 136 figure
+web/src/components/StepPanel.tsx         the "most of the corpus" figure, now 723 of 1,479
+web/src/components/NodeInspector.tsx     membership stated in words beside the influence direction
+web/src/fixtures/*.sse                   re-recorded against v0.7.1 (free, MYCELIUM_LLM_PROVIDER=local)
+web/src/  (attribution, contested display)
+tests/test_chips.py                      FRONTEND_PIN_LAG_UNTIL_STEP_8 deleted, equality restored
+src/musical_mycelium/api/app.py          corpus_summary() carries contested; its docstring figures
 docs/  (ROADMAP, KNOWN-GAPS, SPEC, graph-semantics, spa-explained, phase-6 scope)
 CLAUDE.md, README.md, .claude/rules/*.md   the A1 amendment
 ```
@@ -736,6 +1159,16 @@ real tension and it is resolved by scope, not by argument:** the only permitted 
 `contested` from the `UNREACHABLE` dictionary, which is a declaration of what the corpus can express, not
 logic. No gate rule, no loop, no tool, no prompt. If any other line in `agent/` needs to change, stop and
 write down why — that is the seam breaking and it is a phase finding.
+
+**It was needed once, and it is written down here rather than done.** `ResolveSource` cannot verify a
+DBpedia resource URI (`agent/tools.py:590`): a resource names an article rather than a QID, so unlike a
+Wikidata statement URI it cannot be parsed for its entity, and resolving one needs a reverse lookup
+`GraphStore` does not expose. Fixing it is a `graph/` seam widening **plus** an `agent/` edit, so under
+the rule above it stops here. **It is milder than it sounds and that is why deferring it is safe:** the
+tool already returns `resolvable: false` with a stated reason rather than resolving on faith, and the
+gate does verify DBpedia citations against `Node.dbpedia_resource` before approving a claim. The gap is
+a reader's ability to re-check, not a hole under the citation-resolution gate. Phase 7 or later, at
+sjtroxel's call.
 
 ---
 
@@ -794,6 +1227,13 @@ Stated as uncertain rather than smoothed over, per the skill.
    - **Not yet decided and deliberately left open:** whether the projection is a second generated file
      or the map fetches a neighbourhood on demand. That is a genuine step 8 design question, it does not
      block step 4, and picking it now would be guessing at frontend needs a month early.
+   - **Re-measured 2026-09-05, at step 8, and the reasoning above needs one correction: it argued from
+     RAW megabytes and the wire cost is gzipped.** v0.7.1 full is 2,694,624 raw but **187,294 gzipped**;
+     projected it is 650,503 / **52,411**. So the projection saves 72% of the transfer and lands the
+     browser cost at roughly what full v0.5.0 costs today — a real saving, and a smaller problem than
+     "~2MB client-side download" implied. **The decision and its recommendation are in step 8.1**, along
+     with a third option §9.3 could not have known about: provenance already travels on the claim
+     stream, so the projection need not lose the citation at all.
 4. **Whether DBpedia's 5,124 edges survive screening at anything like the Wikidata rate.** The Wikidata
    genre axis went 351 candidates to 133 edges — a 62% drop through the prose check. `stylisticOrigin` is
    an infobox field rather than a prose mention so the failure modes differ, and the retained fraction is

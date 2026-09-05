@@ -10,7 +10,7 @@ import type { Frame } from "./types";
  * The contract test between two separately-deployed halves.
  *
  * The fixtures are **real bytes captured from the API**, not hand-written strings: `/lineage` against a
- * local run of `api/app.py` on artifact v0.5.0. Synthetic frames test the parser against my idea of the
+ * local run of `api/app.py` on artifact v0.7.1. Synthetic frames test the parser against my idea of the
  * protocol; these test it against the protocol. The backend and the frontend ship on different
  * schedules — Lambda through `deploy.yml`, the SPA through an S3 sync — so a field that quietly changes
  * name has no other place to fail loudly.
@@ -64,9 +64,13 @@ describe("a real answer capture", () => {
     }
   });
 
-  it("yields the four approved claims acid jazz actually has", () => {
+  it("yields the five approved claims acid jazz actually has", () => {
+    // **Four until the phase 6 re-pin, five from artifact v0.7.1.** The fifth is `jazz fusion`, and
+    // it is the first time the headline chip's own answer contains an edge DBpedia supplied
+    // (`INFOBOX_AUTO`, `http://dbpedia.org/resource/Acid_jazz`). The corpus grew under this capture
+    // and lost nothing: the original four Wikidata `HAND` edges are all still here.
     const state = fold(replay(raw, 64));
-    expect(state.claims).toHaveLength(4);
+    expect(state.claims).toHaveLength(5);
     expect(state.outcome).toBe("answer");
     for (const claim of state.claims) {
       expect(claim.subject_id).toBe("Q221772");
@@ -78,15 +82,27 @@ describe("a real answer capture", () => {
     // `Claim.verification` is required with no default in `agent/claims.py` precisely because any
     // default would be wrong for half the corpus. A client that let it go undefined would render
     // "undefined" as a strength-of-check, which is worse than rendering nothing.
+    //
+    // **The list widened at the phase 6 re-pin and that is the whole value of this assertion.** It
+    // held the original four tiers, a real claim arrived carrying `INFOBOX_AUTO`, and this test is
+    // what surfaced that `types.ts` and `ClaimList`'s wording map had both gone stale against the
+    // backend -- so the interface was printing a raw constant where a sentence belongs. The
+    // `MEMBERSHIP_*` pair cannot reach a claim, because the gate never approves `plays_genre`.
     const state = fold(replay(raw, 64));
     for (const claim of state.claims) {
-      expect(["HAND", "PROSE_AUTO", "ASSERTS_AUTO", "EXPOSURE_AUTO"]).toContain(claim.verification);
+      expect([
+        "HAND",
+        "PROSE_AUTO",
+        "ASSERTS_AUTO",
+        "EXPOSURE_AUTO",
+        "INFOBOX_AUTO",
+      ]).toContain(claim.verification);
     }
   });
 
   it("reports a corpus summary on done", () => {
     const state = fold(replay(raw, 64));
-    expect(state.done?.artifact_version).toBe("0.5.0");
+    expect(state.done?.artifact_version).toBe("0.7.1");
     expect(state.done?.corpus.nodes).toBeGreaterThan(0);
   });
 });

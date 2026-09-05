@@ -23,6 +23,8 @@ from collections.abc import Callable, Iterable
 from functools import cached_property, lru_cache
 from pathlib import Path
 
+from musical_mycelium.graph.corroboration import ContestedPair, contested_pairs
+from musical_mycelium.graph.corroboration import summary as corroboration_summary
 from musical_mycelium.graph.coverage import Coverage
 from musical_mycelium.graph.coverage import analyse as analyse_coverage
 from musical_mycelium.graph.schema import INFLUENCE_ONLY, Artifact, Edge, Manifest, Node, verify
@@ -259,6 +261,30 @@ class InMemoryGraphStore:
         speak about at all**. DoD #7 requires it to be a recorded quantity rather than a disclaimer.
         """
         return analyse_coverage(self._artifact)
+
+    @cached_property
+    def corroboration(self) -> dict[str, int]:
+        """Whether a SECOND source agrees, and where two sources disagree.
+
+        The fourth honest half, and the one that did not exist before artifact v0.7.0. ``structure``
+        says what is reachable, ``coverage`` what the corpus can speak about, ``verification_counts``
+        how hard **one** source was checked -- and this says whether anything else agrees with it.
+
+        **``verification`` and this are different guarantees and must never be collapsed.** A
+        corroborated ``PROSE_AUTO`` edge is not thereby a ``HAND`` edge. Reading a verification tier
+        as corroboration is reading the opposite of the truth, and this project has already corrected
+        three files once for blurring exactly that.
+
+        Reports ``reciprocal_pairs`` and ``contested_pairs`` together, never one alone: a reciprocal
+        pair is two edges pointing both ways, a contested pair is two edges pointing both ways **from
+        different sources**, and at v0.7.1 that is 6 against 2. The loose reading overcounts by 3x.
+        """
+        return corroboration_summary(self._artifact)
+
+    @cached_property
+    def contested(self) -> tuple[ContestedPair, ...]:
+        """The pairs two different sources disagree about. Two at artifact v0.7.1."""
+        return contested_pairs(self._artifact)
 
     # --- convenience ----------------------------------------------------------------------------
 

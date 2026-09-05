@@ -217,12 +217,20 @@ export function StepPanel({
       {refused && (
         <div className="panel__context">
           {/* Requirement 5: never a negative claim. The corpus cannot support "nobody influenced X",
-              and this figure is why — it is checked by tests/test_corpus_facts.py. */}
+              and this figure is why — it is checked by tests/test_corpus_facts.py.
+
+              **The word was "most" until phase 6 step 8 and it is no longer available.** The figure
+              was a majority from v0.1 through v0.6.0; the DBpedia axis took it to 723 of 1,479,
+              which is 48.9% — a large minority. `test_most_of_the_corpus_records_no_influences`
+              bounds it to 40-50% precisely so this sentence fails rather than drifts, and it did
+              its job. The ARGUMENT is unchanged: nearly half recording nothing still makes a
+              missing edge weak evidence of a missing influence. Only the quantifier moved, and it
+              moved because the corpus got better, which is the unfamiliar direction for DoD 8. */}
           <p>
             A missing edge is not evidence of a missing influence.{" "}
             {facts.nodes_without_recorded_influences} of the corpus&rsquo;s {facts.nodes} nodes
-            record no influences at all, so silence here is the state of the sources rather than a
-            finding about the music.
+            &mdash; nearly half &mdash; record no influences at all, so silence here is the state of
+            the sources rather than a finding about the music.
           </p>
         </div>
       )}
