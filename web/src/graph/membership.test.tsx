@@ -62,7 +62,10 @@ describe("membership creates no influence depth", () => {
     // The assertion that matters. `blues -> jazz` is one hop, so jazz sits at layer 1. Miles Davis
     // plays jazz, and if that membership edge were layered he would land at layer 2 -- one column
     // PAST the genre, which on this map means "came out of it". He did not come out of jazz.
-    const layers = layerOf(NODES, [influence("Q_blues", "Q_jazz"), membership("Q_jazz", "Q_miles")]);
+    const layers = layerOf(NODES, [
+      influence("Q_blues", "Q_jazz"),
+      membership("Q_jazz", "Q_miles"),
+    ]);
 
     expect(layers.get("Q_blues")).toBe(0);
     expect(layers.get("Q_jazz")).toBe(1);

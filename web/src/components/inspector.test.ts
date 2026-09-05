@@ -48,10 +48,7 @@ const ARTIFACT: Artifact = {
     node("Q_miles", "Miles Davis", "artist"),
   ],
   // `jazz influenced_by blues`, and Miles Davis plays jazz.
-  edges: [
-    edge("Q_jazz", "Q_blues", "influenced_by"),
-    edge("Q_miles", "Q_jazz", "plays_genre"),
-  ],
+  edges: [edge("Q_jazz", "Q_blues", "influenced_by"), edge("Q_miles", "Q_jazz", "plays_genre")],
 };
 
 const graph = indexArtifact("0.7.1", ARTIFACT);

@@ -90,13 +90,9 @@ describe("a real answer capture", () => {
     // `MEMBERSHIP_*` pair cannot reach a claim, because the gate never approves `plays_genre`.
     const state = fold(replay(raw, 64));
     for (const claim of state.claims) {
-      expect([
-        "HAND",
-        "PROSE_AUTO",
-        "ASSERTS_AUTO",
-        "EXPOSURE_AUTO",
-        "INFOBOX_AUTO",
-      ]).toContain(claim.verification);
+      expect(["HAND", "PROSE_AUTO", "ASSERTS_AUTO", "EXPOSURE_AUTO", "INFOBOX_AUTO"]).toContain(
+        claim.verification,
+      );
     }
   });
 

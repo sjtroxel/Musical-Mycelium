@@ -656,6 +656,21 @@ places tail wrapped 57 tick marks onto a second line of four, **reading as a bro
 column 2** beside it, the dead-quarter-panel defect (now a full-width band, 296px). **Final: 1,203px,
 down 39%, no horizontal overflow at 1280px or 420px.**
 
+**A CI divergence this step exposed, and it was the second instance of one already recorded.** The push
+failed on CI's `spa` job in 12 seconds while `make check` was clean: six edited files had never seen
+Prettier, and **`make check` did not touch `web/` at all** — it ran three of CI's four jobs while its
+comment claimed to be "everything CI runs". The Makefile already carried a comment about the identical
+failure from 2026-08-17, when `eval` was missing for the same reason.
+
+Fixed by wiring the **already-existing** `web-check` target into `check` — the gap was one word in a
+prerequisite list, not a missing capability, and a first attempt at this added a duplicate `spa` target
+before grepping for what was there. `web-check`'s own docstring was also stale: it said "types, unit
+tests, and production build" and omitted `prettier --check`, the stage that actually failed. It now
+guards on `npm` and on a missing `web/node_modules`, costs about 4.5 seconds, and was verified by
+breaking it — a deliberate formatting violation now fails locally with
+`make: *** [web-check] Error 1`. The pre-commit hook from `make hooks` is installed here, so this is
+caught before a commit rather than after a push.
+
 **Not done in this step and not owed by it:** the §9.3 projection, deferred by decision (8.1), and the
 `ResolveSource` DBpedia lookup, routed out under DoD #6 (§7).
 

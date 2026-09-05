@@ -175,7 +175,11 @@ export function App() {
             DBpedia
           </a>{" "}
           under{" "}
-          <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noreferrer">
+          <a
+            href="https://creativecommons.org/licenses/by-sa/3.0/"
+            target="_blank"
+            rel="noreferrer"
+          >
             CC BY-SA 3.0
           </a>
           ; and origin details parsed from{" "}
@@ -183,7 +187,11 @@ export function App() {
             English Wikipedia
           </a>{" "}
           under{" "}
-          <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">
+          <a
+            href="https://creativecommons.org/licenses/by-sa/4.0/"
+            target="_blank"
+            rel="noreferrer"
+          >
             CC BY-SA 4.0
           </a>
           . Every edge carries a link back to the source it came from.

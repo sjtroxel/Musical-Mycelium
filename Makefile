@@ -7,9 +7,11 @@
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
         heldout-key heldout-draw heldout-seal heldout-verify heldout-check \
         eval eval-live eval-noise eval-label eval-judge eval-tier2 eval-heldout \
+        web-install web-dev web-check \
         hooks hooks-uninstall
 
 UV := $(shell command -v uv 2>/dev/null)
+NPM := $(shell command -v npm 2>/dev/null)
 
 # --- deployment settings -----------------------------------------------------
 # Every value here is also a Terraform variable default. They are repeated rather than read out of
@@ -70,7 +72,17 @@ root-check: ## Fail if the repo root has grown past its cap (see CLAUDE.md)
 # CI's check job ends with `make eval` and `make check` did not, so a change that broke the scripted
 # tier 1 run passed locally and failed on push. That is a real divergence and it is what makes a
 # pre-commit hook worth installing: the hook is only useful if green locally means green in CI.
-check: lint typecheck test root-check tf-validate eval ## Everything CI runs
+#
+# **`spa` joined it on 2026-09-05, and it is the SAME failure a second time.** CI has four jobs and
+# this target covered three: nothing here touched `web/` at all, so an entire phase of frontend work
+# could go green locally and fail on push. It did -- phase 6 step 8 pushed six files that had never
+# seen Prettier, and CI's `spa` job died in 12 seconds on `format:check` while `make check` was
+# clean. The comment above already had the principle written down; what it lacked was the frontend.
+#
+# It costs about 4.5 seconds on a backend-only run, which is the price of "one command" being true.
+# The target it calls is `web-check`, which already existed and was simply never wired in -- the gap
+# was one word in this line, not a missing capability.
+check: lint typecheck test web-check root-check tf-validate eval ## Everything CI runs
 
 # --- git hooks ---------------------------------------------------------------
 # Automates the thing that otherwise depends on remembering: run the checks before the commit, not
@@ -416,5 +428,18 @@ web-install: ## Install the SPA's dependencies
 web-dev: ## Run the SPA on :5173, proxying /api to whatever is on :8000
 	npm --prefix web run dev
 
-web-check: ## SPA types, unit tests, and production build
+# Part of `make check` since 2026-09-05. The description below said "types, unit tests, and
+# production build" and omitted the FIRST thing `npm run check` runs -- `prettier --check` -- which is
+# precisely the step that failed CI on the phase 6 step 8 push. A target whose name is `check` and
+# whose docstring lists three of its four stages is how a stage gets forgotten.
+web-check: ## SPA prettier, types, unit tests, and production build (the fourth CI job)
+ifndef NPM
+	@echo "npm is not installed, and CI's fourth job needs it. Install Node 22, which is what"
+	@echo "CI pins, then re-run. 'make web-install' installs the SPA's dependencies."
+	@exit 1
+endif
+	@if [ ! -d web/node_modules ]; then \
+		echo "web/node_modules is missing -- running 'npm ci' first"; \
+		npm --prefix web ci; \
+	fi
 	npm --prefix web run check
