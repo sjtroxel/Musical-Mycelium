@@ -1,4 +1,11 @@
 # Phase 5 — SPA and Visualization (v0.5): IMPLEMENTATION
+> **Stale-figure amendment, 2026-09-06, phase 6 step 10.** Every corpus figure below describes the artifact
+> as it stood when this doc was written, and phase 6 moved all of them: **v0.7.1 holds 1,479 nodes, 5,066
+> edges and 7 components** against v0.5.0's 973 / 950 / 169, and the corpus has **two** sources rather than
+> one, so `contested` is reachable and 2 pairs are contested. **The figures below are deliberately not
+> edited** — this doc is a record of what was known then, and rewriting it would destroy the only property
+> it has. Read `docs/graph-semantics.md` §5.2 and the phase 6 step 9 section of `docs/KNOWN-GAPS.md` for
+> the current state; do not quote a number from this file as present tense.
 
 > **As-built plan.** Written 2026-08-24, immediately before phase 5 is built, per `CLAUDE.md`. It absorbs
 > what phases 0–4 actually taught. The scope doc is [`phase-5-spa-and-visualization.md`](phase-5-spa-and-visualization.md),

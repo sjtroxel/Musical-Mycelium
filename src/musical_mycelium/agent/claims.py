@@ -17,10 +17,17 @@ below is a dictionary lookup or a string comparison, so it is free, reproducible
 which is also what makes the Tier 1 eval metrics possible at all.
 
 Not here, and deliberately: **contested** claims. ``.claude/rules/grounding-and-claims.md`` makes
-contested a first-class state rather than an error, and it is genuinely owed. It is also not buildable
-on this corpus, and the reason is arithmetic rather than effort: **disagreement needs two sources and
-every edge has exactly one, always Wikidata.** Shipping the state anyway would mean a `contested` field
-that is structurally always false — worse than absent, because it would read as a check that passed.
+contested a first-class state rather than an error, and it is genuinely owed.
+
+**Amended 2026-09-06, phase 6 step 10.** This paragraph said contested was "not buildable on this
+corpus" because "disagreement needs two sources and every edge has exactly one, always Wikidata". That
+was arithmetic and it was correct; **phase 6 step 4 ingested DBpedia, so the precondition arrived** and 2
+pairs are contested at artifact v0.7.1. Decision A1 is closed by that arrival, not overturned. **It is
+still not a claim, and that has not changed for a different reason**: contested is a property of a PAIR,
+derived in ``graph.corroboration``, never stamped on an edge and never proposed by the model. A
+``contested`` field on a ``Claim`` would still be the wrong shape — and today nothing in this package
+reads corroboration at all, so no answer can express a disagreement the corpus holds. That gap is phase
+6.5's keystone, not a defect in this module.
 
 So it is declared rather than implemented, in ``UNREACHABLE`` below, with the precondition that would
 make it real and a test asserting no artifact edge can produce it. What ships in its place is
@@ -118,9 +125,12 @@ class Claim:
     object_id: str
     source_ids: tuple[str, ...]
     #: **How strongly this claim's ONE source was checked. Not how many sources agree, and not whether
-    #: anything is disputed.** That sentence is the whole point of the field and it is not decoration:
-    #: every edge in this corpus has exactly one source, always Wikidata, so there is nothing here that
-    #: could corroborate anything. ``HAND`` means a person read the subject's article; ``PROSE_AUTO``
+    #: anything is disputed.** That sentence is the whole point of the field and it is not decoration.
+    #: *(It read "every edge in this corpus has exactly one source, always Wikidata, so there is nothing
+    #: here that could corroborate anything" until 2026-09-06. At v0.7.1, 82 of 2,284 influence edges
+    #: carry a second source in ``Edge.corroboration`` — a DIFFERENT field, which never promotes a tier.
+    #: 2,202 remain single-source, so the misreading below is wrong about 96% of the corpus.)*
+    #: ``HAND`` means a person read the subject's article; ``PROSE_AUTO``
     #: means only that an automated check found the object named in body prose, and it over-accepts at
     #: roughly one in five. A reader who takes these as agreement between sources has been told the
     #: opposite of the truth, which is the "grounded slides into correct" failure ``CLAUDE.md`` forbids.

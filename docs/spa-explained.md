@@ -125,25 +125,30 @@ cannot be casual about its own licenses.
 
 ## What the map can honestly show
 
-The corpus is not one connected organism, and the interface must not imply that it is.
+**Rewritten 2026-09-06 at phase 6 step 10, against measurements taken that morning.** The previous
+version of this section is quoted below rather than deleted, because what changed between the two is the
+most interesting thing on this page.
 
-Measured: 973 nodes fall into **169 separate components**, and artists and genres never touch — 128
-components are purely artists, 41 are purely genres, and **none are mixed**. The largest component is 458
-nodes and every one of them is an artist. The blues-to-heavy-metal example that opens the app is a
-component of **three nodes**.
+Measured at artifact v0.7.1: **1,479 nodes in 7 components**, and **1,465 of them are in one**. That
+component holds **all 804 artists and 661 of the 675 genres**. The remaining six components are
+genre-only and hold 14 genres between them. Artists and genres now share a component; before, they never
+touched.
 
-None of this is broken. Only one Wikidata property is ingested — `P737`, *influenced by* — and it does
-not link artists to genres. The property that would, `P136`, is not in the corpus, and adding it means
-cutting a new artifact, which would invalidate every published evaluation number.
+> **What this section said at v0.5.0, and it was accurate then:** *"973 nodes fall into 169 separate
+> components, and artists and genres never touch — 128 components are purely artists, 41 are purely
+> genres, and none are mixed. The largest component is 458 nodes and every one of them is an artist. The
+> blues-to-heavy-metal example that opens the app is a component of three nodes."* Only `P737`
+> (*influenced by*) was ingested, and it does not link artists to genres.
 
-> **Scheduled to change, and this section is written against v0.5.0.** Phase 6 decided on 2026-09-02 to
-> ingest `P136` as a separate, non-narratable predicate — decision C1, `docs/graph-semantics.md` §5.2 —
-> which joins the two axes and makes the map able to show one component containing both artists and
-> genres for the first time. **Every number in this section is still correct today** and stops being
-> correct at phase 6 step 2. Rewrite it there, against measurements, rather than against this note.
+**What closed the gap is membership, and the distinction is the whole point.** Phase 6 step 2 ingested
+`P136` as a **separate, non-narratable predicate** — decision C1, `docs/graph-semantics.md` §5.2. An
+artist playing a genre is not the genre deriving from anything, and the gate cannot narrate `plays_genre`
+as influence. So the corpus is connected **through the people who play across it**, not by an unbroken
+chain of sourced influence, and copy that lets the second read out of the first is exactly the
+overstatement this whole document exists to avoid.
 
-So the map shows a neighbourhood, and says so. The alternative — drawing all 169 islands at once and
-letting it look like one graph — would be a picture that argues for a claim the data does not make.
+The map still shows a neighbourhood rather than the whole graph, and still says so — with 1,465 nodes in
+one component that is now a legibility decision rather than an honesty one.
 
 ## How the map is laid out, and why time is not an axis
 
@@ -228,8 +233,9 @@ rather than dropped — the missing data is data.
 
 The skew is real and structural: the United States and the United Kingdom are the top two places by a
 distance. The counterweight sits in the same block rather than in a disclaimer, because **concentration
-is not absence** — 43 of the 169 genres name neither, and 48 name no place at all. A test fails if a
-future corpus ever turns that counterweight into a fig leaf.
+is not absence** — **136 of the 675 genres name neither, and 222 name no place at all** *(43 of 169 and
+48 when this was written at v0.5.0; re-measured 2026-09-06)*. A test fails if a future corpus ever turns
+that counterweight into a fig leaf.
 
 The panel renders **below** the results, always. It was originally above them, on the reasoning that
 coverage is the frame you read an answer through. Every test passed. The user clicked a chip and thought
@@ -237,9 +243,11 @@ nothing had happened: the panel was a full screen tall, the answer rendered belo
 streaming animation had finished by the time he scrolled to it. *A frame nobody sees the answer inside is
 not a frame.*
 
-There is a third kind of thinness the panel does not chart, and it is the sharpest one: **85 of the 169
-genres have no recorded origin at all, 108 have exactly one connection, and the busiest has six.** Those
-figures live in `web/src/corpus-facts.json`, asserted against the pinned artifact by a Python test.
+There is a third kind of thinness the panel does not chart, and it is the sharpest one: **266 of the 675
+genres have no recorded origin at all, 125 have exactly one connection, and the busiest has 55.** *(85 of
+169, 108, and six at v0.5.0. Re-measured 2026-09-06 — note that the thinness did not go away, it got
+proportionally milder while the busiest node got nearly ten times busier.)* Those figures live in
+`web/src/corpus-facts.json`, asserted against the pinned artifact by a Python test.
 
 ## The mark
 
@@ -261,10 +269,17 @@ different pictures is the ordinary outcome otherwise.
 **The guided tour** — the synchronized narration-and-camera moment — is v1.0, not this phase. Pulling it
 forward is how v0.5 becomes v1.0 with no evaluation work in between.
 
-**A second source.** Four of the six aspirational chips are blocked on it, and it is the precondition for
-this system ever being able to say that a claim is *contested*. On today's corpus every edge has exactly
-one source and it is always Wikidata, so nothing can disagree with anything — that is arithmetic, not
-effort, and any copy implying otherwise is overstating it.
+~~**A second source.**~~ **Delivered 2026-09-04 — DBpedia, artifact v0.7.0.** This paragraph read: *"it
+is the precondition for this system ever being able to say that a claim is contested. On today's corpus
+every edge has exactly one source and it is always Wikidata, so nothing can disagree with anything — that
+is arithmetic, not effort."* **That was correct arithmetic, and its stated precondition arrived**, which
+is a different thing from having been wrong. **82 of 2,284 influence edges now carry a second source and
+2 pairs are contested** — two different sources asserting opposite directions.
+
+**What is still missing is the half that reaches a user.** `contested` is derived in `graph/`, served by
+the corpus summary and drawn in the coverage panel as a **corpus-level statistic**. The agent does not
+read it, **no answer will tell you a lineage is disputed**, and no eval case exercises it. Copy implying
+otherwise is overstating it exactly as the old paragraph warned, in the opposite direction.
 
 **A readable URL.** CloudFront assigns the hostname and there is no vanity subdomain to claim at any
 price; a nicer address means registering a real domain, which is phase 7.

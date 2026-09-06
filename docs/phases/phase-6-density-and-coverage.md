@@ -98,6 +98,17 @@ Phase 5 is complete and `v0.5.0` is tagged. Five things it settled that this pha
    and the map can only ever show a neighbourhood and say so. **`P136` is the property that would change
    this**, and it is a bigger lever on the product's central claim than the second source is. Neither is
    free: both mean a new cut, and a new cut invalidates every published eval number.
+
+   > **Answered by this phase, 2026-09-06, step 10. This item was the phase's best call.** Step 2
+   > ingested `P136` and the prediction held exactly: measured at v0.7.1, **7 components with 1,465 of
+   > 1,479 nodes in one**, holding **all 804 artists and 661 of 675 genres**. The remaining six
+   > components are genre-only and hold 14 genres between them. **The lever was correctly identified as
+   > the bigger one** — membership collapsed the component count, the second source did not.
+   >
+   > **What must not be read out of this.** `plays_genre` is a **separate, non-narratable** predicate:
+   > the corpus is connected **through the people who play across it**, not by an unbroken chain of
+   > sourced influence, and the gate cannot narrate membership as derivation. Decision C1,
+   > `docs/graph-semantics.md` §5.2.
 5. **Six of the 102 datable edges run backwards in time** — the influence recorded as older than its own
    cause, worst `electroclash (1995) -> electropop (1978)` at 17 years, and one inside a demo chip
    (`swing (1930) -> Western swing (1928)`). Phase 5 declined to build geometry on those numbers. **If

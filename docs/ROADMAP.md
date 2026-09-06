@@ -53,7 +53,7 @@ so both columns are labelled. Reading one as the other is the confusion this hea
 | **3** `agent-loop` **DONE 2026-08-12** | **v0.3** | **v0.5.0** (unchanged) | Real agent loop: planning, **7** tools, corroboration | Tool registry; loop untouched |
 | **4** `eval-suite` **DONE 2026-08-24** | **v0.4** | **v0.5.0** (unchanged) | The eval suite proper | Independent scorers over a pinned artifact |
 | **5** `spa-and-visualization` **DONE 2026-09-02** | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
-| **6** `density-and-coverage` **steps 0-7 done** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
+| **6** `density-and-coverage` **BUILT 2026-09-06, untagged** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **6.5** `debt-and-disagreement` **scoped 2026-09-06** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6: `contested` in an answer, the refusal defects, a measured live gate | Agent package, which phase 6 DoD #6 forbade |
 | **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |
 
@@ -98,16 +98,18 @@ alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
 ### Where the build actually is — 2026-09-06
 
-**Phases 0 through 5 are COMPLETE. PHASE 6 IS IN PROGRESS: steps 0-8 are done and step 9 has RUN** — tier
-1 live at v0.7.1 (45 cases) and judged tier 2, both on 2026-09-06. What remains of step 9 is **three open
-decisions**: the live threshold set, the noise floor, and the held-out set. Step 10 is docs, copy audit
-and release. As-built:
-`docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0.
+**Phases 0 through 5 are COMPLETE. PHASE 6 IS BUILT — steps 0 through 10 are all done.** Tier 1 live at
+v0.7.1 (45 cases) and judged tier 2 both ran 2026-09-06, and the copy audit closed the same day. What
+remains of phase 6 is **the `v0.6.0` tag and the deploy, both deliberately deferred**, plus step 9's
+three open decisions: the live threshold set, the noise floor, and the held-out set. As-builts:
+`docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0 and §10.0. **The debt phase 6 could not
+close is scoped as phase 6.5** — `docs/phases/phase-6.5-debt-and-disagreement.md`.
 `v0.3.0-local`, `v0.4.0` and `v0.5.0` are tagged; v0.6.0, v0.7.0 and v0.7.1 are cut but not tagged.
 
 **The corpus has a second source, and `contested` is reachable.** Artifact **v0.7.1 is pinned** —
 `graph/memory.py:34`, `ingest/wikidata.py:59` and the SPA's `GRAPH_PIN` all read it. 1,479 nodes and
-5,066 edges, against v0.5.0's 973 and 950. The influence layer went 949 edges to **2,285** (949 Wikidata + 1,336 DBpedia),
+5,066 edges, against v0.5.0's 973 and 950. The influence layer went 949 edges to **2,284** (measured 2026-09-06; 2,285 was the count before
+`c697712` honoured hand-rejected edges),
 components 169 to **7**, and the deepest chain 6 hops to **12**. Decision **A1 is closed by its own
 stated precondition arriving**: two pairs are now contested between sources.
 

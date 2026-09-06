@@ -327,9 +327,11 @@ METRICS: tuple[tuple[str, str, Callable[[dict[str, Any]], float | None]], ...] =
     ("total_tokens", "count", _total_tokens),
 )
 
-#: Metrics a threshold could plausibly be written against. `thresholds.json` gates five things and
-#: two of them — traversal recall and refusal accuracy — are "within Npp of baseline", which is the
-#: pair this floor exists to size.
+#: Metrics a threshold could plausibly be written against. `thresholds.json` declares five gates, of
+#: which the free every-commit run blocks on THREE — `.claude/rules/evals.md` forbids writing "blocks on
+#: five" anywhere, and this comment said "gates five things" until 2026-09-06. Two of the five —
+#: traversal recall and refusal accuracy — are "within Npp of baseline", which is the pair this floor
+#: exists to size.
 RATE_METRICS = tuple(name for name, unit, _ in METRICS if unit == "rate")
 
 

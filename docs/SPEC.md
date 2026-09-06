@@ -157,10 +157,23 @@ Three things this section predicted correctly and one it did not:
   descendants query are one chip, run in sequence on a single click.** `get_descendants` shipped with
   phase 3, so nothing blocked it.
 - Every "blocked on a second source" row is still blocked, and none of them is on the screen.
+
+  > **Amended 2026-09-06, phase 6 step 10 — the blocker is half gone, and only half.** DBpedia landed at
+  > artifact v0.7.0, so **the corpus now holds disagreement: 82 corroborated edges and 2 contested
+  > pairs.** These rows are still **not** shippable as chips, for a different reason than before:
+  > `contested` is derived in `graph/`, served by the corpus summary and drawn in the coverage panel as a
+  > **corpus-level statistic**, and **nothing in `agent/` reads it**. A chip is a query, a query produces
+  > an answer, and no answer can say the sources disagree. Closing that is phase 6.5's keystone; until it
+  > lands, these rows stay blocked and the reason recorded here is the accurate one.
 - **U2 is not on the chip row.** The paragraph above says it "answers with six gated claims"; the
   artifact holds **nine** incoming edges for `Q396` today. Not a contradiction — claims are what survives
   the gate, not what the graph holds — but the two numbers are counting different things, and the chip
   row was filled without needing to resolve which. It remains the open sixth slot.
+
+  > **Still open, deliberately, 2026-09-06.** Re-read at step 10 and left open. Filling the sixth slot is
+  > a chip-selection call, not a contract change, and the strongest candidate for it is a **contested**
+  > chip that cannot be built yet. Filling it now with an ordinary artist would spend the slot on the
+  > weaker demo a fortnight before the better one becomes possible.
 
 One line, because a scope fence does more work than a feature list:
 
@@ -234,10 +247,18 @@ mixture of these tiers would be worse than any one alone, which is why the field
 
 **Added 2026-08-07 (phase 3).** `verification` also rides on every approved **`Claim`**, copied off the
 edge by the gate exactly as `source_ids` is, so a reader can tell per claim — not only in aggregate —
-which evidence tier they are looking at. Two further states are **defined and deliberately unreachable**,
-each with its precondition recorded: `contested` needs a second source (every edge here has exactly one,
-always Wikidata), and `checks_disagree` needs a corpus policy that flags conflicting checks rather than
-excluding them. A test locks both. See `phases/phase-3-agent-loop.md` A1.1.
+which evidence tier they are looking at. Two further states were **defined and deliberately unreachable**,
+each with its precondition recorded.
+
+> **Amended 2026-09-06, phase 6 step 10. One of the two preconditions arrived.** `contested` needed a
+> second source, and phase 6 step 4 ingested DBpedia, so it left `UNREACHABLE` at artifact v0.7.0 and
+> **2 pairs are contested** at v0.7.1. Decision A1 is **closed by its own stated precondition arriving,
+> not overturned** — it was arithmetic and it was correct. `checks_disagree` is still declared and still
+> unreachable, and still needs a corpus policy that flags conflicting checks rather than excluding them.
+> **`contested` is a property of a PAIR, derived in `graph/corroboration.py`** — never stamped on an
+> edge, never proposed by the model, and **not carried on a `Claim`**. It reaches a reader through the
+> corpus summary, not through an answer. See `phases/phase-3-agent-loop.md` A1.1 and
+> `docs/graph-semantics.md` §5.2.
 
 ## 6. API contract — SETTLED through phase 3
 
@@ -255,15 +276,18 @@ Owned by the v0.1 IMPLEMENTATION doc, and it should be written **before** anythi
 **Added 2026-08-04 (phase 2 step 3).** `/health` and the `done` frame both carry a `corpus` object:
 
 ```json
-{ "artifact_version": "0.5.0", "nodes": 973, "edges": 950,
-  "verification": { "HAND": 22, "PROSE_AUTO": 111, "ASSERTS_AUTO": 760, "EXPOSURE_AUTO": 57 },
+{ "artifact_version": "0.7.1", "nodes": 1479, "edges": 5066,
+  "verification": { "HAND": 22, "PROSE_AUTO": 111, "ASSERTS_AUTO": 759, "EXPOSURE_AUTO": 57,
+                    "INFOBOX_AUTO": 1335, "MEMBERSHIP_BARE": 1363, "MEMBERSHIP_CITED": 1419 },
   "predicate": "influenced_by" }
 ```
 
-*(Values refreshed 2026-08-24 from a live `corpus_summary()` call. They read `0.2.0`, 169 nodes, 133
-edges and a two-value `verification` map until then, which contradicted §5's table two screens above —
-anyone implementing against this section would have built a two-value enum against a corpus three cuts
-old. The **shape** is the contract; the numbers are illustrative and `/health` is authoritative.)*
+*(Values refreshed **2026-09-06, phase 6 step 10**, measured from the pinned store rather than typed.
+They read `0.5.0`, 973 nodes, 950 edges and a **four**-value `verification` map until then. The map is
+now seven: v0.6.0 added the two `MEMBERSHIP_*` tiers and v0.7.0 added `INFOBOX_AUTO` for DBpedia. An
+implementer building a four-value enum against this section would have failed on a real payload, which
+is the same defect this note records from 2026-08-24 — a two-value enum against a corpus three cuts old.
+The **shape** is the contract; the numbers are illustrative and `/health` is authoritative.)*
 
 Coverage is on the screen, not in a footnote (`planning/04` §4.5), and `verification` is the honest half
 of it: a corpus that is mostly machine-verified is noisier per edge, and the product states the split
@@ -272,22 +296,25 @@ rather than presenting one undifferentiated edge count.
 **Added 2026-08-05 (phase 2 step 4).** The corpus object also carries `structure`:
 
 ```json
-{ "component_count": 169, "largest_component": 458, "diameter": 16,
-  "isolated_nodes": 0, "max_path_hops": 6 }
+{ "component_count": 7, "largest_component": 1465, "diameter": 10,
+  "isolated_nodes": 0, "max_path_hops": 12 }
 ```
 
 This is the connectivity half of the same honesty, and it is the half a visitor cannot infer. An edge
-count alone implies one connected graph; the corpus is **169 disconnected islands**, so relating two
-genres is a capability *within* a component and two genres in different components have no sourced path
-at all. `max_path_hops` is the deepest chain `path()` can return anywhere in the corpus. Publishing both
+count alone implies one connected graph, and for most of this project's life the corpus was not one:
+**169 disconnected islands at v0.5.0, 7 at v0.7.1, with 1,465 of 1,479 nodes now in the largest.**
+Relating two genres is still a capability *within* a component, and two nodes in different components
+still have no sourced path at all — the constraint did not disappear, it stopped being the dominant
+fact. `max_path_hops` is the deepest chain `path()` can return anywhere in the corpus. Publishing both
 is what keeps an empty answer legible as a **boundary rather than a failure** — which matters because
 refusal is correct behaviour here and has to be distinguishable from breakage.
 
-*(Values refreshed 2026-08-24, same reason as above. They read 41 / 31 / 10 / 2 — the **genre-only**
-corpus of v0.2.0 — and the jump to 169 / 458 / 16 / 6 is the artist axis, not drift. Both figures are
-worth knowing: more components AND a far larger largest component AND three times the depth. Genre-level
-P737 could not supply depth at all, which is why phase 2's DoD #2 had to be amended; the artist axis is
-where the six hops came from.)*
+*(Values refreshed **2026-09-06**, measured. They read 41 / 31 / 10 / 2 at v0.2.0 and 169 / 458 / 16 / 6
+at v0.5.0, and the jump to 7 / 1,465 / 10 / 12 is **two separate causes, not one**: phase 6 step 2 added
+artist-to-genre membership, which is what collapsed 169 components into a handful, and step 4 added a
+second influence source. Note the shape of the change — **component count fell while the largest
+component and the depth both grew**, which is what connection looks like as opposed to growth. The
+earlier note's reading still holds for its own era: genre-level P737 could not supply depth at all.)*
 
 Derived, never stored: the store recomputes it on load rather than trusting the manifest, so it cannot
 drift from the corpus in hand.
@@ -298,12 +325,12 @@ drift from the corpus in hand.
 canonical one for a day.)*
 
 ```json
-{ "genres": 169, "without_inception": 28, "without_country": 48,
-  "eras": { "pre-1900": 6, "1900-1949": 7, "1950-1969": 29, "1970-1989": 47,
-            "1990-2009": 39, "2010-": 13, "unknown": 28 },
-  "coarser_than_year": 19, "distinct_countries": 29,
-  "genres_without_us_or_uk": 43, "top_country": "United States", "top_country_share": 0.421,
-  "countries": { "United States": 51, "United Kingdom": 42, "Japan": 14, "…": 0 } }
+{ "genres": 675, "without_inception": 198, "without_country": 222,
+  "eras": { "pre-1900": 23, "1900-1949": 56, "1950-1969": 97, "1970-1989": 186,
+            "1990-2009": 96, "2010-": 19, "unknown": 198 },
+  "coarser_than_year": 64, "distinct_countries": 65,
+  "genres_without_us_or_uk": 136, "top_country": "United States", "top_country_share": 0.541,
+  "countries": { "United States": 245, "United Kingdom": 121, "Japan": 24, "…": 0 } }
 ```
 
 **Both halves ship or neither does.** `top_country_share` alone invites "so it is only Western music",
@@ -388,8 +415,11 @@ being silently absent.
 ## 7. Claim contract — SETTLED in detail and in shape
 
 *(Headed "OPEN in detail, fixed in shape" until 2026-08-24. The detail closed in phase 3: `verification`
-is on every claim, and the two unreachable states are declared and test-locked. What is owed is a second
-source in phase 6, which is a corpus job rather than a contract question.)*
+is on every claim, and the two unreachable states are declared and test-locked. What was owed was a
+second source in phase 6 — **delivered 2026-09-04, DBpedia, artifact v0.7.0**. It was a corpus job, as
+predicted, and it left one contract question behind after all: **nothing on the `Claim` or in the answer
+stream carries `contested`**, so the corpus can now hold a disagreement that no answer can express. That
+gap is phase 6.5's keystone.)*
 
 `Claim(subject_id, predicate, object_id, source_ids, verification, span)`. The pipeline is claims first,
 prose second: the agent emits claims, a deterministic gate approves them, and prose is generated from the
@@ -397,11 +427,18 @@ approved set only. Prose generation cannot see anything else. See
 `.claude/rules/grounding-and-claims.md`.
 
 **`verification` added 2026-08-08 (phase 3 step 4).** One of `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`,
-`EXPOSURE_AUTO`, copied off the artifact edge by the gate exactly as `source_ids` is — the model may not
-supply it, so the model cannot inflate it. It says **how strongly this claim's one source was checked. It
-is not a count of agreeing sources and not a disputed flag.** Every edge in this corpus has exactly one
-source, always Wikidata, so there is nothing here that could corroborate anything; reading these tiers as
-agreement is reading the opposite of the truth.
+`EXPOSURE_AUTO`, `INFOBOX_AUTO` or the two `MEMBERSHIP_*` tiers — **seven as of artifact v0.7.1, four
+when this paragraph was written** — copied off the artifact edge by the gate exactly as `source_ids` is,
+so the model may not supply it and cannot inflate it. It says **how strongly this claim's one source was
+checked. It is not a count of agreeing sources and not a disputed flag.**
+
+> **Amended 2026-09-06.** This paragraph ended *"every edge in this corpus has exactly one source, always
+> Wikidata, so there is nothing here that could corroborate anything"*. False since v0.7.0: **82 of 2,284
+> influence edges carry a second source** and `Edge.corroboration` records it. What has **not** changed is
+> the sentence that matters — `verification` and `corroboration` are **different fields**, one says how
+> hard a single source was checked and the other whether a second agrees, a corroboration never promotes
+> a tier, and reading these tiers as agreement is still reading the opposite of the truth. **2,202 of
+> 2,284 edges remain single-source**, so that reading is wrong about 96% of the corpus by construction.
 
 What it buys: a user reading a five-claim answer can see that four rest on an automated assertion filter
 and one rests on documented exposure at 20% recall. That is a **per-claim** honesty guarantee, where

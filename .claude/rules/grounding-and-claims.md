@@ -40,7 +40,7 @@ Canonical detail: `docs/planning/07-EVAL-SPEC.md` §2 (as amended) and `08-REVIE
     second source agrees**. A corroborated `PROSE_AUTO` edge is **not** thereby a `HAND` edge; a
     corroboration must never promote a tier; a UI must never show one number where there are two. This
     project has already corrected three files once for blurring these, from the other direction.
-  - **Still true and still the constraint:** 2,203 of 2,285 influence edges are single-source, so the
+  - **Still true and still the constraint:** 2,202 of 2,284 influence edges are single-source, so the
     corpus detects disagreement only where DBpedia has an opinion at all. "This system surfaces
     disagreement between two sources on the 82 edges where both speak" is honest; "this system knows
     which influence claims are disputed" is not.

@@ -1280,6 +1280,185 @@ is his call, made deliberately at the freeze, not incidentally mid-phase.
 
 ### Step 10 — Docs, copy audit, release
 
+**Written 2026-09-06 after a full sweep, immediately before doing it.** The up-front sketch is kept
+verbatim as 10.9. It named four families of stale sentence and every one of them is real. What it could
+not know is that **the sweep found two more families**, one of which is worse than anything on its list:
+two files instruct future sessions to write a number that is now false.
+
+**Baseline:** `make check` **1330 passed, 1 xfailed**, 14 deselected, mypy clean over 98 source files,
+frontend **159 passed** across 15 files, root 17 of 18. Clean tree at `c8f9932`.
+
+#### 10.0 As built — what the sweep found that the plan did not
+
+**Verified on completion, 2026-09-06:** `make check` green — **1330 passed, 1 xfailed**, 14 deselected,
+mypy clean over 98 source files, frontend **159 passed** across 15 files, root 17 of 18.
+
+The sketch's four families were all real. Eight things it could not see:
+
+1. **Two files did not contain a stale number, they *instructed* one.** `CLAUDE.md:23` and
+   `docs/graph-semantics.md:448` both said present-tense copy **must** say 169 disjoint components — an
+   instruction that was correct when written and became a standing order to state something false the
+   moment step 2 landed. `CLAUDE.md` loads into every session in this repo. **A stale rule outlives the
+   stale sentences it produces, and greps for the number will not find it.** Fixed first, before any
+   sentence.
+2. **`README.md` was staler than the plan's list.** The plan named its one-source bullet; the whole
+   corpus paragraph still described **v0.5.0** — 973 nodes, 950 edges, "both from Wikidata P737 only",
+   four verification tiers. The recruiter-visible file was describing a corpus three cuts old.
+3. **`SPEC.md` repeated its own recorded mistake, one cut later.** Its 2026-08-24 note explains that the
+   `verification` map had been left at **two** values against a four-value corpus, and that "anyone
+   implementing against this section would have built a two-value enum". It was then left at **four**
+   against a **seven**-value corpus. The note describing the defect did not prevent the defect.
+4. **The measured corpus disagrees with three rules files, and step 8 predicted it.** `CLAUDE.md` and
+   both `.claude/rules/` files said "2,203 of 2,285 influence edges are single-source"; the store reports
+   **2,202 of 2,284**, because `c697712` honoured hand-rejected edges after those sentences were written.
+   Corrected here, per §8.8's hand-off. Round down, as always.
+5. **The component structure measured, not assumed.** 7 components: **one mixed component holding all 804
+   artists and 661 of 675 genres**, and six genre-only components holding **14 genres between them**.
+   Phase 6's scope doc §0 item 4 called `P136` "a bigger lever on the product's central claim than the
+   second source is" — **it was right, and that item is now answered in place** rather than left as a
+   prediction. Membership collapsed the component count; the second source did not.
+6. **A direction error, mine, caught by checking.** `README.md` says "Who influenced Kate Bush?" refuses
+   because she has seven incoming edges and zero outgoing. A first query returned zero edges either way
+   and looked like a stale claim. `neighbors()` defaults to **one** direction: queried both ways she has
+   **7 as object, 0 as subject**, so the README was right and the check was wrong. `MEMORY.md` records
+   three separate origins-direction bugs that all passed silently; this is the fourth, and the only
+   reason it did not become a bad edit is that the numbers were re-measured before the sentence was
+   rewritten.
+7. **Seven historical docs were stamped, not rewritten.** Phases 2, 3, 4 and 5 (scope and IMPLEMENTATION
+   both, where both carried figures) each got one dated amendment at the top saying every corpus figure
+   below is a record of its own date. **`docs/phases/phase-4-eval-suite-IMPLEMENTATION.md:1090` needed a
+   targeted one instead**: its DoD table row says "Tier 1 every commit, $0, blocks on five", which reads
+   as what shipped, and `.claude/rules/evals.md` forbids that wording by name. It now says it quotes the
+   scope DoD and that the free run blocks on three.
+8. **The chip row's blocker changed shape rather than clearing.** `SPEC.md`'s four "blocked on a second
+   source" rows have a second source now and are **still blocked**, for a different reason: no answer can
+   express a contested pair. The open sixth slot is left open **deliberately**, because the strongest
+   candidate for it is a contested chip that phase 6.5 makes possible, and filling it now would spend the
+   slot on the weaker demo.
+
+**Deferred by his decision, 2026-09-06:** the `v0.6.0` tag and the deploy. Both are recorded in 10.8 and
+neither was done incidentally.
+
+#### 10.1 The instruction files, first, because they steer everything else
+
+Two files do not merely contain a stale number — they **tell a future session to write it**:
+
+- **`CLAUDE.md:23`** — *"Until phase 6 step 2 lands, present-tense copy must still say 169 disjoint
+  components."* Step 2 landed 2026-09-02. The sentence was correct when written and is now an instruction
+  to state something false, in the file that loads into **every** session in this repo.
+- **`docs/graph-semantics.md:448`** — *"at this section's date the corpus is still 169 disjoint components
+  and present-tense copy must say so."* Same defect, and it is the file `CLAUDE.md` cites as the record.
+
+These go first. Every other item in this step is a sentence; these two are a **rule** that would
+regenerate the sentences.
+
+#### 10.2 The public surface
+
+- **`README.md:42-45`** — *"The corpus is one source deep, so it cannot detect disagreement. Every edge
+  in the graph carries exactly one source, always Wikidata… `contested` is declared in the code and
+  locked as unreachable by a test."* False since v0.7.0 on every clause. This is the recruiter-visible
+  file and the highest-consequence single fix in the step.
+- **`README.md:88`** — *"Detecting genuine disagreement needs a second source."* It has one now.
+- **`docs/SPEC.md`** — canonical contracts, so it is corrected rather than annotated:
+  - `:280` *"the corpus is **169 disconnected islands**"* — present tense, now 7.
+  - `:263-301` the `corpus_summary()` example payload, refreshed 2026-08-24 from a v0.2.0-era call:
+    `component_count: 169`, `genres: 169`, `without_inception: 28`, `without_country: 48`. Measured now:
+    7 components, 675 genres, 198 and 222. **Refresh from a live call, not by hand.**
+  - `:239` and `:403` — `checks_disagree` / verification-tier wording resting on one source per edge.
+- **`docs/spa-explained.md`** — five passages: `:130` and `:145` (169 components, artists and genres never
+  touch, "drawing all 169 islands at once"), `:231` and `:240` (43 of 169 genres, 85 of 169), and
+  `:265-266`, which argues **contested can never exist** — *"on today's corpus every edge has exactly one
+  source and it is always Wikidata, so nothing can disagree with anything — that is arithmetic, not
+  pessimism."* That was true and rigorous when written; it is the single most confidently-wrong paragraph
+  in the repo today, and A1's closure has to be stated **as its precondition arriving**, not as a reversal.
+- **`web/src/graph/layout.ts:10`** — *"artists and genres sit in disjoint components"*, present tense.
+  Step 8 amended its neighbours but missed this one.
+
+#### 10.3 Code that is copy
+
+Docstrings are copy and DoD #8 does not exempt them — the same rule step 8 applied to `api/app.py:140`.
+
+- **`agent/claims.py:22` and `:122`** — one source, always Wikidata. Note `:56` was already corrected at
+  v0.7.0, so this file currently contradicts itself.
+- **`eval/suite.py:12`** — *"decision A1 removed it — one source per edge on this corpus"*.
+- **`eval/noise.py:330`** — *"`thresholds.json` gates five things"*. Check against
+  `.claude/rules/evals.md`, which is explicit that the free run blocks on **three** of five and that
+  writing "blocks on five" anywhere is forbidden.
+
+#### 10.4 The two sentences this phase's own steps added
+
+Neither is on the sketch's list, because neither existed when it was written.
+
+1. **`contested` is a corpus-level statistic and nothing more.** It is derived in
+   `graph/corroboration.py`, served by the corpus summary, and displayed in `CoveragePanel`. **No answer
+   can say the sources disagree, and no eval case exercises it.** Any copy implying the system tells a
+   user that a particular lineage is disputed is false. This wording is **mandatory**, per step 9
+   finding 10, and it is the sentence most likely to be softened by accident.
+2. **The live suite is un-gated at v0.7.1.** A live run reports `NOT GATED` because the dataset grew to
+   45 cases against a 41-case baseline. The **scripted** every-commit gates are unaffected at 3/0/2, and
+   the two must not be conflated. Whatever the release says about "gated correctness properties" has to
+   distinguish them.
+
+#### 10.5 Historical phase docs — annotate, never rewrite
+
+`docs/phases/phase-2-*`, `phase-3-*`, `phase-5-*` and `phase-6-density-and-coverage.md:95` all state the
+one-source and 169-island facts as present tense. They are **records of what was true then**, and this
+repo's style is a dated amendment beside the original, not a silent edit — the same treatment
+`.claude/rules/grounding-and-claims.md` gave A1. One amendment per document, pointing at
+`docs/graph-semantics.md` §5.2 and the step 9 section rather than restating the numbers.
+
+**Explicitly not in this step:** rewriting history so earlier phases appear to have known things they did
+not. That would destroy the one property these docs have.
+
+#### 10.6 The SPEC chip row
+
+`SPEC.md:155-163`: every *"blocked on a second source"* row is marked still blocked and none is on the
+screen. The second source arrived. Re-read the four rows, decide which are now answerable, and treat the
+**open sixth slot** at `:163` as a decision rather than a gap to fill — the U2 discrepancy recorded there
+(six gated claims against nine incoming edges) is a real distinction between what the graph holds and
+what survives the gate, and it should be resolved deliberately or left open deliberately.
+
+#### 10.7 Verification, because a copy audit cannot be unit-tested
+
+DoD #8 is the one item with no test behind it, which is why it is the phase's most likely failure. What
+substitutes for a test:
+
+- **Every replacement number comes from a live call or a `make check` run made during this step**, not
+  from this document and not from memory. Steps 8 and 9 both caught stale figures inside their own plans.
+- **Re-run the sweep after the edits.** The grep patterns are `exactly one source`, `always Wikidata`,
+  `one source per edge`, `169`, `disjoint`, `island`, `blocks on five`. A hit that survives must be
+  either a dated historical annotation or a deliberate exception, and the step records which.
+- **`tests/test_corpus_facts.py` and `tests/test_chips.py` already assert SPA numbers against the
+  artifact.** Anything they cover does not need eyeballing; anything they do not is exactly where a
+  stale number hides.
+
+#### 10.8 The release itself — and it is a separate decision
+
+Three acts, and none of them should be done incidentally:
+
+1. **Tag `v0.6.0`.** The version spine assigns v0.6 to this phase. `v0.5.0` was the last tag.
+2. **Deploy.** `DO NOT DEPLOY` was lifted at step 8 and both pins read `0.7.1`, so a deploy would serve
+   the v0.7.1 corpus from a matching map for the first time. It is outward-facing, it costs about two
+   cents, and **it needs an explicit go — this plan does not assume it.** Note `phase-6.5`'s §4 fence
+   does not cover deployment, and phase 6's own scope doc warns at line 110 that **a bare `make tf-apply`
+   reverts the deployed function to the stub LLM** because it passes none of `image_tag`, `llm_provider`
+   or `reserved_concurrency`. Read that before running anything.
+3. **`KNOWN-GAPS.md` and the ROADMAP updated to close phase 6**, with phase 6.5 as the named successor.
+
+#### 10.9 Done looks like
+
+- The two instruction sentences in 10.1 are gone, and no file tells a future session to write 169.
+- `README.md`, `SPEC.md`, `spa-explained.md` and `layout.ts` state the v0.7.1 corpus, with every number
+  re-measured rather than copied from here.
+- The docstrings in 10.3 agree with `.claude/rules/`, and nothing anywhere says the suite blocks on five.
+- The two mandatory sentences from 10.4 appear in the release copy, unsoftened.
+- Historical phase docs carry dated amendments and no rewritten history.
+- The sweep in 10.7 comes back clean or with every surviving hit accounted for.
+- Phase 6 is closed in the ROADMAP and `KNOWN-GAPS.md`, with the tag and deploy decisions recorded
+  whichever way they go.
+
+#### 10.10 The up-front sketch, kept
+
 DoD #8 — *no project copy anywhere claims coverage the graph does not have* — is the one that cannot be
 tested and is the one this phase is most likely to fail, because the corpus genuinely improves and every
 improvement is one adjective from an overstatement.

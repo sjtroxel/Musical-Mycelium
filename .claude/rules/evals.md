@@ -12,7 +12,7 @@ marketing word. Hard rules:
   corpus and `verification_mix` replaced it. **Amended 2026-09-04: contested is REACHABLE at artifact
   v0.7.0** — 2 pairs — so a contested metric is now buildable. It is NOT yet in this catalog, and adding
   one is a deliberate act with a threshold decision attached, not a gap to be quietly filled. Note the
-  denominator problem before proposing one: 2,203 of 2,285 influence edges are single-source, so a
+  denominator problem before proposing one: 2,202 of 2,284 influence edges are single-source, so a
   contested rate over all edges measures DBpedia's coverage far more than it measures disagreement. See
   `.claude/rules/grounding-and-claims.md`.)*
 - **Tier 2 is judged, sampled, and gated.** Citation *support* and narrative quality only. 20–30 samples,

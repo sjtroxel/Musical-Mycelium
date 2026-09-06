@@ -444,8 +444,13 @@ and the gate cannot narrate the second one.**
 organism."* §5 recorded that the second clause of that thesis was confirmed emphatically and the first was
 not demonstrable. **Phase 6 makes the first demonstrable too, in one specific form and no other: the
 organism is connected through the people who play across it.** Membership, not an unbroken chain of
-genre-to-genre influence. **That is a statement about the corpus phase 6 cuts, not about v0.5.0** — as of
-this section's date the corpus is still 169 disjoint components and present-tense copy must say so.
+genre-to-genre influence. **That is a statement about the corpus phase 6 cuts, not about v0.5.0.**
+
+> **Amended 2026-09-06, phase 6 step 10.** This paragraph ended *"as of this section's date the corpus is
+> still 169 disjoint components and present-tense copy must say so"*, which was correct when written and
+> became an instruction to state a false number the moment step 2 landed on 2026-09-02. Measured at
+> artifact **v0.7.1: 7 components, 1,465 of 1,479 nodes in the largest, deepest chain 12 hops.** The
+> forbidden wordings below are unchanged and still govern.
 
 That is a better claim than the vague one, and it is worth being clear about why: **what actually connects
 musical genres in history is musicians who move between them.** The corpus is about to say so structurally

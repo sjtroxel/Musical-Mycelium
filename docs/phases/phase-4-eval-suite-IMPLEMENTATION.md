@@ -1,4 +1,11 @@
 # Phase 4 — Eval Suite: IMPLEMENTATION
+> **Stale-figure amendment, 2026-09-06, phase 6 step 10.** Every corpus figure below describes the artifact
+> as it stood when this doc was written, and phase 6 moved all of them: **v0.7.1 holds 1,479 nodes, 5,066
+> edges and 7 components** against v0.5.0's 973 / 950 / 169, and the corpus has **two** sources rather than
+> one, so `contested` is reachable and 2 pairs are contested. **The figures below are deliberately not
+> edited** — this doc is a record of what was known then, and rewriting it would destroy the only property
+> it has. Read `docs/graph-semantics.md` §5.2 and the phase 6 step 9 section of `docs/KNOWN-GAPS.md` for
+> the current state; do not quote a number from this file as present tense.
 
 > **As-built plan.** Written 2026-08-15, immediately before phase 4 is built, per `CLAUDE.md`. It absorbs
 > what phases 1–3 actually taught. The scope doc is [`phase-4-eval-suite.md`](phase-4-eval-suite.md); read
@@ -1080,7 +1087,7 @@ and this doc does not soften that.
 
 | Scope DoD | Closes at | Note |
 |---|---|---|
-| 1. Tier 1 every commit, $0, blocks on five | steps 3 + 5 | scripted provider in CI; real-model runs stored separately |
+| 1. Tier 1 every commit, $0, blocks on five | steps 3 + 5 | scripted provider in CI; real-model runs stored separately. **This quotes the SCOPE DoD, not what shipped** — the free run blocks on **three** of five; see §"#1" above and `.claude/rules/evals.md` |
 | 2. Tier 2 only behind a confirmation naming the dollar figure | step 8 | **CLOSED 2026-08-24** |
 | 3. Judge-human agreement measured and printed | step 7 | structurally enforced by `report.py` |
 | 4. Noise floor over five identical runs | step 6 | |

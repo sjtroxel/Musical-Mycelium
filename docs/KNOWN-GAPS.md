@@ -2,9 +2,11 @@
 
 > ## START HERE — where things stand, 2026-09-06
 >
-> **Phase 6 steps 0-8 are done and STEP 9 HAS RUN — both live runs are in.** What is left of step 9 is
-> **three open decisions and nothing else**; step 10 is docs, copy audit and release. The as-built is
-> `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0, ten numbered findings.
+> **PHASE 6 IS BUILT — steps 0 through 10 are all done.** What remains of it is **the `v0.6.0` tag and
+> the deploy**, both deliberately deferred on 2026-09-06, plus step 9's three open decisions. The
+> as-builts are `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0 and §10.0.
+> **`docs/phases/phase-6.5-debt-and-disagreement.md` is the next phase and the authority on what phase 6
+> could not close** — its DoD #6 forbade agent edits and phase 7's scope doc refuses the work outright.
 > **Measured 2026-09-06, not recalled:** `make check` **1330 passed, 1 xfailed** (deliberate — the live
 > gateability lock, see the step 9 section), 14 deselected, mypy clean over 98
 > source files, frontend **159 passed** across 15 files, root 17 of 18. The **scripted** every-commit
@@ -151,6 +153,61 @@ now been executed. ~~What remains is the **Bedrock redeploy, deliberately deferr
 is also why the deployed URL still runs the template stub~~ — **also stale: that redeploy shipped at
 phase 5 step 0 on 2026-08-24.** What remains from this paragraph is only the standing facts about the
 corpus in part 2.
+
+---
+
+## PHASE 6 STEP 10 — the copy audit, and a stale RULE outlives the sentences it writes, 2026-09-06
+
+**Verified state:** `make check` green — **1330 passed, 1 xfailed**, 14 deselected, mypy clean over 98
+source files, frontend **159 passed** across 15 files. Root 17 of 18. Detail in
+`docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §10.0, eight numbered findings.
+
+### THE FINDING: two files instructed future sessions to write a false number
+
+`CLAUDE.md:23` and `docs/graph-semantics.md:448` both said **present-tense copy must say 169 disjoint
+components**. Correct when written, and a standing order to state something false from the moment step 2
+landed on 2026-09-02. `CLAUDE.md` loads into **every session in this repo**.
+
+**A stale rule outlives the stale sentences it produces**, and it is invisible to a grep for the number
+it protects, because it reads as guidance rather than as a claim. Both are fixed, and the correction says
+explicitly that the sentence was an instruction rather than a fact. **Never write 169 again.**
+
+### What was corrected, by surface
+
+- **`README.md`** — the corpus paragraph still described **v0.5.0** entirely (973 nodes, 950 edges,
+  "both from Wikidata P737 only", four verification tiers), not just the one-source bullet the plan named.
+  Now v0.7.1, two sources, two predicates, seven tiers, plus the un-gated live suite and the stale floor.
+- **`docs/SPEC.md`** — payloads refreshed from the store, not typed. Its `verification` map had been left
+  at **four** values against a **seven**-value corpus, one cut after its own 2026-08-24 note explains the
+  identical defect at two-against-four. **The note describing the mistake did not prevent the mistake.**
+- **`docs/spa-explained.md`** — the map section rewritten against measurements, and the paragraph arguing
+  contested could never exist now records that **its arithmetic was right and its precondition arrived**.
+- **Docstrings** — `agent/claims.py`, `eval/suite.py`, `eval/noise.py`, `web/src/graph/layout.ts`,
+  `tests/test_api.py`. `noise.py` said `thresholds.json` "gates five things", which
+  `.claude/rules/evals.md` forbids by name.
+- **`2,203 of 2,285` is now `2,202 of 2,284`** in `CLAUDE.md` and both rules files — deferred here by
+  step 8 §8.8, caused by `c697712` honouring hand-rejected edges after those sentences were written.
+
+### Measured while auditing, and worth keeping
+
+**7 components: one holds all 804 artists and 661 of 675 genres; six hold 14 genres between them.** Phase
+6's scope doc §0 item 4 predicted `P136` was "a bigger lever on the product's central claim than the
+second source is" — **it was right**, and that item is now answered in place. Membership collapsed the
+component count; the second source did not. `plays_genre` remains non-narratable: the corpus is connected
+**through the people who play across it**, not by a chain of sourced influence.
+
+### Historical docs are stamped, never rewritten
+
+Seven phase docs carry one dated amendment saying every corpus figure below is a record of its own date.
+Rewriting them so earlier phases appear to have known things they did not would destroy the only property
+those docs have.
+
+### Still open after this step
+
+- **The `v0.6.0` tag and the deploy** — both deliberately deferred on 2026-09-06 and neither done
+  incidentally. `DO NOT DEPLOY` is lifted, and phase 6's scope doc warns at line 110 that a bare
+  `make tf-apply` reverts the deployed function to the stub LLM.
+- **Everything in `docs/phases/phase-6.5-debt-and-disagreement.md`**, which is the authority.
 
 ---
 
@@ -613,7 +670,9 @@ pinned eval number reads. Verified on the cut artifact:
   edge is still `PROSE_AUTO`. `verification` is *how strongly one source was checked*; `corroboration` is
   *whether a second source agrees*. Different guarantees, and this project has already corrected
   `CLAUDE.md` and two rules files once for blurring exactly this. There is a test.
-- 2,203 influence edges remain single-source and are labelled as such.
+- 2,203 influence edges remain single-source and are labelled as such. *(**2,202 of 2,284** from
+  2026-09-06: `c697712` honoured hand-rejected edges and dropped one after this was written. The
+  figure above is left as the record of what was measured that day.)*
 
 ### Owed, deliberately not done here
 
@@ -638,7 +697,7 @@ files, terraform valid, eval gates **3 passed / 0 failed / 2 not applicable** (u
 | | v0.6.0 | v0.7.0 |
 |---|---|---|
 | nodes | 1,313 | **1,479** (804 artist, 675 genre) |
-| `influenced_by` edges | 949 | **2,285** — 949 Wikidata + **1,336 DBpedia** |
+| `influenced_by` edges | 949 | **2,285** — 949 Wikidata + **1,336 DBpedia** *(2,284 from `c697712`)* |
 | `plays_genre` edges | 2,782 | 2,782 |
 | components / largest / isolated | 12 / — / 0 | **7 / 1,465 / 0** |
 | `graph.json` | 1.7 MB | **2.18 MB** |

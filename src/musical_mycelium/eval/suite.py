@@ -10,7 +10,11 @@ instead of one provider through two.
 **The catalog is eight scorers plus two telemetry figures, and this module does not chase eleven.** The
 phase 4 scope doc says eleven; the implementation doc already recorded the correction and the reason.
 ``contested`` is not here because decision A1 removed it — one source per edge on this corpus — and
-``verification_mix`` stands in its place.
+``verification_mix`` stands in its place. *(Amended 2026-09-06: A1's precondition arrived at artifact
+v0.7.0 and 2 pairs are contested, so a contested metric is now **buildable** and is deliberately still
+absent. Adding one is a decision with a threshold attached, and it has a denominator problem — 2,202 of
+2,284 influence edges are single-source, so a rate over all edges would measure DBpedia's coverage more
+than it measures disagreement. See ``.claude/rules/evals.md``.)*
 
 ## What a scripted number means, and why some of them mean nothing
 

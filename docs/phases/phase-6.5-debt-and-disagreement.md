@@ -98,7 +98,7 @@ Ordered by dependency. Tier 2 cannot start before tier 1; tier 3 cannot be measu
     of 41. The guard is right; the sentence describes a case that did not happen.
 11. **Eval coverage for `contested`**, which is what items 1 and 5 exist to make possible. Whether it
     becomes a gated metric is a decision (§5), and `.claude/rules/evals.md` already warns about the
-    denominator: 2,203 of 2,285 influence edges are single-source, so a contested rate over all edges
+    denominator: 2,202 of 2,284 influence edges are single-source, so a contested rate over all edges
     measures DBpedia's coverage far more than it measures disagreement.
 
 ### Tier 4 — hygiene, independent of everything above

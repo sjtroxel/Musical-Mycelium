@@ -226,7 +226,9 @@ def test_health_reports_the_corpus(client: TestClient) -> None:
 def test_the_corpus_states_its_connectivity(client: TestClient) -> None:
     """The connectivity limit is a published number, not something a visitor infers from an empty
     answer. "Relate two genres" is a capability *within* a component, and an edge count alone implies a
-    single connected graph that does not exist — 133 edges over 41 islands.
+    single connected graph that did not exist — 133 edges over 41 islands when this was written at
+    v0.2.0, 5,066 edges over 7 components at v0.7.1. The limit got milder, not absent: two nodes in
+    different components still have no sourced path.
 
     Cross-checked against the store rather than hardcoded, for the same reason the counts above are
     read off the manifest: a literal here would go stale the moment the corpus moves.

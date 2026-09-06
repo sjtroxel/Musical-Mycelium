@@ -31,22 +31,32 @@ against a ~6.4s total, and reports its own token usage per role — traversal an
 separately, never summed, because two roles may run on differently-priced models and one combined number
 cannot be turned into dollars by anyone downstream. Per-query cost lands in CloudWatch from real traffic.
 
-**The corpus is artifact v0.5.0: 973 nodes, 950 edges** across two axes — genre-to-genre and
-artist-to-artist, both from Wikidata P737 only. Every edge carries how strongly it was checked: 22 read
-by hand, 111 passed an automated Wikipedia prose check, 760 passed an influence-assertion filter, and 57
-rest on documented exposure rather than a stated influence claim. That last tier is measured at **20%
-recall**, so it is a floor on what exists in the sources and is never quoted as a count of it.
+**The corpus is artifact v0.7.1: 1,479 nodes and 5,066 edges**, from **two** sources — Wikidata and
+DBpedia — across two predicates that are never mixed. **2,284 influence edges** say one thing influenced
+another; **2,782 membership edges** say an artist plays a genre, and membership is never narrated as
+derivation. Every edge carries how strongly it was checked: **22 read by hand**, 111 passed an automated
+Wikipedia prose check, 759 passed an influence-assertion filter, 1,335 came from a DBpedia infobox, and
+57 rest on documented exposure rather than a stated influence claim, with 2,782 more across the two
+membership tiers. The exposure tier is measured at **20% recall**, so it is a floor on what exists in the
+sources and is never quoted as a count of it.
 
 Two things are deliberately not done, and saying so is the point of this section:
 
-- **The corpus is one source deep, so it cannot detect disagreement.** Every edge in the graph carries
-  exactly one source, always Wikidata. What the output distinguishes is *how strongly that single source
-  was checked* — read by a human, or cleared by one of two automated filters — and it does **not** and
-  cannot mean two sources agreed. `contested` is declared in the code and locked as unreachable by a test,
-  named rather than silently absent, because a second source is what would make it real and this corpus
-  has none. Anyone reading the verification tiers as corroboration is reading the opposite of the truth.
+- **The corpus has two sources now, and disagreement is visible only where both of them speak.**
+  *(This bullet said the corpus was one source deep and that `contested` was locked as unreachable. That
+  was true, and arithmetic, until DBpedia was ingested at artifact v0.7.0.)* **2,202 of 2,284 influence
+  edges are still single-source**, so a second opinion exists on **82** of them, and **2 pairs are
+  contested** — two different sources asserting opposite directions for the same pair. Six pairs point
+  both ways; only two of those are a disagreement, and the loose reading overcounts by 3x. Two separate
+  fields carry this and must never be collapsed: `verification` says **how strongly one source was
+  checked**, `corroboration` says **whether a second source agrees**. Reading a verification tier as
+  corroboration is still reading the opposite of the truth.
+- **Disagreement is a corpus-level statistic and is not yet something an answer can say.** The contested
+  pairs are derived in `graph/`, served by the corpus summary and shown in the coverage panel. **The
+  agent does not read them, no answer will tell you a lineage is disputed, and no eval case exercises
+  it.** That is the honest state after phase 6 and it is scheduled work, not a claim in waiting.
 - **Coverage generalisation is untested, and the held-out run is a single observation.** Real-model
-  behaviour *is* now measured rather than demonstrated: 41 development cases against a live model, a
+  behaviour *is* now measured rather than demonstrated: 45 development cases against a live model, a
   noise floor taken over five identical runs, a judged tier 2 pass with judge-human agreement reported as
   a range beside every judged number, and a sealed held-out set opened once, on 2026-08-24, that came
   back 10 of 10 with every metric matching the development set. That is a real negative on the
@@ -57,7 +67,10 @@ Two things are deliberately not done, and saying so is the point of this section
   specifically: **9 of its 10 subjects are undated and 9 of 10 have no stated region**, because a
   stratified random draw inherits the corpus's missingness where the gold set was curated to span. So the
   set cannot answer "does this hold up on older or non-Western material." That question is open, not
-  passed.
+  passed. **Both that run and the noise floor were measured at artifact v0.5.0**, and the corpus is now
+  v0.7.1 — roughly three times larger. Neither has been re-measured against it, so no movement in a
+  v0.7.1 number can currently be called noise, and held-out generalisation is untested at this corpus
+  rather than passed on it.
 
 **Coverage is a computed number, not a disclaimer.** The corpus skews Western, anglophone and recent, and
 the output says so with figures rather than a footnote. But concentration is not absence: it spans 500 CE
@@ -84,17 +97,22 @@ hop, in whichever order you name them.
   the narrative is generated *from* the approved claims. The model cannot narrate an edge the gate
   did not pass, and it cannot supply a citation — sources are read off the artifact by the gate, never
   accepted from the model.
-- **Grounded means provenance, not truth.** Every edge traces to a checkable source. Wikidata can still
-  be wrong, and musical influence is genuinely contested. **Detecting genuine disagreement needs a second
-  source, and this corpus has exactly one per edge** — so what the output distinguishes today is how
-  strongly a single source was checked, and where two independent checks reached opposite verdicts. It
-  does not claim to have adjudicated a dispute, because it has not.
+- **Grounded means provenance, not truth.** Every edge traces to a checkable source. Wikidata and
+  DBpedia can both be wrong, and musical influence is genuinely contested. **The second source arrived at
+  artifact v0.7.0, so detecting disagreement is now possible where both sources speak — 82 edges of
+  2,284.** Everywhere else the output still distinguishes only how strongly a single source was checked.
+  It does not claim to have adjudicated a dispute, because it has not.
 - **Refusal is correct behavior.** An unsourced edge is refused rather than narrated, and the refusal is
   reported as one. "Who influenced Kate Bush?" refuses on this corpus: she has seven incoming influence
   edges and zero outgoing ones, so the graph genuinely cannot answer it.
 - **Evaluation is a first-class deliverable.** Because the ground truth is a graph we own, the headline
   correctness metrics are deterministic dictionary lookups rather than judged text comparisons. They
-  cost nothing and run on every commit.
+  cost nothing and run on every commit, where they gate **three** of five correctness properties — the
+  other two need a real model and therefore money. **The paid live suite gates nothing at artifact
+  v0.7.1**: its thresholds were measured over a 41-case development set and the set is now 45 cases, so a
+  live run reports `NOT GATED` rather than a number measured against a different set. Re-measuring that
+  baseline is deliberately deferred until the datasets stop moving. Skipped is not passed, and the report
+  says so in those words.
 
 Stack: Python 3.13 on AWS Lambda as a container image, Bedrock for the agent, Terraform for everything,
 GitHub Actions with OIDC for deploys and no long-lived keys. S3 + CloudFront for the frontend, which

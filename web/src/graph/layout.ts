@@ -6,10 +6,16 @@ import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
  *
  * **Step 5's decision: x is influence depth, not the year, and there is no simulation.** The
  * reasoning is recorded in full in the phase 5 IMPLEMENTATION doc; the short version is that a
- * chronological axis cannot be drawn on this corpus. All 141 dated nodes are genres and all 804
- * artists are undated, and artists and genres sit in disjoint components, so a map is either
- * entirely dated or entirely undated. A time axis would work on four chips and have literally
- * nothing to place on the two Kate Bush panels.
+ * chronological axis cannot be drawn on this corpus. All dated nodes are genres and all 804
+ * artists are undated, so a map is either entirely dated or entirely undated. A time axis would work
+ * on four chips and have literally nothing to place on the two Kate Bush panels.
+ *
+ * **Amended 2026-09-06, phase 6 step 10.** This said "artists and genres sit in disjoint components",
+ * which was true at v0.5.0 and is false at v0.7.1 — membership put all 804 artists and 661 of 675
+ * genres in ONE component. **The decision does not change, because its load-bearing half never was
+ * connectivity**: the artists are still undated, so a mixed neighbourhood is now the common case and a
+ * year axis would have nothing to place the majority of its nodes on. Connecting the axes made the
+ * problem this paragraph describes more acute, not less.
  *
  * Influence depth is derived from the edges instead, which every node has. It also makes "every
  * arrow points left to right" a property of the layout rather than a hope about the data — and that
