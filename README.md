@@ -12,11 +12,13 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-09-02. Phases 0 through 5 are complete and
-tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`). The live URL serves the finished phase 5 SPA: a streaming
-cited answer, an explorable map of the neighbourhood around it, and a coverage panel that states what
-the corpus does not hold. Phase 6 is density and coverage, and it has started: the corpus
-gets a **second, independent source**, which is what makes disagreement between sources detectable at all.
+**Deployed, and honestly incomplete.** Last updated 2026-09-06. Phases 0 through **6** are complete and
+tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`, `v0.6.0`). The live URL serves the SPA at artifact **v0.7.1**
+— a streaming cited answer, an explorable map of the neighbourhood around it, and a coverage panel that
+states what the corpus does not hold. Phase 6 gave the corpus a **second, independent source**, which is
+what makes disagreement between sources detectable at all: **82 of 2,284 influence edges carry a second
+source and 2 pairs are contested.** What it did **not** do is make an answer able to say so — that is
+scoped as phase 6.5, `docs/phases/phase-6.5-debt-and-disagreement.md`.
 Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,

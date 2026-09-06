@@ -202,11 +202,36 @@ Seven phase docs carry one dated amendment saying every corpus figure below is a
 Rewriting them so earlier phases appear to have known things they did not would destroy the only property
 those docs have.
 
+### TAGGED AND DEPLOYED, 2026-09-06 — and verified independently, not from the green run
+
+**`v0.6.0` is tagged at `51f2c21` and that commit is live.** Deploy run `34058614241`. Checked by hand
+rather than trusted, because a green workflow is exactly what hid a 37-commit-stale image in August:
+
+- Terraform applied `image_tag=51f2c210d87e`, **`llm_provider=bedrock`**, `reserved_concurrency=-1`.
+- `/health` serves **artifact 0.7.1** — 1,479 nodes, 5,066 edges, 7 components, 2,284 influence edges,
+  82 corroborated, **2 contested**, all seven verification tiers. Identical to the local store.
+- The SPA bundle carries `artifact_version: "0.7.1"` and **zero** references to `0.5.0`;
+  `/graph/v0.7.1/graph.json` serves 200 at 2.69 MB.
+- The workflow's own smoke test ran a **real Bedrock query** — *"How is the blues connected to heavy
+  metal?"* — and asserted a `claim` frame followed by `token` frames, the gate-to-narration path.
+  TTFB 0.040s, total 7.0s.
+
+**THE DEPLOY MUST BE DISPATCHED FROM `main`, NEVER FROM A TAG.** The first attempt used
+`--ref v0.6.0` and failed at the credential step with *"Not authorized to perform
+sts:AssumeRoleWithWebIdentity"*, an error naming nothing about refs. Cause:
+`infra/terraform/bootstrap/oidc.tf:74` pins the trust policy with `StringEquals` on exactly
+`repo:<repo>:ref:refs/heads/<branch>`, so a `refs/tags/...` subject can never match. **That is the same
+condition that stops a pull request from minting credentials — hardening working correctly, not a bug to
+widen.** Tag the commit, then dispatch from `main` at that commit. Recorded in `deploy.yml`'s header too,
+which is where the next person will actually look. Nothing needed cleaning up: the failed run died before
+ECR or Terraform touched anything.
+
 ### Still open after this step
 
-- **The `v0.6.0` tag and the deploy** — both deliberately deferred on 2026-09-06 and neither done
-  incidentally. `DO NOT DEPLOY` is lifted, and phase 6's scope doc warns at line 110 that a bare
-  `make tf-apply` reverts the deployed function to the stub LLM.
+- **`/graph/v0.5.0/graph.json` is still served, 200.** Left over in `web/public/graph/`, roughly 2 MB of
+  superseded corpus on the CDN. **Nothing references it** — the bundle has zero `0.5.0` hits — so it is
+  dead weight rather than a correctness problem, but it is a stale artifact publicly fetchable and a
+  visitor who found it would have no way to know. Delete it in phase 6.5 tier 4.
 - **Everything in `docs/phases/phase-6.5-debt-and-disagreement.md`**, which is the authority.
 
 ---
@@ -485,7 +510,7 @@ DoD #8 asks that no copy claim coverage the graph does not have. v0.7.1 produced
   moving pin made it fail for a reason that has nothing to do with membership.
 - The **frontend lag was re-read and re-confirmed**, which is what that assertion exists to force. Had
   the frontend followed at step 3, the corpus copy would have been paid three times (v0.6.0, v0.7.0,
-  v0.7.1). **DO NOT DEPLOY while the lag holds.**
+  v0.7.1). **DO NOT DEPLOY while the lag holds.** *(The lag was cleared at step 8 and `v0.6.0` deployed 2026-09-06 — this instruction is spent.)*
 - The baseline was regenerated only after diffing it: `edge_groundedness` 1.0, `citation_resolution` 1.0,
   `injection_resistance` induced 0, claim bounds and gate rejections all held **exactly**. What moved was
   the artifact version, `INFOBOX_AUTO: 4` entering the mix, and the era slices.
@@ -960,6 +985,8 @@ depends on it** — gold_v0_1_020 walks Q11647 via Q125603 and its claim set is 
 or lost an expected claim; no `expected_path` node is missing. Recorded in the file's `repin_history`.
 
 ### THE FRONTEND PIN IS DELIBERATELY BEHIND THE BACKEND — DO NOT DEPLOY UNTIL STEP 8
+
+*(**Spent instruction, 2026-09-06.** Step 8 landed, both pins read `0.7.1`, and `v0.6.0` is deployed. Kept as the record of why the lag existed; it is not an order any more.)*
 
 **`web/src/chips.json` stays at `0.5.0` while the backend is on `0.6.0`.** Decided with sjtroxel
 2026-09-03. `tests/test_chips.py` carries the constant `FRONTEND_PIN_LAG_UNTIL_STEP_8` and the full

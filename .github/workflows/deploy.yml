@@ -24,6 +24,15 @@ name: Deploy
 # the multi-tool-turn fix without which the Bedrock loop breaks on any multi-tool turn. Nothing
 # reported that, because nothing was watching. If `push:` stays off, the deployed image's age is a
 # thing to check deliberately before any redeploy, not a thing to assume.
+# **DISPATCH THIS FROM `main`, NEVER FROM A TAG — learned 2026-09-06, at the v0.6.0 release.**
+# `infra/terraform/bootstrap/oidc.tf` pins the trust policy with `StringEquals` on exactly
+# `repo:<repo>:ref:refs/heads/<branch>`. A run dispatched from a tag presents a `sub` of
+# `...:ref:refs/tags/v0.6.0`, which cannot match, and STS refuses with **"Not authorized to perform
+# sts:AssumeRoleWithWebIdentity"** — an error that names nothing about refs. This is the same condition
+# that stops a pull request from minting credentials, so it is hardening working correctly rather than a
+# bug to widen. Tag the commit, then dispatch from `main` at that same commit; `git rev-parse` both if
+# you want the proof.
+
 on:
   workflow_dispatch:
     inputs:
