@@ -54,6 +54,7 @@ so both columns are labelled. Reading one as the other is the confusion this hea
 | **4** `eval-suite` **DONE 2026-08-24** | **v0.4** | **v0.5.0** (unchanged) | The eval suite proper | Independent scorers over a pinned artifact |
 | **5** `spa-and-visualization` **DONE 2026-09-02** | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
 | **6** `density-and-coverage` **steps 0-7 done** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
+| **6.5** `debt-and-disagreement` **scoped 2026-09-06** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6: `contested` in an answer, the refusal defects, a measured live gate | Agent package, which phase 6 DoD #6 forbade |
 | **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |
 
 **Phases 3, 4 and 5 do not cut a new artifact.** The corpus does not change, and re-cutting it would

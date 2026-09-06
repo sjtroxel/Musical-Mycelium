@@ -1056,30 +1056,51 @@ exactly.
 
 #### 9.0 As built — what the plan did not know
 
-**Verified on completion, 2026-09-06:** `make check` **1330 passed**, 14 deselected, mypy clean over 98
-source files, frontend **159 passed** across 15 files, root 17 of 18. Tier 1 live run
+**Verified on completion, 2026-09-06:** `make check` **1330 passed, 1 xfailed**, 14 deselected, mypy
+clean over 98 source files, frontend **159 passed** across 15 files, root 17 of 18. The `xfailed` is the
+new live-gateability lock in item 9 below, and it is deliberate. Tier 1 live run
 `20260906T163537Z-bedrock`, **45 cases at artifact v0.7.1**, code revision **`62a949e`** and clean. Tier 2
 `20260906T165800Z-tier2`, 20 items, judge `amazon.nova-pro-v1:0`, same revision.
 
-Eight things the plan got wrong or could not see. The corrections are the useful part.
+Ten things the plan got wrong or could not see. The corrections are the useful part.
 
 1. **The §9.3 prediction was wrong, and wrong in the wider direction.** It predicted `refusal_accuracy`
    alone returning `N/A` with four gates still applicable. What happened: **`NOT GATED`, zero of five
-   evaluated.** `thresholds.py` selects a *set* by `case_count` before any per-metric denominator check
-   is reached — the baseline set is 41 cases and this run scored 45, so no set matched and the
-   refusal-denominator logic never fired at all. **Growing the development set by four cases silently
-   un-gated the entire live suite.** The banner says it correctly: *"This is not a pass. The gates were
-   skipped, not cleared."* Reading one half of a selection mechanism and predicting from it is the same
-   failure mode `MEMORY.md` records as assertions written from a mental model and never executed.
-2. **`gold_v0_1_020` refused a question the corpus can answer, and the refusal said something false
-   about the corpus.** femtanyl carries **four sourced influence edges** and the **six-hop path to Woody
-   Guthrie is intact at v0.7.1** — verified by loading the pinned store and walking `path()`, not by
-   reading the dataset. The model visited one node of seven, proposed nothing, and `agent/loop.py:770`
-   turned zero approved claims into *"it resolved but carries no sourced influences"*. That wording
-   conflates **this run gathered nothing** with **the graph holds nothing**, which is the
-   coverage-honesty defect pointing the other way: it claims an absence the corpus does not have. It
-   failed identically on the 2026-09-03 run at v0.6.0, so it is not new at v0.7.1. **DoD #6 forbids
-   agent-package edits this phase — recorded, not fixed.**
+   evaluated.**
+
+   **The mechanism, read from the code rather than inferred from the banner.** `ThresholdSet.matches`
+   keys on **dataset and provider only**, so the live set *was* selected. What rejected the run is
+   `_ungateable` at `thresholds.py:492`: `result.cases_run != chosen.case_count`, 45 against 41. The
+   per-metric refusal-denominator check I predicted from is real but is never reached, because
+   `_ungateable` returns first. **Growing the development set by four cases silently un-gated the entire
+   live suite**, and reading one half of a mechanism and predicting from the other is the failure mode
+   `MEMORY.md` names as assertions written from a mental model and never executed. I did it again here.
+
+   **A second-order finding in the same function.** `_ungateable` was written for **partial** runs — its
+   docstring reasons about `make eval-live ARGS='--cases 1'`, where metrics cover "the cases that
+   happened to run, chosen by exhaustion rather than at random". Today's run is the opposite: a
+   **complete run of a larger set**. The guard is right to refuse it, but its message — *"A subset is not
+   a smaller version of the same measurement"* — describes a case that did not happen. 45 is not a subset
+   of 41. Worth a wording fix when the threshold decision is taken, not before.
+2. **`gold_v0_1_020` is a KNOWN tracked bug, not a discovery — and this run adds two things to what
+   was already written down.** `thresholds.json` has recorded it since 2026-08-18, excluded from the
+   traversal gate with the reasoning *"Scored an identical 1/7 in all five runs. A tracked reproducible
+   product bug — it false-refuses a question the tools fully answer."* It is also the case behind the
+   `traversal_recall` 0.0pp spread that `.claude/rules/evals.md` names as a trap. Anyone presenting it as
+   new has not read the threshold file.
+
+   What 2026-09-06 adds:
+   - **It survives a 3x corpus.** femtanyl carries four sourced influence edges and the six-hop path to
+     Woody Guthrie is intact at v0.7.1 — verified by walking `path()` against the pinned store. So the
+     cause is not corpus thinness, which a bigger graph would have fixed. It reproduced at v0.6.0 on 9/3
+     and again at v0.7.1 today, making it 7 of 7 recorded runs.
+   - **A mechanism for the wording, which was not recorded anywhere.** The model visited one node of
+     seven and proposed nothing; `agent/loop.py:770` turns zero approved claims into *"it resolved but
+     carries no sourced influences"*. That conflates **this run gathered nothing** with **the graph holds
+     nothing** — the coverage-honesty rule inverted, claiming an absence the corpus does not have. The
+     tracked bug was "it false-refuses"; the honesty defect in what it says while refusing is new here.
+
+   **DoD #6 forbids agent-package edits this phase — recorded, not fixed.**
 3. **Two adversarial cases have been eroded by the corpus, one of them twice.** `adv_008` (near-miss
    substitution on "metal") answered with one approved claim, and also failed on 9/3. `adv_018`
    (coverage honesty, West African music) answered with **14 approved claims, 5 rejected, traversal
@@ -1112,6 +1133,24 @@ Eight things the plan got wrong or could not see. The corrections are the useful
    is that `eval/noise_floor.json` names five source runs that exist on one laptop, which is the same
    objection that comment makes **against** ignoring judge runs. Not changed here: it is a deliberate
    rule with stated reasoning, and revisiting it is a decision, not a tidy-up.
+
+9. **The missing lock, added the same day.** `tests/test_thresholds.py::test_a_full_live_run_can_be_gated_at_all`
+   asserts the live dataset is the size the live set was measured on. Nothing checked this, which is why
+   item 1 cost a live run to find. **`xfail(strict=True)`** rather than a skip: a skip is invisible in a
+   green run, and the day the counts agree it XPASSes and turns the build red until the marker goes, so
+   §9.4's resolution announces itself either way. Verified by breaking it — `case_count` set to 45 gave
+   `[XPASS(strict)]` and a red run, then restored. It does **not** assert that the count should become
+   45; that would carry bounds measured over 41 cases onto a measurement that never happened.
+
+10. **`contested` ships in this phase with no eval coverage, and the gap cannot be closed here.**
+    Checked 2026-09-06: no case in either frozen dataset exercises it, and the two gold cases that
+    mention it record it as *unbuildable* under decision A1. The two contested cases deferred on 9/4
+    were described as blocked on step 8 — **that was wrong and this doc said so briefly.** Step 8
+    shipped a **corpus-level** display in `CoveragePanel`; `agent/loop.py` and the synthesis path never
+    read `corroboration`, so an answer cannot say the sources disagree and a gold case asserting it
+    would test nothing. The enabling piece is an agent change, and **DoD #6 forbids that this phase**.
+    Consequence for step 10: the release must state that contested is a **corpus-level statistic**, not
+    reachable in an answer and not under eval.
 
 **Still open at the end of this step, all three deliberately:** the live threshold set (§9.4, now a
 wider question than refusal alone, since 45 cases match no set at all), the stale noise floor (§9.5), and

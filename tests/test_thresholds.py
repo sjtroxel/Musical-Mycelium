@@ -21,6 +21,7 @@ from typing import Any
 
 import pytest
 
+from musical_mycelium.eval.live import live_cases
 from musical_mycelium.eval.metrics import Groundedness, InjectionResistance, Rate, RefusalAccuracy
 from musical_mycelium.eval.suite import SuiteResult, run_gold_suite
 from musical_mycelium.eval.thresholds import (
@@ -134,6 +135,47 @@ def test_the_traversal_gate_excludes_the_known_reproducible_failure(
     assert "gold_v0_1_020" not in traversal["cases"]
     assert "gold_v0_1_020" in traversal["excluded"]
     assert len(traversal["cases"]) == 24
+
+
+# --- the dataset the live gates are supposed to cover ------------------------
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "OPEN DECISION, phase 6 step 9 §9.4, 2026-09-06. The live set grew 41 -> 45 when the refusal "
+        "rebuild took gold from 25 to 29, and no v0.7.1 baseline has been measured yet. An XPASS here "
+        "means a matching baseline landed and this marker is now the stale thing -- remove it."
+    ),
+)
+def test_a_full_live_run_can_be_gated_at_all(committed: dict[str, Any]) -> None:
+    """The live gates only gate if the live dataset is the size they were measured on.
+
+    **This lock is here because its absence cost a live run to notice.** On 2026-09-06 `make eval-live`
+    came back `NOT GATED` -- zero of five properties evaluated -- and nothing in `make check` had said
+    so beforehand. The cause was four gold cases added on 2026-09-04: `ThresholdSet.matches` selected
+    the live set on dataset and provider as it should, and `_ungateable` then refused the run because
+    `cases_run` was 45 against a `case_count` of 41.
+
+    Every other test in this file asks whether a gate decides correctly. This one asks whether the gates
+    run at all, which is the failure this file's own docstring warns about -- *a gate that does not gate
+    is green by default* -- arriving one level up, at the suite rather than at a metric.
+
+    It is `xfail(strict=True)` rather than a skip on purpose. A skip is invisible in a green run and
+    this state is a live open decision, not a permanent condition: either a v0.7.1 baseline gets
+    measured (five runs, roughly $2.50, deliberately deferred while the gold set is still owed cases)
+    or the release states that live runs are un-gated. Strict xfail makes the resolution self-announcing
+    -- the day the counts agree, this test XPASSes and turns the build red until the marker is deleted.
+
+    Deliberately NOT asserted here: that `case_count` should be edited to 45. The bounds behind it were
+    measured over 41 cases and 16 refusal cases, and moving the count to fit a larger set carries
+    measured numbers onto a measurement that never happened.
+    """
+    live = next(s for s in committed["sets"] if s["applies_to"]["provider"] == "bedrock")
+    assert len(live_cases()) == live["case_count"], (
+        f"the live dataset holds {len(live_cases())} cases and {live['name']!r} was measured over "
+        f"{live['case_count']}. A live run of this dataset reports NOT GATED."
+    )
 
 
 # --- the five gates, and only five -------------------------------------------

@@ -4,8 +4,9 @@
 >
 > **Phase 6 steps 0-8 are done and STEP 9 HAS RUN — both live runs are in.** What is left of step 9 is
 > **three open decisions and nothing else**; step 10 is docs, copy audit and release. The as-built is
-> `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0, eight numbered findings.
-> **Measured 2026-09-06, not recalled:** `make check` **1330 passed**, 14 deselected, mypy clean over 98
+> `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0, ten numbered findings.
+> **Measured 2026-09-06, not recalled:** `make check` **1330 passed, 1 xfailed** (deliberate — the live
+> gateability lock, see the step 9 section), 14 deselected, mypy clean over 98
 > source files, frontend **159 passed** across 15 files, root 17 of 18. The **scripted** every-commit
 > gates inside `make check` are **3 passed / 0 failed / 2 N/A** and are unaffected by any of this — the
 > **live** suite is the one that now matches no threshold set. Do not read one for the other.
@@ -43,14 +44,22 @@
 > 3. **The held-out set (§9.7)** — untouched on 9/6, never read, still pins `0.5.0`. Run once, 2026-08-24,
 >    10/10. The default remains **do not run it**, and to state that generalisation is untested at v0.7.1.
 >
-> ### Owed, not scheduled
+> ### Owed — NOW SCHEDULED INTO PHASE 6.5, scoped 2026-09-06
+>
+> **`docs/phases/phase-6.5-debt-and-disagreement.md` is the authority on all of this**, including which
+> items are deliberately out and which are decisions rather than tasks. It exists because phase 6's DoD #6
+> forbids agent edits and phase 7's scope doc refuses the work outright, so the debt had nowhere to live.
+> §10 of that doc is the full inherited inventory with a disposition against every line. **Read it rather
+> than re-deriving this list.** The one item that stays with phase 6 is the step 10 copy sweep.
 >
 > - **Gold cases whose subjects are `dbpedia_only`.** The slicing audit measured the gold set
 >   over-sampling the Wikidata half **~12x** — see the step 7 section. Real authoring; five cases were
 >   proposed and deferred on purpose.
-> - **The two contested gold cases** — electropop/electroclash and western music/New Mexico music. They
->   were blocked on step 8 and **step 8 has landed**, so the blocker is gone and they are now simply
->   unscheduled.
+> - **The two contested gold cases** — electropop/electroclash and western music/New Mexico music. **STILL
+>   BLOCKED, and step 8 did NOT unblock them** (checked 2026-09-06, after this file briefly said it had).
+>   Step 8 shipped a **corpus-level** contested display in `CoveragePanel`; `agent/loop.py` and the
+>   synthesis path never read `corroboration`, so an answer still cannot say the sources disagree. The
+>   enabling piece is an agent change, which **DoD #6 forbids this phase**. Phase 7 at the earliest.
 > - **A case exercising the `ambiguous` branch**, now that `big band` / `big band music` made it
 >   reachable.
 > - **The `ResolveSource` tool cannot verify a DBpedia URI** — needs a reverse lookup `GraphStore` does
@@ -147,20 +156,26 @@ corpus in part 2.
 
 ## PHASE 6 STEP 9 — the full suite at v0.7.1, and the run that gated nothing, 2026-09-06
 
-**Verified state:** `make check` green — **1330 passed**, 14 deselected, mypy clean over 98 source files,
-frontend **159 passed** across 15 files. Root 17 of 18. Tier 1 `20260906T163537Z-bedrock`, **45 cases at
+**Verified state:** `make check` green — **1330 passed, 1 xfailed**, 14 deselected, mypy clean over 98
+source files, frontend **159 passed** across 15 files. Root 17 of 18. **The `xfailed` is deliberate and
+new — see "the lock that was missing" below. Do not delete it to tidy the run.** Tier 1 `20260906T163537Z-bedrock`, **45 cases at
 artifact v0.7.1**, revision `62a949e` clean. Tier 2 `20260906T165800Z-tier2`, 20 items, judge
 `amazon.nova-pro-v1:0`.
 
-**Detail lives in `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0** — eight numbered
+**Detail lives in `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0** — ten numbered
 findings, written as corrections to the plan. This section carries only what an open-items list needs.
 
 ### THE FINDING: four extra gold cases un-gated the entire live suite
 
-`eval/thresholds.py` selects a threshold **set** by `case_count` before it ever reaches a per-metric
-denominator check. The live baseline set is **41 cases**; this run scored **45**, because the refusal
-rebuild on 9/4 took gold from 25 to 29. No set matched, so **`NOT GATED` — zero of five gates evaluated**,
-not the one `N/A` that §9.3 predicted.
+`ThresholdSet.matches` keys on dataset and provider, so the live set **was** selected. What rejected the
+run is `_ungateable` at `thresholds.py:492` — `result.cases_run != chosen.case_count`, **45 against 41**,
+because the refusal rebuild on 9/4 took gold from 25 to 29. So **`NOT GATED` — zero of five gates
+evaluated**, not the one `N/A` that §9.3 predicted, and the per-metric denominator check never runs at
+all because `_ungateable` returns first.
+
+Second-order: that guard was written for **partial** runs (`--cases 1`) and its message reads *"A subset
+is not a smaller version of the same measurement."* Today's run is a complete run of a **larger** set —
+45 is not a subset of 41. The refusal is right; the wording describes a case that did not happen.
 
 **Nothing was cleared today.** `edge_groundedness` 100% (164/164) and `citation_resolution` 100% (164/164)
 are real observations and neither is a passed gate. The banner is the wording to reuse: *"This is not a
@@ -172,17 +187,24 @@ stale noise floor (§9.5), so one purchase buys both. **Editing `case_count` or 
 the existing set match is not on the table**: the bounds were measured against 41 cases and 16 refusals,
 and carrying them onto a larger set weakens the gate while turning the banner green.
 
-### The refusal wording claims an absence the corpus does not have
+### `gold_v0_1_020` — a KNOWN bug, plus two things that are new
 
-`gold_v0_1_020` (femtanyl to Woody Guthrie) was refused with *"it resolved but carries no sourced
-influences"*. **femtanyl carries four sourced influence edges and the six-hop path is intact at v0.7.1** —
-verified by walking `path()` against the pinned store. The model visited one node of seven and proposed
-nothing; `agent/loop.py:770` emits that string whenever the gate approves zero claims, so **"this run
-gathered nothing" reaches the user as "the graph holds nothing"**.
+**Not a discovery.** `thresholds.json` has tracked it since 2026-08-18, excluded from the traversal gate:
+*"Scored an identical 1/7 in all five runs. A tracked reproducible product bug — it false-refuses a
+question the tools fully answer."* It is also the case behind the `traversal_recall` 0.0pp spread that
+`.claude/rules/evals.md` calls a trap. Read the threshold file before calling it news.
 
-That is the coverage-honesty rule inverted — claiming an absence rather than a coverage — and it is the
-most important thing this run surfaced. It failed identically on the 9/3 run at v0.6.0, so it is **not**
-a v0.7.1 regression. **Not fixed here: DoD #6 forbids agent-package edits in this phase.** Owed.
+What 2026-09-06 adds:
+
+1. **It survives a 3x corpus, so thinness was never the cause.** femtanyl carries four sourced influence
+   edges and the six-hop path to Woody Guthrie is intact at v0.7.1, verified by walking `path()` against
+   the pinned store. 7 of 7 recorded runs now.
+2. **The refusal *wording* is a second defect and was not written down anywhere.** The model visited one
+   node of seven and proposed nothing; `agent/loop.py:770` turns zero approved claims into *"it resolved
+   but carries no sourced influences"*, so **"this run gathered nothing" reaches the user as "the graph
+   holds nothing"** — the coverage-honesty rule inverted, claiming an absence the corpus does not have.
+
+**Not fixed here: DoD #6 forbids agent-package edits in this phase.** Owed.
 
 ### Two adversarial cases eroded by corpus growth, one of them for the second time
 
@@ -210,6 +232,38 @@ worth. Substituting our own reading for the judge's number is how a judged metri
 
 `narrative_quality`'s mean hides its shape: **twelve 5s, one 4, seven 3s**, and every 3 says a version of
 *"reads like a list rather than a coherent narrative"*. Bimodal and diagnosable in the synthesis prompt.
+
+### The lock that was missing, added 2026-09-06
+
+`tests/test_thresholds.py::test_a_full_live_run_can_be_gated_at_all` asserts that the live dataset is the
+size the live threshold set was measured on. **It cost a $0.42 live run to notice that nothing checked
+this**, and `make check` said nothing beforehand — every other test in that file asks whether a gate
+*decides* correctly, and none asked whether the gates *run*.
+
+It is **`xfail(strict=True)`**, not a skip, because a skip is invisible in a green run and this is an open
+decision rather than a permanent state. **The day the counts agree the test XPASSes and turns the build
+red until the marker is removed**, so whichever way §9.4 goes, the resolution announces itself. Verified
+by breaking it: setting `case_count` to 45 produced `[XPASS(strict)]` and a red run, then restored.
+
+It does **not** assert that `case_count` should become 45. The bounds behind it were measured over 41
+cases and 16 refusals; moving the count to fit a larger set carries measured numbers onto a measurement
+that never happened.
+
+### `contested` ships in this phase with NO eval coverage — checked 2026-09-06
+
+**No case in either frozen dataset exercises it.** The only two gold cases that mention `contested` say
+the opposite: notes from 2026-08-14 recording that it was unbuildable under decision A1 and *"is not
+being smuggled in through the notes field."*
+
+So phase 6's headline capability — the corpus can surface disagreement between two sources — is derived
+in `graph/corroboration.py`, served by the corpus summary, displayed in `CoveragePanel`, and **measured
+nowhere**. That is a real gap, and it is not closable inside this phase: writing a gold case needs the agent
+to surface contested per answer, and DoD #6 forbids agent-package edits here.
+
+**What the release must therefore say** — step 10, and it is not optional: contested is reported as a
+**corpus-level statistic** (2 contested of 6 reciprocal pairs at v0.7.1), it is **not** reachable in an
+answer, and it is **not** under eval. Any copy implying the system tells a user that a particular lineage
+is disputed would be false.
 
 ### Owed, added by this step
 
