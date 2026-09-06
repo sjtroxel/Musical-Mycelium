@@ -95,14 +95,18 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-09-04
+### Where the build actually is — 2026-09-06
 
-**Phases 0 through 5 are COMPLETE. PHASE 6 IS IN PROGRESS: steps 0-7 are done, step 8 is next.**
+**Phases 0 through 5 are COMPLETE. PHASE 6 IS IN PROGRESS: steps 0-8 are done and step 9 has RUN** — tier
+1 live at v0.7.1 (45 cases) and judged tier 2, both on 2026-09-06. What remains of step 9 is **three open
+decisions**: the live threshold set, the noise floor, and the held-out set. Step 10 is docs, copy audit
+and release. As-built:
+`docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0.
 `v0.3.0-local`, `v0.4.0` and `v0.5.0` are tagged; v0.6.0, v0.7.0 and v0.7.1 are cut but not tagged.
 
 **The corpus has a second source, and `contested` is reachable.** Artifact **v0.7.1 is pinned** —
-`graph/memory.py:34` and `ingest/wikidata.py:59` both read it. 1,479 nodes and 5,066 edges, against
-v0.5.0's 973 and 950. The influence layer went 949 edges to **2,285** (949 Wikidata + 1,336 DBpedia),
+`graph/memory.py:34`, `ingest/wikidata.py:59` and the SPA's `GRAPH_PIN` all read it. 1,479 nodes and
+5,066 edges, against v0.5.0's 973 and 950. The influence layer went 949 edges to **2,285** (949 Wikidata + 1,336 DBpedia),
 components 169 to **7**, and the deepest chain 6 hops to **12**. Decision **A1 is closed by its own
 stated precondition arriving**: two pairs are now contested between sources.
 
@@ -110,11 +114,14 @@ stated precondition arriving**: two pairs are now contested between sources.
 
 1. **`contested` is REACHABLE and means two DIFFERENT sources disagree** — v0.7.1 holds 6 reciprocal
    pairs and only **2** are contested. "A reciprocal pair exists" overcounts by 3x.
-2. **DO NOT DEPLOY.** The frontend pin deliberately lags at `0.5.0` until step 8. A deploy today would
-   answer from v0.7.1 and draw its map from v0.5.0.
-3. **The SPA's copy is now overstated in the OTHER direction** — it says most of the corpus records no
-   influences (now 48.9%) and that even the busiest genre is thin (now 55 connections). Step 8 and
-   step 10.
+2. **DO NOT DEPLOY is LIFTED — step 8, 2026-09-05.** Both pins read `0.7.1`, with
+   `web/public/graph/v0.7.1/` staged. ~~The frontend pin deliberately lags at `0.5.0`~~ was true until
+   then and is **stale — do not write it again.** A deploy is a step 10 act, not a casual one.
+3. **The LIVE suite currently gates nothing, and the 2026-09-06 run cleared nothing.** `thresholds.py`
+   picks a set by `case_count` — baseline 41, run 45 — so it came back **`NOT GATED`, zero of five
+   evaluated**. 100% groundedness and 100% citation resolution are observations, not passed gates. The
+   **scripted** every-commit gates in `make check` are unaffected at 3 passed / 0 failed / 2 N/A; do not
+   read one for the other. Editing the set to match is not an option. Decision open at §9.4.
 
 `docs/KNOWN-GAPS.md` newest-first carries the as-built for every step; **read it rather than restating
 it here.**

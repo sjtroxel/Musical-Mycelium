@@ -1044,6 +1044,183 @@ without picking a winner; and the CC BY-SA attribution and link-back per step 4.
 
 ### Step 9 — The full suite, and the held-out decision
 
+**Written 2026-09-06, immediately before running it, against measurements taken the same morning.** The
+up-front sketch is kept verbatim as 9.9 and nothing in it is withdrawn. What the sketch did not know is
+that **two of its preconditions are not in the state it assumed**: three money-spending targets are not
+in the deny list, and the live refusal gate can no longer report a number at all.
+
+**Baseline, measured this morning, not recalled:** `make check` **1330 passed**, 14 deselected, mypy
+clean over 98 source files, frontend **159 passed** across 15 files, root 17 of 18, eval gates
+**3 passed / 0 failed / 2 N/A**. Working tree clean at `62a949e`. This matches step 8's as-built record
+exactly.
+
+#### 9.0 As built — what the plan did not know
+
+**Verified on completion, 2026-09-06:** `make check` **1330 passed**, 14 deselected, mypy clean over 98
+source files, frontend **159 passed** across 15 files, root 17 of 18. Tier 1 live run
+`20260906T163537Z-bedrock`, **45 cases at artifact v0.7.1**, code revision **`62a949e`** and clean. Tier 2
+`20260906T165800Z-tier2`, 20 items, judge `amazon.nova-pro-v1:0`, same revision.
+
+Eight things the plan got wrong or could not see. The corrections are the useful part.
+
+1. **The §9.3 prediction was wrong, and wrong in the wider direction.** It predicted `refusal_accuracy`
+   alone returning `N/A` with four gates still applicable. What happened: **`NOT GATED`, zero of five
+   evaluated.** `thresholds.py` selects a *set* by `case_count` before any per-metric denominator check
+   is reached — the baseline set is 41 cases and this run scored 45, so no set matched and the
+   refusal-denominator logic never fired at all. **Growing the development set by four cases silently
+   un-gated the entire live suite.** The banner says it correctly: *"This is not a pass. The gates were
+   skipped, not cleared."* Reading one half of a selection mechanism and predicting from it is the same
+   failure mode `MEMORY.md` records as assertions written from a mental model and never executed.
+2. **`gold_v0_1_020` refused a question the corpus can answer, and the refusal said something false
+   about the corpus.** femtanyl carries **four sourced influence edges** and the **six-hop path to Woody
+   Guthrie is intact at v0.7.1** — verified by loading the pinned store and walking `path()`, not by
+   reading the dataset. The model visited one node of seven, proposed nothing, and `agent/loop.py:770`
+   turned zero approved claims into *"it resolved but carries no sourced influences"*. That wording
+   conflates **this run gathered nothing** with **the graph holds nothing**, which is the
+   coverage-honesty defect pointing the other way: it claims an absence the corpus does not have. It
+   failed identically on the 2026-09-03 run at v0.6.0, so it is not new at v0.7.1. **DoD #6 forbids
+   agent-package edits this phase — recorded, not fixed.**
+3. **Two adversarial cases have been eroded by the corpus, one of them twice.** `adv_008` (near-miss
+   substitution on "metal") answered with one approved claim, and also failed on 9/3. `adv_018`
+   (coverage honesty, West African music) answered with **14 approved claims, 5 rejected, traversal
+   truncated** — new at v0.7.1, and its subject term had **already** been re-authored once on 9/3 for
+   exactly this reason. §5 governs: a case that becomes wrong because the corpus grew is a finding to
+   record, not a case to rewrite. Both are open findings, not defects fixed here.
+4. **Tier 2's `OVERSTATED` count is 2 and the defensible number is 1.** `tier2_sample_015` added *"These
+   influences combined to create the genre"*, which no approved claim supports — a real instance of
+   prose asserting past the claim set, which is the leak the claims-first invariant exists to catch.
+   `tier2_sample_016` was marked `OVERSTATED` for writing *"dub music"* where the claim label reads
+   `dub_music`. That is an underscore, not an overstatement. **Both numbers are recorded** — 18/20 is
+   what the metric says, 19/20 with one false positive is what it is worth — because replacing the
+   judge's number with our own reading is how a judged metric stops being a measurement.
+5. **`narrative_quality`'s mean hides its shape.** 4.25 of 5 is **twelve 5s, one 4 and seven 3s**, and
+   every 3 says a version of *"reads like a list rather than a coherent narrative"*. That is bimodal and
+   diagnosable in the synthesis prompt, not a middling average. Tracked, never blocking.
+6. **Neither run recorded a dollar figure.** `MYCELIUM_TOKEN_PRICES` is unset, so both spend prompts
+   printed *"cost not shown"*. Measured usage: tier 1 **348,625 tokens** (328,158 in / 20,467 out), tier
+   2 **46,405** (45,200 / 1,205). Scaled against the measured ~$0.36 run that is roughly **$0.42** and
+   about a cent — **but scaled is not measured**, and `.claude/rules/aws-and-cost.md` asks for real token
+   cost tracked so measured numbers replace estimates. Setting the env var is owed.
+7. **A workflow trap, recorded because it cost a run.** `git stash push -u` stashes the **untracked**
+   transcript, so `make eval-tier2` reached past it to the 2026-09-03 run and refused on
+   `1239efe-dirty`. Stash **without** `-u`: `provenance.py` exempts `eval/results/` and
+   `eval/transcripts/`, so the new run's own output cannot dirty the stamp, and only the code and doc
+   edits need to go.
+8. **The tier 1 result is gitignored, and so is every run the noise floor was measured from.**
+   `.gitignore:79` keeps `-bedrock.json` out deliberately — *"about 36 cents and re-running one answers
+   the same question again"* — while `-judge`, `-tier2` and `-heldout` are re-included. The consequence
+   is that `eval/noise_floor.json` names five source runs that exist on one laptop, which is the same
+   objection that comment makes **against** ignoring judge runs. Not changed here: it is a deliberate
+   rule with stated reasoning, and revisiting it is a decision, not a tidy-up.
+
+**Still open at the end of this step, all three deliberately:** the live threshold set (§9.4, now a
+wider question than refusal alone, since 45 cases match no set at all), the stale noise floor (§9.5), and
+the held-out set (§9.7, untouched, and its default is still not to run).
+
+#### 9.1 Close the deny-list gap — before anything judged runs
+
+`make eval-judge`, `make eval-tier2` and `make eval-heldout` all **spend money** and **none of the three
+is in `.claude/settings.json`'s deny list**, while `Bash(make *)` sits in `allow`. `make eval-live`,
+`make heldout-seal`, `make tf-apply` and `make tf-destroy` are denied; these three were missed because
+they predate step 0, which only generalised the rule for targets *added* in this phase.
+
+Step 9 is the step that runs tier 2, so this is fixed first. Three deny lines, no other change.
+`eval-heldout` matters most of the three: it is the one target that both spends money and touches the
+sealed set, and `.claude/rules/heldout-set.md` makes running it a decision that is his alone.
+
+#### 9.2 Clear the stale "step 8 is next" text
+
+`docs/KNOWN-GAPS.md`'s START HERE block and `docs/ROADMAP.md`'s "Where the build actually is" both still
+say step 8 is next and both still carry **DO NOT DEPLOY**. Step 8's own 8.0 already records that both
+pins read `0.7.1` and that the deploy block is lifted, so the repo contradicts itself in two places. Free
+to fix and it goes first, because everything below is read against it.
+
+#### 9.3 The live tier 1 run — and a prediction stated before it runs
+
+He runs it: `make eval-live`. It is denied to me by design and stays that way.
+
+**Prediction, written down first so it is falsifiable: `refusal_accuracy` comes back `N/A` — not PASS and
+not FAIL.** `eval/thresholds.json`'s live set carries `expected_refusals: 16` and `expected_answers: 25`,
+measured on the 41-case v0.5.0 development set. The set is now **29 gold cases** (gold's refusals went
+1 to 5 on 9/4) plus the adversarial cases, so the denominators have moved. `thresholds.py` checks
+denominators rather than assuming them and reports `N/A` with a note when they move. **That is the code
+working, not a regression** — and per the three-state design, `N/A` is never counted as a pass.
+
+So the live run has **four applicable gates** — `edge_groundedness`, `citation_resolution`,
+`traversal_recall`, `injection_resistance` — with `refusal_accuracy` inapplicable. Not five, not three.
+If `refusal_accuracy` comes back with a number instead, the denominator check did not fire and that is a
+finding to chase before reading anything else on the run.
+
+**Cost.** The 2026-09-03 live run at artifact v0.6.0 spent **276,286 input + 17,518 output tokens over 41
+cases**, which is the measured ~$0.36. Today's set is larger against a corpus roughly 3x bigger, so
+**expect more than $0.36**, not exactly it. The confirmation prompt names its own estimate before it
+spends; that number governs, not this doc.
+
+#### 9.4 The live refusal gate — a decision, and the option that is not on the table
+
+**Widened by 9.0 item 1: the run matched no threshold set at all, so this is no longer only about
+`refusal_accuracy`.** The options below stand as written; what changed is that taking the default leaves
+**five** gates unassessed on live runs rather than one.
+
+- **Default: leave the live threshold set alone.** `refusal_accuracy` reports `N/A` on live runs until a
+  new baseline exists, and the release says exactly that. Costs nothing and launders nothing.
+- **Alternative: measure a new live baseline** — five identical runs, ~$0.5 each, roughly **$2.50** — and
+  write a v0.7.1 threshold set from it. This is the only honest route back to a live refusal gate, and it
+  exceeds the phase's stated "under $2" total, so it is a deliberate spend rather than a rounding error.
+- **Not an option: editing `expected_refusals` to match the new set.** The bound (>= 13 true, <= 3 false)
+  was measured against a 16-refusal denominator; carrying it onto a larger one weakens the gate silently
+  while making it look green. §8 already forbids re-tuning to accommodate the corpus, and this would be
+  that with an extra step.
+
+#### 9.5 The noise floor — coupled to 9.4, not separate
+
+`eval/noise_floor.json` was measured at artifact **v0.5.0**, code revision **`f84453a`**. Until it is
+re-measured, **no movement in any live number on this corpus can be called noise** — including a movement
+that looks small. Re-measuring is the same five runs as 9.4's alternative; one spend buys both.
+
+Default: record it stale, quote the old floor only with its artifact version attached, and never describe
+a v0.7.1 movement as inside it.
+
+#### 9.6 Tier 2, judged
+
+`make eval-tier2` over the transcript the 9.3 run writes. 20 items, a few cents.
+
+Its refusals all fire **before** the spend prompt, so a misconfigured run costs nothing. One of them is
+live right now: **the 9/3 run's `code_revision` is `1239efe-dirty`**, and tier 2 refuses a source whose
+revision is dirty. Point it at the 9.3 run, which will be clean, and not at the newest file by accident.
+
+Every judged number is reported as a **range** with its inherited agreement figure beside it —
+`citation_support` kappa **0.44-0.48**, `narrative_quality` **0.66-0.73**, never the single value.
+
+#### 9.7 The held-out set — his decision, and this plan still does not make it
+
+The facts are in 9.9 and are unchanged. The plan's default remains **do not run it**, and to state in the
+release that held-out generalisation was measured at v0.5.0 and is untested at v0.7.1.
+
+If he decides to run it: `make heldout-check` goes first. It needs the key, decrypts in memory, and
+prints **case ids and problem codes only** — never content — which is exactly the question worth asking,
+because the set pins `0.5.0` and the corpus moved under it. If check reports findings, `eval-heldout`
+refuses on them anyway.
+
+What does not happen either way: I do not open the `.enc`, do not ask for the seed, do not read a
+decrypted copy, and do not propose a fix whose justification traces back to a held-out number.
+
+#### 9.8 Done looks like
+
+- The three deny lines added, and 9.2's two stale blocks corrected.
+- One clean live tier 1 result committed, reported with its gate table as gated / failed / inapplicable
+  and with `refusal_accuracy`'s `N/A` explained rather than glossed.
+- A tier 2 result carrying its inherited agreement range.
+- The 9.4 refusal-gate decision, the 9.5 noise-floor decision and the 9.7 held-out decision each recorded
+  with a date and a reason **whichever way they go**, because a default taken deliberately is a decision.
+- `make check` still green at the same or a higher count, and a `KNOWN-GAPS.md` step 9 section.
+
+Not in this step: any threshold edit that makes something pass, gold-set authoring, or the copy rewrites,
+which are step 10.
+
+#### 9.9 The up-front sketch, kept
+
+
 Tier 1 plus a judged tier 2, as agreed. Roughly $0.40 measured.
 
 **The held-out set is a decision for sjtroxel and this plan does not make it.** `heldout_v1.manifest.json`

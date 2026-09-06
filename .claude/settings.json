@@ -10,7 +10,10 @@
       "Bash(make tf-apply*)",
       "Bash(make tf-destroy*)",
       "Bash(make heldout-seal*)",
-      "Bash(make eval-live*)"
+      "Bash(make eval-live*)",
+      "Bash(make eval-judge*)",
+      "Bash(make eval-tier2*)",
+      "Bash(make eval-heldout*)"
     ],
     "allow": [
       "Bash(make *)",

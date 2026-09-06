@@ -1,45 +1,62 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-04 end of day
+> ## START HERE — where things stand, 2026-09-06
 >
-> **Phase 6 steps 0-7 are done. STEP 8 (frontend) IS NEXT.** Artifact **v0.7.1 is pinned** in both
-> places. `make check` **1329 passed**, frontend **146**, eval gates **3 passed / 0 failed / 2 N/A**.
-> Everything below is newest-first; the four sections dated 2026-09-04 are today.
+> **Phase 6 steps 0-8 are done and STEP 9 HAS RUN — both live runs are in.** What is left of step 9 is
+> **three open decisions and nothing else**; step 10 is docs, copy audit and release. The as-built is
+> `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0, eight numbered findings.
+> **Measured 2026-09-06, not recalled:** `make check` **1330 passed**, 14 deselected, mypy clean over 98
+> source files, frontend **159 passed** across 15 files, root 17 of 18. The **scripted** every-commit
+> gates inside `make check` are **3 passed / 0 failed / 2 N/A** and are unaffected by any of this — the
+> **live** suite is the one that now matches no threshold set. Do not read one for the other.
 >
 > **Three things that are easy to get backwards:**
 >
-> 1. **DO NOT DEPLOY.** The frontend pin deliberately lags at `0.5.0` until step 8. A deploy today
->    answers from v0.7.1 and draws its map from v0.5.0.
+> 1. **DO NOT DEPLOY is LIFTED — step 8, 2026-09-05.** Both pins read `0.7.1`: the backend in
+>    `graph/memory.py` and `ingest/wikidata.py`, the SPA through `GRAPH_PIN` in `graph/staticGraph.ts`,
+>    with `web/public/graph/v0.7.1/` staged. **The line "the frontend pin deliberately lags at 0.5.0" is
+>    stale — never write it again.** A deploy is still a step 10 act, not a casual one.
 > 2. **`contested` is REACHABLE and means two DIFFERENT sources disagree.** 6 reciprocal pairs, only
 >    **2** contested. "A reciprocal pair exists" overcounts by 3x.
-> 3. **The SPA's copy is now overstated in the OTHER direction** — "most of the corpus records no
->    influences" is 48.9%, and "even the busiest genre is thin" is 55 connections.
+> 3. **THE LIVE SUITE GATES NOTHING RIGHT NOW, and the 9/6 run cleared nothing.** `thresholds.py` picks
+>    a set by `case_count` before any denominator check: the baseline is 41 cases, the run scored 45, so
+>    **`NOT GATED` — zero of five evaluated.** `edge_groundedness` 100% and `citation_resolution` 100%
+>    are observations, not passed gates. Four extra gold cases did this. **Editing `case_count` or
+>    `expected_refusals` to make the set match is not on the table** — see the step 9 section.
 >
-> ### Decided for tomorrow, in order
+> ### Done 2026-09-06
 >
-> 1. **Step 8, frontend.** Copy v0.7.1 into `web/public/graph/`, delete `FRONTEND_PIN_LAG_UNTIL_STEP_8`
->    in `tests/test_chips.py`, restore the plain pin equality, and rewrite the copy listed above.
->    `web/src/corpus-facts.json` is due for deletion in the same step.
-> 2. **Surface `contested`**, which is the enabling piece for item 3. `graph/corroboration.py` computes
->    it; no tool exposes it and the SPA does not show it. §7 lists "contested display" under `web/`.
-> 3. **The two contested gold cases** — electropop/electroclash and western music/New Mexico music.
->    **Deliberately NOT written on 2026-09-04**: the correct answer to "where did electropop come from"
->    on a contested pair is *"the sources disagree"*, and the agent cannot say that until item 2 lands.
->    Writing them sooner means either two failing tests or two cases that assert an ordinary origins
->    answer and therefore test nothing. Decided with sjtroxel.
+> 1. **Deny lines for `make eval-judge`, `make eval-tier2`, `make eval-heldout`** — all three spend money
+>    and none was denied, while `Bash(make *)` is allowed. `eval-heldout` was the one that mattered: it
+>    spends money *and* touches the sealed set.
+> 2. **The stale "step 8 is next" text cleared** — this block and `ROADMAP.md`.
+> 3. **Tier 1 live at v0.7.1 (45 cases, `62a949e`) and judged tier 2 (20 items, Nova Pro).** Both clean,
+>    both recorded. Tier 1's result is **gitignored by design** (`.gitignore:79`), so its numbers survive
+>    only in the step 9 section — the tier 2 result and the transcript are committed.
+>
+> ### THE THREE OPEN DECISIONS — his, none urgent, none made
+>
+> 1. **The live threshold set (§9.4).** Leave the suite un-gated on live runs and say so in the release,
+>    or spend ~$2.50 on five runs to measure a v0.7.1 baseline. Not a threshold edit either way.
+> 2. **The noise floor (§9.5)** — stale at v0.5.0 / `f84453a`. The same five runs buy both this and #1.
+>    Until re-measured, **no v0.7.1 movement may be called noise.**
+> 3. **The held-out set (§9.7)** — untouched on 9/6, never read, still pins `0.5.0`. Run once, 2026-08-24,
+>    10/10. The default remains **do not run it**, and to state that generalisation is untested at v0.7.1.
 >
 > ### Owed, not scheduled
 >
 > - **Gold cases whose subjects are `dbpedia_only`.** The slicing audit measured the gold set
 >   over-sampling the Wikidata half **~12x** — see the step 7 section. Real authoring; five cases were
 >   proposed and deferred on purpose.
+> - **The two contested gold cases** — electropop/electroclash and western music/New Mexico music. They
+>   were blocked on step 8 and **step 8 has landed**, so the blocker is gone and they are now simply
+>   unscheduled.
 > - **A case exercising the `ambiguous` branch**, now that `big band` / `big band music` made it
 >   reachable.
 > - **The `ResolveSource` tool cannot verify a DBpedia URI** — needs a reverse lookup `GraphStore` does
 >   not expose.
-> - **The noise floor is stale** (v0.5.0, revision `f84453a`) and re-measuring is a step 9 decision.
-> - **The held-out set still pins `0.5.0`** and its run decision is sjtroxel's, at step 9. It was never
->   read today.
+> - **The step 10 copy sweep.** Step 8 fixed the three SPA sentences its own changes falsified (§8.8);
+>   the full DoD #8 pass across docs, README and rules is still owed.
 
 Written 2026-08-12, at the phase 3 release step. Required by
 `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §5.1, which asks that the tag ship with the open items
@@ -128,6 +145,89 @@ corpus in part 2.
 
 ---
 
+## PHASE 6 STEP 9 — the full suite at v0.7.1, and the run that gated nothing, 2026-09-06
+
+**Verified state:** `make check` green — **1330 passed**, 14 deselected, mypy clean over 98 source files,
+frontend **159 passed** across 15 files. Root 17 of 18. Tier 1 `20260906T163537Z-bedrock`, **45 cases at
+artifact v0.7.1**, revision `62a949e` clean. Tier 2 `20260906T165800Z-tier2`, 20 items, judge
+`amazon.nova-pro-v1:0`.
+
+**Detail lives in `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0** — eight numbered
+findings, written as corrections to the plan. This section carries only what an open-items list needs.
+
+### THE FINDING: four extra gold cases un-gated the entire live suite
+
+`eval/thresholds.py` selects a threshold **set** by `case_count` before it ever reaches a per-metric
+denominator check. The live baseline set is **41 cases**; this run scored **45**, because the refusal
+rebuild on 9/4 took gold from 25 to 29. No set matched, so **`NOT GATED` — zero of five gates evaluated**,
+not the one `N/A` that §9.3 predicted.
+
+**Nothing was cleared today.** `edge_groundedness` 100% (164/164) and `citation_resolution` 100% (164/164)
+are real observations and neither is a passed gate. The banner is the wording to reuse: *"This is not a
+pass. The gates were skipped, not cleared."*
+
+The decision this forces is **§9.4 and it is open**. Writing a v0.7.1 threshold set honestly requires a
+measured baseline, which is five live runs at roughly **$2.50** — and that same spend re-measures the
+stale noise floor (§9.5), so one purchase buys both. **Editing `case_count` or `expected_refusals` to make
+the existing set match is not on the table**: the bounds were measured against 41 cases and 16 refusals,
+and carrying them onto a larger set weakens the gate while turning the banner green.
+
+### The refusal wording claims an absence the corpus does not have
+
+`gold_v0_1_020` (femtanyl to Woody Guthrie) was refused with *"it resolved but carries no sourced
+influences"*. **femtanyl carries four sourced influence edges and the six-hop path is intact at v0.7.1** —
+verified by walking `path()` against the pinned store. The model visited one node of seven and proposed
+nothing; `agent/loop.py:770` emits that string whenever the gate approves zero claims, so **"this run
+gathered nothing" reaches the user as "the graph holds nothing"**.
+
+That is the coverage-honesty rule inverted — claiming an absence rather than a coverage — and it is the
+most important thing this run surfaced. It failed identically on the 9/3 run at v0.6.0, so it is **not**
+a v0.7.1 regression. **Not fixed here: DoD #6 forbids agent-package edits in this phase.** Owed.
+
+### Two adversarial cases eroded by corpus growth, one of them for the second time
+
+- `adv_008`, near-miss substitution on "metal" — answered with one approved claim instead of refusing.
+  Also failed 9/3.
+- `adv_018`, coverage honesty on West African music — answered with **14 approved claims, 5 rejected**,
+  traversal truncated. **New at v0.7.1**, and its subject term was already re-authored once on 9/3 for
+  this same reason.
+
+§5 governs and is unchanged: a frozen case that becomes wrong because the corpus grew is a **finding to
+record, not a case to rewrite**. Recorded. Both are open.
+
+### Tier 2: one real overstatement and one judge artifact
+
+18/20 SUPPORTED, `narrative_quality` mean 4.25 of 5, quoted with the inherited agreement — `citation_support`
+kappa **0.44-0.48**, `narrative_quality` **0.66-0.73**, n=30 over 3 validation runs.
+
+- `tier2_sample_015` added *"These influences combined to create the genre"*, supported by no approved
+  claim. **Real**, and exactly the leak claims-first exists to catch.
+- `tier2_sample_016` was marked OVERSTATED for writing *"dub music"* where the claim label reads
+  `dub_music`. **An underscore, not an overstatement.**
+
+**Both readings are kept.** 18/20 is what the metric says; 19/20 with one false positive is what it is
+worth. Substituting our own reading for the judge's number is how a judged metric stops measuring.
+
+`narrative_quality`'s mean hides its shape: **twelve 5s, one 4, seven 3s**, and every 3 says a version of
+*"reads like a list rather than a coherent narrative"*. Bimodal and diagnosable in the synthesis prompt.
+
+### Owed, added by this step
+
+- **A v0.7.1 live threshold set**, or a written decision to run live un-gated. §9.4. Open.
+- **The `agent/loop.py:770` refusal wording**, which must distinguish "gathered nothing this run" from
+  "the corpus holds nothing". Blocked on DoD #6 until this phase closes.
+- **`MYCELIUM_TOKEN_PRICES` is unset**, so neither run recorded a dollar figure. Measured usage: tier 1
+  **348,625 tokens** (328,158 in / 20,467 out), tier 2 **46,405** (45,200 / 1,205). Roughly $0.42 and
+  about a cent when scaled from the measured runs, but **scaled is not measured** and the cost rules ask
+  for the real thing.
+- **The noise floor's evidence lives on one laptop.** `.gitignore:79` keeps `-bedrock.json` runs out by a
+  deliberate rule, so `eval/noise_floor.json` names five source runs that are not in the repo — the same
+  objection that comment raises against ignoring judge runs. A decision, not a tidy-up. Unscheduled.
+- **A workflow note that cost a run:** `git stash push -u` stashes the untracked transcript, after which
+  `make eval-tier2` reaches back to an older dirty run and refuses. Stash **without** `-u` — `eval/results/`
+  and `eval/transcripts/` are exempt from the dirty check, so a run's own output never dirties its stamp.
+
+---
 ## PHASE 6 STEP 7 — the slicing audit, and the gold set samples a corpus that no longer exists, 2026-09-04
 
 **Verified state:** `make check` green — **1329 passed**, mypy clean over 97 files, eval gates
