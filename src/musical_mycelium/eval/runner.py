@@ -31,6 +31,7 @@ from musical_mycelium.agent.loop import (
     STOP_COMPLETE,
     ClaimApproved,
     ClaimRejected,
+    Contested,
     Done,
     PathWalked,
     Planned,
@@ -73,6 +74,12 @@ class CaseRun:
     approved: tuple[Claim, ...]
     rejections: tuple[Rejection, ...]
     visited: tuple[str, ...]
+    #: Pairs this run TOLD THE USER two sources disagree about. Recorded 2026-09-07, phase 6.5 step 6,
+    #: because the metric that gates the keystone cannot exist without it -- the loop had emitted
+    #: ``Contested`` since step 4 and this record dropped it, the same defect the transcript had with
+    #: ``tool_calls`` until step 3. **Announced, not crossed:** whether a pair was crossed is a
+    #: property of the approved claims and is derived in ``graph/``; this is what the run actually said.
+    announced_contested: tuple[Contested, ...]
     refused: bool
     #: Why, when it refused. Empty otherwise. Refusal is correct behaviour, not an error state.
     refusal_reason: str
@@ -138,6 +145,7 @@ def run_case(
     visited: tuple[str, ...] = ()
     refused = False
     refusal_reason = ""
+    announced: list[Contested] = []
     prose_parts: list[str] = []
     done: Done | None = None
 
@@ -163,6 +171,8 @@ def run_case(
                 rejections.append(event.rejection)
             case PathWalked():
                 visited = event.node_ids
+            case Contested():
+                announced.append(event)
             case Token():
                 prose_parts.append(event.text)
             case Refused():
@@ -184,6 +194,7 @@ def run_case(
         visited=visited,
         refused=refused,
         refusal_reason=refusal_reason,
+        announced_contested=tuple(announced),
         prose="".join(prose_parts),
         done=done,
     )

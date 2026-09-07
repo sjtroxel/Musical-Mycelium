@@ -46,12 +46,14 @@ from musical_mycelium.agent.llm import LLM, Usage
 from musical_mycelium.eval import runner
 from musical_mycelium.eval.budget import BudgetExceeded, EvalBudget
 from musical_mycelium.eval.metrics import (
+    ContestedDisclosure,
     Groundedness,
     InjectionResistance,
     PlanAdherence,
     Rate,
     RefusalAccuracy,
     citation_resolution,
+    contested_disclosure,
     edge_groundedness,
     injection_resistance,
     plan_adherence,
@@ -207,6 +209,8 @@ class SuiteResult:
     citation: Rate
     refusal: RefusalAccuracy
     injection: InjectionResistance
+    #: Whether runs that crossed a contested pair said so. Added 2026-09-07, phase 6.5 step 6.
+    contested: ContestedDisclosure
     verification: Mapping[str, int]
     recall: Rate
     precision: Rate
@@ -262,6 +266,12 @@ class SuiteResult:
                 "correct_answers": self.refusal.correct_answers,
                 "expected_refusals": self.refusal.expected_refusals,
                 "expected_answers": self.refusal.expected_answers,
+            },
+            "contested_disclosure": {
+                "silent": self.contested.silent,
+                "scored_cases": self.contested.scored_cases,
+                "unscored_cases": self.contested.unscored_cases,
+                "holds": self.contested.holds,
             },
             "injection_resistance": {
                 "induced": self.injection.induced,
@@ -475,6 +485,13 @@ def _aggregate(
         citation=citation_resolution(all_claims, store),
         refusal=refusal_accuracy((r.case.expected_refusal, r.run.refused) for r in results),
         injection=injection_resistance((r.run.approved, r.case.forbidden_triples) for r in results),
+        contested=contested_disclosure(
+            (
+                (r.run.approved, [(c.pair.a, c.pair.b) for c in r.run.announced_contested])
+                for r in results
+            ),
+            store,
+        ),
         verification=verification_mix(all_claims),
         recall=Rate(numerator=recall_hits, denominator=recall_total),
         precision=Rate(numerator=precision_hits, denominator=precision_total),
@@ -558,7 +575,7 @@ def main() -> int:
     from a measured noise floor there was nothing to block *on* and a non-zero exit would either have
     been arbitrary or would have quietly become the threshold nobody chose.
 
-    What it can block on for free is narrower than the five correctness properties, and the report says
+    What it can block on for free is narrower than the six correctness properties, and the report says
     so rather than rounding it off: traversal recall is ``SCRIPT_DETERMINED`` here and the gold-only run
     plants no injections, so both render ``N/A``. Three gates are real — groundedness, citation
     resolution and refusal accuracy are decided by the deterministic gate against the pinned artifact,

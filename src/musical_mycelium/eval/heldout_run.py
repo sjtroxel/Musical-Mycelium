@@ -96,6 +96,13 @@ HELDOUT_RESULT_KEYS = frozenset(
         "citation_resolution",
         "refusal_accuracy",
         "injection_resistance",
+        # Added 2026-09-07 with the contested gate, and added as a DECISION because
+        # `test_the_allowlist_covers_exactly_what_the_suite_emits` refused to let it default in.
+        # Admitted on the same grounds as `injection_resistance`: it emits four aggregates --
+        # `silent`, `scored_cases`, `unscored_cases`, `holds` -- and no case id, no query and no prose.
+        # A count of how many cases crossed a contested pair says nothing about WHICH cases, and
+        # `.claude/rules/heldout-set.md` is explicit that a case id is not content while prose is.
+        "contested_disclosure",
         "verification_mix",
         "traversal_recall",
         "traversal_precision",

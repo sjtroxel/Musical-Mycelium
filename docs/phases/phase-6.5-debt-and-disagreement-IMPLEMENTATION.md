@@ -929,7 +929,7 @@ justified by the diff rather than by convenience.
 as sitting one. Re-measured, not typed: **5 of 5 true refusals, 0 false refusals of 33**, and
 `cases_correct` 38/38. **The live threshold set is still untouched** and stays that way until step 7.
 
-### Step 6 — Item 10, and the contested-metric decision
+### Step 6 — Item 10, and the contested-metric decision — **DONE 2026-09-07**
 
 Trivial and cheap, done while the datasets settle.
 
@@ -939,6 +939,78 @@ Trivial and cheap, done while the datasets settle.
 - **Decide whether a contested metric joins the tier 1 catalog** (decision 5.2, his). Note the denominator
   before proposing a rate: 2,202 of 2,284 influence edges are single-source, so a contested rate over all
   edges measures DBpedia's coverage far more than it measures disagreement.
+
+#### 6.0 As built — 2026-09-07. **DONE, both halves.**
+
+**Verified:** `make check` green — **1457 passed** (from 1448), 14 deselected, 1 xfailed, mypy clean over
+99 source files, frontend **168**, root **17 of 18**. The every-commit gate is now
+**4 passed / 0 failed / 2 N/A, of SIX correctness properties** — it was 3 of 5.
+
+##### Item 10 — the `_ungateable` message
+
+**Split into three conditions rather than reworded, because the two size mismatches need opposite
+remedies.** A run SMALLER than its baseline is a partial run of a stable dataset: the original sentence
+— *"a subset is not a smaller version of the same measurement"* — is correct, and step 3's finding was
+that it reads correctly for `--cases 1`. It is kept **verbatim**, with a test asserting so, because
+fixing the broken branch by rewording the working one is how a correction becomes a regression.
+
+A run LARGER than its baseline is a **complete** run of a dataset that has outgrown it. The run is the
+correct half and the baseline is the stale one, so the message says that and deliberately does **not**
+tell the reader to run anything again — re-measuring the live baseline costs money and is step 7. A test
+asserts the absence of that nudge.
+
+Live today at 56 cases against a baseline of 41:
+
+> this run scored 56 cases and the 'live gold+adversarial on Bedrock' baseline was measured over 41. The
+> dataset has grown past its baseline, so this run is the complete one and the baseline is the stale
+> half. These numbers cannot be compared to it until the baseline is re-measured over the current set.
+
+##### Item 11 — the contested metric. Decision 5.2: **GATED.**
+
+**1. It was not buildable, and the reason was the same defect twice.** `CaseRun` recorded `plan`,
+`tool_calls`, `approved`, `rejections`, `visited`, `refused`, `prose` and `done` — and **dropped
+`Contested`**, which the loop had emitted since step 4. Exactly what the transcript did with
+`tool_calls` until step 3. Recording it was the prerequisite.
+
+**2. A PROPERTY, not a rate, and that is what dissolves the denominator problem.**
+`.claude/rules/evals.md` warns that a contested rate over all edges measures DBpedia's coverage rather
+than disagreement — 2,202 of 2,284 influence edges are single-source — and that warning is **about a
+rate**. `ContestedDisclosure` computes no rate. Its denominator is *runs that crossed a contested pair*,
+and the blocking condition is **zero silent crossings**: the same shape as `injection_resistance`, which
+the rules already list as blocking on zero failures.
+
+**3. Free, because the scripted trace genuinely crosses both pairs.** `gold_v0_1_030` and
+`gold_v0_1_031` propose real artifact edges the gate approves, so the every-commit run measures
+**silent=0, scored=2, unscored=36**. No money, deterministic, exact bounds.
+
+**4. Crossing is DERIVED, never reported.** A run cannot mark its own homework: `crossed` is computed
+from the approved claims through `GraphStore.contested_between`, and only `announced` comes from the
+run. A run that announces a pair it never crossed gains nothing; one that crosses a pair silently cannot
+hide it. There is a test that lies to the metric and checks it is not fooled.
+
+**5. `minimum_scored_cases: 2` doubles as a coverage lock**, and this is the subtle half. Only two
+contested pairs exist at v0.7.1. If the corpus lost ONE, the metric would read *silent 0 over 1 scored*
+— perfect, while measuring half of what it was measured on. That **fails**. If it lost both, the gate
+reads `N/A`, which is never a pass. **The metric is thin and the bound says so in writing.**
+
+**6. What it locks is step 4's keystone.** Without it, `contested` could stop reaching answers entirely
+and every other number in the suite would stay green.
+
+**7. Five gates became six, and `.claude/rules/evals.md` says the tuple is the authority.** Amended in
+place: `GATE_NAMES`, `thresholds.py`'s module docstring ("three of five" -> "four of six"), `suite.py`,
+`noise.py` (twice), `thresholds.json`'s scripted note, and two test names. The live threshold set was
+deliberately **NOT** given a bound — writing one before step 7 measures it would be inventing a
+threshold, so a live run reads `N/A` with "this set declares no bound", which is honest.
+
+**8. The held-out allowlist refused to let the new key default in**, which is the fail-closed design
+working. `test_the_allowlist_covers_exactly_what_the_suite_emits` failed the moment `to_json` grew
+`contested_disclosure`, forcing it to be admitted as a decision. Admitted on `injection_resistance`'s
+grounds: four aggregates, no case id, no query, no prose. A count of how many cases crossed a contested
+pair says nothing about which.
+
+**9. Five locks broken, five caught**, including the coverage lock and the derived-not-reported
+property. One break needed a second attempt because I typed the anchor from memory instead of reading
+it — the same small lesson as step 4.
 
 ### Step 7 — Tier 3: measure the floor, then write the gates
 
@@ -984,7 +1056,7 @@ Six from the scope doc §5. This plan carries a recommendation on two and leaves
 | # | decision | this plan's position |
 |---|---|---|
 | 5.1 | Shape of `contested` in a response | **CLOSED 2026-09-07: a distinct SSE event.** The two rejected options and why are recorded in §6 step 4. |
-| 5.2 | Contested metric — gated, tracked, or absent | Open. Decided at step 6, with the denominator problem stated first. |
+| 5.2 | Contested metric — gated, tracked, or absent | **CLOSED 2026-09-07: GATED**, as a property rather than a rate, which is what dissolves the denominator problem. Free on the scripted run. §6.0 item 11. |
 | 5.3 | Is `gold_v0_1_020` fixable | Open by construction. Step 3 diagnoses; the decision follows the diagnosis and not the reverse. |
 | 5.4 | How many `dbpedia_only` gold cases | **CLOSED 2026-09-07: six.** Gold ends at 38 cases, the live set at 54. Chosen for margin above the n<5 floor, not for a round total. |
 | 5.5 | Held-out set at the freeze | **Not made here, and no step depends on it.** Run count is 1. Default remains **do not run**. His alone, at the freeze. |

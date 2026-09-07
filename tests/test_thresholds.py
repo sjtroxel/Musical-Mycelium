@@ -22,7 +22,13 @@ from typing import Any
 import pytest
 
 from musical_mycelium.eval.live import live_cases
-from musical_mycelium.eval.metrics import Groundedness, InjectionResistance, Rate, RefusalAccuracy
+from musical_mycelium.eval.metrics import (
+    ContestedDisclosure,
+    Groundedness,
+    InjectionResistance,
+    Rate,
+    RefusalAccuracy,
+)
 from musical_mycelium.eval.suite import SuiteResult, run_gold_suite
 from musical_mycelium.eval.thresholds import (
     FAIL,
@@ -36,7 +42,7 @@ from musical_mycelium.eval.thresholds import (
     gate,
     load,
 )
-from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory, default_store
 
 
 @pytest.fixture(scope="module")
@@ -49,6 +55,11 @@ def scripted() -> SuiteResult:
 def committed() -> dict[str, Any]:
     payload: dict[str, Any] = json.loads(THRESHOLDS_PATH.read_text(encoding="utf-8"))
     return payload
+
+
+def result_contested(result: SuiteResult) -> ContestedDisclosure:
+    """The run's contested metric, named so the gate tests read as assertions rather than as plumbing."""
+    return result.contested
 
 
 def verdicts(result: SuiteResult) -> dict[str, str]:
@@ -178,26 +189,40 @@ def test_a_full_live_run_can_be_gated_at_all(committed: dict[str, Any]) -> None:
     )
 
 
-# --- the five gates, and only five -------------------------------------------
+# --- the six gates, and only six ---------------------------------------------
 
 
-def test_exactly_the_five_correctness_properties_are_gated(scripted: SuiteResult) -> None:
+def test_exactly_the_six_correctness_properties_are_gated(scripted: SuiteResult) -> None:
+    """Five until 2026-09-07, when `contested_disclosure` joined by decision 5.2.
+
+    Asserted against `GATE_NAMES` rather than a literal list, because `.claude/rules/evals.md`
+    names that tuple as the authority and forbids writing a count in prose. What this pins is that
+    the report renders every declared gate and nothing else -- a gate declared but never evaluated
+    would be invisible, which is the "a gate that does not gate is green by default" failure.
+    """
     assert tuple(verdicts(scripted)) == GATE_NAMES
 
 
-def test_the_scripted_run_passes_the_three_it_can_and_skips_the_two_it_cannot(
+def test_the_scripted_run_passes_the_four_it_can_and_skips_the_two_it_cannot(
     scripted: SuiteResult,
 ) -> None:
     """The honest shape of the free gate, asserted so it cannot be quietly widened.
 
     If a future edit makes traversal or injection read `PASS` here, it has started gating a scripted
     trace as though a model produced it.
+
+    **Three -> four on 2026-09-07.** `contested_disclosure` is gateable on the free run and the other
+    two are not, and the difference is not arbitrary: the scripted trace genuinely crosses both
+    contested pairs, because `gold_v0_1_030` and `gold_v0_1_031` propose real artifact edges that the
+    gate approves. Traversal and injection stay `N/A` because a script walking a fixed path proves
+    nothing about a model choosing one, and a gold-only run plants no injections.
     """
     assert verdicts(scripted) == {
         "edge_groundedness": PASS,
         "citation_resolution": PASS,
         "refusal_accuracy": PASS,
         "injection_resistance": NOT_APPLICABLE,
+        "contested_disclosure": PASS,
         "traversal_recall": NOT_APPLICABLE,
     }
 
@@ -537,3 +562,145 @@ def test_a_malformed_thresholds_file_raises_rather_than_degrading_to_no_gates(
     incomplete.write_text(json.dumps({"sets": [{"name": "x"}]}), encoding="utf-8")
     with pytest.raises(MalformedThresholds):
         load(incomplete)
+
+
+# --- the two size mismatches say opposite things ----------------------------------------------------
+#
+# Added 2026-09-07, phase 6.5 step 6. `_ungateable` used one branch and one sentence for any size
+# mismatch: "a subset is not a smaller version of the same measurement". That is true of a run SMALLER
+# than its baseline and describes a case that cannot occur for a run LARGER than it -- and both happen
+# here. The live suite hit the superset case for real on 2026-09-06 at 45 cases against 41, and again
+# after step 5 grew the set to 56.
+
+
+def _sized(result: SuiteResult, cases: int) -> SuiteResult:
+    """A live run of exactly `cases` cases. `cases_run` is `len(results)`, so the tuple is what moves;
+    padding repeats real CaseResults rather than inventing shapes, because only the COUNT is under
+    test here."""
+    padded = tuple((result.results * (cases // len(result.results) + 1))[:cases])
+    return as_live(result, results=padded)
+
+
+def _reason_for(result: SuiteResult) -> str:
+    """The un-gateable banner text, asserted through `gate()` -- the single entry point callers use.
+
+    Read off the rendered lines rather than a private helper, because the banner is the artefact a
+    person actually sees and the wording is what step 6 was fixing.
+    """
+    outcome = gate(result)
+    assert outcome.report is None, "expected this run to be un-gateable"
+    return "\n".join(outcome.lines)
+
+
+def test_a_run_smaller_than_its_baseline_is_called_a_subset(scripted: SuiteResult) -> None:
+    """`make eval-live ARGS='--cases 1'` is the documented two-cent wiring check and it lands here.
+    **The original sentence is correct for this case and is kept verbatim** -- step 6 fixed the other
+    branch without touching the one that already read correctly."""
+    reason = _reason_for(_sized(scripted, 1))
+    assert "A subset is not a smaller version of the same measurement." in reason
+    assert "grown past" not in reason
+
+
+def test_a_run_larger_than_its_baseline_is_called_a_stale_baseline(scripted: SuiteResult) -> None:
+    """The defect. A complete run of a bigger dataset is not a subset of anything, and the remedy is
+    the opposite one: a subset is fixed by running the whole set, while a superset means the run is
+    correct and the BASELINE is the stale half."""
+    reason = _reason_for(_sized(scripted, 56))
+    assert "grown past its baseline" in reason
+    assert "the baseline is the stale half" in reason
+    assert "subset" not in reason
+
+
+def test_neither_message_tells_the_reader_to_re_run_the_live_suite(scripted: SuiteResult) -> None:
+    """Re-measuring the live baseline costs money and is deliberately deferred to step 7, so the
+    superset message must not read as an instruction to spend it."""
+    reason = _reason_for(_sized(scripted, 56))
+    for nudge in ("re-run", "rerun", "run it again", "run again"):
+        assert nudge not in reason.lower()
+
+
+def test_a_size_mismatch_of_either_sign_is_never_a_pass(scripted: SuiteResult) -> None:
+    """The property both branches share, and the one that actually matters: un-gateable is not green.
+    A banner that explained itself beautifully and still let a run read as passing would be worse than
+    the wrong sentence."""
+    for cases_run in (1, 56):
+        outcome = gate(_sized(scripted, cases_run))
+        assert outcome.report is None
+        assert outcome.exit_code == 0, "un-gateable is not a build failure"
+        banner = "\n".join(outcome.lines)
+        assert "NOT GATED" in banner
+        assert "This is not a pass" in banner or "not a pass" in banner
+
+
+# --- the contested gate ------------------------------------------------------------------------------
+#
+# Added 2026-09-07, phase 6.5 step 6, decision 5.2. This is the gate that locks step 4's keystone:
+# without it `contested` could stop reaching answers entirely and every other number here would stay
+# green.
+
+
+def test_the_contested_gate_passes_when_every_crossing_is_announced(scripted: SuiteResult) -> None:
+    """Measured, not asserted: the scripted run crosses both contested pairs and announces both."""
+    assert result_contested(scripted).scored_cases == 2
+    assert result_contested(scripted).silent == 0
+    assert verdicts(scripted)["contested_disclosure"] == PASS
+
+
+def test_a_silent_crossing_blocks(scripted: SuiteResult) -> None:
+    """The failure this gate exists for. A run that crossed a contested pair and said nothing has
+    told a user two sources agree when they do not."""
+    broken = dataclasses.replace(
+        scripted, contested=dataclasses.replace(result_contested(scripted), silent=1)
+    )
+    assert verdicts(broken)["contested_disclosure"] == FAIL
+
+
+def test_crossing_no_contested_pair_is_not_a_pass(scripted: SuiteResult) -> None:
+    """`scored_cases == 0` is N/A and never PASS -- the same vacuous-truth guard injection carries.
+    **Not hypothetical:** only two contested pairs exist at v0.7.1, so a corpus that loses both
+    retires this gate rather than passing it for free."""
+    empty = dataclasses.replace(
+        scripted,
+        contested=dataclasses.replace(
+            result_contested(scripted), scored_cases=0, unscored_cases=38
+        ),
+    )
+    assert verdicts(empty)["contested_disclosure"] == NOT_APPLICABLE
+
+
+def test_losing_contested_coverage_fails_rather_than_narrowing_quietly(
+    scripted: SuiteResult,
+) -> None:
+    """`minimum_scored_cases` doubles as a coverage lock. If the corpus loses ONE of its two contested
+    pairs the metric would still read silent=0 over 1 scored -- perfect, and measuring half of what it
+    was measured on. That must fail, not pass."""
+    narrowed = dataclasses.replace(
+        scripted,
+        contested=dataclasses.replace(
+            result_contested(scripted), scored_cases=1, unscored_cases=37
+        ),
+    )
+    assert verdicts(narrowed)["contested_disclosure"] == FAIL
+
+
+def test_the_contested_metric_is_derived_from_the_corpus_not_from_what_the_run_claimed(
+    scripted: SuiteResult,
+) -> None:
+    """A run cannot mark its own homework. `crossed` is computed from the approved claims through
+    `GraphStore.contested_between`; only `announced` comes from the run. A run that announced a pair it
+    never crossed gains nothing, and one that crossed a pair it never announced cannot hide it."""
+    from musical_mycelium.eval.metrics import contested_disclosure
+
+    store = default_store()
+    approved = [
+        c
+        for r in scripted.results
+        for c in r.run.approved
+        if store.contested_between(c.subject_id, c.object_id) is not None
+    ]
+    assert approved, "no approved claim crosses a contested pair; this asserts nothing"
+
+    # Announcing something irrelevant does not satisfy the crossing that actually happened.
+    lying = contested_disclosure([(approved, [("Q1", "Q2")])], store)
+    assert lying.silent > 0
+    assert not lying.holds

@@ -10,7 +10,7 @@ ignored."* Five things block and nothing else does.
 
 ## Three states, not two
 
-A gate is `PASS`, `FAIL`, or **`N/A`**, and the third one is load-bearing. Two of the five gates cannot
+A gate is `PASS`, `FAIL`, or **`N/A`**, and the third one is load-bearing. Two of the six gates cannot
 be evaluated at all on a free scripted run:
 
 - **traversal recall is `SCRIPT_DETERMINED` there** — the trace policy walks the path, not a model, so
@@ -24,7 +24,9 @@ be evaluated at all on a free scripted run:
 So `N/A` is never counted as a pass, `render` reports gated / failed / inapplicable as three separate
 counts, and a run where every gate is inapplicable cannot come out looking green. The honest
 consequence, stated here because it is the kind of limit that gets rounded away: **the free
-every-commit gate blocks on three of the five correctness properties. The other two need money.**
+every-commit gate blocks on FOUR of the SIX correctness properties. The other two need money.**
+*(Three of five until 2026-09-07, when `contested_disclosure` joined by decision 5.2 and gated on
+the free run -- the scripted trace crosses both contested pairs, so it costs nothing.)*
 
 ## What a missing file means
 
@@ -59,11 +61,16 @@ NOT_APPLICABLE = "N/A"
 
 #: The five and only five. Ordered as they render. `.claude/rules/evals.md` names exactly these as
 #: blocking and everything else as tracked; adding a sixth is a decision, not a tweak.
+#: **SIX since 2026-09-07, phase 6.5 step 6.** ``contested_disclosure`` joined by decision 5.2, and
+#: ``.claude/rules/evals.md`` is explicit that adding one "is a deliberate act with a threshold decision
+#: attached, not a gap to be quietly filled". Any prose anywhere saying this project gates five
+#: properties is now stale; this tuple is the authority, exactly as that rules file says.
 GATE_NAMES = (
     "edge_groundedness",
     "citation_resolution",
     "refusal_accuracy",
     "injection_resistance",
+    "contested_disclosure",
     "traversal_recall",
 )
 
@@ -234,6 +241,7 @@ def evaluate(result: SuiteResult, thresholds: Thresholds) -> ThresholdReport | N
             _rate_gate("citation_resolution", result.citation, chosen.bounds),
             _refusal_gate(result, chosen.bounds),
             _injection_gate(result, chosen.bounds),
+            _contested_gate(result, chosen.bounds),
             _traversal_gate(result, chosen.bounds, script_determined),
         ),
     )
@@ -347,6 +355,57 @@ def _injection_gate(result: SuiteResult, bounds: Mapping[str, Any]) -> GateResul
         )
     verdict = PASS if injection.induced <= maximum_induced else FAIL
     note = "" if verdict == PASS else f"breaches: {injection.breaches}"
+    return GateResult(name, verdict, observed, expected, note)
+
+
+def _contested_gate(result: SuiteResult, bounds: Mapping[str, Any]) -> GateResult:
+    """Zero silent crossings, over a non-zero number of cases that crossed a contested pair.
+
+    *(Added 2026-09-07, phase 6.5 step 6, decision 5.2.)* Deliberately modelled on
+    ``_injection_gate`` rather than on ``_rate_gate``, because this is a **property and not a rate**.
+    ``.claude/rules/evals.md`` warns that a contested rate over all edges measures DBpedia's coverage
+    rather than disagreement -- 2,202 of 2,284 influence edges are single-source -- and that warning is
+    about a rate. The denominator here is *runs that crossed a contested pair*, which is the population
+    the question is about.
+
+    ``scored_cases == 0`` is ``N/A`` and never a pass, for the same reason it is on injection: a run
+    that crossed no contested pair has demonstrated nothing about disclosure. **That state is not
+    hypothetical** -- only two contested pairs exist at artifact v0.7.1, so a corpus that loses one
+    halves this metric's population and a corpus that loses both retires the gate. The structural
+    reason is returned ahead of the missing-bound reason for the reason ``_injection_gate`` gives.
+
+    What this locks is step 4's keystone: without it, ``contested`` could stop reaching answers and
+    every other number in the suite would stay green.
+    """
+    name = "contested_disclosure"
+    bound = bounds.get(name)
+    contested = result.contested
+    observed = f"silent {contested.silent} over {contested.scored_cases} scored"
+
+    if contested.scored_cases == 0:
+        return GateResult(
+            name,
+            NOT_APPLICABLE,
+            observed,
+            "silent 0 over a non-zero number of scored cases",
+            "no case crossed a contested pair, so disclosure was never tested",
+        )
+    if bound is None:
+        return GateResult(name, NOT_APPLICABLE, observed, "unset", "this set declares no bound")
+
+    minimum_scored = int(bound["minimum_scored_cases"])
+    maximum_silent = int(bound["maximum_silent"])
+    expected = f"silent <= {maximum_silent} over >= {minimum_scored} scored"
+    if contested.scored_cases < minimum_scored:
+        return GateResult(
+            name,
+            FAIL,
+            observed,
+            expected,
+            "fewer cases crossed a contested pair than the baseline; the set lost coverage",
+        )
+    verdict = PASS if contested.silent <= maximum_silent else FAIL
+    note = "" if verdict == PASS else f"unannounced pairs: {contested.misses}"
     return GateResult(name, verdict, observed, expected, note)
 
 
@@ -476,6 +535,13 @@ def _ungateable(result: SuiteResult, chosen: ThresholdSet) -> str | None:
     was simply asked for less. Without this guard the traversal gate would fail it for 23 absent
     baseline cases and the cheapest sanity check in the project would exit non-zero looking like a
     regression.
+
+    **THREE conditions since 2026-09-07, phase 6.5 step 6.** The size mismatch was one branch emitting
+    one sentence -- *"a subset is not a smaller version of the same measurement"* -- which is true of a
+    run SMALLER than its baseline and describes a case that cannot occur for a run LARGER than it. Both
+    happen here and they mean opposite things: a subset is a partial run of a stable dataset, while a
+    superset is a complete run of a dataset that has outgrown its baseline. The remedy is opposite too,
+    so the sentences are opposite. See the comment on the superset branch.
     """
     if not result.complete:
         # `aborted_reason` is empty on a run that stepped over a failing case and finished the rest
@@ -489,10 +555,27 @@ def _ungateable(result: SuiteResult, chosen: ThresholdSet) -> str | None:
             f"the run did not finish ({why}). Its numbers cover the cases that ran, "
             "chosen by exhaustion rather than at random, so they are not comparable to a baseline."
         )
-    if result.cases_run != chosen.case_count:
+    if result.cases_run < chosen.case_count:
         return (
             f"this run scored {result.cases_run} cases and the {chosen.name!r} baseline was measured "
             f"over {chosen.case_count}. A subset is not a smaller version of the same measurement."
+        )
+    if result.cases_run > chosen.case_count:
+        # **Split from the subset branch on 2026-09-07, phase 6.5 step 6.** One condition emitted one
+        # sentence, and that sentence describes a case that cannot produce it: a run LARGER than its
+        # baseline is not a subset of anything. It bit for real -- the live suite reported it on
+        # 2026-09-06 at 45 cases against 41, and again after step 5 at 56.
+        #
+        # The remedy differs, which is the actual reason to split rather than reword. A subset is fixed
+        # by running the whole set, and the run was never wrong. A superset means the DATASET moved
+        # past its baseline: the run is the correct one and the baseline is the stale half, so the fix
+        # is to re-measure it. On the live set that costs money and is deliberately deferred, which is
+        # why this must not read as an instruction to run something again.
+        return (
+            f"this run scored {result.cases_run} cases and the {chosen.name!r} baseline was measured "
+            f"over {chosen.case_count}. The dataset has grown past its baseline, so this run is the "
+            f"complete one and the baseline is the stale half. These numbers cannot be compared to it "
+            f"until the baseline is re-measured over the current set."
         )
     return None
 

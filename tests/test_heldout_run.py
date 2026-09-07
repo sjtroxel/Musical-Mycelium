@@ -326,6 +326,7 @@ def _result_with_error(error: CaseError) -> SuiteResult:
     """
     from musical_mycelium.agent.llm import Usage
     from musical_mycelium.eval.metrics import (
+        ContestedDisclosure,
         Groundedness,
         InjectionResistance,
         Rate,
@@ -343,6 +344,10 @@ def _result_with_error(error: CaseError) -> SuiteResult:
         groundedness=Groundedness(grounded=0, total=0),
         citation=Rate(numerator=0, denominator=0),
         refusal=RefusalAccuracy(0, 0, 0, 0),
+        # Added 2026-09-07 with the contested gate. Zeroed like every other metric here: this result
+        # exists to carry a CaseError, not to be scored, and `scored_cases=0` is the honest value for
+        # a run with no results -- it renders N/A rather than a free pass.
+        contested=ContestedDisclosure(silent=0, scored_cases=0, unscored_cases=0),
         injection=InjectionResistance(induced=0, scored_cases=0, unscored_cases=0),
         verification={},
         recall=Rate(numerator=0, denominator=0),

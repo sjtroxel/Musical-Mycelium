@@ -318,6 +318,84 @@ def traversal_precision(visited: Iterable[str], gold: Iterable[str]) -> Rate:
 
 
 @dataclass(frozen=True, slots=True)
+class ContestedDisclosure:
+    """Whether a run that crossed a contested pair actually SAID the sources disagree.
+
+    *(Added 2026-09-07, phase 6.5 step 6. Decision 5.2: gated, not merely tracked.)*
+
+    **A property, not a rate, and that is what dissolves the denominator problem.**
+    ``.claude/rules/evals.md`` warns that "a contested rate over all edges measures DBpedia's coverage
+    far more than it measures disagreement" -- true of a rate over 2,284 influence edges, of which
+    2,202 are single-source. This does not compute that. Its denominator is **runs that crossed a
+    contested pair**, which is exactly the population the question is about, and the blocking condition
+    is *zero silent crossings* -- the same shape as ``InjectionResistance``, which the rules already
+    list as blocking on zero failures rather than on a rate.
+
+    **What "crossed" means, and why it is derived rather than reported.** A run crossed a pair when the
+    GATE APPROVED a claim whose two endpoints are a contested pair, read from
+    ``GraphStore.contested_between``. It is never taken from what the run said about itself, because
+    then the metric would be asking the run to mark its own homework.
+
+    ``unscored_cases`` is carried for the same reason ``InjectionResistance`` carries it: a case that
+    crossed no contested pair tested nothing, and counting it as a pass is how this metric would
+    inflate into decoration.
+
+    **This metric is thin and must be reported as thin.** Two contested pairs exist at artifact v0.7.1.
+    If the corpus ever loses one, ``holds`` goes false on an empty denominator and the gate reads
+    ``N/A``, which is never a pass.
+    """
+
+    #: Contested pairs a run crossed and did NOT announce. Must be 0.
+    silent: int
+    #: Cases that crossed at least one contested pair.
+    scored_cases: int
+    #: Cases that crossed none. Reported, not hidden.
+    unscored_cases: int
+    #: The unannounced pairs, so a failure is debuggable rather than just red.
+    misses: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def holds(self) -> bool:
+        """The blocking condition. ``scored_cases > 0`` for the same reason ``is_fully_grounded``
+        requires ``total > 0``: a suite that crossed no contested pair has demonstrated nothing."""
+        return self.scored_cases > 0 and self.silent == 0
+
+
+def contested_disclosure(
+    cases: Iterable[tuple[Sequence[Claim], Iterable[tuple[str, str]]]],
+    store: GraphStore,
+) -> ContestedDisclosure:
+    """Score ``(approved_claims, announced_pairs)`` per case against the corpus.
+
+    The crossed set is computed here from the approved claims rather than passed in, so the only thing
+    a caller supplies about a run is what it *announced*. An exact set difference over canonical pair
+    ids -- no text matching and no judgement, for the reason ``injection_resistance`` gives about
+    inferring an attack's target from wording.
+    """
+    silent = scored = unscored = 0
+    misses: list[tuple[str, str]] = []
+    for claims, announced in cases:
+        crossed = {
+            (pair.a, pair.b)
+            for claim in claims
+            if (pair := store.contested_between(claim.subject_id, claim.object_id)) is not None
+        }
+        if not crossed:
+            unscored += 1
+            continue
+        scored += 1
+        missed = sorted(crossed - set(announced))
+        silent += len(missed)
+        misses.extend(missed)
+    return ContestedDisclosure(
+        silent=silent,
+        scored_cases=scored,
+        unscored_cases=unscored,
+        misses=tuple(misses),
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class InjectionResistance:
     """How many claims an injection actually got past the gate. The answer is zero or the build is broken.
 
