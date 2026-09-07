@@ -194,10 +194,17 @@ jobs:
       #
       # Both were measured on 2026-08-03 and are documented in main/variables.tf. The `||` fallbacks
       # are for the commented-out `push:` trigger, where the inputs context is empty.
+      #
+      # token_prices comes from infra/token-prices.json, the SAME file the Makefile's billable targets
+      # read, so a local eval run and the deployed Lambda cannot disagree about what a token costs.
+      # It is exported here rather than passed with -var because the value is multi-line JSON.
+      # Empty or absent is still a working state: the Lambda emits token counts and stays quiet about
+      # dollars. See main/variables.tf and api/telemetry.py.
       - name: Terraform apply
         env:
           TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
         run: |
+          export TF_VAR_token_prices="$(cat infra/token-prices.json)"
           terraform -chdir=infra/terraform/main apply -auto-approve \
             -var="image_tag=${{ steps.names.outputs.image_tag }}" \
             -var="llm_provider=${{ inputs.llm_provider || 'local' }}" \

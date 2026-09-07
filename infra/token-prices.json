@@ -1,0 +1,11 @@
+{
+  "_provenance": "On-demand list prices in USD per MILLION tokens, us-east-1, looked up 2026-09-07 at https://aws.amazon.com/bedrock/pricing/. Keys beginning with an underscore are metadata and are ignored by api/telemetry.py:load_prices; see tests/test_token_prices.py, which locks that. These are LIST prices and a deliberate simplification: batch inference is 50% off and prompt caching discounts cached input, neither of which this project uses today, so a measured dollar figure here is an upper bound rather than an estimate. Cross-region inference adds NOTHING -- AWS bills an inference profile at the source region's price, so the us. profile below costs exactly the us-east-1 rate. Secondary sources claiming a ~10% cross-region surcharge are wrong; the AWS docs are explicit. Re-look these up rather than trusting this line: a price is an interpretation with an expiry date.",
+  "us.anthropic.claude-haiku-4-5-20251001-v1:0": {
+    "input": 1.0,
+    "output": 5.0
+  },
+  "amazon.nova-pro-v1:0": {
+    "input": 0.8,
+    "output": 3.2
+  }
+}

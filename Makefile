@@ -13,6 +13,21 @@
 UV := $(shell command -v uv 2>/dev/null)
 NPM := $(shell command -v npm 2>/dev/null)
 
+# --- token prices -------------------------------------------------------------
+# ONE source of truth for what a token costs, read by every billable target below AND by
+# `.github/workflows/deploy.yml`, which passes the same file to Terraform as TF_VAR_token_prices.
+# Two copies of a price table is how the two surfaces come to disagree without anyone noticing.
+#
+# It is a FILE rather than a value here because `api/telemetry.py` is emphatic that a price baked
+# into source is wrong the moment a vendor changes it, and a wrong price does not fail -- it produces
+# a plausible number that every downstream decision then trusts. A file carries its own provenance
+# and its own date; a Makefile variable would carry neither.
+#
+# `"$$(cat ...)"` is safe with JSON: command substitution inside double quotes is not re-parsed, so
+# the `"` characters in the file survive intact. Unquoted, it would word-split on every space.
+PRICES := infra/token-prices.json
+TOKEN_PRICES = MYCELIUM_TOKEN_PRICES="$$(cat $(PRICES))"
+
 # --- deployment settings -----------------------------------------------------
 # Every value here is also a Terraform variable default. They are repeated rather than read out of
 # Terraform because these targets have to work before any state exists.
@@ -283,7 +298,7 @@ eval: ## Tier 1 over the gold set, scripted (free, no AWS)
 # Check one behaviour, wherever its case sits:   make eval-live ARGS='--case-ids gold_v0_1_021'
 # Neither form is gated -- a subset is not a smaller version of the 41-case baseline.
 eval-live: ## SPENDS MONEY. Tier 1 through Bedrock, behind an explicit confirmation
-	uv run python -m musical_mycelium.eval.live $(ARGS)
+	$(TOKEN_PRICES) uv run python -m musical_mycelium.eval.live $(ARGS)
 
 # FREE. Reads result files that eval-live already wrote and reports how much the suite moves against
 # itself. Phase 4 step 6, and it runs BEFORE step 5 sets thresholds -- two runs on 2026-08-16 differed
@@ -319,7 +334,7 @@ eval-label: ## FREE. Hand-label the judge pool, one item at a time
 # refuses labels whose digest no longer matches the pool -- all three BEFORE the spend prompt, so a
 # misconfigured judge never costs anything. Thirty items is one request each: small.
 eval-judge: ## SPENDS MONEY. Run the validated judge over the labeled pool
-	uv run python -m musical_mycelium.eval.judge $(ARGS)
+	$(TOKEN_PRICES) uv run python -m musical_mycelium.eval.judge $(ARGS)
 
 # SPENDS MONEY. Phase 4 step 8. The same judge, pointed at a SAMPLE OF A RELEASE CANDIDATE rather than
 # at the labeled pool -- so the number it produces is about the AGENT, where eval-judge's number is
@@ -339,7 +354,7 @@ eval-judge: ## SPENDS MONEY. Run the validated judge over the labeled pool
 #   make eval-tier2 ARGS='--size 25'                         a larger sample if the run supports it
 #   make eval-tier2 ARGS='--transcript src/.../transcripts/A.json'
 eval-tier2: ## SPENDS MONEY. Tier 2 judged over a release candidate (tracked, never blocking)
-	uv run python -m musical_mycelium.eval.tier2 $(ARGS)
+	$(TOKEN_PRICES) uv run python -m musical_mycelium.eval.tier2 $(ARGS)
 
 # --- the sealed held-out set -------------------------------------------------
 # .claude/rules/evals.md requires a held-out set "never looked at during development". The threat is the
@@ -392,8 +407,11 @@ heldout-check: ## Validate the sealed set against the pinned corpus (needs the k
 #
 # If a number here comes back bad and is not diagnosable from ids and error types alone, the correct
 # outcome is to report it undiagnosed. Opening the set to debug it is what the seal exists to prevent.
+# The price wiring here reaches the SPEND ESTIMATE and the cost line ONLY. It reads no case, prints
+# no case, and changes nothing about what this target may look at. `.claude/rules/heldout-set.md`
+# still governs in full, and the default is still DO NOT RUN.
 eval-heldout: ## SPENDS MONEY. The sealed held-out set, run once, reported without being read
-	uv run python -m musical_mycelium.eval.heldout_run --key "$(HELDOUT_KEY)" $(ARGS)
+	$(TOKEN_PRICES) uv run python -m musical_mycelium.eval.heldout_run --key "$(HELDOUT_KEY)" $(ARGS)
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .mypy_cache .ruff_cache dist build .coverage
@@ -418,7 +436,7 @@ dev: ## Run the API locally on :8000 (local stub LLM — no AWS, and see the cav
 # credentials. This is what the deployed site runs, and it is the only local mode whose ANSWERS are
 # representative.
 dev-live: ## SPENDS MONEY. Run the API locally on :8000 against Bedrock, like production
-	MYCELIUM_LLM_PROVIDER=bedrock \
+	MYCELIUM_LLM_PROVIDER=bedrock $(TOKEN_PRICES) \
 		uv run uvicorn musical_mycelium.api.app:app --reload --port 8000
 	@exit 1
 

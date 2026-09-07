@@ -126,6 +126,15 @@ variable "token_prices" {
     environment block had no such key at all, which meant a Bedrock redeploy would have produced missing
     dollar metrics that read as a bug. Look the real numbers up when setting it. Do not copy them from
     this description, which is a format illustration and nothing else.
+
+    **SET IN CI SINCE 2026-09-07, phase 6.5 step 0. The default is still empty and the paragraph above
+    is still true of it — what changed is that a deploy no longer takes the default.**
+    `.github/workflows/deploy.yml` exports TF_VAR_token_prices from `infra/token-prices.json`, which is
+    the same file the Makefile's billable targets read, so a local eval run and the deployed Lambda
+    cannot disagree about what a token costs. The numbers there were looked up on 2026-09-07 and carry
+    their own provenance and date; `tests/test_token_prices.py` locks that the table covers every model
+    this project actually invokes. A `terraform apply` run by hand, without that export, still gets the
+    empty default and still deploys a working function.
   EOT
   type        = string
   default     = ""

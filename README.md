@@ -24,12 +24,16 @@ Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 1189 Python tests and 146 frontend tests, plus 14 that spend real money and are
+generated. 1330 Python tests and 159 frontend tests, plus 14 that spend real money and are
 deselected by default.
 
-**The prose comes from a real model on Bedrock as of 2026-08-24** — Claude Haiku 4.5 on a cross-region
-inference profile, deployed by CI with no long-lived AWS keys. A live query streams first byte in ~0.24s
-against a ~6.4s total, and reports its own token usage per role — traversal and synthesis counted
+**The prose comes from a real model on Bedrock** — Claude Haiku 4.5 on a cross-region inference profile,
+deployed by CI with no long-lived AWS keys, and re-verified against the deployed URL on **2026-09-06** by
+a real query that streamed a gate-approved claim and its narration. Two measurements that day: first byte
+in **0.040s** against a **7.0s** total, and **0.059s** against **5.1s**. *(This read "~0.24s against a
+~6.4s total" from 2026-08-24. Two samples are not a distribution and the difference is unexplained — the
+corpus tripled between those dates — so read these as two observations, not as a speedup.)* It reports
+its own token usage per role — traversal and synthesis counted
 separately, never summed, because two roles may run on differently-priced models and one combined number
 cannot be turned into dollars by anyone downstream. Per-query cost lands in CloudWatch from real traffic.
 

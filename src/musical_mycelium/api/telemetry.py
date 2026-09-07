@@ -97,6 +97,14 @@ def load_prices(raw: str | None = None) -> dict[str, Price]:
 
     prices: dict[str, Price] = {}
     for model_id, entry in parsed.items():
+        # **Keys beginning with an underscore are metadata and are skipped deliberately.**
+        # `infra/token-prices.json` carries its own provenance -- where the numbers came from and the
+        # date they were looked up -- in a `_provenance` key, because JSON has no comments and a price
+        # separated from its date goes stale invisibly. That worked before this branch existed, by
+        # falling through the `isinstance` check below; it now works because the format says so.
+        # `tests/test_token_prices.py` locks it.
+        if model_id.startswith("_"):
+            continue
         if not isinstance(entry, dict):
             continue
         try:
