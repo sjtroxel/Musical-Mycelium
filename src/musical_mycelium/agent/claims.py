@@ -26,7 +26,13 @@ pairs are contested at artifact v0.7.1. Decision A1 is closed by that arrival, n
 still not a claim, and that has not changed for a different reason**: contested is a property of a PAIR,
 derived in ``graph.corroboration``, never stamped on an edge and never proposed by the model. A
 ``contested`` field on a ``Claim`` would still be the wrong shape — and today nothing in this package
-reads corroboration at all, so no answer can express a disagreement the corpus holds. That gap is phase
+read corroboration at all, so no answer could express a disagreement the corpus holds. **CLOSED
+2026-09-07, phase 6.5 step 4:** the loop emits a ``Contested`` event when a traversal crosses a pair
+two sources disagree about, read through ``GraphStore.contested_between``. It is still **not a claim**
+and ``checks_disagree`` below is still declared rather than implemented, for the reason above -- what
+changed is that the response can now carry the disagreement beside the claims. It is also deliberately
+absent from the prose: ``synthesize`` takes exactly one claim-bearing parameter, and handing it a
+disagreement would let prose assert a relationship the gate never approved. That gap was phase
 6.5's keystone, not a defect in this module.
 
 So it is declared rather than implemented, in ``UNREACHABLE`` below, with the precondition that would

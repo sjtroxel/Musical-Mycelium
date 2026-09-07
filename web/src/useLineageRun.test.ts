@@ -26,6 +26,7 @@ function blank(): StepState {
     path: null,
     toolNodeIds: [],
     refusal: null,
+    contested: [],
     done: null,
     error: null,
   };

@@ -31,6 +31,7 @@ from musical_mycelium.agent.llm import ROLE_SYNTHESIS, ROLE_TRAVERSAL, build_llm
 from musical_mycelium.agent.loop import (
     ClaimApproved,
     ClaimRejected,
+    Contested,
     Done,
     Event,
     PathWalked,
@@ -66,6 +67,10 @@ EVENT_NAMES: dict[type, str] = {
     ClaimApproved: "claim",
     ClaimRejected: "rejected",
     PathWalked: "path",
+    # One line, exactly as `plan` cost one line at phase 3 step 3, and for the same reason: `render` is
+    # generic over `asdict`, which walks the nested `ContestedPair` and its two `Edge`s unaided. A frame
+    # needing a handler here would mean `api` had grown logic.
+    Contested: "contested",
     Token: "token",
     Refused: "refused",
     Done: "done",

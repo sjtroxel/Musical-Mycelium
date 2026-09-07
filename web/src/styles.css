@@ -38,6 +38,26 @@
   --accent: #ff5cae;
   --accent-soft: #2a1526;
 
+  /* A SECOND accent, for disagreement between sources. Added 2026-09-07, phase 6.5 step 4, after the
+     first attempt reused `--accent-soft` and sjtroxel reported the block was "hardly noticeable" --
+     correctly: it was the same rose as every claim row, so it read as more of the same.
+     
+     Electric cyan rather than the lavender first considered, because the chrome is ALREADY
+     violet-tinted (`--rule`, `--ground`) and a lavender block would have blended into it the same way
+     the rose blended into the claims. Near-complementary to `--accent`, so the two never read as
+     variants of one idea.
+     
+     **Not a warning colour, and that is the whole point.** Two cited sources disagreeing is among the
+     more interesting things this corpus holds, not a defect in the answer. Amber or red would tell a
+     reader the answer is degraded — the same argument phase 5 used to give a refusal no error chrome.
+     
+     Measured against `--contested-soft`: `--ink` 14.8:1, `--ink-soft` 8.1:1, `--contested` 10.1:1.
+     The fill itself is 1.08:1 against `--card`, which is true of `--accent-soft` too — on this ground
+     no dark fill separates by luminance, so the SIGNAL is the rule and the source names at full
+     strength, not the background. */
+  --contested: #5cd8ff;
+  --contested-soft: #0d2028;
+
   --measure: 34rem;
   --radius: 10px;
 }
@@ -538,6 +558,69 @@ code {
   margin: 1rem 0 0;
   font-size: 0.85rem;
   color: var(--ink-faint);
+}
+
+/* --- contested ---
+ *
+ * Deliberately NOT a warning colour. A contested pair is not an error, a risk, or a lower-quality
+ * claim -- it is two cited sources that disagree, which is one of the more interesting things this
+ * corpus holds. Amber or red would tell a reader the answer is degraded, and phase 5's decision that a
+ * refusal shares the answer's styling for exactly this reason applies here too. Same surface as a
+ * claim, a rule down the side to group the two directions, no icon.
+ *
+ * The two directions carry IDENTICAL styling. Making one heavier would pick a winner in CSS. */
+
+.contested {
+  margin-top: 1.25rem;
+}
+
+.contested__heading {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--contested);
+  margin: 0 0 0.6rem;
+  font-weight: 600;
+}
+
+.contested__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.contested__pair {
+  padding: 0.7rem 0.85rem;
+  background: var(--contested-soft);
+  border-radius: var(--radius);
+  /* Full-strength accent. This is the thing that carries the signal -- see the token comment. */
+  border-left: 3px solid var(--contested);
+}
+
+.contested__direction {
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
+}
+
+.contested__node {
+  font-weight: 600;
+}
+
+/* Both source names, identically. Styling one more heavily than the other would pick a winner in CSS,
+   and the corpus records a disagreement rather than a verdict. */
+.contested__source {
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--contested);
+}
+
+.contested__note {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
 }
 
 /* --- claims --- */

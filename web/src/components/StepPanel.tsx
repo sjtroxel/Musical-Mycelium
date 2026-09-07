@@ -5,6 +5,7 @@ import type { StaticGraph } from "../graph/staticGraph";
 import { buildRenderGraph } from "../graph/subgraph";
 import type { StepState } from "../useLineageRun";
 import { ClaimList } from "./ClaimList";
+import { ContestedNotice } from "./ContestedNotice";
 import { NodeInspector } from "./NodeInspector";
 
 /**
@@ -235,6 +236,7 @@ export function StepPanel({
         </div>
       )}
 
+      <ContestedNotice contested={step.contested} />
       <ClaimList claims={step.claims} labels={labels} />
 
       {step.rejectionCount > 0 && (

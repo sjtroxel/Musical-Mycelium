@@ -47,6 +47,7 @@ function fold(frames: Frame[]): StepState {
     path: null,
     toolNodeIds: [],
     refusal: null,
+    contested: [],
     done: null,
     error: null,
   };
@@ -120,5 +121,52 @@ describe("a real refusal capture", () => {
     expect(state.phase).toBe("settled");
     expect(state.done?.stop_reason).toBe("complete");
     expect(state.error).toBeNull();
+  });
+});
+
+describe("a real contested capture", () => {
+  const raw = fixture("electropop-contested.sse");
+
+  it("carries the disagreement as its own frame, not as a field on a claim", () => {
+    const state = fold(replay(raw, 29));
+    expect(state.contested).toHaveLength(1);
+    // `contested` is a property of a PAIR. A claim that grew the marker would seat it beside
+    // `verification`, which says how strongly ONE source was checked — the collapse this repo has
+    // already corrected three files for.
+    for (const claim of state.claims) {
+      expect(claim).not.toHaveProperty("contested");
+    }
+  });
+
+  it("names both directions and both sources and picks no winner", () => {
+    const { contested } = fold(replay(raw, 29));
+    expect(contested).toHaveLength(1);
+    const pair = contested[0]!;
+    const sources = [pair.pair.a_from_b.source, pair.pair.b_from_a.source].sort();
+    expect(sources).toEqual(["dbpedia", "wikidata"]);
+    expect(pair.pair.a_from_b.subject_id).toBe(pair.pair.b_from_a.object_id);
+    expect(pair.pair.b_from_a.subject_id).toBe(pair.pair.a_from_b.object_id);
+  });
+
+  it("arrives before the first token, so it can be read while the prose streams", () => {
+    const frames = replay(raw, 29);
+    const contestedAt = frames.findIndex((f) => f.type === "contested");
+    const firstTokenAt = frames.findIndex((f) => f.type === "token");
+    expect(contestedAt).toBeGreaterThan(-1);
+    expect(contestedAt).toBeLessThan(firstTokenAt);
+  });
+
+  it("is absent from the prose, which the model wrote from approved claims alone", () => {
+    const state = fold(replay(raw, 29));
+    expect(state.prose.length).toBeGreaterThan(0);
+    for (const word of ["disagree", "contested", "dbpedia", "wikidata"]) {
+      expect(state.prose.toLowerCase()).not.toContain(word);
+    }
+  });
+
+  it("still answers — a disagreement is not a refusal", () => {
+    const state = fold(replay(raw, 29));
+    expect(state.outcome).toBe("answer");
+    expect(state.claims.length).toBeGreaterThan(0);
   });
 });

@@ -146,6 +146,53 @@ export interface PathFrame {
   chain_labels: string[];
 }
 
+/**
+ * One edge of a contested pair, as the `contested` frame carries it.
+ *
+ * This is an edge row, not a claim. It has a `source` (which corpus asserted it) AND a `verification`
+ * (how strongly that ONE source was checked) and the two say different things — see `Claim.verification`,
+ * which spells out why collapsing them states the opposite of the truth.
+ */
+export interface ContestedEdge {
+  subject_id: string;
+  predicate: string;
+  object_id: string;
+  source: string;
+  source_id: string;
+  retrieved_at: string;
+  prose_tier: string;
+  verification: Verification;
+  corroboration: string | null;
+}
+
+/**
+ * Two DIFFERENT sources asserting opposite directions for one pair the traversal crossed.
+ *
+ * **It does not mean a reciprocal pair exists.** At artifact v0.7.1 the corpus holds 6 reciprocal pairs
+ * and only **2** are contested; the other four are a single source describing mutual influence, which
+ * between genres is frequently a real claim. Rendering "reciprocal" as "contested" overcounts by 3x and
+ * says something false about where the corpus's information came from.
+ *
+ * **Both directions and both sources ride here, and no winner is picked** — the corpus records a
+ * disagreement, not a verdict. A UI that shows one side, or that resolves the pair into a single
+ * "disputed" badge next to a verification tier, has thrown away the distinction the frame exists for.
+ *
+ * It arrives **before the first `token`**, so it can be shown while the narration is still streaming,
+ * and it is deliberately absent from the prose: `loop.py:Contested` explains why letting a synthesis
+ * model see a disagreement would reintroduce the claims-first leak.
+ */
+export interface ContestedFrame {
+  type: "contested";
+  pair: {
+    a: string;
+    b: string;
+    a_from_b: ContestedEdge;
+    b_from_a: ContestedEdge;
+  };
+  a_label: string;
+  b_label: string;
+}
+
 export interface TokenFrame {
   type: "token";
   text: string;
@@ -176,6 +223,7 @@ export interface DoneFrame {
 }
 
 export type Frame =
+  | ContestedFrame
   | PlanFrame
   | ToolFrame
   | ClaimFrame

@@ -162,8 +162,9 @@ Three things this section predicted correctly and one it did not:
   > artifact v0.7.0, so **the corpus now holds disagreement: 82 corroborated edges and 2 contested
   > pairs.** These rows are still **not** shippable as chips, for a different reason than before:
   > `contested` is derived in `graph/`, served by the corpus summary and drawn in the coverage panel as a
-  > **corpus-level statistic**, and **nothing in `agent/` reads it**. A chip is a query, a query produces
-  > an answer, and no answer can say the sources disagree. Closing that is phase 6.5's keystone; until it
+  > **corpus-level statistic**, and **nothing in `agent/` read it**. A chip is a query, a query produces
+  > an answer, and no answer could say the sources disagree. **Closed 2026-09-07, phase 6.5 step 4** — an
+  > answer that crosses a contested pair now emits a `contested` event. Until it
   > lands, these rows stay blocked and the reason recorded here is the accurate one.
 - **U2 is not on the chip row.** The paragraph above says it "answers with six gated claims"; the
   artifact holds **nine** incoming edges for `Q396` today. Not a contradiction — claims are what survives
@@ -418,7 +419,8 @@ being silently absent.
 is on every claim, and the two unreachable states are declared and test-locked. What was owed was a
 second source in phase 6 — **delivered 2026-09-04, DBpedia, artifact v0.7.0**. It was a corpus job, as
 predicted, and it left one contract question behind after all: **nothing on the `Claim` or in the answer
-stream carries `contested`**, so the corpus can now hold a disagreement that no answer can express. That
+stream carried `contested`**, so the corpus could hold a disagreement that no answer could express.
+**The stream carries it as of 2026-09-07, phase 6.5 step 4**, as an event rather than a claim field. That
 gap is phase 6.5's keystone.)*
 
 `Claim(subject_id, predicate, object_id, source_ids, verification, span)`. The pipeline is claims first,

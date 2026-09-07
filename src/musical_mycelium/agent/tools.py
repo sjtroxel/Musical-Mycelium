@@ -578,28 +578,42 @@ class ResolveSource:
 
         # DBpedia arrived at v0.7.0. A resource URI names an article rather than a QID, so unlike a
         # statement URI it cannot be *parsed* for the entity it belongs to -- resolving one needs a
-        # reverse lookup from resource to node, and `GraphStore` exposes no way to scan nodes.
+        # reverse lookup from resource to node.
         #
-        # **Reported as unresolved-by-this-tool rather than resolved-on-faith.** The gate DOES verify
-        # these exactly, against `Node.dbpedia_resource`, so a DBpedia citation on an approved claim is
-        # checked; what is missing is only this tool's ability to re-check it for a reader. Saying
-        # `resolvable: True` here without performing the check would make the word mean something
-        # weaker for DBpedia than for Wikidata, which is the failure this tool exists to prevent.
-        # Widening `GraphStore` for it is a real design change and belongs in a step that owns the
-        # seam -- recorded in KNOWN-GAPS, step 4.
+        # **RESOLVED 2026-09-07, phase 6.5 step 4.** From v0.7.0 until today this branch returned
+        # `resolvable: False` with the reason "this tool cannot verify the alignment", which was honest
+        # and was a weaker guarantee for half the corpus than for the other half -- 624 of 1,479 nodes
+        # carry a DBpedia resource. `GraphStore.node_by_resource` (step 1) is the lookup that was
+        # missing; the check now performed here is the same one `claims.resolve_sources` runs before
+        # approving, against `Node.dbpedia_resource`, so "resolvable" finally means one thing across
+        # both sources rather than two things depending on which source a claim happened to cite.
         if source_id.startswith(DBPEDIA_RESOURCE_PREFIX):
+            # CC BY-SA 3.0 requires attribution and a link back; DATA-LICENSES.md is the full
+            # statement. Carried on both outcomes -- a URI that resolves to nothing here is still a
+            # DBpedia URI, and the attribution is not conditional on the lookup succeeding.
+            node = self.store.node_by_resource(source_id)
+            if node is None:
+                return ToolResult(
+                    content={
+                        "source_id": source_id,
+                        "resolvable": False,
+                        "url": source_id,
+                        "license": "CC BY-SA 3.0 (DBpedia)",
+                        "reason": (
+                            "no node in this graph is aligned to that DBpedia resource, so it is not "
+                            "a citation for anything here"
+                        ),
+                    }
+                )
             return ToolResult(
                 content={
                     "source_id": source_id,
-                    "resolvable": False,
+                    "resolvable": True,
+                    "entity_id": node.id,
+                    "label": node.label,
+                    "kind": node.kind,
                     "url": source_id,
-                    # CC BY-SA 3.0 requires attribution and a link back; DATA-LICENSES.md is the
-                    # full statement. The link is given even though the check could not be run.
                     "license": "CC BY-SA 3.0 (DBpedia)",
-                    "reason": (
-                        "a DBpedia resource URI names an article, not an entity id; this tool cannot "
-                        "verify the alignment, though the gate did before approving the claim"
-                    ),
                 }
             )
 

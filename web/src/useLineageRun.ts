@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { nodeIdsInArguments } from "./graph/subgraph";
 import { streamLineage } from "./stream";
-import type { Claim, CorpusSummary, DoneFrame, Frame, PathFrame, RefusedFrame } from "./types";
+import type {
+  Claim,
+  ContestedFrame,
+  CorpusSummary,
+  DoneFrame,
+  Frame,
+  PathFrame,
+  RefusedFrame,
+} from "./types";
 
 /**
  * One query's worth of state, built up frame by frame.
@@ -30,6 +38,15 @@ export interface StepState {
    */
   toolNodeIds: string[];
   refusal: RefusedFrame | null;
+  /**
+   * Pairs this run crossed where two different sources disagree about the direction of influence.
+   *
+   * A list rather than a flag: one answer can cross more than one, and a count of disagreements is a
+   * different thing from "this answer is disputed". Empty is the ordinary case — 2,202 of 2,284
+   * influence edges are single-source, so the corpus can only surface disagreement where DBpedia has
+   * an opinion at all.
+   */
+  contested: ContestedFrame[];
   done: DoneFrame | null;
   error: string | null;
 }
@@ -49,6 +66,7 @@ function emptyStep(query: string): StepState {
     path: null,
     toolNodeIds: [],
     refusal: null,
+    contested: [],
     done: null,
     error: null,
   };
@@ -65,6 +83,11 @@ export function applyFrame(step: StepState, frame: Frame): StepState {
       return { ...step, prose: step.prose + frame.text };
     case "path":
       return { ...step, path: frame };
+    case "contested":
+      // Appended at frame time rather than folded into `done`, for the reason the `refused` case below
+      // gives: the frame arrives before the first token, so the panel can show the disagreement while
+      // the narration is still streaming instead of after the reader has finished it.
+      return { ...step, contested: [...step.contested, frame] };
     case "refused":
       // Outcome is set the moment the frame arrives rather than at `done`, so the panel can commit to
       // the refusal presentation without a flash of empty answer.

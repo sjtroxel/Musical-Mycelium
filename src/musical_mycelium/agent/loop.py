@@ -62,6 +62,7 @@ from musical_mycelium.agent.llm import (
 )
 from musical_mycelium.agent.plan import Plan, parse_plan, planning_prompt
 from musical_mycelium.agent.tools import ToolRegistry
+from musical_mycelium.graph.corroboration import ContestedPair
 from musical_mycelium.graph.memory import resolve_exact
 from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
@@ -258,6 +259,40 @@ class PathWalked:
 
 
 @dataclass(frozen=True, slots=True)
+class Contested:
+    """Two sources assert opposite directions for a pair this traversal crossed. **Not a claim.**
+
+    *(Added 2026-09-07, phase 6.5 step 4 — the keystone. Decision 5.1: a distinct event.)*
+
+    **Why this is an event and not a field on ``Claim``.** ``contested`` is a property of a **pair**,
+    derived in ``graph.corroboration`` over the edge set. A contested pair is two edges pointing
+    opposite ways; a traversal walks one of them, so stamping the marker on the approved claim would
+    make that claim assert something about an edge which is not in the answer. It would also seat
+    ``contested`` beside ``verification`` in one row -- the collapse this repo has already corrected
+    three files for, from the other direction. ``agent/claims.py`` says a ``contested`` field on a
+    ``Claim`` "would still be the wrong shape", and it is still right.
+
+    **Why this never reaches prose, which is the part that looks like a gap and is not.**
+    ``synthesize`` takes exactly one claim-bearing parameter and its docstring is explicit that a
+    change needing another "is reintroducing the leak". Handing the synthesis model a disagreement
+    would let prose assert a relationship the gate never approved as a claim, which is one-way door 1.
+    So the disagreement rides beside the narration rather than inside it: a pair-level caveat belongs
+    next to the claims, not woven into a sentence about them. The client renders it; the model never
+    sees it.
+
+    **It names both directions and both sources and picks no winner**, because the corpus records a
+    disagreement and not a verdict. ``ContestedPair`` carries both edges whole, so nothing here has to
+    choose which to show. ``checks_disagree`` stays declared in ``agent/claims.py:UNREACHABLE`` and is
+    not made reachable by this event: the model still cannot propose a disagreement, it can only be
+    told that the graph holds one.
+    """
+
+    pair: ContestedPair
+    a_label: str
+    b_label: str
+
+
+@dataclass(frozen=True, slots=True)
 class Token:
     text: str
 
@@ -302,7 +337,17 @@ class Done:
     stop_reason: str = STOP_COMPLETE
 
 
-Event = Planned | ToolCalled | ClaimApproved | ClaimRejected | PathWalked | Token | Refused | Done
+Event = (
+    Planned
+    | ToolCalled
+    | ClaimApproved
+    | ClaimRejected
+    | PathWalked
+    | Contested
+    | Token
+    | Refused
+    | Done
+)
 
 
 # --- the approved claim set: the only thing synthesis is allowed to see ------------------------------
@@ -819,6 +864,24 @@ def run(
         chain=approved_chain,
         chain_labels=tuple(labels[node_id] for node_id in approved_chain),
     )
+
+    # **Before any prose token, and after the gate.** Before, so a reader sees the disagreement while
+    # the narration is still arriving rather than after they have finished reading it -- the same
+    # reasoning `web/src/useLineageRun.ts` gives for committing a refusal at frame time. After, because
+    # only an approved claim can put a pair in the answer at all: a pair the gate rejected is not
+    # something this run crossed, and announcing a disagreement about it would be asserting an edge the
+    # gate refused.
+    #
+    # Deduplicated by canonical pair. Both directions of a contested pair can be approved in one run --
+    # 6 reciprocal pairs exist at v0.7.1 -- and telling a reader twice that two sources disagree would
+    # read as two disagreements.
+    announced: set[tuple[str, str]] = set()
+    for claim in decision.approved:
+        pair = store.contested_between(claim.subject_id, claim.object_id)
+        if pair is None or (pair.a, pair.b) in announced:
+            continue
+        announced.add((pair.a, pair.b))
+        yield Contested(pair=pair, a_label=_label(store, pair.a), b_label=_label(store, pair.b))
 
     if not decision.approved:
         # Axis-neutral wording. These strings said "genre" until the artist axis landed at v0.4.0, at

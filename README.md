@@ -57,7 +57,10 @@ Two things are deliberately not done, and saying so is the point of this section
   fields carry this and must never be collapsed: `verification` says **how strongly one source was
   checked**, `corroboration` says **whether a second source agrees**. Reading a verification tier as
   corroboration is still reading the opposite of the truth.
-- **Disagreement is a corpus-level statistic and is not yet something an answer can say.** The contested
+- **Disagreement reaches an answer as of 2026-09-07 (phase 6.5 step 4).** When a traversal crosses a
+  pair two sources disagree about, the response carries a `contested` event naming both directions and
+  both sources and picking no winner, and the page shows it beside the claims. It is **not** a claim and
+  it is **not** in the prose, because prose is generated from approved claims alone. The contested
   pairs are derived in `graph/`, served by the corpus summary and shown in the coverage panel. **The
   agent does not read them, no answer will tell you a lineage is disputed, and no eval case exercises
   it.** That is the honest state after phase 6 and it is scheduled work, not a claim in waiting.

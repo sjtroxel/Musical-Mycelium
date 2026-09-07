@@ -277,7 +277,10 @@ is a different thing from having been wrong. **82 of 2,284 influence edges now c
 2 pairs are contested** — two different sources asserting opposite directions.
 
 **What is still missing is the half that reaches a user.** `contested` is derived in `graph/`, served by
-the corpus summary and drawn in the coverage panel as a **corpus-level statistic**. The agent does not
+the corpus summary and drawn in the coverage panel as a **corpus-level statistic**. *(Amended
+2026-09-07, phase 6.5 step 4: an ANSWER can now say it too — a `contested` frame arrives before the
+first prose token and `ContestedNotice` renders both directions above the claim list. The paragraph
+below describes what the coverage panel does, which is unchanged.)* The agent did not
 read it, **no answer will tell you a lineage is disputed**, and no eval case exercises it. Copy implying
 otherwise is overstating it exactly as the old paragraph warned, in the opposite direction.
 

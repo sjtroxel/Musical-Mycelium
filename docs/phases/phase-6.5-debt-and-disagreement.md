@@ -46,6 +46,7 @@ Today the answers are no, no, and no:
 - **Disagreement:** `graph/corroboration.py:89` derives `contested_pairs`, `api/app.py:183` serves them, and
   `web/src/components/CoveragePanel.tsx:242` displays them **as a corpus-level statistic**. Nothing in
   `agent/` reads `corroboration`. An answer cannot say the sources disagree.
+  **DELIVERED 2026-09-07, phase 6.5 step 4** — a `contested` event, decision 5.1.
 - **Refusal:** `gold_v0_1_020` has false-refused a fully answerable question in **7 of 7 recorded runs**
   since 2026-08-18, and `thresholds.json` excludes it from the traversal gate as *"a tracked reproducible
   product bug"*. It survived a 3x corpus, so thinness was never the cause.

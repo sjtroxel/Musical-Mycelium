@@ -156,6 +156,32 @@ corpus in part 2.
 
 ---
 
+## PHASE 6.5 STEP 4 — contested is reachable in an ANSWER, 2026-09-07
+
+**CLOSED: the keystone.** A traversal that crosses a pair two sources disagree about now emits a
+`contested` event, before the first prose token, naming **both** directions and **both** sources and
+picking no winner. `ContestedNotice` renders it above the claim list. Decision 5.1 chose an event over a
+field on `Claim`, and the reason is recorded in `agent/loop.py:Contested`: contested is a property of a
+**pair**, a traversal walks one of its two edges, and stamping it on the approved claim would make that
+claim assert something about an edge that is not in the answer.
+
+**It is not in the prose, and that is deliberate rather than unfinished.** `synthesize` takes exactly one
+claim-bearing parameter and its docstring says a change needing another is reintroducing the leak.
+Handing a synthesis model a disagreement would let prose assert a relationship the gate never approved.
+The disagreement rides beside the narration instead of inside it.
+
+**Still true and still the constraint:** `checks_disagree` remains declared in
+`agent/claims.py:UNREACHABLE`. The model may be **told** the graph holds a disagreement; it may never
+**propose** one. And 2,202 of 2,284 influence edges are single-source, so the corpus surfaces
+disagreement only where DBpedia has an opinion at all — 2 pairs at v0.7.1.
+
+**Also closed: `ResolveSource` verifies a DBpedia URI** (item 4). From v0.7.0 until today every DBpedia
+citation came back `resolvable: false` — honest, and a weaker guarantee for half the corpus than the
+other half. 624 of 1,479 nodes carry a DBpedia resource.
+
+**Measured:** `make check` green — 1366 passed, 1 xfailed, mypy clean over 99 source files, frontend
+**168** across 16 files, root 17 of 18, gates 3 passed / 0 failed / 2 N/A.
+
 ## PHASE 6 STEP 10 — the copy audit, and a stale RULE outlives the sentences it writes, 2026-09-06
 
 **Verified state:** `make check` green — **1330 passed, 1 xfailed**, 14 deselected, mypy clean over 98

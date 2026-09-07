@@ -47,6 +47,7 @@ from musical_mycelium.agent.loop import (
     ApprovedClaimSet,
     ClaimApproved,
     ClaimRejected,
+    Contested,
     Done,
     PathWalked,
     Planned,
@@ -2280,3 +2281,150 @@ def test_refusal_text_does_not_assert_an_empty_graph_when_it_is_not_one() -> Non
     assert populated.startswith("This run found no sourced answer")
     assert "not a statement that the graph holds nothing" in populated
     assert "not a statement that the graph holds nothing" not in empty
+
+
+# --- contested: the keystone -----------------------------------------------------------------------
+#
+# Added 2026-09-07, phase 6.5 step 4. `graph/corroboration.py` has derived contested pairs since
+# artifact v0.7.0 and `api/app.py` has served a corpus-wide count since phase 6 step 8, and no ANSWER
+# could say the sources disagree, because nothing in `agent/` could read corroboration. Step 1 put the
+# fact on the seam; this makes it reachable in a response.
+#
+# Decision 5.1: a distinct event. NOT a field on `Claim` -- contested is a property of a PAIR, a
+# traversal walks one of its two edges, and stamping the marker on the approved claim would make that
+# claim assert something about an edge that is not in the answer.
+
+ELECTROPOP, ELECTROCLASH = "Q188450", "Q861823"
+#: Reciprocal and NOT contested -- both directions come from DBpedia. Four such pairs exist at v0.7.1
+#: against two contested ones, which is why "a reciprocal pair exists" overcounts by 3x.
+JANGLE_POP, COLLEGE_ROCK = "Q1349217", "Q1108214"
+
+
+def _events_for(store: InMemoryGraphStore, query: str) -> list[Any]:
+    return list(run(query, store=store, llm=build_llm("local"), registry=default_registry(store)))
+
+
+def test_a_traversal_that_crosses_a_contested_pair_says_so(store: InMemoryGraphStore) -> None:
+    events = _events_for(store, "Where did electropop come from?")
+    contested = [e for e in events if isinstance(e, Contested)]
+
+    assert len(contested) == 1
+    announced = contested[0]
+    assert {announced.pair.a, announced.pair.b} == {ELECTROPOP, ELECTROCLASH}
+    assert {announced.a_label, announced.b_label} == {"electropop", "electroclash"}
+
+
+def test_it_names_both_directions_and_both_sources_and_picks_no_winner(
+    store: InMemoryGraphStore,
+) -> None:
+    """DoD #1. The corpus records a disagreement, not a verdict, so both edges ride whole and nothing
+    in the event marks one as preferred."""
+    announced = next(
+        e for e in _events_for(store, "Where did electropop come from?") if isinstance(e, Contested)
+    )
+    forward, reverse = announced.pair.a_from_b, announced.pair.b_from_a
+
+    assert {forward.source, reverse.source} == {"wikidata", "dbpedia"}
+    assert forward.subject_id == reverse.object_id
+    assert forward.object_id == reverse.subject_id
+    # No field anywhere on the event ranks the two.
+    assert not [f for f in ("winner", "preferred", "correct") if hasattr(announced, f)]
+
+
+def test_a_merely_reciprocal_pair_is_never_announced(store: InMemoryGraphStore) -> None:
+    """**The definition lock.** `jangle pop` and `college rock` point both ways and BOTH come from
+    DBpedia -- one source describing mutual influence, which between genres is frequently a real claim
+    rather than a disagreement. Announcing it would state something false about where the corpus's
+    information came from."""
+    assert store.contested_between(JANGLE_POP, COLLEGE_ROCK) is None
+
+    events = _events_for(store, "Where did jangle pop come from?")
+    assert [e for e in events if isinstance(e, ClaimApproved)], "the run approved nothing to check"
+    assert not [e for e in events if isinstance(e, Contested)]
+
+
+def test_contested_arrives_before_the_first_prose_token(store: InMemoryGraphStore) -> None:
+    """So a reader sees the disagreement while the narration is still streaming, not after they have
+    finished reading it. Same reasoning `useLineageRun.ts` gives for committing a refusal at frame
+    time."""
+    events = _events_for(store, "Where did electropop come from?")
+    order = [type(e).__name__ for e in events]
+
+    assert order.index("Contested") < order.index("Token")
+    assert order.index("PathWalked") < order.index("Contested")
+
+
+def test_contested_is_not_a_claim_and_never_enters_the_claim_set(
+    store: InMemoryGraphStore,
+) -> None:
+    """One-way door 1. The disagreement is a property of a pair; it is not proposed by the model, not
+    gated, and not narrated. `checks_disagree` stays declared in `claims.py:UNREACHABLE`."""
+    events = _events_for(store, "Where did electropop come from?")
+    claims = [e.claim for e in events if isinstance(e, ClaimApproved)]
+
+    assert claims, "nothing was approved, so this asserts nothing"
+    for claim in claims:
+        assert not hasattr(claim, "contested"), (
+            "a Claim grew a contested field; it is a property of a PAIR and stamping it on a claim "
+            "seats it beside verification, which is the collapse this repo has corrected three files for"
+        )
+
+    # The real lock, and the first draft of this line asserted on `loop`'s own namespace, which has no
+    # UNREACHABLE at all -- trivially true and worth nothing (caught 2026-09-07).
+    from musical_mycelium.agent.claims import UNREACHABLE
+
+    assert "checks_disagree" in UNREACHABLE, (
+        "contested became reachable in an ANSWER at phase 6.5 step 4 and must stay unreachable as a "
+        "CLAIM: the model may be told the graph holds a disagreement, never propose one"
+    )
+
+
+def test_prose_never_mentions_the_disagreement(store: InMemoryGraphStore) -> None:
+    """**The leak this would be.** `synthesize` takes exactly one claim-bearing parameter and its
+    docstring says a change needing another is reintroducing the leak. Handing a synthesis model a
+    disagreement would let prose assert a relationship the gate never approved as a claim."""
+    events = _events_for(store, "Where did electropop come from?")
+    assert [e for e in events if isinstance(e, Contested)], "no disagreement in this run to check"
+
+    prose = "".join(e.text for e in events if isinstance(e, Token)).lower()
+    for word in ("disagree", "contested", "dispute", "dbpedia", "wikidata"):
+        assert word not in prose, f"prose asserted {word!r}, which no approved claim carries"
+
+
+def test_a_pair_is_announced_once_even_when_both_directions_are_approved(
+    store: InMemoryGraphStore,
+) -> None:
+    """Deduplicated by canonical pair. Telling a reader twice that two sources disagree reads as two
+    disagreements."""
+    events = _events_for(store, "Where did electropop come from?")
+    contested = [e for e in events if isinstance(e, Contested)]
+    keys = [(e.pair.a, e.pair.b) for e in contested]
+
+    assert len(keys) == len(set(keys))
+
+
+def test_resolve_source_now_verifies_a_dbpedia_uri(store: InMemoryGraphStore) -> None:
+    """Item 4. From v0.7.0 until 2026-09-07 this returned `resolvable: false` for every DBpedia URI --
+    honest, and a weaker guarantee for half the corpus than for the other half. 624 of 1,479 nodes
+    carry a DBpedia resource."""
+    registry = default_registry(store)
+    result = registry.invoke(
+        "resolve_source", {"source_id": "http://dbpedia.org/resource/Acid_jazz"}
+    )
+
+    assert result.content["resolvable"] is True
+    assert result.content["entity_id"] == ACID_JAZZ
+    assert result.content["license"] == "CC BY-SA 3.0 (DBpedia)"
+
+
+def test_an_unaligned_dbpedia_uri_still_resolves_to_nothing(store: InMemoryGraphStore) -> None:
+    """A syntactically perfect URI naming nothing this graph holds is not a citation for anything, and
+    the attribution is carried anyway — it is still a DBpedia URI whether or not the lookup found it."""
+    registry = default_registry(store)
+    result = registry.invoke(
+        "resolve_source", {"source_id": "http://dbpedia.org/resource/Not_Aligned_Here"}
+    )
+
+    assert result.content["resolvable"] is False
+    assert result.content["license"] == "CC BY-SA 3.0 (DBpedia)"
+    assert "entity_id" not in result.content

@@ -602,7 +602,7 @@ difference. Step 5 gains an adversarial case for it (§5, added deliberately 202
   measurement attached, made while a related case is being watched. Recorded for a later phase.
 - **`thresholds.json` corrected**, and the phase 6.5 scope doc §2 amended: it is not 7 of 7.
 
-### Step 4 — Item 1: `contested` reachable in an answer, and item 4
+### Step 4 — Item 1: `contested` reachable in an answer, and item 4 — **DONE 2026-09-07**
 
 The keystone. **Decision 5.1, closed 2026-09-07: a distinct SSE event.** The two options not taken are
 recorded here, because the reason C was rejected is the reason this step is dangerous.
@@ -645,6 +645,80 @@ fields are separately represented.
 **Done means:** DoD #1 and #4. `checks_disagree` is still declared in `agent/claims.py:UNREACHABLE`, still
 never proposed by the model, and the copy from phase 6 step 10 saying contested is corpus-level-only is
 updated **the day this lands** (DoD #9), not at step 8.
+
+#### 4.0 As built — 2026-09-07
+
+**Verified on completion:** `make check` green — **1366 passed** (from 1357), 14 deselected, 1 xfailed,
+mypy clean over 99 source files, frontend **168** across 16 files (from 159/15), root **17 of 18**, gates
+**3 / 0 / 2**.
+
+**1. `synthesize`'s own docstring settled the hardest question before it was asked.** The open design
+question was whether the prose should say the sources disagree. It must not, and the authority is one
+line already in the repo: *"There is still exactly one claim-bearing parameter... If a future change
+needs one of those here, that change is reintroducing the leak."* Handing a synthesis model a
+disagreement would let prose assert a relationship the gate never approved as a claim — one-way door 1.
+**So the disagreement rides beside the narration rather than inside it**, and a pair-level caveat next to
+the claims is the honest shape anyway: prose narrates claims, and this is not one.
+
+This is worth stating plainly because it looks like a gap and is not. A reader of the prose alone does
+not learn of the disagreement; a reader of the *answer* does, above the claim list, before the prose has
+finished arriving.
+
+**2. The API cost was exactly the one line the plan predicted**, and for the recorded reason: `render` is
+generic over `EVENT_NAMES` and `asdict`, which walked the nested `ContestedPair` and its two `Edge`s
+unaided. `app.py`'s own docstring called this shot at phase 3 step 3 — *"a frame type that needed a
+handler here would mean `api` had grown logic"* — and it held.
+
+**3. Emitted after `PathWalked` and before the first `Token`.** After, because only an approved claim can
+put a pair in an answer: a pair the gate rejected was not crossed, and announcing it would assert an edge
+the gate refused. Before, so a reader sees it while the narration streams — the same reasoning
+`useLineageRun.ts` already gives for committing a refusal at frame time.
+
+**4. Deduplicated by canonical pair.** Both directions of a contested pair can be approved in one run, and
+telling a reader twice that two sources disagree reads as two disagreements.
+
+**5. The frontend was bounded to what the event forced, and the styling took two passes.**
+`ContestedNotice` is **not** a warning colour. A contested pair is not an error or a degraded answer — it
+is two cited sources that disagree, which is among the more interesting things this corpus holds. Amber
+would tell a reader the answer is worse. Phase 5 decided a refusal shares the answer's styling for
+exactly this reason, and the same argument applies. **The two directions carry identical styling: making
+one heavier would pick a winner in CSS.**
+
+**The first pass got that right and was invisible anyway.** It reused `--accent-soft`, the same rose fill
+every claim row uses, so the block read as more of the same; sjtroxel looked at it running and said
+"hardly noticeable", which was correct. The fix needed a measurement to find, not a darker fill:
+**against `--card`, every dark fill on this ground sits at ~1.05:1**, `--accent-soft` included. No
+background separates by luminance here, so a new fill colour would have changed nothing.
+
+**So the signal is the left rule and the source names at full strength**, and the block gets a second
+accent token, `--contested: #5cd8ff`. Electric cyan rather than the lavender first considered, because
+the chrome is *already* violet-tinted — a lavender block would have blended into `--rule` and `--ground`
+the same way the rose blended into the claims. Near-complementary to `--accent`, so the two never read as
+variants of one idea. Measured against `--contested-soft`: `--ink` 14.8:1, `--ink-soft` 8.1:1,
+`--contested` 10.1:1. Chosen by sjtroxel from three candidates rendered in the running app, which is the
+same way the phase 5 palette was chosen.
+
+**6. A recorded fixture, not a hand-written one.** `electropop-contested.sse` is real bytes from
+`stream_answer` at artifact v0.7.1 — frame order `plan, tool, tool, claim x4, path, contested, token x2,
+done`. The contract test asserts the ordering against the capture rather than against a synthetic string.
+
+**7. A decorative assertion caught itself, for the third time this phase.** The claims-first test
+originally read `set(agent_loop.__dict__.get("UNREACHABLE", {}) or {}) == set()` — trivially true, since
+`loop` has no such name. Replaced with an assertion that `claims.UNREACHABLE` still declares
+`checks_disagree`, then broken to confirm it fires. **The first attempt at that break was also wrong**
+(`{} or {...}` evaluates to the populated dict), which is its own small lesson: a mutation that does not
+mutate is indistinguishable from a lock that does not lock.
+
+**8. Item 4 shipped in the same step**, on the seam step 1 widened. `ResolveSource` verifies a DBpedia
+resource URI through `node_by_resource`, so `resolvable` finally means one thing across both sources
+rather than two things depending on which source a claim happened to cite. The CC BY-SA attribution is
+carried on **both** outcomes — a URI that resolves to nothing is still a DBpedia URI, and attribution is
+not conditional on the lookup succeeding.
+
+**9. DoD #9 honoured the day item 1 landed, not at step 8.** Six surfaces said an answer cannot express a
+disagreement, and all six were true when written: `README.md`, `docs/SPEC.md` (twice),
+`docs/spa-explained.md`, `agent/claims.py:29`, and this phase's own scope doc. `KNOWN-GAPS.md` carries a
+dated closure block. Every correction is an amendment with its date rather than a rewrite.
 
 ### Step 5 — Tier 2: the frozen datasets
 
