@@ -45,7 +45,7 @@ also means the walked path and each claim reach the client *as they happen*, whi
 
 from __future__ import annotations
 
-from collections.abc import Generator, Iterator, Mapping
+from collections.abc import Generator, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from itertools import pairwise
 
@@ -68,7 +68,7 @@ from musical_mycelium.graph.schema import (
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
 )
-from musical_mycelium.graph.store import GraphStore
+from musical_mycelium.graph.store import Direction, GraphStore
 
 #: Hard ceiling on model turns, **planning turn included**. It is a **cost control** as much as a safety
 #: one — an agentic loop re-sends its accumulated context every turn, so an unbounded loop is an
@@ -625,12 +625,70 @@ def _reversal(claim_set: ApprovedClaimSet) -> str:
     return f"\n\n{INVERTED_PREMISE_PROMPT}\n\nAsked as: {dumps(asked)}"
 
 
-def refusal_text(query: str, reason: str) -> str:
-    """Deterministic. No model call, so it cannot hallucinate the thing it is declining to state."""
+def refusal_text(query: str, reason: str, *, graph_is_empty: bool = True) -> str:
+    """Deterministic. No model call, so it cannot hallucinate the thing it is declining to state.
+
+    **``graph_is_empty`` is the phase 6.5 step 2 correction, and it is about the OPENING SENTENCE
+    rather than about the reason.** *"This graph has no sourced answer for X"* is itself a claim about
+    the corpus, and it was emitted for every refusal — including refusals where the corpus holds
+    plenty and this particular run simply did not turn any of it into an approved claim. That inverts
+    the coverage-honesty rule in ``.claude/rules/grounding-and-claims.md``: it asserts an absence the
+    graph does not have, in the one sentence a user is most likely to read and repeat.
+
+    Two openings, because there are two different things to say and only one of them is about the
+    graph. The reason clause was never the whole defect; a caller that passed an honest reason into
+    the old opening still shipped a false sentence around it.
+    """
+    if graph_is_empty:
+        return (
+            f"This graph has no sourced answer for {query!r}: {reason}. "
+            f"Every claim here has to trace to a checkable source, and there is none to trace — so "
+            f"rather than fill the gap, it is left open."
+        )
     return (
-        f"This graph has no sourced answer for {query!r}: {reason}. "
-        f"Every claim here has to trace to a checkable source, and there is none to trace — so rather "
-        f"than fill the gap, it is left open."
+        f"This run found no sourced answer for {query!r}: {reason}. "
+        f"Every claim here has to trace to a checkable source and none did — which is a limit of this "
+        f"run, not a statement that the graph holds nothing."
+    )
+
+
+#: The three refusal reasons, which are three genuinely different facts.
+#:
+#: **Before 2026-09-07 there were two, and the second was doing the work of both.**
+#: ``REASON_NO_INFLUENCES`` was emitted whenever the gate approved nothing and any node had been
+#: visited, so *"this run gathered nothing"* reached the user as *"the graph holds nothing"*. Measured
+#: the same day: the acid-jazz-to-turntablism lineage refusal said acid jazz "carries no sourced
+#: influences" while the corpus held **five** for it, and ``gold_v0_1_020`` — the repo's most
+#: reproducible bug, false-refusing in 7 of 7 runs — said the same of femtanyl, which has **four**.
+REASON_NOT_IN_GRAPH = "it is not in this graph"
+REASON_NO_INFLUENCES = (
+    "it resolved, and this graph holds no sourced influences for it in either direction"
+)
+REASON_RUN_FOUND_NONE = "this run reached it but established no sourced influence"
+
+
+def _graph_holds_influences(store: GraphStore, node_ids: Iterable[str]) -> bool:
+    """Whether the corpus holds ANY sourced influence edge touching any node this run visited.
+
+    **Both directions, deliberately, and this is the conservative choice rather than the precise one.**
+    A rule that checked only ``INFLUENCED_BY`` would be more specific and would be wrong on a
+    descendants question: ``turntablism`` has 0 parents and 2 children, so an origins refusal and a
+    descendants refusal are different facts about it and a one-directional check states the wrong one
+    half the time. Knowing which direction the run walked would need the loop to know what each tool
+    does, which is exactly what ``CLAUDE.md`` invariant 4 forbids.
+
+    So the corpus-absence claim is made **only when it is unambiguously true in every direction**.
+    The cost is that a refusal on a node with edges the run did not walk reads as "this run found
+    none" rather than "the graph holds none in that direction" — less specific, never false. That is
+    the right direction to be imprecise in: the dangerous error is asserting an emptiness the corpus
+    does not have, and no wording here can commit it.
+
+    ``neighbors`` defaults to ``INFLUENCE_ONLY``, so a node that only ``plays_genre`` still counts as
+    having no influences. Membership is not derivation and must not make the graph look fuller here
+    than it is.
+    """
+    return any(
+        store.neighbors(node_id, direction) for node_id in node_ids for direction in Direction
     )
 
 
@@ -766,12 +824,18 @@ def run(
         # Axis-neutral wording. These strings said "genre" until the artist axis landed at v0.4.0, at
         # which point a refusal on "U2" told the user the graph has no such *genre* — true of a word
         # nobody used, and misleading about what was actually asked.
-        reason = (
-            "it resolved but carries no sourced influences"
-            if visited
-            else "it is not in this graph"
-        )
-        text = refusal_text(query, reason)
+        #
+        # **Three states since phase 6.5 step 2, because there are three different facts.** The middle
+        # one is the addition: the run reached real nodes and established nothing, while the corpus
+        # holds influences it did not turn into claims. That is a fact about the RUN, and stating it in
+        # the corpus's voice is the coverage-honesty rule inverted.
+        if not visited:
+            reason, graph_is_empty = REASON_NOT_IN_GRAPH, True
+        elif _graph_holds_influences(store, visited):
+            reason, graph_is_empty = REASON_RUN_FOUND_NONE, False
+        else:
+            reason, graph_is_empty = REASON_NO_INFLUENCES, True
+        text = refusal_text(query, reason, graph_is_empty=graph_is_empty)
         yield Refused(reason=reason, query=query)
         yield Token(text)
     else:
@@ -796,8 +860,12 @@ def run(
             # `ApprovedClaimSet.narratable`: `synthesize` raising here escaped `run()` and killed a
             # whole billable run at case 33 of 41. A refusal costs one case; an uncaught exception
             # costs every case after it.
+            # `graph_is_empty=False` because this branch is only reachable with claims the gate
+            # APPROVED — they simply do not form one lineage. The old opening said "this graph has no
+            # sourced answer" in the same sentence as "its sourced influences", which contradicted
+            # itself and asserted an emptiness contradicted two lines up by `decision.approved`.
             reason = "its sourced influences describe no single lineage"
-            text = refusal_text(query, reason)
+            text = refusal_text(query, reason, graph_is_empty=False)
             yield Refused(reason=reason, query=query)
             yield Token(text)
         else:

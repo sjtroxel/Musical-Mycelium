@@ -251,7 +251,7 @@ reproduces a cost figure the project measured back in August, before the table e
 *(These paragraphs accumulate per step and are consolidated into the right `docs/*-explained.md` at
 step 8. A new explainer doc is not created mid-phase.)*
 
-### Step 1 — Widen the `GraphStore` seam
+### Step 1 — Widen the `GraphStore` seam — **DONE 2026-09-07**
 
 The prerequisite for items 1 and 4, done once so it is reviewed once.
 
@@ -269,13 +269,121 @@ The prerequisite for items 1 and 4, done once so it is reviewed once.
 **Done means:** the protocol exposes both reads, `mypy` is clean over the package, every implementation
 satisfies it, and no file in `agent/` has changed yet.
 
-### Step 2 — Item 3: the refusal's missing third branch
+#### 1.0 As built — what the plan did not know
+
+**Verified on completion, 2026-09-07:** `make check` green — **1343 passed** (from 1334), 14 deselected,
+1 xfailed, mypy clean over 99 source files, frontend **159** across 15 files, root **17 of 18**, eval
+gates **3 passed / 0 failed / 2 N/A**. Three files changed: `graph/store.py`, `graph/memory.py`,
+`tests/test_graph_store.py`. **`git status src/musical_mycelium/agent/` returns nothing** — DoD checked,
+not assumed.
+
+**1. Uncertainty §13.2 resolves to zero. There are no other implementations.** The plan worried about
+what widening the protocol would cost every implementation, and `store.py`'s v0.1 docstring built its
+whole "declare `path` early" argument on that cost. Checked four ways — `def get_node`, `def neighbors`,
+`def search(`/`def path(`, and `class .*Store` — across `src/` and `tests/`: **`InMemoryGraphStore` is
+the only structural implementation.** The twenty files that mention `GraphStore` all use it as a
+parameter type. So the bill the docstring warned about is currently **one class**, and the warning was
+right in principle while being cheap in fact. Worth saying plainly rather than quietly enjoying: this
+seam has never yet been swapped, and its value today is the discipline it imposes on what `agent/` may
+reach, not a second backend it has enabled.
+
+**2. The protocol got a PAIR lookup, deliberately, not a read of the contested set.**
+`contested_between(a, b)` rather than exposing `contested`. The agent's question is always *"the pair I
+just walked — do the sources disagree about it?"*, never *"list every disagreement you hold"*. A
+protocol member returning the whole set invites a tool that pours it into the model's context: it spends
+the token budget on pairs no traversal touched, and it hands the model disagreements it could narrate
+without having walked to them. The corpus-wide read stays on the concrete store, where `api/app.py:183`
+and the coverage panel already use it. **This means step 4 gets a bounded fact about the pair in hand,
+which is the shape that keeps `contested` from drifting toward being a claim.**
+
+**3. The resource index was measured before it was designed.** At v0.7.1: **624 nodes carry a
+`dbpedia_resource`, 624 distinct resources, zero collisions.** One-to-one today — and the index still
+excludes a resource claimed by more than one node rather than taking the first, because that is a
+property of one artifact and not a guarantee, and **the failure would be silent**: a citation resolved to
+an arbitrary one of two entities looks exactly like a citation that resolved correctly, and nothing
+downstream could tell. Ambiguity returns `None`, the same honest absence `get_node` gives an unknown id.
+
+**4. THE FINDING: a test passed for the wrong reason, and only breaking it showed that.** Six locks were
+broken once each and watched to fail. Five failed. The sixth — removing the skip that keeps unaligned
+nodes out of the resource index — **failed nothing**, because the assertion was written against the
+pinned corpus. 855 of 1,479 nodes carry `dbpedia_resource=""`, so with the skip gone they would all key
+on `""`, all collide, and the ambiguity rule from finding 3 would exclude them anyway.
+`node_by_resource("")` returned `None` either way. **The assertion was true while the behaviour it names
+was broken**, and with exactly one unaligned node it would have returned that node.
+
+Rewritten against a synthetic corpus holding exactly one unaligned node, where the collision rule cannot
+rescue it, and re-broken to confirm it now fails. `.claude/rules/evals.md` says *"a metric you have not
+tried to break is not a metric"* about eval metrics; this is the same defect one layer down, and it took
+four minutes to find because the practice was followed rather than skipped. **The other five locks were
+fine, which is exactly why the one that was not is worth recording.**
+
+**5. Nothing in `agent/` changed, and `contested` is still not a claim.** The seam now carries the fact;
+no consumer reads it yet. `checks_disagree` is still declared in `agent/claims.py:UNREACHABLE`.
+
+### Step 2 — Item 3: the refusal's missing third branch — **DONE 2026-09-07**
 
 Distinguish, in the text a user reads, *this run gathered nothing* from *the corpus holds nothing for this
 subject*, using the deterministic `neighbors` check from §5. Both strings stay axis-neutral — the v0.4.0
 lesson at `loop.py:766-768` still applies, and neither may say "genre".
 
 **Done means:** three distinguishable refusal reasons with a test for each, and DoD #3 satisfied.
+
+#### 2.0 As built — what the plan did not know
+
+**Verified on completion, 2026-09-07:** `make check` green — **1349 passed** (from 1343), 14 deselected,
+1 xfailed, mypy clean over 99 source files, frontend **159**, root **17 of 18**, gates **3 / 0 / 2**.
+Two files changed: `agent/loop.py`, `tests/test_agent_loop.py`. **No frontend change was needed** — the
+`refused` frame's shape is unchanged, only a string value it already carried, and the recorded
+`kate-bush-refusal.sse` fixture is a *not-in-this-graph* refusal, which this step does not touch.
+
+**1. THE FINDING: the opening sentence carried the same defect, and it is the worse half.**
+`refusal_text` opened every refusal with *"This graph has no sourced answer for X"* — a claim about the
+**corpus**, emitted regardless of what the corpus held. The plan named a two-branch ternary as the
+defect and treated the fix as a missing third reason. It is not: **a caller passing a perfectly honest
+reason still shipped a false sentence wrapped around it**, and the opening is the half a reader is most
+likely to quote. `refusal_text` now takes `graph_is_empty` and has two openings.
+
+**2. A fourth call site had the same bug, and it contradicted itself in one sentence.** The
+narratability guard at `loop.py` emits *"its sourced influences describe no single lineage"* — reachable
+**only** when the gate has APPROVED claims. Wrapped in the old opening it read: *"This graph has no
+sourced answer for X: its sourced influences describe no single lineage."* The sentence asserts an
+emptiness that the clause after the colon, and `decision.approved` two lines above it, both contradict.
+Fixed with `graph_is_empty=False`.
+
+**3. The rule is BOTH directions, and that is a deliberate choice of conservative over precise.**
+Measured at v0.7.1: `turntablism` has **0 sourced parents and 2 sourced children**, so an origins
+refusal and a descendants refusal about it are different facts and a one-directional check states the
+wrong one half the time. Knowing which direction a run walked would require the loop to know what each
+tool does, which `CLAUDE.md` invariant 4 forbids by name. So the corpus-absence claim is made **only
+when it is true in every direction**. The cost is a refusal on a node with unwalked edges reading as
+"this run found none" rather than the sharper "the graph holds none in that direction" — less specific,
+never false. **The dangerous error is asserting an emptiness the corpus does not have, and no wording
+this branch can produce commits it.**
+
+**4. Two real, measured falsehoods stopped being emitted today.** Both against the pinned store:
+
+| refusal | what it said before | what the corpus holds |
+|---|---|---|
+| "How is acid jazz connected to turntablism?" | acid jazz "carries no sourced influences" | **5** sourced parents |
+| `gold_v0_1_020` — femtanyl to Woody Guthrie | femtanyl "carries no sourced influences" | **4** sourced parents |
+
+The second is the point of the ordering argument in §5. `gold_v0_1_020` false-refuses in 7 of 7 recorded
+runs and **step 3 may conclude it is unfixable**. Whether or not it does, the false refusal no longer
+tells the user the corpus is empty about a subject with four sourced parents. `test_the_gold_020_subject_
+can_no_longer_be_told_the_corpus_is_empty` locks that without a live model and without fixing the bug.
+
+**5. One existing test changed, and the change is the fix rather than an accommodation.**
+`test_a_refusal_run_never_calls_the_model_for_prose` asserted `"no sourced influences" in refusal.reason`
+with `turntablism` as the subject. Turntablism has two sourced children, so under the new rule it is a
+run-limit refusal and the old assertion was encoding the two-state world. Updated, with the measurement
+in a comment beside it, and the corpus-empty wording given its own test on `tread rap` — one of **120
+nodes at v0.7.1 with no influence edge in either direction**, all of them genres.
+
+**6. Five locks broken once each, five caught** — including two that needed a second attempt because the
+first mutation did not compile or `make fmt` had reflowed the anchor. Notable: breaking the
+`INFLUENCE_ONLY` default so membership counts as influence failed **two** tests rather than the one it
+targeted, because `tread rap` has `plays_genre` edges. Membership is not derivation, and if it counted
+here the corpus-empty wording would become unreachable for the entire artist axis.
 
 ### Step 3 — Item 2: diagnose `gold_v0_1_020`, then decide
 
@@ -494,8 +602,9 @@ Named as uncertain rather than smoothed over.
 1. **Whether `gold_v0_1_020` is a code defect at all.** 7 of 7 identical failures reads like determinism,
    and determinism is equally consistent with a model reliably declining a 7-node path. The plan is built
    so that "unfixable, recorded" is a clean outcome and not a failure of the phase.
-2. **How much of step 1 the other `GraphStore` implementations cost.** Twenty files mention the protocol;
-   how many structurally implement it is not yet counted, and the fakes in `tests/` are the uncertainty.
+2. ~~**How much of step 1 the other `GraphStore` implementations cost.**~~ **RESOLVED 2026-09-07: zero.**
+   `InMemoryGraphStore` is the only structural implementation; the other nineteen files use `GraphStore`
+   as a parameter type. See §1.0 finding 1.
 3. **Whether two contested pairs are enough to author two useful gold cases.** Both are real disagreements,
    and both are also thin and peripheral — *New Mexico music* and *electroclash* are not central subjects.
    A case built on a thin pair may measure the plumbing rather than the behavior. If that turns out true,

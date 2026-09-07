@@ -137,6 +137,26 @@ class InMemoryGraphStore:
         for node in artifact.nodes:
             self._by_name[normalise(node.label)].append(node)
 
+        # DBpedia resource -> node, for `node_by_resource`. Built here rather than scanned per call:
+        # a resolve_source tool call would otherwise walk 1,479 nodes to answer one citation.
+        #
+        # **A resource claimed by more than one node is EXCLUDED rather than resolved to whichever
+        # came first.** Measured at v0.7.1 there are none -- 624 aligned nodes and 624 distinct
+        # resources -- but that is a property of one artifact and not a guarantee, and the failure
+        # would be silent: a citation resolving to an arbitrary one of two entities looks exactly like
+        # a citation that resolved. Absence is checkable; a coin flip is not.
+        by_resource: dict[str, Node | None] = {}
+        for node in artifact.nodes:
+            if not node.dbpedia_resource:
+                continue
+            # None marks "claimed twice", so a later third claimant cannot revive it.
+            by_resource[node.dbpedia_resource] = (
+                None if node.dbpedia_resource in by_resource else node
+            )
+        self._by_resource: dict[str, Node] = {
+            resource: node for resource, node in by_resource.items() if node is not None
+        }
+
     # --- construction ---------------------------------------------------------------------------
 
     @classmethod
@@ -283,8 +303,28 @@ class InMemoryGraphStore:
 
     @cached_property
     def contested(self) -> tuple[ContestedPair, ...]:
-        """The pairs two different sources disagree about. Two at artifact v0.7.1."""
+        """The pairs two different sources disagree about. Two at artifact v0.7.1.
+
+        **Concrete-only, and deliberately not on the ``GraphStore`` protocol.** The API and the
+        coverage panel state a corpus-wide count; the agent asks about one pair at a time and reaches
+        it through ``contested_between``. See that method for why the whole set is the wrong shape to
+        put in front of a model.
+        """
         return contested_pairs(self._artifact)
+
+    @cached_property
+    def _contested_index(self) -> dict[tuple[str, str], ContestedPair]:
+        """Canonical ``(a, b)`` -> pair, computed once. ``ContestedPair`` already orders its two node
+        ids, so one key per pair is enough and a lookup needs no second try."""
+        return {(pair.a, pair.b): pair for pair in self.contested}
+
+    def contested_between(self, a_id: str, b_id: str) -> ContestedPair | None:
+        """See ``GraphStore.contested_between``. Order-independent, and derived, never stamped."""
+        return self._contested_index.get((a_id, b_id) if a_id < b_id else (b_id, a_id))
+
+    def node_by_resource(self, resource: str) -> Node | None:
+        """See ``GraphStore.node_by_resource``. Index built at load; ambiguity resolves to ``None``."""
+        return self._by_resource.get(resource)
 
     # --- convenience ----------------------------------------------------------------------------
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
+from musical_mycelium.graph.corroboration import ContestedPair
 from musical_mycelium.graph.coverage import Coverage
 from musical_mycelium.graph.schema import INFLUENCE_ONLY, Edge, Node
 
@@ -146,5 +147,59 @@ class GraphStore(Protocol):
 
         Implementations may cache. Coverage is a property of a pinned, immutable artifact, so recomputing
         it per call is waste rather than freshness.
+        """
+        ...
+
+    def contested_between(self, a_id: str, b_id: str) -> ContestedPair | None:
+        """The disagreement between these two nodes, or ``None`` when there is not one.
+
+        *(Added 2026-09-07, phase 6.5 step 1, so that ``agent/`` can reach a fact ``graph/`` has held
+        since artifact v0.7.0. Nothing in the agent package could read corroboration before this,
+        which is why an answer could not say the sources disagree — the gap was structural: there was
+        nothing on this seam to read.)*
+
+        **Contested means two DIFFERENT sources assert opposite directions for one pair.** It does not
+        mean a reciprocal pair exists. At v0.7.1 the corpus holds 6 reciprocal pairs and **2** are
+        contested; the other four are one source describing mutual influence, which between genres is
+        frequently a real claim rather than a disagreement. The loose reading overcounts by 3x, and
+        ``graph/corroboration.py`` is the authority.
+
+        Order-independent: a pair is canonical, so ``contested_between(a, b)`` and
+        ``contested_between(b, a)`` return the same object. ``ContestedPair`` carries **both** edges,
+        so a caller has both directions and both sources and never has to pick a winner. Nothing here
+        decides who is right, because nothing can — the corpus records a disagreement, not a verdict.
+
+        **Deliberately a PAIR lookup rather than a read of every contested pair in the corpus.** The
+        question the agent asks is always "the pair I just walked — do the sources disagree about it?",
+        never "list every disagreement you hold". A protocol member that handed back the whole set
+        would invite a tool that pours it into the model's context, which spends the token budget on
+        pairs no traversal touched and gives the model disagreements it could narrate without having
+        walked them. The corpus-wide read stays on the concrete store, where the API and the coverage
+        panel already use it.
+
+        **This is not ``verification`` and must never be collapsed into it.** ``verification`` says how
+        strongly ONE source was checked; this says whether a second source contradicts it. A
+        corroborated ``PROSE_AUTO`` edge is not thereby a ``HAND`` edge.
+        """
+        ...
+
+    def node_by_resource(self, resource: str) -> Node | None:
+        """The node a DBpedia resource URI names, or ``None``.
+
+        *(Added 2026-09-07, phase 6.5 step 1.)* The reverse of ``Node.dbpedia_resource``, and the thing
+        ``ResolveSource`` has been unable to do since DBpedia arrived at v0.7.0. A Wikidata statement
+        URI **encodes** the QID it belongs to, so resolving one is string surgery; a DBpedia resource
+        URI names an article and encodes nothing, so resolving one needs an index the store owns.
+
+        Until this existed, a DBpedia citation on an approved claim was verified by the gate and then
+        reported by the tool as ``resolvable: false`` — correct, and a worse guarantee for half the
+        corpus than for the other half.
+
+        ``None`` for an unknown resource, exactly as ``get_node`` returns ``None`` for an unknown id,
+        and **``None`` also when a resource is claimed by more than one node**. An ambiguous citation
+        resolves to nothing rather than to a coin flip: a source that names two entities is not a
+        citation for either, and returning one of them is the plausible-looking fabrication this
+        project's whole gate exists to catch. Never a fuzzy match, for the same reason ``get_node``
+        is not one.
         """
         ...

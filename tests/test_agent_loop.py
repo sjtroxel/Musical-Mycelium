@@ -41,6 +41,9 @@ from musical_mycelium.agent.llm import (
     tool_results_message,
 )
 from musical_mycelium.agent.loop import (
+    REASON_NO_INFLUENCES,
+    REASON_NOT_IN_GRAPH,
+    REASON_RUN_FOUND_NONE,
     ApprovedClaimSet,
     ClaimApproved,
     ClaimRejected,
@@ -50,6 +53,7 @@ from musical_mycelium.agent.loop import (
     Refused,
     Token,
     ToolCalled,
+    _graph_holds_influences,
     refusal_text,
     run,
     synthesize,
@@ -73,7 +77,13 @@ from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
+    PREDICATE_PLAYS_GENRE,
+    PROSE_TIER_NOT_APPLICABLE,
     VERIFICATION_HAND,
+    VERIFICATION_MEMBERSHIP_BARE,
+    Artifact,
+    Edge,
+    Node,
 )
 
 BLUES_ROCK, BLUES = "Q193355", "Q9759"
@@ -1318,7 +1328,11 @@ def test_a_refusal_run_never_calls_the_model_for_prose(store: InMemoryGraphStore
 
     assert not [e for e in events if isinstance(e, ClaimApproved)]
     refusal = next(e for e in events if isinstance(e, Refused))
-    assert "no sourced influences" in refusal.reason
+    # Was `"no sourced influences" in refusal.reason` until 2026-09-07, phase 6.5 step 2. Turntablism
+    # has 0 sourced parents and **2 sourced children**, so the corpus is not empty about it and the
+    # old wording asserted that it was. The run-limit reason is the honest one here; the corpus-empty
+    # reason has its own test below, on a subject that genuinely has neither.
+    assert refusal.reason == REASON_RUN_FOUND_NONE
     assert llm.exhausted, "the loop asked the model for prose it had no claims to ground"
     assert next(e for e in events if isinstance(e, Done)).claim_count == 0
 
@@ -2116,3 +2130,153 @@ def test_an_unnarratable_shape_refuses_instead_of_killing_the_run(
     assert "no single lineage" in refusal.reason
     assert llm.exhausted, "the loop asked for prose it had no describable shape for"
     assert next(e for e in events if isinstance(e, Done)).claim_count == 2
+
+
+# --- the three refusal states ----------------------------------------------------------------------
+#
+# Added 2026-09-07, phase 6.5 step 2. Until this step there were two refusal reasons and the second was
+# doing the work of both: `it resolved but carries no sourced influences` fired whenever the gate
+# approved nothing and any node had been visited, so **"this run gathered nothing" reached the user as
+# "the graph holds nothing"** -- an absence asserted about the corpus on the evidence of one run.
+#
+# Measured the same day, both against the pinned v0.7.1 store:
+#   acid jazz    5 sourced parents, and the lineage refusal said it carried none
+#   femtanyl     4 sourced parents, and `gold_v0_1_020` says the same of it in 7 of 7 recorded runs
+#
+# The opening sentence carried the same defect and is the half more likely to be read and repeated:
+# *"This graph has no sourced answer for X"* is a claim about the corpus, and it was emitted for every
+# refusal regardless of what the corpus held.
+
+#: 0 sourced influences in BOTH directions -- the only shape about which the corpus-empty wording is
+#: true. 120 of 1,479 nodes qualify at v0.7.1, all of them genres.
+GENUINELY_EMPTY = "Q104847619"  # tread rap
+
+#: `gold_v0_1_020`'s subject. Four sourced parents, and it false-refuses in 7 of 7 recorded runs.
+FEMTANYL = "Q131318965"
+
+
+def test_an_unresolvable_name_says_the_graph_does_not_hold_it(store: InMemoryGraphStore) -> None:
+    events = list(
+        run(
+            "Where did zzzznotarealgenre come from?",
+            store=store,
+            llm=build_llm("local"),
+            registry=default_registry(store),
+        )
+    )
+    refusal = next(e for e in events if isinstance(e, Refused))
+    assert refusal.reason == REASON_NOT_IN_GRAPH
+    prose = "".join(e.text for e in events if isinstance(e, Token))
+    assert prose.startswith("This graph has no sourced answer")
+
+
+def test_the_corpus_empty_wording_is_used_only_when_the_corpus_is_actually_empty(
+    store: InMemoryGraphStore,
+) -> None:
+    """`tread rap` resolves and has no sourced influence edge in either direction, so the strong
+    claim is the true one here and the refusal is allowed to make it."""
+    assert not _graph_holds_influences(store, [GENUINELY_EMPTY])
+
+    events = list(
+        run(
+            "Where did tread rap come from?",
+            store=store,
+            llm=build_llm("local"),
+            registry=default_registry(store),
+        )
+    )
+    refusal = next(e for e in events if isinstance(e, Refused))
+    assert refusal.reason == REASON_NO_INFLUENCES
+    prose = "".join(e.text for e in events if isinstance(e, Token))
+    assert prose.startswith("This graph has no sourced answer")
+
+
+def test_a_refusal_over_a_populated_corpus_blames_the_run_and_not_the_graph(
+    store: InMemoryGraphStore,
+) -> None:
+    """**The defect this step exists to fix.**
+
+    Acid jazz has five sourced influences. Before 2026-09-07 this refusal told the user it had none,
+    in the corpus's voice, on the evidence of one traversal that did not reach a chain.
+    """
+    assert _graph_holds_influences(store, [ACID_JAZZ])
+
+    events = list(
+        run(
+            "How is acid jazz connected to turntablism?",
+            store=store,
+            llm=build_llm("local"),
+            registry=default_registry(store),
+        )
+    )
+    refusal = next(e for e in events if isinstance(e, Refused))
+    assert refusal.reason == REASON_RUN_FOUND_NONE
+
+    prose = "".join(e.text for e in events if isinstance(e, Token))
+    assert prose.startswith("This run found no sourced answer")
+    assert "not a statement that the graph holds nothing" in prose
+
+
+def test_the_gold_020_subject_can_no_longer_be_told_the_corpus_is_empty(
+    store: InMemoryGraphStore,
+) -> None:
+    """Ties this step to step 3 without needing a live model, and without fixing the bug.
+
+    `gold_v0_1_020` false-refuses in 7 of 7 recorded runs. Whether that is fixable is step 3's
+    question and may be answered "no". What this step guarantees regardless is that the false refusal
+    stops claiming the corpus is empty about a subject with four sourced parents -- **the honest floor
+    exists whether or not the bug does.**
+    """
+    assert _graph_holds_influences(store, [FEMTANYL]), (
+        "femtanyl has four sourced parents; if this ever fails the corpus moved, not the code"
+    )
+
+
+def test_membership_edges_do_not_make_the_graph_look_populated() -> None:
+    """A node whose only edge is `plays_genre` has no *influences*, and the strong wording stays true.
+
+    Membership is not derivation. If `neighbors` were called without its `INFLUENCE_ONLY` default here,
+    every artist in the corpus would read as having influences and the corpus-empty wording would
+    become unreachable for the whole artist axis.
+    """
+    artist = Node(
+        id="Q1",
+        label="an artist",
+        source="test",
+        source_id="Q1",
+        retrieved_at="2026-01-01T00:00:00+00:00",
+        kind=NODE_KIND_ARTIST,
+    )
+    genre = Node(
+        id="Q2",
+        label="a genre",
+        source="test",
+        source_id="Q2",
+        retrieved_at="2026-01-01T00:00:00+00:00",
+        kind=NODE_KIND_GENRE,
+    )
+    membership = Edge(
+        subject_id="Q1",
+        predicate=PREDICATE_PLAYS_GENRE,
+        object_id="Q2",
+        source="test",
+        source_id="stmt/1",
+        retrieved_at="2026-01-01T00:00:00+00:00",
+        prose_tier=PROSE_TIER_NOT_APPLICABLE,
+        verification=VERIFICATION_MEMBERSHIP_BARE,
+    )
+    store = InMemoryGraphStore(Artifact(nodes=(artist, genre), edges=(membership,)))
+
+    assert not _graph_holds_influences(store, ["Q1", "Q2"])
+
+
+def test_refusal_text_does_not_assert_an_empty_graph_when_it_is_not_one() -> None:
+    """The opening sentence was the half of the defect a caller could not fix by passing a better
+    reason. Both openings are asserted here so neither can drift into the other's meaning."""
+    empty = refusal_text("Where did X come from?", "a reason", graph_is_empty=True)
+    populated = refusal_text("Where did X come from?", "a reason", graph_is_empty=False)
+
+    assert empty.startswith("This graph has no sourced answer")
+    assert populated.startswith("This run found no sourced answer")
+    assert "not a statement that the graph holds nothing" in populated
+    assert "not a statement that the graph holds nothing" not in empty

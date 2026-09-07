@@ -406,3 +406,157 @@ def test_influence_traversal_is_unchanged_by_the_membership_axis() -> None:
         ("Q11647", Direction.INFLUENCED_BY),
         ("Q2306", Direction.INFLUENCED),
     }
+
+
+# --- the phase 6.5 seam widening -------------------------------------------------------------------
+#
+# Added 2026-09-07, phase 6.5 step 1. Two members, added together because they are the same change: the
+# `agent/` package types every store it holds as `GraphStore`, so a fact that lives only on the concrete
+# class is a fact the agent structurally cannot reach. `contested` had been derived in `graph/` since
+# v0.7.0 and served by the API since phase 6 step 8, and no answer could say the sources disagree --
+# not because anyone forgot, but because there was nothing on this seam to read.
+
+WESTERN_MUSIC = "Q1425111"
+NEW_MEXICO_MUSIC = "Q18217098"
+ELECTROPOP = "Q188450"
+ELECTROCLASH = "Q861823"
+ACID_JAZZ_RESOURCE = "http://dbpedia.org/resource/Acid_jazz"
+
+
+def test_contested_between_finds_a_real_disagreement(store: InMemoryGraphStore) -> None:
+    pair = store.contested_between(WESTERN_MUSIC, NEW_MEXICO_MUSIC)
+    assert pair is not None
+    assert {pair.a_from_b.source, pair.b_from_a.source} == {"wikidata", "dbpedia"}
+
+
+def test_contested_between_is_order_independent(store: InMemoryGraphStore) -> None:
+    """A pair is a pair. A caller that happened to walk the edge the other way must not be told the
+    sources agree."""
+    assert store.contested_between(ELECTROPOP, ELECTROCLASH) is store.contested_between(
+        ELECTROCLASH, ELECTROPOP
+    )
+    assert store.contested_between(ELECTROCLASH, ELECTROPOP) is not None
+
+
+def test_contested_between_returns_none_for_an_ordinary_pair(store: InMemoryGraphStore) -> None:
+    """`blues rock influenced_by blues` is single-source and uncontroversial. Absence is the answer for
+    2,202 of 2,284 influence edges, and it must read as absence rather than as agreement."""
+    assert store.contested_between(BLUES_ROCK, BLUES) is None
+
+
+def test_contested_between_does_not_fire_on_a_merely_reciprocal_pair(
+    store: InMemoryGraphStore,
+) -> None:
+    """**The definition lock, and the one worth having.**
+
+    Contested means two DIFFERENT sources assert opposite directions. It does NOT mean a reciprocal
+    pair exists: at v0.7.1 there are 6 reciprocal pairs and 2 contested, so the loose reading
+    overcounts by 3x and would state something false about where the corpus's information came from.
+    The other four are one source describing mutual influence, which between genres is frequently a
+    real claim.
+    """
+    from musical_mycelium.graph.corroboration import reciprocal_pairs
+
+    reciprocal = reciprocal_pairs(store._artifact)
+    same_source = [
+        (forward, reverse) for forward, reverse in reciprocal if forward.source == reverse.source
+    ]
+    assert same_source, "no single-source reciprocal pair exists to test the distinction against"
+    for forward, _ in same_source:
+        assert store.contested_between(forward.subject_id, forward.object_id) is None
+
+
+def test_node_by_resource_resolves_a_dbpedia_uri(store: InMemoryGraphStore) -> None:
+    node = store.node_by_resource(ACID_JAZZ_RESOURCE)
+    assert node is not None
+    assert node.id == ACID_JAZZ
+
+
+def test_node_by_resource_is_none_for_an_unknown_resource(store: InMemoryGraphStore) -> None:
+    """A syntactically perfect URI naming an entity this graph does not hold is not a citation for
+    anything, and reporting it as one is the fabrication the gate exists to catch."""
+    assert store.node_by_resource("http://dbpedia.org/resource/Not_A_Real_Genre_Here") is None
+
+
+def test_node_by_resource_is_none_when_two_nodes_claim_one_resource() -> None:
+    """**Ambiguity resolves to nothing, not to whichever node was loaded first.**
+
+    There are no collisions at v0.7.1 -- 624 aligned nodes, 624 distinct resources -- so this is a
+    lock on a property of the code rather than a property of today's corpus. It matters because the
+    failure would be silent: a citation resolved to an arbitrary one of two entities looks exactly
+    like a citation that resolved correctly, and nothing downstream could tell.
+    """
+    shared = "http://dbpedia.org/resource/Shared"
+    nodes = tuple(
+        Node(
+            id=node_id,
+            label=f"genre {node_id}",
+            source="test",
+            source_id=node_id,
+            retrieved_at="2026-01-01T00:00:00+00:00",
+            kind=NODE_KIND_GENRE,
+            dbpedia_resource=shared,
+        )
+        for node_id in ("Q1", "Q2")
+    )
+    store = InMemoryGraphStore(Artifact(nodes=nodes, edges=()))
+
+    assert store.get_node("Q1") is not None, "the nodes themselves are still reachable by id"
+    assert store.node_by_resource(shared) is None
+
+
+def test_a_third_claimant_does_not_revive_an_ambiguous_resource() -> None:
+    """Off-by-one in the index build: marking a duplicate must be sticky, not toggled by the next row."""
+    shared = "http://dbpedia.org/resource/Shared"
+    nodes = tuple(
+        Node(
+            id=node_id,
+            label=f"genre {node_id}",
+            source="test",
+            source_id=node_id,
+            retrieved_at="2026-01-01T00:00:00+00:00",
+            kind=NODE_KIND_GENRE,
+            dbpedia_resource=shared,
+        )
+        for node_id in ("Q1", "Q2", "Q3")
+    )
+    store = InMemoryGraphStore(Artifact(nodes=nodes, edges=()))
+
+    assert store.node_by_resource(shared) is None
+
+
+def test_a_node_with_no_dbpedia_alignment_is_not_indexed_under_the_empty_string() -> None:
+    """**Written against the pinned corpus first, and that version passed for the wrong reason.**
+
+    The first draft asserted `store.node_by_resource("") is None` on the real store. It does -- but not
+    because unaligned nodes are skipped. 855 of 1,479 nodes carry `dbpedia_resource=""`, so with the
+    skip removed they would all key on `""`, all collide, and the ambiguity rule would exclude them
+    anyway. The assertion held while the behaviour it names was broken, which is the shape of a test
+    that measures nothing.
+
+    So this builds a corpus with **exactly one** unaligned node, where the collision rule cannot
+    rescue it. Found by breaking the skip and watching nothing fail (2026-09-07).
+    """
+    aligned = Node(
+        id="Q1",
+        label="aligned genre",
+        source="test",
+        source_id="Q1",
+        retrieved_at="2026-01-01T00:00:00+00:00",
+        kind=NODE_KIND_GENRE,
+        dbpedia_resource="http://dbpedia.org/resource/Aligned",
+    )
+    unaligned = Node(
+        id="Q2",
+        label="unaligned genre",
+        source="test",
+        source_id="Q2",
+        retrieved_at="2026-01-01T00:00:00+00:00",
+        kind=NODE_KIND_GENRE,
+    )
+    store = InMemoryGraphStore(Artifact(nodes=(aligned, unaligned), edges=()))
+
+    assert store.node_by_resource("") is None, (
+        "the one unaligned node was indexed under empty string"
+    )
+    assert store.node_by_resource("http://dbpedia.org/resource/Aligned") is aligned
