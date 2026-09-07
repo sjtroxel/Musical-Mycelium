@@ -49,6 +49,17 @@ Today the answers are no, no, and no:
 - **Refusal:** `gold_v0_1_020` has false-refused a fully answerable question in **7 of 7 recorded runs**
   since 2026-08-18, and `thresholds.json` excludes it from the traversal gate as *"a tracked reproducible
   product bug"*. It survived a 3x corpus, so thinness was never the cause.
+
+  > **AMENDED 2026-09-07, phase 6.5 step 3 — this bullet is wrong in three ways and the corrections are
+  > the useful part.** It is **not 7 of 7**: across all 13 recorded runs the case has answered completely
+  > twice, and `eval/noise.py`'s own docstring has recorded one of those since 2026-08-16. It is **not
+  > reproducible**: the five identical failures behind that wording were one afternoon on one revision.
+  > It is **not a product bug**: read from a recorded trace, the model calls
+  > `resolve_node(name="fentanyl")` — the opioid — for a query that says *femtanyl*, then has one
+  > endpoint, cannot call `trace_lineage`, and stops. The corpus, `store.path()` and every tool answer
+  > this case correctly and deterministically. The last sentence above survives intact and was the one
+  > clue that pointed the right way: thinness was never the cause.
+  > Full diagnosis in `phase-6.5-debt-and-disagreement-IMPLEMENTATION.md` §3.0 and §3.3.
 - **Proof:** the live suite reports `NOT GATED` at v0.7.1, and no eval case anywhere exercises `contested`.
 
 ## 3. Delivers
@@ -138,9 +149,13 @@ Each of these is a real fork, and none should be settled by whoever happens to b
    `corroboration` get collapsed, which this repo has already had to correct in three files once.
 2. **Whether a contested metric joins the tier 1 catalog, and at what threshold** — or whether it stays
    tracked. Note the denominator problem before proposing a rate.
-3. **Whether `gold_v0_1_020` is fixable at all.** If diagnosis shows the cause is model behavior on a
-   7-node path rather than a code defect, the honest outcome is a recorded finding and a case that stays
-   excluded from the traversal gate — not a prompt tweaked until the number moves.
+3. ~~**Whether `gold_v0_1_020` is fixable at all.**~~ **CLOSED 2026-09-07.** The cause is model
+   behavior, and not on the axis this bullet guessed: the model mistypes the subject's name before any
+   traversal happens. **The outcome this bullet named is exactly the outcome taken** — a recorded
+   finding, a case that stays excluded, and no prompt tweaked. The near-miss resolver that would have
+   "fixed" it was measured and rejected: 8 label pairs sit one edit apart, including
+   `Joy Orbison`/`Roy Orbison`, so suggesting near labels trades an honest refusal for an undetectable
+   grounded wrong answer. IMPLEMENTATION §3.3 to §3.5.
 4. **How many `dbpedia_only` gold cases.** Five were proposed on 2026-09-04. Fewer is defensible; zero is
    not, since that leaves 48% of the corpus measured by four cases.
 5. **The held-out set at the phase 6.5 freeze.** Run count is 1, and re-running it after a corpus change

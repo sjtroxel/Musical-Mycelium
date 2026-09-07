@@ -83,6 +83,79 @@ class ClaimRow:
 
 
 @dataclass(frozen=True, slots=True)
+class ToolCallRow:
+    """One tool call the model actually made, with the arguments it chose.
+
+    *(Added 2026-09-07, phase 6.5 step 3.)* **Arguments are the point.** A name alone says the model
+    reached for ``trace_lineage``; the arguments say whether it handed over two ids or one, and in which
+    order. `gold_v0_1_020` was diagnosed for a day on metrics alone precisely because this row did not
+    exist -- the runner has recorded ``tool_calls`` on ``CaseRun`` since phase 3, and the transcript
+    writer dropped them.
+    """
+
+    name: str
+    arguments: dict[str, Any]
+    is_error: bool
+
+    def to_json(self) -> dict[str, Any]:
+        return {"name": self.name, "arguments": self.arguments, "is_error": self.is_error}
+
+
+@dataclass(frozen=True, slots=True)
+class TraceRow:
+    """What the model intended and what it did, side by side. The diagnostic half of a transcript.
+
+    **Why a transcript needs this at all.** Until 2026-09-07 a transcript recorded what a run *wrote* --
+    prose and approved claims -- which is everything a judge needs and nothing a debugger does. A case
+    that refuses writes a template and approves nothing, so its entire transcript row was the refusal
+    reason: it said the run found nothing and could not say what the run tried.
+
+    **The plan is recorded and is still not executed.** ``loop.run`` is explicit that no branch reads
+    ``plan``, and nothing here changes that -- this stores the model's stated intent so a reader can
+    compare it against ``tool_calls``, which is the comparison that makes a premature stop visible. A
+    plan naming three steps beside a single executed ``resolve_node`` is a fact about the model that no
+    metric in ``SuiteResult`` can express.
+
+    ``rejections`` carries the gate's reasons. Zero rejections beside zero approved claims means the
+    model proposed nothing at all, which is a completely different failure from proposing claims the
+    gate threw out, and the two are indistinguishable from ``approved_claims: 0``.
+    """
+
+    query_kind: str
+    planned_tools: tuple[str, ...]
+    #: Tools the plan named that do not exist. Already measured by the runner; a model wrong about its
+    #: own toolbox is data, not a failure.
+    unregistered: tuple[str, ...]
+    tool_calls: tuple[ToolCallRow, ...]
+    #: Visit ORDER, not descent order. See ``CaseRun.visited`` -- reading it as a lineage states the
+    #: history backwards.
+    visited: tuple[str, ...]
+    rejections: tuple[str, ...]
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "query_kind": self.query_kind,
+            "planned_tools": list(self.planned_tools),
+            "unregistered": list(self.unregistered),
+            "tool_calls": [call.to_json() for call in self.tool_calls],
+            "visited": list(self.visited),
+            "rejections": list(self.rejections),
+        }
+
+
+#: What a transcript written before 2026-09-07 has instead of a trace. Explicit rather than ``None`` so
+#: a reader of an old file sees "this was not recorded" rather than "this run did nothing".
+NO_TRACE_RECORDED = TraceRow(
+    query_kind="not-recorded",
+    planned_tools=(),
+    unregistered=(),
+    tool_calls=(),
+    visited=(),
+    rejections=(),
+)
+
+
+@dataclass(frozen=True, slots=True)
 class CaseTranscript:
     """One case: what was asked, what was approved, and what was written.
 
@@ -97,6 +170,7 @@ class CaseTranscript:
     refusal_reason: str
     prose: str
     claims: tuple[ClaimRow, ...]
+    trace: TraceRow = NO_TRACE_RECORDED
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -106,6 +180,7 @@ class CaseTranscript:
             "refusal_reason": self.refusal_reason,
             "prose": self.prose,
             "claims": [claim.to_json() for claim in self.claims],
+            "trace": self.trace.to_json(),
         }
 
 
@@ -181,6 +256,21 @@ def build(result: SuiteResult, store: GraphStore, *, revision: str) -> RunTransc
                 )
                 for claim in case.run.approved
             ),
+            trace=TraceRow(
+                query_kind=case.run.plan.query_kind,
+                planned_tools=tuple(step.tool for step in case.run.plan.steps),
+                unregistered=case.run.unregistered,
+                tool_calls=tuple(
+                    ToolCallRow(
+                        name=call.name,
+                        arguments=dict(call.arguments),
+                        is_error=call.is_error,
+                    )
+                    for call in case.run.tool_calls
+                ),
+                visited=case.run.visited,
+                rejections=case.run.rejection_reasons,
+            ),
         )
         for case in result.results
     )
@@ -245,9 +335,34 @@ def load(path: Path) -> RunTranscript:
                     )
                     for claim in case["claims"]
                 ),
+                # `.get` rather than `[...]`: eleven committed transcripts predate the trace and must
+                # stay readable, because `eval-tier2` and the judge pool builder load them. An absent
+                # trace becomes NO_TRACE_RECORDED, which says "not recorded" rather than "empty run".
+                trace=_trace_from_json(case.get("trace")),
             )
             for case in payload["cases"]
         ),
+    )
+
+
+def _trace_from_json(payload: dict[str, Any] | None) -> TraceRow:
+    """Parse a trace, or report that the file predates traces. Never invents an empty run."""
+    if not payload:
+        return NO_TRACE_RECORDED
+    return TraceRow(
+        query_kind=payload.get("query_kind", "not-recorded"),
+        planned_tools=tuple(payload.get("planned_tools", ())),
+        unregistered=tuple(payload.get("unregistered", ())),
+        tool_calls=tuple(
+            ToolCallRow(
+                name=call["name"],
+                arguments=dict(call.get("arguments", {})),
+                is_error=bool(call.get("is_error", False)),
+            )
+            for call in payload.get("tool_calls", ())
+        ),
+        visited=tuple(payload.get("visited", ())),
+        rejections=tuple(payload.get("rejections", ())),
     )
 
 

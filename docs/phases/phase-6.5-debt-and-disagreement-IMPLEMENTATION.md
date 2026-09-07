@@ -385,7 +385,7 @@ first mutation did not compile or `make fmt` had reflowed the anchor. Notable: b
 targeted, because `tread rap` has `plays_genre` edges. Membership is not derivation, and if it counted
 here the corpus-empty wording would become unreachable for the entire artist axis.
 
-### Step 3 — Item 2: diagnose `gold_v0_1_020`, then decide
+### Step 3 — Item 2: diagnose `gold_v0_1_020`, then decide — **DONE 2026-09-07**
 
 **Diagnosis first and separately. This step does not get to guess, and it does not get to tune.** Read the
 five baseline transcripts in `eval/transcripts/` and `noise_floor.json` for what the model actually did on
@@ -398,6 +398,209 @@ moves. Fitting a prompt to a gold case is the day the gold set stops measuring a
 names that here so the temptation is on the record before the diagnosis exists.
 
 **Done means:** DoD #2 — the case passes, or a written diagnosis names the cause and records the decision.
+
+#### 3.0 The diagnosis, 2026-09-07 — measured, and it contradicts the premise
+
+**No code changed in this step.** Everything below is read from the committed record and from the pinned
+store; nothing was tuned and nothing was run against a live model.
+
+**1. The premise is wrong: it is NOT 7 of 7, and it is NOT reproducible.** Across every recorded run —
+the five noise-floor runs of 2026-08-17 plus seven committed transcripts — the case has run **12 times:
+11 refusals and one complete, correct answer.**
+
+| run | artifact | code | outcome |
+|---|---|---|---|
+| 20260817 x5 | 0.5.0 | `f84453a` | refused |
+| 20260819 x2 | 0.5.0 | `db80585-dirty` | refused |
+| 20260823 x2 | 0.5.0 | `bb54263-dirty`, `97665e2` | refused |
+| **20260824T003339** | **0.5.0** | **`0f8a188`** | **ANSWERED — all 6 expected claims, exact expected chain** |
+| 20260903 | 0.6.0 | `1239efe-dirty` | refused |
+| 20260906 | 0.7.1 | `62a949e` | refused |
+
+And `eval/noise.py`'s own module docstring has recorded a **second** answering observation since
+2026-08-16: *"`gold_v0_1_020` went 0 approved claims to 6"* between two identical runs. **The repo has
+known this case is a coin since before the noise floor was measured**, and the scope doc, `thresholds.json`
+and this plan all restated "reproducible" anyway.
+
+`noise_floor.json` files it under `reproducible_failure_ids`, and **that classification is correct for
+the five runs it summarises** — they were all on one afternoon, one revision, and all failed. The defect
+is in reading a five-run window as a permanent property. `thresholds.json:126` calls it *"a tracked
+reproducible product bug"* and **both words are wrong**: not reproducible (1 in 12 answers), and not
+demonstrably a product bug (see finding 2).
+
+**2. The corpus, the graph and every tool answer this case perfectly — deterministically, today.**
+Measured against pinned v0.7.1:
+
+- All six expected hops exist as sourced Wikidata edges.
+- `store.path(femtanyl, Woody Guthrie)` returns **exactly the expected 6-hop chain**, unaided.
+- `resolve_node` resolves both names, in either casing, to the right ids with the right `kind`.
+- **`trace_lineage(Q131318965, Q4061)` returns 6 hops and 6 proposals in a single call.** The entire
+  answer is one tool call away, and that call is free and deterministic.
+
+So the fault is not the data, not the traversal, and not the tool layer. It is the model not making the
+call.
+
+**3. What the failing run actually did, from `per_case`.** `approved_claims: 0`, **`rejected_claims: 0`**
+— the gate rejected nothing because **nothing was proposed**. `traversal_recall` 1/7 with
+`traversal_precision` 1.0 means it visited exactly one node and that node was on the expected path.
+`truncated: false` — it did not hit the turn cap or the token cap. **It executed one step, that step
+proposed nothing, so it was a `resolve_node` and not a traversal. Then it chose to stop.**
+
+**4. `plan_divergence` is NOT the differentiator, and the two sibling cases prove it.** Every
+path-shaped case in the 2026-09-06 run:
+
+| case | axis | hops | recall | claims | refused |
+|---|---|---|---|---|---|
+| `gold_v0_1_016` | genre | 2 | 1.00 | 2 | no |
+| `gold_v0_1_017` | genre | 1 | 1.00 | 1 | no |
+| `gold_v0_1_018` | artist | 3 | 1.00 | 3 | no |
+| `gold_v0_1_019` | artist | 4 | 1.00 | 4 | no |
+| `gold_v0_1_020` | artist | **6** | 0.14 | 0 | **yes** |
+
+018 and 019 are artist paths, carry the **identical** `plan_divergence` of -2, and both answer perfectly.
+So "the artist axis fails" is false, and "it plans more steps than it runs" is normal rather than a
+symptom. **The only structural difference left is length: 6 hops against 3 and 4.**
+
+**5. THE EPISTEMIC PROBLEM, and it is the most useful thing here: the length hypothesis is untestable on
+the current gold set.** Among path-shaped cases the hop counts are 1, 2, 3, 4 and **6** — `gold_v0_1_020`
+is the only case above four hops. So *"paths longer than four hops fail"* and *"this one case fails"* fit
+the evidence identically and **cannot be told apart by any number of re-runs of this set.** More live runs
+of this case would buy precision on a rate and nothing at all on the cause.
+
+**6. A real code defect was found, and it is genuinely adjacent rather than the proven cause.** Two of the
+seven tool descriptions still say the corpus is genres only:
+
+- `get_influences` — *"List the documented influences on **a genre**... it does not mean **the genre** had
+  no influences."* No mention of artists.
+- `trace_lineage` — *"Trace the documented chain of influence between **two genres**... this graph cannot
+  connect **the two genres**."* No mention of artists.
+
+Meanwhile `resolve_node` says *"a genre name OR an artist name"*, `get_descendants` says *"a genre or
+artist"*, and `describe_node` says *"whether it is a genre or an artist"*. **Three tools were updated for
+the artist axis at v0.4.0 and two were missed** — the same defect class as the refusal strings that
+`loop.py:766` records fixing at that version, in the tool layer instead of the prose layer.
+
+It is a defect on its own merits: a tool that misdescribes its own scope is wrong whether or not any eval
+case notices. **It is NOT established as the cause of this case**, because 018 and 019 are artist paths
+that succeed through the same genre-described tool.
+
+**7. The record cannot answer the remaining question, and that is a finding about the record.** The
+transcript format stores `case_id`, `query`, `claims`, `prose`, `refused`, `refusal_reason` — **no plan
+and no tool calls.** The scope doc called this case *"the most reproducible bug in the repo and therefore
+the cheapest to study."* It is neither: it is a coin, and it is expensive to study, because the evidence
+that would name the mechanism was never recorded. Everything in findings 2 through 5 was reconstructed
+from metrics rather than read from a trace.
+
+#### 3.1 The options as they stood before the trace existed (superseded by §3.5)
+
+Three options, and they are not exclusive.
+
+- **A. Fix the two stale tool descriptions.** Justified without reference to this case at all: two tools
+  lie about their own scope and three siblings already do not. **The line that must not be crossed:** if
+  the justification becomes *"and then 020 passed"*, that is fitting the product to a gold case and the
+  gold set stops measuring on the day it happens. So the fix ships as a defect fix, the eval lands where
+  it lands, and a subsequent pass is **not** reported as evidence the fix was right.
+- **B. Record tool calls in the transcript, then look.** The only route to the actual mechanism. Small,
+  useful beyond this case, and it would have to happen before step 7's five runs to be worth anything.
+  Costs a cent or two to exercise.
+- **C. Record it as undiagnosed and leave it excluded from the traversal gate.** Honest, and cheapest.
+
+**Independent of A, B and C, two things are now known to be false and should be corrected in place:**
+`thresholds.json:126`'s *"tracked reproducible product bug"*, and the scope doc's *"7 of 7 recorded
+runs"*. **Step 5 should also add a second long path case** — a 5+ hop artist chain — because that is the
+only thing that would let the next person tell "long paths fail" from "this case fails", and it costs one
+case in a set that is gaining nine.
+
+#### 3.2 The instrument — transcripts now record what the model DID
+
+Option B, chosen 2026-09-07. `eval/transcripts.py` gains a `trace` per case: `query_kind`,
+`planned_tools`, `unregistered`, `tool_calls` **with their arguments**, `visited`, and `rejections`.
+
+**Every one of those already existed on `CaseRun` and had since phase 3.** The runner recorded them and
+the transcript writer discarded them, which is why finding 3.0.7 was possible at all: a transcript
+recorded what a run *wrote*, which is everything a judge needs and nothing a debugger does.
+
+Backward compatible by necessity: the eleven committed transcripts predate the field, `eval-tier2` and
+the judge pool builder both load them, and an absent trace parses to `NO_TRACE_RECORDED` whose
+`query_kind` is the literal `"not-recorded"` rather than an empty run. **A missing measurement must not
+read as a measured zero.**
+
+**One of the new tests was decorative and a break found it.** Emptying `visited` and `rejections` inside
+`build` failed nothing, because the assertions were `isinstance(..., tuple)` and `()` is a tuple.
+Replaced with a field-by-field comparison against the `CaseRun` the transcript was built from; the
+arguments test now asserts on the serialised JSON, because a mutation that dropped arguments in
+`to_json` also passed. This is the second time in this phase that asserting a type passed for asserting
+a behaviour — see §1.0 finding 4.
+
+#### 3.3 THE CAUSE, read from a trace — 2026-09-07, run `20260907T181311Z`
+
+One case, two cents, and it is none of the hypotheses in §3.0.
+
+```
+query_kind    : lineage
+planned_tools : ['resolve_node', 'resolve_node', 'trace_lineage']
+tool_calls    : resolve_node(name="fentanyl")        <-- the opioid
+                resolve_node(name="Woody Guthrie")
+visited       : ['Q4061']
+rejections    : []
+```
+
+**The model autocorrected the artist's name.** The query says *femtanyl*; the model typed **fentanyl**.
+`search("fentanyl")` returns zero candidates, so `resolve_node` answers `{"node_id": null, "reason":
+"not in this graph"}`. The model then holds one endpoint, cannot call `trace_lineage`, and stops. That is
+`traversal_recall` 1/7 exactly: `visited` is Woody Guthrie alone.
+
+**Every hypothesis in §3.0 is dead.** Path length is irrelevant — it never reached a traversal tool. The
+genre-only tool descriptions (§3.0.6) are irrelevant for the same reason. The artist axis is fine. And
+the non-determinism is explained: whether a model transcribes an unusual spelling or normalises it to the
+common word is sampling variance, which is what a 2-in-13 success rate looks like.
+
+**The `did_you_mean` asymmetry, which is real and is NOT being fixed.** `resolve_node` has two failure
+branches: candidates-but-no-unique-match returns `did_you_mean`, and **zero candidates returns nothing at
+all**. The graph held a label one edit away and told the model only that its guess failed.
+
+#### 3.4 The near-miss resolver was MEASURED and REJECTED
+
+The obvious fix is to suggest near labels on the zero-candidate branch. Measured over the 1,479 distinct
+normalised labels at v0.7.1 before deciding:
+
+| edit distance | pairs of REAL entities that collide |
+|---|---|
+| 1 | **8** |
+| 2 | **149** |
+
+The eight at distance 1: `funk rock`/`punk rock`, **`Joy Orbison`/`Roy Orbison`**, `chanson`/`Hanson`,
+`C-pop`/`J-pop`, `jingle`/`jungle`, `Sia`/`ska`, `synth funk`/`synth-punk`, `oi!`/`T.I.` Distance 2
+includes `art rock`/`hard rock`, `Afrobeat`/`Eurobeat`, `avant-pop`/`avant-prog`.
+
+**Three reasons it is rejected, in order of weight:**
+
+1. **It only helps when the mistyped name is ABSENT from the corpus.** femtanyl is recoverable precisely
+   because "fentanyl" is not a node. When an autocorrection lands on something real the model never sees
+   a null at all — it resolves cleanly and answers the wrong question, and no suggester is involved.
+2. **At the distance that catches femtanyl it would offer `punk rock` for `funk rock` and `Roy Orbison`
+   for `Joy Orbison`.** That trades an honest refusal for a **grounded wrong answer**: groundedness 100%,
+   citation resolution 100%, and nothing in the suite notices. This project can make no worse trade.
+   `resolve_node`'s "refuse a near miss rather than guessing" rule was right, and this measurement is the
+   argument *for* it.
+3. Distance 2 is unusable on volume alone.
+
+**THE FINDING THAT OUTLIVES THE DECISION: `Joy Orbison`/`Roy Orbison` means this failure is already live,
+today, with no feature added.** A model that typed "Roy" for "Joy" would resolve cleanly, cite correctly,
+and answer about a 1960s rock legend when asked about a contemporary electronic producer. **No metric in
+the suite would catch it**, because every claim would be genuinely grounded. Groundedness is a provenance
+guarantee, not a relevance one, and this is the sharpest example the project has yet produced of the
+difference. Step 5 gains an adversarial case for it (§5, added deliberately 2026-09-07).
+
+#### 3.5 The decision — CLOSED 2026-09-07 (§5.3)
+
+- **`gold_v0_1_020` stays excluded from the traversal gate**, with the real cause recorded in
+  `thresholds.json` in place of the false "tracked reproducible product bug".
+- **The resolver is not changed.** No near-miss suggestion, no fuzzy matching, no prompt nudge. §3.4.
+- **The two genre-only tool descriptions (§3.0.6) are NOT fixed in this step.** They are a real defect and
+  they are now known not to be this case's cause, so fixing them here would be a change with no
+  measurement attached, made while a related case is being watched. Recorded for a later phase.
+- **`thresholds.json` corrected**, and the phase 6.5 scope doc §2 amended: it is not 7 of 7.
 
 ### Step 4 — Item 1: `contested` reachable in an answer, and item 4
 
@@ -449,6 +652,9 @@ Items 5, 6 and 7, unblocked by step 4.
 
 - **The two contested gold cases**, authored against the exact pairs measured in §2.
 - **One `ambiguous`-branch case**, against `big band` / `big band music`.
+- **A second long path case.** `gold_v0_1_020` is the only path-shaped case above four hops, so
+  *"paths longer than four hops fail"* and *"this one case fails"* cannot be told apart on the current
+  set (§3.0 finding 5). One 5+ hop artist chain settles it for the next person and costs one case.
 - **Six `dbpedia_only` gold cases.** The largest single piece of work in the phase and real
   hand-authoring: each needs an independent, non-Wikidata citation. **Decision 5.4, settled 2026-09-07 at
   six** — five were proposed on 2026-09-04, and six was chosen over five for margin above the slicer's
@@ -457,10 +663,25 @@ Items 5, 6 and 7, unblocked by step 4.
   under-sampled, and now reported as a rate rather than a count.
 - The 66 existing hand-authored claims are **not** re-authored. Item 7 adds.
 
-**Arithmetic, because it is easy to get wrong and it drives step 7.** All nine additions are **gold**
-cases in `gold_v0_1.json` — the contested and ambiguous cases are not a separate set. Gold goes
-**29 -> 38**, and the live set goes **45 -> 54**. The adversarial set stays at 18 and this phase adds
-nothing to it.
+**One ADVERSARIAL case, added deliberately 2026-09-07 — this is a scope widening and it is his call,
+not a silent absorption.** Step 3 measured that `Joy Orbison` and `Roy Orbison` are one edit apart and
+**both real**, so a model that mistypes one resolves cleanly, cites correctly, and answers about the
+wrong artist with **100% groundedness and 100% citation resolution**. Nothing in the suite catches it.
+That is a live hole today, it is the sharpest demonstration the project has that *groundedness is a
+provenance guarantee and not a relevance one*, and `gold_v0_1_020` cannot test it because "fentanyl" is
+absent from the corpus — a refusal is the one outcome that saves you, and it is unavailable here.
+
+The case belongs in the **adversarial** set rather than the gold set: it plants a confusable name and
+asks whether the system answers the wrong question confidently. `.claude/rules/evals.md` names the
+adversarial set as the home for planted failures. **Authoring it requires deciding what "correct" is** —
+almost certainly *"names the artist it actually resolved, so a reader can see the substitution"* rather
+than *"refuses"*, since refusing every confusable name would be its own false-refusal problem.
+
+**Arithmetic, because it is easy to get wrong and it drives step 7.** Nine additions are **gold** cases
+in `gold_v0_1.json` — the contested and ambiguous cases are not a separate set — and one is
+**adversarial**. Gold goes **29 -> 38**. The adversarial set goes **18 -> 19**, of which **17** run live
+(`adv_014` and `adv_015` need synthetic fixtures and are excluded by `eval/harness.py`). **The live set
+goes 45 -> 55**, and that is the number step 7's threshold set must be measured over.
 
 **Done means:** DoD #5 — the datasets exercise contested, the `ambiguous` branch, and `dbpedia_only` at
 n>=5 so the slicer reports a rate rather than a count.

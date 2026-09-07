@@ -7,6 +7,7 @@ serialisation and is tested because a pool built from a mis-parsed transcript wo
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -179,3 +180,130 @@ def test_an_unresolvable_node_id_is_shown_as_the_id(store: InMemoryGraphStore) -
     )
     assert row.to_json()["subject"] == "Q999999"
     assert store.get_node("Q999999") is None
+
+
+# --- the trace -------------------------------------------------------------------------------------
+#
+# Added 2026-09-07, phase 6.5 step 3. A transcript recorded what a run WROTE and not what it DID, so a
+# refusing case's whole record was its refusal reason. `gold_v0_1_020` was diagnosed across a full day
+# on `SuiteResult` metrics alone -- 11 refusals in 12 recorded runs, one perfect answer, and no way to
+# see what the model reached for -- while `CaseRun` had carried `plan`, `tool_calls`, `unregistered`,
+# `visited` and `rejections` since phase 3. The runner recorded them; this file dropped them.
+
+
+def test_the_trace_records_what_the_model_actually_called(transcript: RunTranscript) -> None:
+    answered = next(c for c in transcript.cases if c.claims)
+    assert answered.trace.tool_calls, "a case that produced claims called no tools"
+    assert all(call.name for call in answered.trace.tool_calls)
+
+
+def test_the_trace_records_arguments_and_not_only_names(transcript: RunTranscript) -> None:
+    """**The arguments are the diagnostic half.** A name says the model reached for `trace_lineage`;
+    the arguments say whether it passed two ids or one, and in which order.
+
+    Asserted on the SERIALISED form, not the in-memory object. The first draft checked the dataclass
+    and a mutation that dropped arguments from `to_json` sailed straight past it -- the field a reader
+    of a committed file actually sees is the one in the JSON (2026-09-07).
+    """
+    calls = [c for case in transcript.cases for c in case.trace.tool_calls]
+    assert any(call.arguments for call in calls), "every recorded call had empty arguments"
+
+    serialised = [
+        call for case in transcript.to_json()["cases"] for call in case["trace"]["tool_calls"]
+    ]
+    assert any(call["arguments"] for call in serialised), (
+        "arguments were dropped on the way to JSON"
+    )
+
+
+def test_a_refusing_case_still_carries_its_trace(transcript: RunTranscript) -> None:
+    """The case this step exists for. A refusal used to record a reason and nothing else, which is the
+    one shape where knowing what was attempted matters most."""
+    refusals = [c for c in transcript.cases if c.refused]
+    assert refusals, "the scripted gold run produced no refusal to check"
+    assert any(c.trace.tool_calls or c.trace.planned_tools for c in refusals)
+
+
+def test_the_plan_is_recorded_and_still_does_not_drive_execution(
+    transcript: RunTranscript,
+) -> None:
+    """`loop.run` is explicit that no branch reads `plan`. Recording it changes nothing about that --
+    the value is that `planned_tools` can be compared against `tool_calls`, which is how a premature
+    stop becomes visible at all."""
+    case = transcript.cases[0]
+    assert case.trace.query_kind
+    assert isinstance(case.trace.planned_tools, tuple)
+
+
+def test_build_copies_every_trace_field_from_the_run_it_scored(
+    result: SuiteResult, transcript: RunTranscript
+) -> None:
+    """**The lock that matters, and the first draft did not have it.**
+
+    Four mutations were tried against these tests; the one that emptied `visited` and `rejections`
+    inside `build` failed nothing, because the tests asserted `isinstance(..., tuple)` and `()` is a
+    tuple. Asserting a type is not asserting a behaviour -- the same defect found one layer down in
+    step 1. This compares the transcript against the `CaseRun` it was built from, field by field, so a
+    dropped field cannot pass as an empty one.
+
+    `rejections` matters for its own reason: `approved_claims: 0` collapses two different failures --
+    the model proposed nothing, and the model proposed claims the gate threw out. Only this field
+    separates them, and `gold_v0_1_020` is the first case where the difference decided a diagnosis.
+    """
+    assert len(transcript.cases) == len(result.results)
+    for scored, case in zip(result.results, transcript.cases, strict=True):
+        run = scored.run
+        assert case.trace.query_kind == run.plan.query_kind
+        assert case.trace.planned_tools == tuple(step.tool for step in run.plan.steps)
+        assert case.trace.unregistered == run.unregistered
+        assert case.trace.visited == run.visited
+        assert case.trace.rejections == run.rejection_reasons
+        assert [c.name for c in case.trace.tool_calls] == [c.name for c in run.tool_calls]
+        assert [c.arguments for c in case.trace.tool_calls] == [
+            dict(c.arguments) for c in run.tool_calls
+        ]
+
+
+def test_a_transcript_written_before_traces_existed_still_loads(tmp_path: Path) -> None:
+    """**Eleven committed transcripts predate this field**, and `eval-tier2` and the judge pool builder
+    both load them. An absent trace must read as "not recorded" rather than as an empty run -- the
+    difference between a fact and a fabrication, in the file whose entire purpose is being read later.
+    """
+    legacy = {
+        "dataset": "live",
+        "provider": "bedrock",
+        "model_id": "m",
+        "artifact_version": "0.5.0",
+        "code_revision": "abc",
+        "written_at": "20260819T000000Z",
+        "cases": [
+            {
+                "case_id": "x",
+                "query": "q",
+                "refused": True,
+                "refusal_reason": "it is not in this graph",
+                "prose": "p",
+                "claims": [],
+            }
+        ],
+    }
+    path = tmp_path / "20260819T000000Z-bedrock.json"
+    path.write_text(json.dumps(legacy), encoding="utf-8")
+
+    loaded = transcripts.load(path)
+    assert loaded.cases[0].trace is transcripts.NO_TRACE_RECORDED
+    assert loaded.cases[0].trace.query_kind == "not-recorded"
+    assert loaded.cases[0].trace.tool_calls == ()
+
+
+def test_every_committed_transcript_still_loads() -> None:
+    """The real files, not a synthetic one. A schema change that breaks the committed history breaks
+    the judge pool, and the pool is the only thing tier 2 can be built from."""
+    for path in sorted(transcripts.TRANSCRIPTS_DIR.glob("*.json")):
+        assert transcripts.load(path).cases, f"{path.name} loaded with no cases"
+
+
+def test_the_trace_round_trips(transcript: RunTranscript, tmp_path: Path) -> None:
+    path = transcripts.write(transcript, directory=tmp_path)
+    reloaded = transcripts.load(path)
+    assert [c.trace for c in reloaded.cases] == [c.trace for c in transcript.cases]

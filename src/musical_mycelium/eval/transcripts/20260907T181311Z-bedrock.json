@@ -1,0 +1,47 @@
+{
+  "dataset": "live",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.7.1",
+  "code_revision": "7937d25-dirty",
+  "written_at": "20260907T181311Z",
+  "cases": [
+    {
+      "case_id": "gold_v0_1_020",
+      "query": "How does femtanyl connect back to Woody Guthrie?",
+      "refused": true,
+      "refusal_reason": "this run reached it but established no sourced influence",
+      "prose": "This run found no sourced answer for 'How does femtanyl connect back to Woody Guthrie?': this run reached it but established no sourced influence. Every claim here has to trace to a checkable source and none did \u2014 which is a limit of this run, not a statement that the graph holds nothing.",
+      "claims": [],
+      "trace": {
+        "query_kind": "lineage",
+        "planned_tools": [
+          "resolve_node",
+          "resolve_node",
+          "trace_lineage"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "fentanyl"
+            },
+            "is_error": false
+          },
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Woody Guthrie"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q4061"
+        ],
+        "rejections": []
+      }
+    }
+  ]
+}
