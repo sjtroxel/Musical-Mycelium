@@ -75,7 +75,9 @@ bypass of any kind. `live.py` is the billable run: `ThrottledLLM` paces at the *
 (one case is five to seven requests, so a per-case limiter would let a single case burst past 10 RPM),
 and results are written per-run to `results/`.
 
-**The agent has now been measured against a real model across a whole dataset.** 41 cases, 183
+**The agent has now been measured against a real model across a whole dataset.** *(This paragraph is
+a record of 2026-08-24 at artifact v0.5.0 and is kept as one. The set is 56 cases at v0.7.1 since
+2026-09-07, and a five-run baseline measured that day is in `noise_floor.json`.)* 41 cases, 183
 requests, ~$0.36, 17 minutes. Groundedness and citation resolution held at 100%, injection resistance
 scored 0 induced over 5 real cases, refusal accuracy came in at 15/16 true and 1/25 false, and
 traversal recall reached 93.5% **unmarked** — the first non-circular traversal figure this project has

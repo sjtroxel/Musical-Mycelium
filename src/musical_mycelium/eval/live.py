@@ -62,6 +62,12 @@ RESULTS_DIR = Path(__file__).parent / "results"
 #:
 #: The scripted floor was 179 requests and ~225k input tokens across 41 cases. These round that up
 #: rather than down, because an estimate that under-states spend is the one that matters.
+#:
+#: **Measured against reality on 2026-09-07 over five 56-case runs: the estimate is about 2x high.**
+#: It projected 392 requests and ~$1.09; the runs issued 255-262 and cost $0.501-$0.539. Left
+#: deliberately unchanged. A spend gate should quote the ceiling, not the expectation -- the number a
+#: person approves is the worst case they are agreeing to, and tuning it toward the mean would make
+#: the prompt more accurate and the consent weaker.
 ESTIMATED_REQUESTS_PER_CASE = 7
 ESTIMATED_INPUT_TOKENS_PER_CASE = 14_000
 ESTIMATED_OUTPUT_TOKENS_PER_CASE = 1_100
@@ -290,8 +296,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     failures means nothing.
 
     Neither flag produces a gated run. That is not a special case here — the threshold check compares
-    against the 41-case baseline and declines to gate any subset, which is the same guard `--cases`
-    already relies on.
+    against the live baseline's case count (56 since 2026-09-07) and declines to gate any subset, which
+    is the same guard `--cases` already relies on. The count is deliberately not repeated here as a
+    literal: `thresholds.json` is the authority, and a number copied into a docstring is a number that
+    goes stale without failing anything.
     """
     args = list(sys.argv[1:] if argv is None else argv)
     try:

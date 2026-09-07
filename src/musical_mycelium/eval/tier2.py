@@ -106,7 +106,8 @@ from musical_mycelium.eval.transcripts import RunTranscript
 SAMPLE_NAME = "tier2_sample"
 
 #: `07` §2 and the scope doc both say 20-30. Twenty rather than thirty because **one live run answers
-#: roughly 25 of its 41 cases** -- the other 16 refuse, correctly -- so 20 is reachable from a single
+#: roughly 36 of its 56 cases** -- measured over five runs on 2026-09-07, 35 to 37, the rest refusing
+#: correctly -- so 20 is reachable from a single
 #: release candidate, and a tier 2 sample that needs two runs to exist is a tier 2 sample that does not
 #: get taken. The size travels in the result file next to every number drawn from it.
 SAMPLE_SIZE = 20

@@ -289,9 +289,11 @@ def build_pool(
 ) -> Pool:
     """Sample `size` items across one or more transcripts, deterministically.
 
-    **Distinct cases first, then second answers to cases already used.** One live run answers about 25
-    of its 41 cases -- the other 16 are refusal cases and refuse correctly -- so a single run cannot
-    fill a 30-item pool at all, and a naive sample across two runs would happily take the same case
+    **Distinct cases first, then second answers to cases already used.** One live run answers about 36
+    of its 56 cases -- measured over five runs on 2026-09-07, 35 to 37, the rest refusing correctly.
+    *(Was 25 of 41 until then, and the conclusion below has flipped: a 30-item pool IS now reachable
+    from a single run. The pooling logic is unchanged and still correct -- it just no longer needs a
+    second run in the ordinary case.)* A naive sample across two runs would happily take the same case
     twice while leaving another unseen. The greedy rounds below take every case once before taking any
     case twice, which maximises how much of the corpus the agreement figure is measured over.
 
@@ -350,7 +352,7 @@ def build_pool(
     if len(chosen) < size and not allow_short:
         raise PoolError(
             f"only {len(chosen)} eligible items across {len(runs)} run(s); the target is {size}. "
-            "One live run answers roughly 25 of its 41 cases, so a 30-item pool needs two runs. "
+            "One live run answers roughly 36 of its 56 cases (measured over five runs, 2026-09-07). "
             "Pass allow_short to build a smaller pool deliberately -- it is a smaller n, permanently, "
             "next to every judged number."
         )

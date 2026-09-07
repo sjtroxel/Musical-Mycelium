@@ -176,6 +176,19 @@ def _metric_lines(result: SuiteResult) -> list[str]:
             marked,
         )
     )
+    # Added 2026-09-07, phase 6.5 step 7. The metric and its gate landed at step 6 and this line did
+    # not, so on a NOT GATED run -- which every live run was between steps 5 and 7 -- the number was
+    # in the JSON and invisible to the person reading the terminal. A metric nobody can see is a
+    # metric nobody checks, and the gates block only when a threshold set matches.
+    lines.append(
+        _line(
+            "contested_disclosure",
+            f"{result.contested.silent} silent over {result.contested.scored_cases} scored "
+            f"({result.contested.unscored_cases} cases crossed no contested pair)",
+            result,
+            marked,
+        )
+    )
     lines.append(
         _line(
             "verification_mix",

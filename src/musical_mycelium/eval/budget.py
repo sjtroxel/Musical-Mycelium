@@ -52,8 +52,9 @@ HAIKU_TOKENS_PER_DAY = 27_000_000
 #: throttling. Headroom is what keeps that loop from being entered at all — the limiter cannot see the
 #: retries, so it has to leave room for them.
 #:
-#: One request per minute of headroom costs a 41-case run about two minutes. A throttle costs the whole
-#: run.
+#: One request per minute of headroom costs a 56-case run about three minutes. A throttle costs the
+#: whole run. *(Measured 2026-09-07: five runs issued 255-262 requests each and took ~27-30 minutes at
+#: this rate, so the trade is three minutes against a run that cannot be resumed.)*
 EVAL_REQUESTS_PER_MINUTE = 9
 
 #: Nova Pro, the judge, on this account: 2M TPM / 25 RPM, confirmed 2026-08-11. A different model on a

@@ -1012,7 +1012,7 @@ pair says nothing about which.
 property. One break needed a second attempt because I typed the anchor from memory instead of reading
 it — the same small lesson as step 4.
 
-### Step 7 — Tier 3: measure the floor, then write the gates
+### Step 7 — Tier 3: measure the floor, then write the gates — **DONE 2026-09-07**
 
 **Nothing here starts until step 5's case count stops moving.** This is arithmetic, not preference: every
 case added moves `case_count` and invalidates a set measured before it.
@@ -1029,6 +1029,123 @@ case failing identically every run. A zero-variance number is a reason to ask wh
 
 **Done means:** DoD #6 and #7 — a live run at the pinned artifact is gated by a set that was measured, and
 the xfail is gone because the invariant holds rather than because a test was deleted.
+
+#### 7.0 As built — 2026-09-07. **DONE. The live suite gates again.**
+
+**Verified:** `make check` green — **1458 passed, 0 xfailed**, 14 deselected, mypy clean over 99 source
+files, frontend **168**, root **17 of 18**. Scripted gate **4 passed / 0 failed / 2 N/A of six**.
+
+**Measured:** five identical live runs at artifact v0.7.1, code `2957832`, clean tree throughout.
+**$2.61 and ~2.4 hours** — under the ~$3.00 / 3.6h projection because the model issued ~4.7 requests per
+case rather than the estimated 7.
+
+##### The floor
+
+| metric | spread | reading |
+|---|---|---|
+| edge_groundedness | 0.0pp | invariant: the gate cannot approve an ungrounded claim |
+| citation_resolution | 0.0pp | same |
+| injection_induced | 0 | same |
+| contested_disclosure | 0 silent / 2 scored | the keystone, holding on a real model |
+| traversal_recall | **0.0pp** | **an artifact — see below** |
+| false_refusal_rate | 2.8pp | one case |
+| true_refusal_rate | 5.0pp | one case |
+| traversal_precision | **11.4pp** | **not gated, and the floor is why** |
+| approved_claims | 36 (182-218) | a 17% swing in evidence per answer |
+
+**1. THE ZERO-VARIANCE TRAP, CAUGHT A SECOND TIME — and this time proved rather than suspected.**
+`traversal_recall` read 203/209 in **all five** runs. Per-case: **37 cases at 1.0 every run, and exactly
+one — `gold_v0_1_020` — at 0.143 every run.** The aggregate is frozen because one excluded case fails
+identically, not because traversal is stable. A band written off that 0.0pp would fire the first time
+that case *succeeds*, which it can: it answered completely on 2026-08-24. `.claude/rules/evals.md` names
+this as the lesson from the *last* floor; it recurred, and the per-case data is what settles it.
+
+**2. `traversal_precision` at 11.4pp is the widest thing measured and is deliberately NOT gated.** The
+floor's own verdict line says a 5pp threshold on it "would fire on chance alone". It is the one metric
+a scripted trace can never show, which is exactly why it is noisy.
+
+**3. Membership churn: 4 of 56 cases changed verdict, and the fifth run earned its money.**
+
+```
+reproducible : gold_v0_1_020   0/5
+unstable     : adv_008 1/5   adv_018 2/5   gold_v0_1_035 3/5   gold_v0_1_026 4/5
+```
+
+`adv_018` failed runs 1-3 and passed runs 4-5. **Had we stopped at three it would have been recorded as
+a reproducible failure** — precisely the error step 3 found in the previous floor, where five identical
+failures on one afternoon were filed as permanent for a case that has since answered twice.
+
+##### The bounds, and the one judgement in them
+
+Four are arithmetic. `refusal_accuracy` is the decision, taken by sjtroxel: **exclude
+`gold_v0_1_020`, keep every unstable case inside the gate.**
+
+**The argument I first gave for this was wrong, and testing it is what showed that.** I claimed that
+counting the known failure spends one of the gate's allowed false refusals on a diagnosed bug, "so a
+genuinely new false refusal would only trip the gate on runs where a second unstable case also fired."
+The first half is true. **The second half does not follow, and is equally true of both options** —
+measured against the five runs, one new false refusal fails **2 of 5** under the plain envelope and
+**2 of 5** under the exclusion. Sensitivity is identical, because the slack comes from
+`gold_v0_1_035` being unstable rather than from `gold_v0_1_020` being counted: excluding it lowers the
+bound and the observations by the same one case.
+
+**The reason that actually holds is durability.** The day `gold_v0_1_020` is fixed it stops
+false-refusing, and under the plain envelope the observations drop to 0/0/0/1/1 against an unchanged
+bound of ≤2 — **the gate silently gains a spare case of slack nobody decided to grant.** Under the
+exclusion the bound and the observations stay aligned and the headroom stays zero. A gate that loosens
+itself when a bug is fixed is the failure this file exists to prevent.
+
+Two lesser reasons survive: it keeps the refusal and traversal exclusions as **one** decision rather
+than half of one, and the number means something cleaner — "of 35 legitimately answerable cases, at
+most 1 refuses" rather than "at most 2, one of which is a known bug". Excluding it costs nothing either
+way — a case failing every run has nothing left to regress, and the only direction it can move is up. It is the same case the traversal bound already
+excluded, for the same reason, and **the case remains in the dataset**, scored in `cases_correct` and
+every slice; it loses a vote, not its membership.
+
+**The unstable four stay in.** Excluding a case because it is *noisy* is a different act from excluding
+one that is *diagnosed*, and it is how a gate stops measuring what is broken. That is why
+`minimum_true_refusals` is 18 rather than 20.
+
+**This required a code change, which the plan did not anticipate.** `_refusal_gate` read aggregates and
+had no exclusion mechanism, unlike `_traversal_gate`. It now recomputes from per-case outcomes when
+`excluded` is set — never by subtracting from the aggregate, which cannot say which direction an
+excluded case contributed to.
+
+##### Verification, because bounds that pass everything are worthless
+
+All five recorded runs were replayed through the new gates: **6 PASS, exit 0, every run.** Then the
+other half — a run one case worse than anything observed:
+
+```
+worst observed run              exit=0  no failures
++1 missed refusal               exit=1  refusal_accuracy
++1 false refusal                exit=1  refusal_accuracy
+one gated case loses its path   exit=1  traversal_recall
+```
+
+**4. The `xfail` resolved itself exactly as its own reason predicted**, and the argument for strict
+xfail over skip is now evidence rather than assertion: it XPASSed the moment a matching baseline landed,
+turned the build red, and was deleted. Its resolution was the one it demanded and **not** the one it
+warned against — `case_count` was not edited to fit the set; the set was measured.
+
+**5. A reporting gap found at run 1 and fixed here.** `contested_disclosure` was wired into the suite and
+the gate at step 6 but **not into `report.py`**, so on a `NOT GATED` run — which every live run was
+between steps 5 and 7 — the number existed only in the JSON. A metric nobody can see is a metric nobody
+checks.
+
+**6. Seven stale references swept, and two had flipped from true to false.** `thresholds.py:matches`
+described the denominators as "41 with 16 / 25 with 3"; both halves had moved (56 with 20 / 38 with 5) —
+the docstring's own argument arriving as evidence. `live.py` claimed subsets are compared "against the
+41-case baseline". Historical records in `eval/__init__.py` were **stamped, not rewritten**.
+
+**Behaviour changed by the bigger set, recorded where it matters:** one live run now answers ~36 of 56
+cases rather than 25 of 41, so a 30-item tier 2 pool is reachable from a **single** run. `labelling.py`
+said it needed two.
+
+**7. The estimator is ~2x high and is deliberately left alone.** It projected 392 requests / $1.09; runs
+issued 255-262 / $0.501-$0.539. A spend gate should quote the ceiling: the number a person approves is
+the worst case they are consenting to, and tuning it toward the mean would make the prompt more accurate
+and the consent weaker.
 
 ### Step 8 — Copy, docs, release
 

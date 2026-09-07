@@ -57,6 +57,46 @@ def committed() -> dict[str, Any]:
     return payload
 
 
+#: The one case excluded from the live refusal gate. Named once so the tests and the bound cannot
+#: drift apart silently.
+EXCLUDED_CASE = "gold_v0_1_020"
+
+
+def with_refusals(result: SuiteResult, *, true_refusals: int, false_refusals: int) -> SuiteResult:
+    """A live-shaped result whose PER-CASE outcomes produce the requested refusal counts.
+
+    **Injecting a `RefusalAccuracy` no longer works and that is the point.** Since 2026-09-07 the live
+    refusal bound carries `excluded: ["gold_v0_1_020"]`, so `_refusal_gate` recomputes the counts from
+    `result.results` rather than trusting the aggregate -- an aggregate cannot say which direction an
+    excluded case contributed to. A test that overrode the aggregate would be asserting on a value the
+    gate ignores, which is worse than asserting nothing.
+
+    The composition is built rather than borrowed: the `scripted` fixture is the 38-case GOLD suite and
+    the live bound was measured on 56 gold+adversarial cases, so its denominators (20 refusal / 35
+    answer) cannot be reached by relabelling it. One real `CaseResult` is used as the template and its
+    `case` is replaced to make each row.
+
+    `gold_v0_1_020` is always present and always refusing, exactly as in every recorded live run, so
+    these tests also prove the exclusion works: it lands in neither counter.
+    """
+    template = result.results[0]
+
+    def row(case_id: str, expected_refusal: bool, refused: bool) -> Any:
+        return dataclasses.replace(
+            template,
+            case=dataclasses.replace(
+                template.case, case_id=case_id, expected_refusal=expected_refusal
+            ),
+            run=dataclasses.replace(template.run, refused=refused),
+        )
+
+    rows = [row(f"refusal_{i}", True, i < true_refusals) for i in range(20)]
+    rows += [row(f"answer_{i}", False, i < false_refusals) for i in range(35)]
+    rows += [row(EXCLUDED_CASE, False, True)]
+    assert len(rows) == 56, "the live bound is measured over 56 cases"
+    return as_live(result, results=tuple(rows))
+
+
 def result_contested(result: SuiteResult) -> ContestedDisclosure:
     """The run's contested metric, named so the gate tests read as assertions rather than as plumbing."""
     return result.contested
@@ -145,20 +185,19 @@ def test_the_traversal_gate_excludes_the_known_reproducible_failure(
     traversal = live["bounds"]["traversal_recall"]
     assert "gold_v0_1_020" not in traversal["cases"]
     assert "gold_v0_1_020" in traversal["excluded"]
-    assert len(traversal["cases"]) == 24
+    # 24 -> 37 on 2026-09-07: the v0.7.1 baseline covers a 56-case set, so the gate is materially
+    # STRONGER than the one it replaces rather than merely renumbered.
+    assert len(traversal["cases"]) == 37
+
+    # It is excluded from the REFUSAL gate too, and for the same reason. Added 2026-09-07: the two
+    # exclusions are one decision and must not drift apart -- a case tracked-not-gated on traversal
+    # while still spending the refusal budget would be half a decision.
+    assert live["bounds"]["refusal_accuracy"]["excluded"] == ["gold_v0_1_020"]
 
 
 # --- the dataset the live gates are supposed to cover ------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "OPEN DECISION, phase 6 step 9 §9.4, 2026-09-06. The live set grew 41 -> 45 when the refusal "
-        "rebuild took gold from 25 to 29, and no v0.7.1 baseline has been measured yet. An XPASS here "
-        "means a matching baseline landed and this marker is now the stale thing -- remove it."
-    ),
-)
 def test_a_full_live_run_can_be_gated_at_all(committed: dict[str, Any]) -> None:
     """The live gates only gate if the live dataset is the size they were measured on.
 
@@ -172,15 +211,16 @@ def test_a_full_live_run_can_be_gated_at_all(committed: dict[str, Any]) -> None:
     run at all, which is the failure this file's own docstring warns about -- *a gate that does not gate
     is green by default* -- arriving one level up, at the suite rather than at a metric.
 
-    It is `xfail(strict=True)` rather than a skip on purpose. A skip is invisible in a green run and
-    this state is a live open decision, not a permanent condition: either a v0.7.1 baseline gets
-    measured (five runs, roughly $2.50, deliberately deferred while the gold set is still owed cases)
-    or the release states that live runs are un-gated. Strict xfail makes the resolution self-announcing
-    -- the day the counts agree, this test XPASSes and turns the build red until the marker is deleted.
+    **It carried `xfail(strict=True)` from 2026-09-06 until 2026-09-07, and the marker worked exactly
+    as its own reason said it would.** A skip would have been invisible in a green run; strict xfail
+    made the resolution self-announcing, and the day a v0.7.1 baseline was measured over the current
+    56-case set this XPASSed and turned the build red until the marker was deleted. That is the whole
+    argument for strict xfail over skip, and it is recorded here because the marker is now gone and the
+    evidence for the technique would otherwise go with it.
 
-    Deliberately NOT asserted here: that `case_count` should be edited to 45. The bounds behind it were
-    measured over 41 cases and 16 refusal cases, and moving the count to fit a larger set carries
-    measured numbers onto a measurement that never happened.
+    The resolution was the one the marker demanded and NOT the one it warned against: `case_count` was
+    not edited to fit the set. Five identical live runs were measured on 2026-09-07 ($2.61, ~2.4 hours)
+    and every bound was rewritten from that floor.
     """
     live = next(s for s in committed["sets"] if s["applies_to"]["provider"] == "bedrock")
     assert len(live_cases()) == live["case_count"], (
@@ -337,33 +377,32 @@ def test_a_single_ungrounded_claim_blocks(scripted: SuiteResult) -> None:
 
 
 def test_refusal_is_gated_in_cases_not_percentage_points(committed: dict[str, Any]) -> None:
-    """16 refusal cases makes one case 6.25pp, so a 5pp band cannot be tripped by less than one case.
+    """A 5pp band cannot be tripped by less than one case, so the bound is expressed in CASES.
 
     Asserting the *shape* of the bound, not just its value: a future edit that reintroduces a
     percentage here has reintroduced an arithmetically unsatisfiable gate.
+
+    **The arithmetic changed on 2026-09-07 and the conclusion did not.** At 16 refusal cases one case
+    was 6.25pp and strictly exceeded the abandoned 5pp band. At 20 it is exactly 5.0pp -- it saturates
+    the band rather than exceeding it -- so the comparison is `>=`. Either way a 5pp band is
+    unsatisfiable: it cannot fire on less than one case, and one case already reaches it.
     """
     live = next(s for s in committed["sets"] if s["applies_to"]["provider"] == "bedrock")
     bound = live["bounds"]["refusal_accuracy"]
     assert isinstance(bound["minimum_true_refusals"], int)
     assert isinstance(bound["maximum_false_refusals"], int)
-    assert bound["expected_refusals"] == 16
-    assert 100 / bound["expected_refusals"] > 5, "one case must exceed the abandoned 5pp band"
+    assert bound["expected_refusals"] == 20
+    assert 100 / bound["expected_refusals"] >= 5, "one case must reach the abandoned 5pp band"
 
 
 def test_a_two_case_refusal_regression_blocks(scripted: SuiteResult) -> None:
-    """13 of 16 passes; 12 does not. The gate sits one case below the worst observed value of 14."""
-    at_the_bound = as_live(
-        scripted,
-        refusal=RefusalAccuracy(
-            true_refusals=13, false_refusals=3, expected_refusals=16, expected_answers=25
-        ),
-    )
-    below = as_live(
-        scripted,
-        refusal=RefusalAccuracy(
-            true_refusals=12, false_refusals=3, expected_refusals=16, expected_answers=25
-        ),
-    )
+    """18 of 20 passes; 17 does not. The gate sits at the worst value observed across five runs.
+
+    Re-derived 2026-09-07 from the v0.7.1 baseline: true refusals ran 19/18/18/19/18, so 18 is the
+    measured floor and 17 is a case worse than anything five identical runs produced.
+    """
+    at_the_bound = with_refusals(scripted, true_refusals=18, false_refusals=1)
+    below = with_refusals(scripted, true_refusals=17, false_refusals=1)
     thresholds = load()
     assert thresholds is not None
     for result, expected in ((at_the_bound, PASS), (below, FAIL)):
@@ -379,12 +418,7 @@ def test_too_many_false_refusals_blocks_even_when_true_refusals_are_perfect(
 
     The gate is a pair, so the useless-but-safe direction has to fail too.
     """
-    cautious = as_live(
-        scripted,
-        refusal=RefusalAccuracy(
-            true_refusals=16, false_refusals=4, expected_refusals=16, expected_answers=25
-        ),
-    )
+    cautious = with_refusals(scripted, true_refusals=20, false_refusals=2)
     thresholds = load()
     assert thresholds is not None
     report = evaluate(cautious, thresholds)
@@ -581,6 +615,21 @@ def _sized(result: SuiteResult, cases: int) -> SuiteResult:
     return as_live(result, results=padded)
 
 
+def live_case_count() -> int:
+    """The live baseline's case count, read from the committed file.
+
+    **Derived rather than written down, and the first draft of these tests got that wrong.** They were
+    added at step 6 with a literal `56` meaning "larger than the 41-case baseline"; step 7 re-measured
+    the baseline over 56 cases and the literal silently became "exactly the baseline", so all three
+    tests stopped testing a size mismatch at all. A test that encodes a moving number has an expiry
+    date nobody wrote down.
+    """
+    thresholds = load()
+    assert thresholds is not None
+    live = next(s for s in thresholds.sets if s.applies_to.get("provider") == "bedrock")
+    return int(live.case_count)
+
+
 def _reason_for(result: SuiteResult) -> str:
     """The un-gateable banner text, asserted through `gate()` -- the single entry point callers use.
 
@@ -605,7 +654,7 @@ def test_a_run_larger_than_its_baseline_is_called_a_stale_baseline(scripted: Sui
     """The defect. A complete run of a bigger dataset is not a subset of anything, and the remedy is
     the opposite one: a subset is fixed by running the whole set, while a superset means the run is
     correct and the BASELINE is the stale half."""
-    reason = _reason_for(_sized(scripted, 56))
+    reason = _reason_for(_sized(scripted, live_case_count() + 1))
     assert "grown past its baseline" in reason
     assert "the baseline is the stale half" in reason
     assert "subset" not in reason
@@ -614,7 +663,7 @@ def test_a_run_larger_than_its_baseline_is_called_a_stale_baseline(scripted: Sui
 def test_neither_message_tells_the_reader_to_re_run_the_live_suite(scripted: SuiteResult) -> None:
     """Re-measuring the live baseline costs money and is deliberately deferred to step 7, so the
     superset message must not read as an instruction to spend it."""
-    reason = _reason_for(_sized(scripted, 56))
+    reason = _reason_for(_sized(scripted, live_case_count() + 1))
     for nudge in ("re-run", "rerun", "run it again", "run again"):
         assert nudge not in reason.lower()
 
@@ -623,7 +672,7 @@ def test_a_size_mismatch_of_either_sign_is_never_a_pass(scripted: SuiteResult) -
     """The property both branches share, and the one that actually matters: un-gateable is not green.
     A banner that explained itself beautifully and still let a run read as passing would be worse than
     the wrong sentence."""
-    for cases_run in (1, 56):
+    for cases_run in (1, live_case_count() + 1):
         outcome = gate(_sized(scripted, cases_run))
         assert outcome.report is None
         assert outcome.exit_code == 0, "un-gateable is not a build failure"

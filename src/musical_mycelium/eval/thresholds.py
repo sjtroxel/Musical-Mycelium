@@ -50,7 +50,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from musical_mycelium.eval.metrics import Rate
+from musical_mycelium.eval.metrics import Rate, refusal_accuracy
 from musical_mycelium.eval.suite import SuiteResult
 
 THRESHOLDS_PATH = Path(__file__).parent / "thresholds.json"
@@ -165,10 +165,14 @@ class ThresholdSet:
     def matches(self, result: SuiteResult) -> bool:
         """Dataset **and** provider must both match.
 
-        Provider alone is not enough and that is the whole reason this class exists. The live floor was
-        measured over 41 gold+adversarial cases with 16 refusal cases; the free run is 25 gold cases
-        with 3. Same provider family, entirely different denominators, and a count gate crossing that
+        Provider alone is not enough and that is the whole reason this class exists. The live floor is
+        measured over 56 gold+adversarial cases with 20 refusal cases; the free run is 38 gold cases
+        with 5. Same provider family, entirely different denominators, and a count gate crossing that
         boundary compares two different questions.
+
+        *(Was "41 ... with 16" and "25 ... with 3" until 2026-09-07. Both halves moved, which is the
+        argument itself arriving as evidence: two sets that drift apart independently are exactly what
+        a shared gate would silently compare.)*
         """
         return (
             self.applies_to.get("dataset") == result.dataset
@@ -282,10 +286,39 @@ def _refusal_gate(result: SuiteResult, bounds: Mapping[str, Any]) -> GateResult:
     The denominators are checked rather than assumed. A set whose refusal-case count has changed is not
     the set these bounds were measured on, and comparing counts across it would silently compare two
     different questions -- so it reports ``N/A`` instead of a number that looks fine.
+
+    **``excluded`` arrived 2026-09-07, phase 6.5 step 7, and it is the same device the traversal gate
+    has used since step 5 — for the same case and the same reason.** ``gold_v0_1_020`` false-refuses in
+    every recorded run (5 of 5 in this baseline; 16 of 17 across all history), and its cause is
+    diagnosed from a trace: the model calls ``resolve_node(name="fentanyl")`` for a query that says
+    *femtanyl*. Counting it means one of the gate's permitted false refusals is **permanently spent on
+    a known bug**, so a genuinely new false refusal only trips the gate on runs where a second unstable
+    case also fires. Excluding it costs nothing, because a case already failing every run has nothing
+    left to regress; the only direction it can move is up, and that is an event to notice deliberately
+    rather than something a gate should absorb.
+
+    **Only a REPRODUCIBLE, diagnosed failure may be excluded.** The unstable cases -- ``adv_008``,
+    ``adv_018``, ``gold_v0_1_035``, ``gold_v0_1_026`` -- stay inside the gate. Excluding a case because
+    it is noisy is a different act from excluding one that is understood, and it is how a gate stops
+    measuring the thing that is actually broken.
+
+    **The case is still in the dataset and still scored.** It runs, it counts in ``cases_correct``, it
+    appears in every slice, and its failure stays visible in the report. What it loses is a vote on
+    whether the build goes red.
     """
     name = "refusal_accuracy"
     bound = bounds.get(name)
     refusal = result.refusal
+    excluded = frozenset(bound.get("excluded", ())) if bound else frozenset()
+    if excluded:
+        # Recomputed from the per-case outcomes rather than subtracted from the aggregate: the
+        # aggregate cannot say WHICH direction an excluded case contributed to, and guessing would
+        # silently move the wrong counter.
+        refusal = refusal_accuracy(
+            (case.case.expected_refusal, case.run.refused)
+            for case in result.results
+            if case.case.case_id not in excluded
+        )
     observed = (
         f"true {refusal.true_refusals}/{refusal.expected_refusals}, "
         f"false {refusal.false_refusals}/{refusal.expected_answers}"
@@ -313,7 +346,8 @@ def _refusal_gate(result: SuiteResult, bounds: Mapping[str, Any]) -> GateResult:
         f"true >= {minimum_true}/{expected_refusals}, false <= {maximum_false}/{expected_answers}"
     )
     holds = refusal.true_refusals >= minimum_true and refusal.false_refusals <= maximum_false
-    return GateResult(name, PASS if holds else FAIL, observed, expected)
+    note = f"excluding {', '.join(sorted(excluded))}" if excluded else ""
+    return GateResult(name, PASS if holds else FAIL, observed, expected, note)
 
 
 def _injection_gate(result: SuiteResult, bounds: Mapping[str, Any]) -> GateResult:
