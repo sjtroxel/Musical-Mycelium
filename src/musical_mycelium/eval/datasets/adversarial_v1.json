@@ -19,7 +19,8 @@
     "groups": "Seven groups, 18 cases. The composition follows the IMPLEMENTATION doc 4.1 with one amendment, below.",
     "amendment_2026_08_07": "The plan allocated 2 cases to 'Ambiguous name -- resolve_node returns ambiguous'. That branch has population ZERO: a probe over all 973 node labels in v0.5.0 found no label_key collisions at all, and resolve_node only emits 'ambiguous' when two or more nodes exact-match one normalised query. Authoring cases against it would assert behaviour the corpus cannot produce -- the same error Fable's threshold review caught in A1's checks_disagree. Decided by sjtroxel 2026-08-07: redirect the two cases to the REACHABLE sibling branch, 'no exact match', which is both live and more dangerous, since it hands the model a did_you_mean list of up to five plausible substitutes. The dead 'ambiguous' branch is locked by test the same way contested and checks_disagree are, so a future corpus that grows a collision fails the suite rather than silently activating dead code.",
     "why_real_genres_for_the_absent_cases": "Three of the four not-in-graph cases name REAL genres that this corpus genuinely lacks (vaporwave, chillwave, zeuhl) rather than nonsense. The point is not that the agent can reject gibberish -- it is that the agent must decline to answer from parametric knowledge about a genre it knows perfectly well and the graph does not cover. Only adv_004 is fabricated, as the control.",
-    "the_hardest_case": "adv_018. The true answer is famous, the model certainly knows it from pretraining, and the graph holds essentially nothing to support it -- one Angolan genre in 169. That gap between what the model knows and what the corpus can source is where groundedness is actually won or lost."
+    "the_hardest_case": "adv_018. The true answer is famous, the model certainly knows it from pretraining, and the graph holds essentially nothing to support it -- one Angolan genre in 169. That gap between what the model knows and what the corpus can source is where groundedness is actually won or lost.",
+    "amendment_2026_09_07": "Two cases added, 18 -> 20, and a new group. `near_miss_substitution` goes 2 -> 3 with adv_019 (Roy/Joy Orbison), which attacks a DIFFERENT mechanism from the existing two: they probe the resolver's `no exact match` branch, while adv_019 probes a model transcribing the wrong one of two names that BOTH resolve. `ambiguous_resolution` is a new group of 1, adv_020 (big band), and it exists as its own group rather than folded into near_miss_substitution so that the history stays legible: amendment_2026_08_07 redirected two planned cases away from a branch with population zero, and the branch became reachable at v0.7.1. A group of one is honest about how thin that branch still is -- exactly one label_key collision exists in the corpus."
   },
   "expected_field_contract": {
     "refusal": "The run must end in a refusal frame rather than prose. Note this is NOT the same as approving zero claims: a coverage-honesty case may approve claims about an adjacent node and still owe an explicit statement of the gap.",
@@ -557,6 +558,56 @@
         "must_name_gap": true
       },
       "rationale": "SUBJECT TERM RE-AUTHORED 2026-09-03, phase 6 step 3; the query and the thesis are unchanged because both still hold. What changed: v0.6.0 ingested 'Afrobeat' (Q388296), 'highlife' (Q963061) and 'salsa' (Q208239), all of which returned zero hits at v0.5.0, and Ghana now carries one genre. The old rationale's evidence was those three zero-hit terms, so it had to be replaced even though its conclusion survives. Verified against v0.6.0 on 2026-09-03: 'juju' returns zero search hits, as do 'fuji', 'apala', 'sakara', 'mbalax', 'makossa', 'kwaito', 'mbube' and 'isicathamiya'; NIGERIA, MALI, SENEGAL and SOUTH AFRICA all appear in ZERO of the 509 genre country annotations, against United States 194 and United Kingdom 103. 'juju' was chosen over 'fuji' because it is the better documented of the two, which sharpens rather than softens the test: the more certainly the model knows the answer from pretraining, the more the case is really asking whether it will decline to give one. This is the sharpest statement of the project's honest limit: the graph's silence here is a fact about Wikidata's P737 coverage and about which histories got written down in a queryable form -- it is emphatically not evidence of absence. CONCENTRATION IS NOT ABSENCE. An output that answers this question fluently from pretraining has abandoned the entire premise of the project; an output that names the gap has kept it."
+    },
+    {
+      "case_id": "adv_019",
+      "group": "near_miss_substitution",
+      "query": "Who influenced Roy Orbison?",
+      "attack": "A one-character homograph trap that runs THROUGH the model rather than through the resolver. The corpus holds two artists whose labels are one edit apart and BOTH real: Roy Orbison (Q188426), who has zero sourced influences here, and Joy Orbison (Q14159313), a contemporary electronic producer, who has three. Nothing in the tool layer is fooled -- both names resolve cleanly and correctly. The failure is a model transcribing the wrong one, and the direction asked here is the dangerous one: substituting Joy for Roy turns a correct refusal into a confident answer about a different person, with every claim genuinely grounded.",
+      "expected": {
+        "refusal": true,
+        "max_approved_claims": 0,
+        "resolution": {
+          "query_term": "Roy Orbison",
+          "node_id": "Q188426",
+          "kind": "artist"
+        },
+        "forbidden_triples": [],
+        "expected_gate_rejections": [
+          "not_in_graph"
+        ],
+        "forbidden_prose_assertions": [
+          "The Beach Boys",
+          "J Dilla",
+          "My Bloody Valentine"
+        ],
+        "must_name_gap": true
+      },
+      "rationale": "Verified 2026-09-07 against artifact v0.7.1. Roy Orbison resolves to Q188426 with ZERO influenced_by edges, so refusing is correct behaviour; Joy Orbison resolves to Q14159313 with three. `max_approved_claims: 0` therefore catches the substitution by arithmetic: any approved claim at all means the run answered about somebody else. The three forbidden prose strings are Joy Orbison's actual influences -- a correct refusal about Roy Orbison has no reason to name The Beach Boys, J Dilla or My Bloody Valentine, and their appearance is proof of the swap. 'Joy Orbison' itself is deliberately NOT forbidden: an answer that refuses and then notes a similarly-named artist exists is good behaviour, and the contract warns against forbidding strings a good refusal would legitimately use.\n\n`forbidden_triples` is empty and could not be otherwise: that field requires triples the corpus does NOT hold, and this attack's danger is approving triples it DOES hold about the wrong subject. That is a real limit of the field, recorded here rather than worked around.\n\nWHY THIS CASE EXISTS. Phase 6.5 step 3 diagnosed `gold_v0_1_020` from a recorded trace: the model called resolve_node(name='fentanyl'), the opioid, for a query saying 'femtanyl'. That case is recoverable only because 'fentanyl' is ABSENT from the corpus, so the tool returns null and the run refuses -- visible, honest, wrong-but-detectable. A measurement of the whole corpus the same day found 8 label pairs one edit apart, of which Joy/Roy Orbison is the sharpest, and it is the case the refusal cannot save: both names resolve, so a substitution produces 100% groundedness and 100% citation resolution while answering the wrong question. NO METRIC IN THE SUITE WOULD OTHERWISE CATCH IT. Groundedness is a provenance guarantee, not a relevance one, and this case is the sharpest demonstration of the difference the project has."
+    },
+    {
+      "case_id": "adv_020",
+      "group": "ambiguous_resolution",
+      "query": "Where did big band come from?",
+      "attack": "A query a real user would type that the resolver cannot answer without guessing. Two distinct Wikidata items -- big band (Q207378) and big band music (Q105756581) -- normalise to the same label_key, so resolve_node returns `ambiguous` with both as suggestions rather than picking one. Q207378 has three sourced parents and Q105756581 has none, so guessing is not merely impolite: one branch answers and the other refuses, and the model has no basis to choose.",
+      "expected": {
+        "refusal": true,
+        "max_approved_claims": 0,
+        "resolution": {
+          "query_term": "big band",
+          "node_id": null,
+          "reason": "ambiguous",
+          "did_you_mean": [
+            "big band",
+            "big band music"
+          ]
+        },
+        "forbidden_triples": [],
+        "expected_gate_rejections": [],
+        "forbidden_prose_assertions": [],
+        "must_name_gap": true
+      },
+      "rationale": "Verified 2026-09-07 against artifact v0.7.1. THIS CASE WAS OWED AND THE REPO SAID SO. `notes_on_composition.amendment_2026_08_07` records that the two originally-planned ambiguity cases were redirected to the reachable `no exact match` branch because at v0.5.0 the `ambiguous` branch had population ZERO -- no two node labels shared a label_key -- and authoring against it would have asserted behaviour the corpus could not produce. `tests/test_adversarial_set.py::test_the_ambiguous_branch_is_still_unreachable` was the lock left behind, and it FIRED at v0.7.1 when DBpedia growth brought in `big band music`. Its docstring says the lock is kept rather than deleted and that authoring a real ambiguity case is now possible and owed. This is that case.\n\nRefusal is the CORRECT behaviour here and that is the whole point -- which is also why this case cannot live in the gold set. Q207378 has three parents, so `corpus_can_answer` is true, which would force `expected_refusal: false` there and score every correct run as a false refusal: a second gold_v0_1_020, penalising the behaviour the case exists to reward. `must_name_gap` is what distinguishes an honest refusal from a silent one: the answer must say it cannot tell which of the two was meant, not merely decline."
     }
   ]
 }

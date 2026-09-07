@@ -12,7 +12,8 @@
       "These are Wikipedia-MEDIATED citations to independent works. Nobody has opened Boyd's Jazz of the Southwest to confirm page ix-x says what the sentence claims. Doing so is manual and is not done. Treat these as 'a checkable source exists and is named', not as 'independently confirmed'.",
       "AllMusic, Britannica, RateYourMusic and similar return 403 to automated fetch (docs/graph-semantics.md 7), so citation retrieval cannot currently be automated.",
       "Grounded means traceable, not true. Every claim here traces to a checkable source. None of them is thereby correct.",
-      "CLEAN BY PROCEDURE, NOT BY CONSTRUCTION -- recorded 2026-08-14. docs/phases/phase-3-agent-loop-IMPLEMENTATION.md 4.3 argued that nothing in this repo could be contaminated by model output because Bedrock had never completed a call. That premise expired on 2026-08-12, when the loop ran end to end against a real model. The exposure is narrow and is stated here rather than glossed: the live run's subject was acid jazz, which is gold case 002, authored 2026-08-02, ten days before any model output existed. No case authored from 2026-08-14 onward is derived from agent output. Their subjects are selected from a population probe of the pinned artifact (density, region, path depth, verification tier), their claims are read from the artifact's edge list, and their prose and citations come from Wikipedia and the published works it cites. That is a checkable procedure rather than an accident of an unprovisioned account, and it is weaker. Step 8 -- the full evaluated run against a real model -- has still not happened, and authoring must finish before it does."
+      "CLEAN BY PROCEDURE, NOT BY CONSTRUCTION -- recorded 2026-08-14. docs/phases/phase-3-agent-loop-IMPLEMENTATION.md 4.3 argued that nothing in this repo could be contaminated by model output because Bedrock had never completed a call. That premise expired on 2026-08-12, when the loop ran end to end against a real model. The exposure is narrow and is stated here rather than glossed: the live run's subject was acid jazz, which is gold case 002, authored 2026-08-02, ten days before any model output existed. No case authored from 2026-08-14 onward is derived from agent output. Their subjects are selected from a population probe of the pinned artifact (density, region, path depth, verification tier), their claims are read from the artifact's edge list, and their prose and citations come from Wikipedia and the published works it cites. That is a checkable procedure rather than an accident of an unprovisioned account, and it is weaker. Step 8 -- the full evaluated run against a real model -- has still not happened, and authoring must finish before it does.",
+      "AUTHORSHIP CHANGED AT CASE 030, 2026-09-07, and this is a weakening named rather than glossed. Cases 001-029 were authored by sjtroxel. Cases 030-037 were drafted by Claude (Opus 5) and reviewed by him. The risk is specific and it is not the usual contamination one: the drafting agent is the same model FAMILY the suite evaluates, so a subject chosen by its judgement could unconsciously favour cases that model handles well -- the same blind-spot argument that made the held-out ten DRAWN rather than curated. Mitigation: subject selection was made mechanical and the rule is restated in the slots above so it can be re-run and audited; claims are read off the artifact's edge list, never chosen; prose and citations are quoted from Wikipedia and the published works it cites, never composed. NOT mitigated: which slots to fill was a judgement, and it was made in a session that had spent a day inside this corpus."
     ],
     "repin_history": [
       "Authored against artifact v0.1.0 (21 edges) on 2026-08-02. Re-pinned to v0.2.0 (133 edges) on 2026-08-04 when phase 2 replaced the hand-verified edge list with the full P737 discovery. Re-pinning is only safe because the neighbour set of every one of the five case subjects is IDENTICAL under both corpora -- checked pair-by-pair, not assumed -- so no case gained or lost an expected claim. The cases themselves are unchanged and remain pre-agent. If a future corpus change moves any case's neighbours, the gold set must be re-authored rather than re-pinned: re-pinning past a real divergence is exactly how a benchmark silently stops measuring anything.",
@@ -26,7 +27,7 @@
   "notes_on_composition": {
     "authoring_is_incremental": "Cases 006 onward are authored one at a time across separate sittings, and that is the intended mode, not a compromise: docs/phases/phase-3-agent-loop-IMPLEMENTATION.md says 'Nothing about it requires one sitting, and a set labelled while fatigued is a worse set -- this is measurement equipment, and the whole eval suite inherits its errors permanently.' This file is the save point. tests/test_gold_set.py declares EXPECTED_CASE_COUNT, which is bumped to the real count at the end of each sitting, so the suite is green at every stopping point and a case can never be added silently.",
     "composition_plan": {
-      "target_total": 29,
+      "target_total": 38,
       "why_a_distribution_and_not_a_count": "Stopping early is fine; stopping lopsided is not. .claude/rules/evals.md requires results sliced by era, region, density and query type, and a set that is 100% genre-origins cannot exercise traversal_recall at all -- every path in artifact v0.5.0 past 4 hops is artists. Slots are filled in an order that keeps the distribution balanced as the set grows.",
       "slots": {
         "genre_origins_v0_1": "5 of 5 filled -- cases 001-005, authored 2026-08-02",
@@ -35,7 +36,10 @@
         "path_multi_hop": "5 of 5 filled -- cases 016 (2 hops, genre, all HAND), 017 (2 hops, genre, non-Western), 018 (3 hops, artist), 019 (4 hops, artist), 020 (6 hops, artist, the deepest chain in the corpus). Every path past 4 hops is artists, so the length spread and the axis spread are not independent choices.",
         "descendants": "4 of 4 filled -- cases 021 (hip-hop, 6 children), 022 (shoegaze, contains the documented mutual-influence cycle), 023 (reggae, most globally spread and worst sourced), 024 (Etta James, artist axis).",
         "refusal": "5 of 5 filled. WAS '3 of 3 -- cases 005 (genre), 009 (artist), 010 (genre)'. REBUILT 2026-09-04 at the v0.7.1 re-pin, because two of those three stopped being refusals: the DBpedia axis gave blues 3 sourced origins and techno 9, so 005 and 010 were refusals only while the corpus was thin and both were flipped to answerable. The slot fell to ONE case -- 009 -- and a gate resting on one case cannot distinguish a system that refuses correctly from one that refuses that particular subject correctly. Now: 009 (artist, Stevie Wonder), 026 (genre, electronic music), 027 (genre, non-Western, corrido), 028 (artist, James Brown), 029 (genre, pre-1900, classical music). Deliberately larger than the original three -- the failure showed the slot had no margin -- and deliberately 2 artist / 3 genre, because DBpedia is genre-to-genre only, so artist refusals were the half that survived untouched and are the durable half of this metric.",
-        "deliberate_exposure_auto": "2 of 2 filled -- cases 015 (John Lydon) and 025 (Fela Kuti)."
+        "deliberate_exposure_auto": "2 of 2 filled -- cases 015 (John Lydon) and 025 (Fela Kuti).",
+        "contested_pairs": "2 of 2 filled -- cases 030 (electropop/electroclash) and 031 (western music/New Mexico music), authored 2026-09-07. Both carry NO expected_claims deliberately: the gold set asserts verified correctness and a contested pair is exactly where correctness is unknown, because two sources assert opposite directions and this project does not adjudicate. They exist to put a contested-crossing query into the frozen set now that phase 6.5 step 4 makes an answer able to say the sources disagree. Citation research FAILED for both and the failures are the finding, recorded in each case's notes.",
+        "dbpedia_only": "6 of 6 filled -- cases 032 (G-funk), 033 (bebop), 034 (soca music), 035 (musica popular brasileira), 036 (progressive soul), 037 (danzon), authored 2026-09-07. The slice held FOUR cases against 48% of corpus genres, below the slicer's own n<5 floor, so it reported a count rather than a rate. Subjects chosen MECHANICALLY and the rule is restated so it can be re-run: the 321 dbpedia_only genres with at least one parent that resolve unambiguously as search(label)[0] and are not already gold subjects, bucketed by region_slice x density_slice, lowest QID in each of the six buckets. The era spread (1900-1949 through undated) fell out of that rule rather than being arranged. Four carry independent citations; two are flagged.",
+        "long_path_second": "0 of 1 -- OWED. Molly Grace -> The Velvet Underground, 5 hops, chosen 2026-09-07 by sjtroxel over Nine Inch Nails -> Woody Guthrie. NIN was rejected on a measurement: all five of its hops already sit inside gold_v0_1_020's expected path, so it adds ZERO new edges, and gold_v0_1_019 already shares Beatles->Dylan->Guthrie with 020 -- a third case over that route would move cases_correct by 3/38 for one corpus fact. Molly Grace adds 4 new edges. The slot exists to settle whether paths longer than four hops fail in general or gold_v0_1_020 fails specifically, which is currently untestable because 020 is the only path case above four hops."
       }
     },
     "shape": "The first five are origins-shaped, because v0.1's get_influences walks parent edges only. Descendant and path queries are later phases (docs/SPEC.md 2.2).",
@@ -1681,6 +1685,350 @@
       "independent_citations": [],
       "expected_behavior": "The node RESOLVES, is dated to 500, and has zero sourced parent edges. The correct output states that this graph has no sourced account of where classical music came from.",
       "notes": "THE SET'S ONLY PRE-1900 CASE, on either axis. `.claude/rules/evals.md` requires slicing by era and the corpus is thinnest before 1900 -- 23 of 675 genres -- so a set with no case there cannot show whether the system behaves differently on the era it knows least about. Dated 500, which makes it the earliest subject in any dataset here. Ten nodes trace to classical music, including jazz, ragtime, progressive rock and cool jazz, so it sits underneath a large part of what the corpus can narrate while the corpus can say nothing about it. The pretraining surface is enormous -- plainchant, Gregorian, the Renaissance -- and none of it is here."
+    },
+    {
+      "case_id": "gold_v0_1_030",
+      "query": "Where did electropop come from?",
+      "shape": "origins",
+      "difficulty": "contested",
+      "authored_at": "2026-09-07",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "electropop",
+        "node_id": "Q188450"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q188450",
+        "Q1298934",
+        "Q37073",
+        "Q861823",
+        "Q9778"
+      ],
+      "expected_claims": [],
+      "notes": "One of the corpus's TWO contested pairs at artifact v0.7.1, and the reason this case exists is phase 6.5 step 4: a traversal that crosses it now emits a `contested` event naming both directions and both sources. Before that event existed this case would have asserted an ordinary origins answer and tested nothing, which is why it was deferred twice on purpose.\n\n**It carries NO expected_claims deliberately, and that is the whole point rather than an omission.** The gold set asserts verified correctness; a contested pair is exactly the place where correctness is unknown, because two sources assert opposite directions and this project does not adjudicate between them. Asserting either direction as a gold claim would state something the corpus specifically does not support. The gold_v0_1_005 / gold_v0_1_010 pattern -- answerable, asserting nothing -- is the honest shape, and `correct` is `refusal_correct and fully_grounded`, neither of which reads expected_claims, so the case still scores.\n\nCitation research, 2026-09-07, is recorded here because its FAILURE is the finding: en.wikipedia.org/wiki/Electropop, read 2026-09-07, contains NO sentence stating that electropop was influenced by, derived from or emerged from electroclash. It mentions electroclash as a stylistic origin of the 21st-century revival and in a quote about Lady Gaga, and otherwise presents the two as related but distinct. The corpus edge is Wikidata PROSE_AUTO, so an automated check found the object named in the article prose at ingestion in August 2026; the article has since changed or the match was weaker than the tier implies. That is a live example of why `verification` says how strongly ONE source was checked and never that the claim is true."
+    },
+    {
+      "case_id": "gold_v0_1_031",
+      "query": "Where did western music come from?",
+      "shape": "origins",
+      "difficulty": "contested",
+      "authored_at": "2026-09-07",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "western music",
+        "node_id": "Q1425111"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1425111",
+        "Q18217098",
+        "Q431415",
+        "Q727634",
+        "Q869210"
+      ],
+      "expected_claims": [],
+      "notes": "One of the corpus's TWO contested pairs at artifact v0.7.1, and the reason this case exists is phase 6.5 step 4: a traversal that crosses it now emits a `contested` event naming both directions and both sources. Before that event existed this case would have asserted an ordinary origins answer and tested nothing, which is why it was deferred twice on purpose.\n\n**It carries NO expected_claims deliberately, and that is the whole point rather than an omission.** The gold set asserts verified correctness; a contested pair is exactly the place where correctness is unknown, because two sources assert opposite directions and this project does not adjudicate between them. Asserting either direction as a gold claim would state something the corpus specifically does not support. The gold_v0_1_005 / gold_v0_1_010 pattern -- answerable, asserting nothing -- is the honest shape, and `correct` is `refusal_correct and fully_grounded`, neither of which reads expected_claims, so the case still scores.\n\nCitation research, 2026-09-07, is recorded here because its FAILURE is the finding: en.wikipedia.org/wiki/Western_music_(North_America), read 2026-09-07. The link to New Mexico music appears in the opening paragraph and is UNCITED. **More importantly, the article's infobox does not list New Mexico music as a stylistic origin at all** -- it lists American folk, Ranchera, Singing cowboys and Tejano -- while the corpus carries this edge as INFOBOX_AUTO from DBpedia. DBpedia snapshots lag Wikipedia, so an INFOBOX_AUTO edge asserts what an infobox held when DBpedia parsed it, not what it holds today. Recorded here because it is a real provenance finding about the tier, not about this pair."
+    },
+    {
+      "case_id": "gold_v0_1_032",
+      "query": "Where did G-funk come from?",
+      "shape": "origins",
+      "difficulty": "middle",
+      "authored_at": "2026-09-07",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "G-funk",
+        "node_id": "Q1045541"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1045541",
+        "Q164444",
+        "Q429264",
+        "Q753679"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1045541",
+          "predicate": "influenced_by",
+          "object_id": "Q164444",
+          "subject_label": "G-funk",
+          "object_label": "funk",
+          "wikidata_statement": null,
+          "supporting_prose": "The genre is heavily influenced by the synthesizer-heavy 1970s funk sound of Parliament-Funkadelic (aka P-Funk), often incorporated through samples or re-recordings.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/G-funk, read 2026-09-07",
+          "independent_citations": [
+            "Hunter, Christopher, \"Warren G Is Releasing a Documentary on the History of G-funk\", XXL, March 16, 2017"
+          ],
+          "dbpedia_resource": "http://dbpedia.org/resource/G-funk"
+        }
+      ],
+      "notes": "One of six `dbpedia_only` cases added 2026-09-07 (phase 6.5 step 5) to make that slice measurable. Before them the slice held FOUR gold cases against 48% of corpus genres -- below the slicer's own n<5 reporting floor, so it returned a count rather than a rate and the gold set over-sampled the Wikidata half of the corpus about 12x.\n\n**Subject selection was mechanical, not editorial.** The pool was every dbpedia_only genre with at least one parent that resolves unambiguously as `search(label)[0]` and is not already a gold subject -- 321 candidates. Those were bucketed by `region_slice` x `density_slice` and the LOWEST QID in each of the six buckets was taken. No case here was chosen because it looked good. The rule is stated so it can be re-run and audited.\n\nBucket: anglophone_core / connected. Three parents in the corpus; ONE is claimed here. The subset is deliberate and permitted since 2026-09-04 -- the opening definitional sentence naming gangsta rap and West Coast hip-hop is uncited, and the infobox citations resolve to AllMusic, The Source and VIBE, which return 403 to automated fetch (docs/graph-semantics.md 7). Only the funk influence carries a footnote that names a checkable published work."
+    },
+    {
+      "case_id": "gold_v0_1_033",
+      "query": "Where did bebop come from?",
+      "shape": "origins",
+      "difficulty": "trivial",
+      "authored_at": "2026-09-07",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "bebop",
+        "node_id": "Q105513"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q105513",
+        "Q203775"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q105513",
+          "predicate": "influenced_by",
+          "object_id": "Q203775",
+          "subject_label": "bebop",
+          "object_label": "swing",
+          "wikidata_statement": null,
+          "supporting_prose": "Bebop developed as the younger generation of jazz musicians expanded the creative possibilities of jazz beyond the popular, dance-oriented swing music-style to a new 'musician's music'.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Bebop, read 2026-09-07",
+          "independent_citations": [
+            "Lott, Eric, \"Double V, Double-Time: Bebop's Politics of Style\", Callaloo, no. 36, Summer 1988, pp. 597-605"
+          ],
+          "dbpedia_resource": "http://dbpedia.org/resource/Bebop"
+        }
+      ],
+      "notes": "One of six `dbpedia_only` cases added 2026-09-07 (phase 6.5 step 5) to make that slice measurable. Before them the slice held FOUR gold cases against 48% of corpus genres -- below the slicer's own n<5 reporting floor, so it returned a count rather than a rate and the gold set over-sampled the Wikidata half of the corpus about 12x.\n\n**Subject selection was mechanical, not editorial.** The pool was every dbpedia_only genre with at least one parent that resolves unambiguously as `search(label)[0]` and is not already a gold subject -- 321 candidates. Those were bucketed by `region_slice` x `density_slice` and the LOWEST QID in each of the six buckets was taken. No case here was chosen because it looked good. The rule is stated so it can be re-run and audited.\n\nBucket: anglophone_core / sparse, and the earliest era in the set (1900-1949). The article's most direct sentence -- \"Bebop grew out of the culmination of trends that had been occurring within swing music since the mid-1930s\" -- is UNCITED. The sentence quoted above is the adjacent one that IS footnoted and that supports the same relationship; it is used rather than the tidier uncited one on purpose."
+    },
+    {
+      "case_id": "gold_v0_1_034",
+      "query": "Where did soca music come from?",
+      "shape": "origins",
+      "difficulty": "middle",
+      "authored_at": "2026-09-07",
+      "axis": "genre",
+      "region": "Trinidad and Tobago",
+      "expected_resolution": {
+        "name": "soca music",
+        "node_id": "Q1051735"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1051735",
+        "Q131272",
+        "Q164444",
+        "Q2932658",
+        "Q6348555",
+        "Q752785"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1051735",
+          "predicate": "influenced_by",
+          "object_id": "Q752785",
+          "subject_label": "soca music",
+          "object_label": "calypso",
+          "wikidata_statement": null,
+          "supporting_prose": "It is considered an offshoot of calypso, with influences from Afro-Trinidadian and Indo-Trinidadian rhythms.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Soca_music, read 2026-09-07",
+          "independent_citations": [],
+          "dbpedia_resource": "http://dbpedia.org/resource/Soca_music",
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Soca_music, read 2026-09-07 -- the offshoot-of-calypso sentence carries no inline reference, and neither does the adjacent sentence listing calypso and kaiso among soca's fusions.",
+              "Web search for a scholarly treatment of the calypso-to-soca lineage (Garfield Blackman / Lord Shorty). Surfaced Britannica's soca entry and Red Bull Music Academy, plus user-generated aggregators. Britannica returns 403 to automated fetch (docs/graph-semantics.md 7), so its text could not be read and quoting it unread would be asserting a source nobody opened."
+            ],
+            "finding": "No independent published work could be located that Wikipedia cites for this specific claim. The edge remains fully traceable to its DBpedia resource; it has no second opinion."
+          }
+        }
+      ],
+      "notes": "One of six `dbpedia_only` cases added 2026-09-07 (phase 6.5 step 5) to make that slice measurable. Before them the slice held FOUR gold cases against 48% of corpus genres -- below the slicer's own n<5 reporting floor, so it returned a count rather than a rate and the gold set over-sampled the Wikidata half of the corpus about 12x.\n\n**Subject selection was mechanical, not editorial.** The pool was every dbpedia_only genre with at least one parent that resolves unambiguously as `search(label)[0]` and is not already a gold subject -- 321 candidates. Those were bucketed by `region_slice` x `density_slice` and the LOWEST QID in each of the six buckets was taken. No case here was chosen because it looked good. The rule is stated so it can be re-run and audited.\n\nBucket: elsewhere / connected. Five parents; one claimed, and flagged."
+    },
+    {
+      "case_id": "gold_v0_1_035",
+      "query": "Where did musica popular brasileira come from?",
+      "shape": "origins",
+      "difficulty": "trivial",
+      "authored_at": "2026-09-07",
+      "axis": "genre",
+      "region": "Brazil",
+      "expected_resolution": {
+        "name": "música popular brasileira",
+        "node_id": "Q1046768"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1046768",
+        "Q486263"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1046768",
+          "predicate": "influenced_by",
+          "object_id": "Q486263",
+          "subject_label": "música popular brasileira",
+          "object_label": "bossa nova",
+          "wikidata_statement": null,
+          "supporting_prose": "A partir de cerca de 1958 surgiu a bossa nova, movimento musical urbano do Rio de Janeiro... A MPB surgiu exatamente em um momento de declinio da bossa nova.",
+          "supporting_prose_source": "pt.wikipedia.org/wiki/Musica_popular_brasileira, read 2026-09-07",
+          "independent_citations": [
+            "Ribas Ghezzi, Daniela, \"Musica em transe: o momento critico da emergencia da MPB (1958-1968)\", Campinas, SP, March 30, 2011, doi:10.47749/t/unicamp.2011.787379"
+          ],
+          "dbpedia_resource": "http://dbpedia.org/resource/Música_popular_brasileira"
+        }
+      ],
+      "notes": "One of six `dbpedia_only` cases added 2026-09-07 (phase 6.5 step 5) to make that slice measurable. Before them the slice held FOUR gold cases against 48% of corpus genres -- below the slicer's own n<5 reporting floor, so it returned a count rather than a rate and the gold set over-sampled the Wikidata half of the corpus about 12x.\n\n**Subject selection was mechanical, not editorial.** The pool was every dbpedia_only genre with at least one parent that resolves unambiguously as `search(label)[0]` and is not already a gold subject -- 321 candidates. Those were bucketed by `region_slice` x `density_slice` and the LOWEST QID in each of the six buckets was taken. No case here was chosen because it looked good. The rule is stated so it can be re-run and audited.\n\nBucket: elsewhere / sparse. **Rescued by the multi-language pass rather than flagged.** The English article's equivalent sentences are uncited; the Portuguese article footnotes an academic work with a DOI on a sentence that ties MPB's emergence to bossa nova's decline. This is exactly the pass the dataset's own provenance credits with rescuing kuduro and cachaca, and it is why searching one language is not a search."
+    },
+    {
+      "case_id": "gold_v0_1_036",
+      "query": "Where did progressive soul come from?",
+      "shape": "origins",
+      "difficulty": "middle",
+      "authored_at": "2026-09-07",
+      "axis": "genre",
+      "expected_resolution": {
+        "name": "progressive soul",
+        "node_id": "Q105334717"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q105334717",
+        "Q105527",
+        "Q131272",
+        "Q164444",
+        "Q2743435",
+        "Q49451"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q105334717",
+          "predicate": "influenced_by",
+          "object_id": "Q2743435",
+          "subject_label": "progressive soul",
+          "object_label": "psychedelic soul",
+          "wikidata_statement": null,
+          "supporting_prose": "Among their influences were musical forms that arose from rhythm and blues music's transformation into rock, such as Motown, progressive rock, psychedelic soul, and jazz fusion.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Progressive_soul, read 2026-09-07",
+          "independent_citations": [],
+          "dbpedia_resource": "http://dbpedia.org/resource/Progressive_soul",
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Progressive_soul, read 2026-09-07 -- the influence sentence quoted above carries no inline reference, and the five stylistic origins are listed only in the infobox, which is not individually footnoted.",
+              "Web search for a published treatment of progressive soul's origins. Returned RateYourMusic and Last.fm genre pages, which are user-generated and return 403 to automated fetch (docs/graph-semantics.md 7), and album articles rather than a work about the genre's lineage."
+            ],
+            "finding": "No independent published work could be located for this claim. The genre is recent as a named category, which is the likely reason: the label is applied retrospectively by aggregators more than by the published criticism of the period it describes."
+          }
+        }
+      ],
+      "notes": "One of six `dbpedia_only` cases added 2026-09-07 (phase 6.5 step 5) to make that slice measurable. Before them the slice held FOUR gold cases against 48% of corpus genres -- below the slicer's own n<5 reporting floor, so it returned a count rather than a rate and the gold set over-sampled the Wikidata half of the corpus about 12x.\n\n**Subject selection was mechanical, not editorial.** The pool was every dbpedia_only genre with at least one parent that resolves unambiguously as `search(label)[0]` and is not already a gold subject -- 321 candidates. Those were bucketed by `region_slice` x `density_slice` and the LOWEST QID in each of the six buckets was taken. No case here was chosen because it looked good. The rule is stated so it can be re-run and audited.\n\nBucket: unstated / connected -- the corpus records no country for it, which is itself the coverage fact this bucket exists to sample. Five parents; one claimed, and flagged."
+    },
+    {
+      "case_id": "gold_v0_1_037",
+      "query": "Where did danzon come from?",
+      "shape": "origins",
+      "difficulty": "trivial",
+      "authored_at": "2026-09-07",
+      "axis": "genre",
+      "region": "Cuba",
+      "expected_resolution": {
+        "name": "danzón",
+        "node_id": "Q1165358"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1165358",
+        "Q1775526"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1165358",
+          "predicate": "influenced_by",
+          "object_id": "Q1775526",
+          "subject_label": "danzón",
+          "object_label": "Contradanza",
+          "wikidata_statement": null,
+          "supporting_prose": "The danzon evolved from the Cuban contradanza, or habanera.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Danzon, read 2026-09-07",
+          "independent_citations": [
+            "Manuel, Peter (ed.), Creolizing Contradance in the Caribbean, Philadelphia: Temple University Press, 2009",
+            "Carpentier, Alejo, Music in Cuba, Minneapolis: University of Minnesota Press, 2001, p. 146",
+            "Gradante, William; Fairley, Jan, \"Danzon\", Grove Music Online, Oxford Music Online"
+          ],
+          "dbpedia_resource": "http://dbpedia.org/resource/Danzón"
+        }
+      ],
+      "notes": "One of six `dbpedia_only` cases added 2026-09-07 (phase 6.5 step 5) to make that slice measurable. Before them the slice held FOUR gold cases against 48% of corpus genres -- below the slicer's own n<5 reporting floor, so it returned a count rather than a rate and the gold set over-sampled the Wikidata half of the corpus about 12x.\n\n**Subject selection was mechanical, not editorial.** The pool was every dbpedia_only genre with at least one parent that resolves unambiguously as `search(label)[0]` and is not already a gold subject -- 321 candidates. Those were bucketed by `region_slice` x `density_slice` and the LOWEST QID in each of the six buckets was taken. No case here was chosen because it looked good. The rule is stated so it can be re-run and audited.\n\nBucket: unstated / sparse, and the only undated-era case among the six. The best-sourced of the six by a distance -- three independent published works, two of them university press monographs -- which is worth noting against the assumption that the DBpedia half of the corpus is the poorly-sourced half. It is not; sourcing tracks how much scholarship exists about a genre, not which database recorded it."
+    },
+    {
+      "case_id": "gold_v0_1_038",
+      "query": "How does Molly Grace connect back to the Velvet Underground?",
+      "shape": "path",
+      "difficulty": "rich",
+      "authored_at": "2026-09-07",
+      "axis": "artist",
+      "expected_resolution": {
+        "name": "Molly Grace",
+        "node_id": "Q127310755"
+      },
+      "expected_terminus": {
+        "name": "The Velvet Underground",
+        "node_id": "Q103550"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q127310755",
+        "Q110281146",
+        "Q19848",
+        "Q1744",
+        "Q5383",
+        "Q103550"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q110281146",
+          "predicate": "influenced_by",
+          "object_id": "Q19848",
+          "subject_label": "Chappell Roan",
+          "object_label": "Lady Gaga",
+          "wikidata_statement": "Q110281146 P737 Q19848",
+          "supporting_prose": "She has also cited Lady Gaga and Nicki Minaj as inspiration for her attitude towards making people feel confident with her music.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Chappell_Roan, read 2026-08-14",
+          "independent_citations": [
+            "Levine, Nick, \"Chappell Roan is becoming the queer pop icon of her dreams\", NME, June 21, 2023",
+            "\"A Chat with: Chappell Roan\", Anchr Magazine, 2018"
+          ]
+        },
+        {
+          "subject_id": "Q1744",
+          "predicate": "influenced_by",
+          "object_id": "Q5383",
+          "subject_label": "Madonna",
+          "object_label": "David Bowie",
+          "wikidata_statement": "Q1744 P737 Q5383",
+          "supporting_prose": "David Bowie changed the course of my life forever. [Madonna, on seeing Bowie's Detroit concert, her first: 'the most amazing show that I'd ever seen, not just because the music was great, but because it was great theater... I came home a changed woman.']",
+          "supporting_prose_source": "rollingstone.com, \"Madonna: 'David Bowie Changed the Course of My Life Forever'\", read 2026-09-07 -- taken from the primary source rather than from Wikipedia, because the Madonna article's Influences section could not be reached by automated fetch",
+          "independent_citations": [
+            "\"Madonna: 'David Bowie Changed the Course of My Life Forever'\", Rolling Stone, January 2016",
+            "Madonna's induction speech for David Bowie, Rock and Roll Hall of Fame, 1996"
+          ]
+        },
+        {
+          "subject_id": "Q5383",
+          "predicate": "influenced_by",
+          "object_id": "Q103550",
+          "subject_label": "David Bowie",
+          "object_label": "The Velvet Underground",
+          "wikidata_statement": "Q5383 P737 Q103550",
+          "supporting_prose": "White Light/White Heat would prove profoundly influential upon such artists as the Stooges, David Bowie, Jonathan Richman, Suicide, the Buzzcocks and a little band called Nirvana.",
+          "supporting_prose_source": "rollingstone.com, \"The Velvet Underground's 'White Light/White Heat': 10 Things You Didn't Know\", read 2026-09-07",
+          "independent_citations": [
+            "\"The Velvet Underground's 'White Light/White Heat': 10 Things You Didn't Know\", Rolling Stone"
+          ]
+        }
+      ],
+      "notes": "The SECOND long-path case, added 2026-09-07 (phase 6.5 step 5). It exists to settle a question the set could not previously answer: `gold_v0_1_020` is the only path-shaped case above four hops, so *\"paths longer than four hops fail\"* and *\"that one case fails\"* fit the evidence identically and no number of re-runs can separate them.\n\n**Chosen over Nine Inch Nails -> Woody Guthrie on a measurement, not a preference.** All five of NIN's hops already sit inside gold_v0_1_020's expected path -- it adds ZERO new edges -- and gold_v0_1_019 already shares Beatles->Dylan->Guthrie with 020, so a third case over that route would move cases_correct by 3/38 for one corpus fact. This chain adds four new edges and shares exactly one hop (Chappell Roan <- Lady Gaga) with gold_v0_1_019, whose claim is reused here verbatim rather than re-researched. NIN -> Guthrie remains the tighter DIAGNOSTIC for the femtanyl finding -- same route, different subject -- and can be run any time with `make eval-live ARGS='--case-ids ...'`; it was deliberately not frozen into the set.\n\n**THREE of the five hops are claimed, and the two omissions are findings rather than shortcuts.** A claim subset has been permitted since 2026-09-04, and `expected_path` carries the full chain, so traversal_recall -- the thing this case exists to measure -- is unaffected.\n\n1. **Molly Grace <- Chappell Roan is NOT claimed, and the reason is a caught footnote.** en.wikipedia.org/wiki/Molly_Grace says \"Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Renee Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences\" and attaches two citations to that seven-name list. **The Armenian Mirror-Spectator article (Kezelian, 2021-04-01) was opened and does not mention Chappell Roan at all** -- it names Sammy Rae & The Friends, Lake Street Dive and Lawrence, and it predates Roan's breakout. The other citation is ragman.org, an artist-management page, which is not independent. This is the same defect the set already records for Lady Gaga -> the Beatles, and it was caught only by opening the source, which `provenance.honest_limits` says is normally NOT done. Flagging it `source_uncited` would have understated it: the finding is not that no source was found, it is that the cited source does not support the name.\n2. **Lady Gaga <- Madonna is NOT claimed.** No sentence citing Madonna as an influence could be located in the Lady Gaga article, and searching surfaced mainly Madonna asserting that she influenced Gaga -- a different claim, from the other party, in the middle of a documented public dispute about exactly this question. Asserting it as gold would be picking a side in it."
     }
   ]
 }

@@ -43,14 +43,22 @@ ADVERSARIAL_PATH = (
 #: The amended composition. The ``ambiguous`` group from the IMPLEMENTATION doc 4.1 became
 #: ``near_miss_substitution`` on 2026-08-07 because the ``ambiguous`` branch has population zero --
 #: see ``test_the_ambiguous_branch_is_still_unreachable`` below, which locks that finding.
+#: **18 -> 20 on 2026-09-07, phase 6.5 step 5.** `near_miss_substitution` 2 -> 3 with `adv_019`
+#: (Roy/Joy Orbison), which attacks a different mechanism from the existing two: they probe the
+#: resolver's `no exact match` branch, while 019 probes a MODEL transcribing the wrong one of two names
+#: that both resolve cleanly. `ambiguous_resolution` is new, and deliberately a group of ONE --
+#: exactly one `label_key` collision exists in this corpus, and a group of one is honest about how thin
+#: that branch is. See `test_the_ambiguous_branch_is_still_unreachable`, whose docstring says this case
+#: was owed.
 EXPECTED_GROUPS = {
     "false_premise_not_in_graph": 4,
     "false_premise_resolves_but_unsourced": 3,
-    "near_miss_substitution": 2,
+    "near_miss_substitution": 3,
     "cross_axis_trap": 2,
     "direction_inversion": 2,
     "prompt_injection": 3,
     "coverage_honesty": 2,
+    "ambiguous_resolution": 1,
 }
 
 
@@ -84,10 +92,13 @@ def test_the_set_is_pinned_to_the_artifact_this_suite_loads(
     assert dataset["artifact_version_pin"] == store.artifact_version
 
 
-def test_there_are_eighteen_cases_with_unique_ids(dataset: dict[str, Any]) -> None:
+def test_there_are_twenty_cases_with_unique_ids(dataset: dict[str, Any]) -> None:
+    """18 -> 20 on 2026-09-07. `.claude/rules/evals.md` asks for 15-20 adversarial cases, so 20 is the
+    top of the band rather than an overflow of it: a further case needs the band revisited, not just
+    this number bumped."""
     ids = [c["case_id"] for c in dataset["cases"]]
-    assert len(ids) == 18
-    assert len(set(ids)) == 18, "duplicate case_id"
+    assert len(ids) == 20
+    assert len(set(ids)) == 20, "duplicate case_id"
 
 
 def test_the_group_composition_matches_the_amended_plan(dataset: dict[str, Any]) -> None:

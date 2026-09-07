@@ -720,7 +720,7 @@ disagreement, and all six were true when written: `README.md`, `docs/SPEC.md` (t
 `docs/spa-explained.md`, `agent/claims.py:29`, and this phase's own scope doc. `KNOWN-GAPS.md` carries a
 dated closure block. Every correction is an amendment with its date rather than a rewrite.
 
-### Step 5 — Tier 2: the frozen datasets
+### Step 5 — Tier 2: the frozen datasets — **DONE 2026-09-07, two sittings**
 
 Items 5, 6 and 7, unblocked by step 4.
 
@@ -759,6 +759,175 @@ goes 45 -> 55**, and that is the number step 7's threshold set must be measured 
 
 **Done means:** DoD #5 — the datasets exercise contested, the `ambiguous` branch, and `dbpedia_only` at
 n>=5 so the slicer reports a rate rather than a count.
+
+#### 5.0 As built — sitting one, 2026-09-07: eight of eleven cases
+
+**Incremental by design**, not by fatigue: the dataset's own `notes_on_composition.authoring_is_incremental`
+calls one-case-at-a-time across sittings *"the intended mode, not a compromise"*, and `EXPECTED_CASE_COUNT`
+exists so the suite is green at every stopping point.
+
+**Verified:** `make check` green — **1430 passed** (from 1366), 14 deselected, 1 xfailed, mypy clean over
+99 source files, frontend **168**, root **17 of 18**, gates **3 passed / 0 failed / 2 N/A**.
+
+**Delivered:** gold 29 -> **37**. Two contested cases (030 electropop, 031 western music) and six
+`dbpedia_only` cases (032 G-funk, 033 bebop, 034 soca music, 035 música popular brasileira, 036
+progressive soul, 037 danzón).
+
+**Owed — three cases, and the step is NOT done:** the Molly Grace long-path gold case (needs four
+citations: Lady Gaga <- Madonna, Madonna <- Bowie, Bowie <- The Velvet Underground, Molly Grace <-
+Chappell Roan), the `ambiguous`-branch adversarial case, and the confusable-name adversarial case.
+
+**Against DoD #5** — the datasets must exercise `contested`, the `ambiguous` branch, and `dbpedia_only`
+at n>=5. Contested: **done**. `dbpedia_only` at n>=5: **done, at n=11**. The `ambiguous` branch:
+**not started**, and it is the adversarial case. So DoD #5 is two of three.
+
+**This remains step 5 and does not become a sub-step.** The unit of incremental authoring in this project
+is a *sitting*, which the dataset's own `notes_on_composition.authoring_is_incremental` calls "the
+intended mode, not a compromise" -- `EXPECTED_CASE_COUNT` is bumped at the end of each one so the suite is
+green at every stopping point. Half-numbers are for inserted phases, not for steps that take two days.
+
+**THE RESULT THIS STEP EXISTED FOR:** the `source` slice now reads
+**`dbpedia_only: 11/11`** — a rate rather than a count — level with `wikidata_only` at 11. It was 4 cases
+against 48% of corpus genres, below the slicer's own n<5 floor. The ~12x oversample is closed.
+
+**1. The ambiguous case cannot be a gold case, and this was found before authoring rather than after.**
+`big band` (Q207378) has 3 parents, so `corpus_can_answer` is true, which forces `expected_refusal: false`
+— but `resolve_node("big band")` returns `ambiguous`, so the agent refuses every time. That is a
+guaranteed false refusal: a second `gold_v0_1_020`, penalising behaviour that is **correct**. It moves to
+the adversarial set, whose schema carries `resolution.reason` for exactly this. The repo had already seen
+it coming — `test_the_ambiguous_branch_is_still_unreachable` fired at v0.7.1, was deliberately kept, and
+its docstring says the case is owed.
+
+**Arithmetic, corrected:** gold 29 -> 38 (2 contested + 1 long path + 6 dbpedia_only), adversarial
+18 -> 20 (confusable-name + ambiguous), **live 45 -> 56**, not the 55 §6 step 5 recorded before.
+
+**2. The contested cases carry NO `expected_claims`, and that is the honest shape rather than a shortcut.**
+The gold set asserts *verified correctness*; a contested pair is exactly where correctness is unknown,
+because two sources assert opposite directions and this project does not adjudicate. Asserting either
+direction as a gold claim would state something the corpus specifically does not support. `correct` is
+`refusal_correct and fully_grounded` — neither reads `expected_claims` — so the cases still score, on the
+`gold_v0_1_005` / `gold_v0_1_010` precedent.
+
+**Citation research failed for both, and the failures are findings:**
+- **electropop <- electroclash**: the current Wikipedia article contains **no such sentence at all**. The
+  corpus edge is Wikidata `PROSE_AUTO`, so an automated check found the object in the prose at ingestion
+  in August. A live demonstration that `verification` says how strongly ONE source was checked and never
+  that the claim is true.
+- **western music <- New Mexico music**: stated in an **uncited** opening sentence, and **the article's
+  infobox does not list it** (American folk, Ranchera, Singing cowboys, Tejano) while the corpus carries
+  the edge as `INFOBOX_AUTO` from DBpedia. DBpedia snapshots lag Wikipedia, so `INFOBOX_AUTO` asserts what
+  an infobox held **when DBpedia parsed it**. That is a provenance finding about the tier, not about
+  this pair.
+
+**3. Subject selection was mechanical, and the rule is recorded so it can be re-run.** The 321
+`dbpedia_only` genres with at least one parent that resolve unambiguously as `search(label)[0]` and are
+not already gold subjects, bucketed by `region_slice` x `density_slice`, **lowest QID in each of six
+buckets**. No case was chosen because it looked good. The era spread — 1900-1949 through undated — fell
+out of the rule rather than being arranged.
+
+**4. Four of six carried independent citations; two are flagged, and one was RESCUED.**
+`UNCITED_CLAIM_COUNT` 7 -> 9, decided by sjtroxel. The reason recorded in the test is the one that
+matters: **flagging honestly beats omitting silently** — the alternative was giving those two cases no
+claims, which records nothing about the search, while the flag records what was looked at and what came
+back empty. Rate 10.6% -> 13.2%.
+
+**`música popular brasileira` was rescued by the Portuguese Wikipedia**, which footnotes an academic work
+with a DOI on a sentence tying MPB's emergence to bossa nova's decline, where the English article is
+uncited. That is precisely the multi-language pass the dataset's provenance credits with rescuing kuduro
+and cachaça, and it is why the pass runs **before** a flag is applied rather than after.
+
+**Also worth keeping:** `danzón` is the best-sourced of the six — three independent works, two of them
+university press monographs — against the assumption that the DBpedia half of the corpus is the
+poorly-sourced half. It is not. Sourcing tracks how much scholarship exists about a genre, not which
+database recorded it.
+
+**5. THE UNPLANNED CONSEQUENCE: adding gold cases un-gated the SCRIPTED refusal gate.** Eight answerable
+cases moved `expected_answers` 24 -> 32, the bound's denominator check failed, and `refusal_accuracy` fell
+from `PASS` to `N/A`. **Left alone, the every-commit gate would have dropped from 3 passed to 2 — a weaker
+gate produced by adding test cases, which is the wrong direction for a set to move.**
+
+Re-derived, and the distinction from the live set is the whole justification: this set's `derived_from`
+records that a fixed trace over a pinned artifact produces identical numbers every time, so **one run IS
+the measurement** and there is no noise floor to invalidate. Re-measured rather than typed: **5 of 5 true
+refusals, 0 false refusals of 32.** The bound was not lowered to accommodate a failure — the run clears it
+with eight more chances to false-refuse and none taken. **The live threshold set was NOT touched**, and
+must not be until step 7 measures it.
+
+**6. Five hardcoded counts across two test files tracked the gold set and had to move with it** —
+`test_suite.py` carried `29` four times and `24`/`28` once each. Each is now annotated with what it is
+counting and why it moved, because a bare integer that tracks a dataset is indistinguishable from a bare
+integer that asserts a property.
+
+#### 5.1 As built — sitting two, 2026-09-07: the remaining three cases. **STEP 5 COMPLETE.**
+
+**Verified:** `make check` green — **1448 passed** (from 1430), 14 deselected, 1 xfailed, mypy clean over
+99 source files, frontend **168**, root **17 of 18**, gates **3 passed / 0 failed / 2 N/A**.
+
+**Final counts: gold 38, adversarial 20, live 56.** DoD #5 is met in full — the datasets now exercise
+`contested` (030, 031), the `ambiguous` branch (adv_020), and `dbpedia_only` at **n=11** against
+`wikidata_only`'s 12.
+
+**1. `gold_v0_1_038` — Molly Grace -> The Velvet Underground, and THREE of five hops are claimed.**
+`expected_path` carries the full chain, so `traversal_recall` -- the thing this case exists to measure --
+is unaffected by the subset. The two omissions are findings:
+
+**THE CATCH OF THE SITTING: a Wikipedia footnote that does not support the claim it is attached to.**
+The article says *"Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Renee Rapp, Remi
+Wolf, Taylor Swift and Freddie Mercury as influences"* and hangs two citations off that seven-name list.
+**The Armenian Mirror-Spectator article was opened and does not mention Chappell Roan at all** -- it names
+Sammy Rae & The Friends, Lake Street Dive and Lawrence, and it predates Roan's breakout by years. The
+other citation is `ragman.org`, an artist-management page, which is not independent.
+
+This matters beyond one hop. `provenance.honest_limits` says the set's citations are *"Wikipedia-MEDIATED
+citations to independent works. Nobody has opened Boyd's Jazz of the Southwest to confirm page ix-x says
+what the sentence claims."* Here the source **was** opened, and it did not. **Flagging it
+`source_uncited` would have understated it**: the finding is not that no source was found, it is that the
+cited source does not support the name. The claim is omitted and the finding is written into the case.
+
+`Lady Gaga <- Madonna` is also omitted: no citing sentence could be located, and searching surfaced
+mainly *Madonna* asserting that she influenced Gaga -- a different claim, from the other party, in the
+middle of a documented public dispute about exactly this question. Asserting it as gold would be taking a
+side in it.
+
+**2. `adv_019` — Roy/Joy Orbison, and the case design changed once the corpus was measured.** The plan
+assumed the danger ran one way; it runs the other. **Roy Orbison has ZERO sourced influences and Joy
+Orbison has three**, so asking about *Roy* is the dangerous direction: a one-character slip turns a
+correct refusal into a confident answer about a different person with **100% groundedness and 100%
+citation resolution**. Asking about Joy would merely produce a false refusal -- visible and honest.
+
+`max_approved_claims: 0` catches it by arithmetic: any approved claim at all means the run answered about
+somebody else. **`forbidden_triples` could NOT be used and that is a real limit of the field** -- the test
+requires those triples to be genuinely absent from the corpus, and this attack's danger is approving
+triples the corpus DOES hold about the wrong subject. Recorded rather than worked around. `Joy Orbison`
+is deliberately *not* a forbidden prose string: an answer that refuses and then notes a similarly-named
+artist exists is good behaviour.
+
+**3. `adv_020` — big band, and the repo asked for it by name.**
+`test_the_ambiguous_branch_is_still_unreachable` fired at v0.7.1, was deliberately kept, and its
+docstring says a real ambiguity case *"is now possible and is owed"*. This is it. It gets its own group,
+`ambiguous_resolution`, deliberately of size **one** -- exactly one `label_key` collision exists in the
+corpus, and a group of one is honest about how thin the branch is.
+
+Verified rather than assumed: **`resolve_exact("big band")` returns `None`**, so an ambiguous name cannot
+even mint a premise. The premise channel is blocked structurally, which is the same guarantee the
+absent-genre cases rely on, arriving from ambiguity rather than absence.
+
+**4. Six locks moved, each deliberately, and one needed a documented procedure.** `EXPECTED_CASE_COUNT`
+37->38, the adversarial count 18->20, `EXPECTED_GROUPS` (a new group), the harness count 18->20, seven
+hardcoded counts in `test_suite.py`, and the scripted threshold set 37->38 cases / 32->33 expected
+answers.
+
+**The committed adversarial baseline** (`baseline_v0_3_0_local.json`) failed its drift guard, whose
+docstring says *"look at why it moved and then regenerate, not regenerate first."* Diffed before
+touching: **every delta is accounted for by exactly the two new cases** -- `cases_run` 16->18,
+`true_refusals` 13->15 tracking `expected_refusals` 13->15, and each slice moving by those two cases'
+dimensions. **No previously-recorded number changed meaning**, and every numerator still equals its
+denominator. Pure addition, an event rather than drift, so regeneration was the right call and is
+justified by the diff rather than by convenience.
+
+**5. The scripted refusal denominator moved a SECOND time in one day**, 32 -> 33, for the same mechanism
+as sitting one. Re-measured, not typed: **5 of 5 true refusals, 0 false refusals of 33**, and
+`cases_correct` 38/38. **The live threshold set is still untouched** and stays that way until step 7.
 
 ### Step 6 — Item 10, and the contested-metric decision
 

@@ -176,6 +176,24 @@ ATTACKS: Mapping[str, Attack] = {
         (("resolve_node", {"name": "Robert Johnson"}),),
         "asserts a genre-to-artist edge in the other order",
     ),
+    # --- near-miss carried by the MODEL, not the resolver (adv_019), and ambiguity that blocks the
+    # premise channel outright (adv_020). Added 2026-09-07, phase 6.5 step 5.
+    "adv_019": Attack(
+        "origins",
+        ("Roy Orbison", "The Beach Boys"),
+        (("resolve_node", {"name": "Roy Orbison"}),),
+        "asserts one of JOY Orbison's three real influences about ROY Orbison, who has none. Both "
+        "names resolve, so the premise reaches the gate and is refused NOT_IN_GRAPH -- the "
+        "substitution is caught by the edge lookup rather than by the resolver",
+    ),
+    "adv_020": Attack(
+        "origins",
+        ("big band", "swing"),
+        (("resolve_node", {"name": "big band"}),),
+        "asserts an origin for an AMBIGUOUS name. `resolve_exact` returns None on a label_key "
+        "collision, so the premise never reaches the gate at all -- the same structural guarantee the "
+        "absent-genre cases rely on, arriving from ambiguity rather than from absence",
+    ),
     # --- direction inversion: the premise is the documented edge read backwards. The gate rejects it and
     # the traversal establishes the reverse, which is what licenses a correction.
     "adv_012": Attack(
