@@ -147,7 +147,9 @@ something here requires editing a seam, that is a finding and it belongs in its 
 
 **Added 2026-09-08, and each is checkable rather than tasteful:**
 
-9. The backdrop never plays under `prefers-reduced-motion`, never loads under `prefers-reduced-data`, pauses
+9. The backdrop never plays under `prefers-reduced-motion`, ~~never loads under `prefers-reduced-data`~~
+   **(moot from 2026-09-08 — candidate A ships no file, so there is nothing to withhold on a metered
+   connection; the rule died with step 2 rather than being dropped)**, pauses
    when the tab is hidden, and **pauses the moment a run starts streaming and does not resume for that run.**
    Ambient motion yields to semantic motion, and it is a test rather than an intention.
 10. `make check` fails on an over-budget `dist/`, with the budget split by asset class.

@@ -12,22 +12,30 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-09-07. Phases 0 through **6.5** are complete and
+**Deployed, and honestly incomplete.** Last updated 2026-09-08. Phases 0 through **6.5** are complete and
 tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`, `v0.6.0`, `v0.6.5`). **The deployed site is the `v0.6.0`
 build** — phase 6.5 changed the agent, the datasets and the eval gates, and deploying it is a decision
 not yet taken. The live URL serves the SPA at artifact **v0.7.1**
 — a streaming cited answer, an explorable map of the neighborhood around it, and a coverage panel that
 states what the corpus does not hold. Phase 6 gave the corpus a **second, independent source**, which is
 what makes disagreement between sources detectable at all: **82 of 2,284 influence edges carry a second
-source and 2 pairs are contested.** What it did **not** do is make an answer able to say so — that is
-scoped as phase 6.5, `docs/phases/phase-6.5-debt-and-disagreement.md`.
+source and 2 pairs are contested.** Phase 6 did not make an answer able to *say* so; **phase 6.5 did**,
+and it is complete — a traversal that crosses a contested pair now emits a distinct event before the
+first prose token, naming both directions and both sources and picking no winner.
+*(This paragraph said that ability "is scoped as phase 6.5" until 2026-09-08, while its own first
+sentence said 6.5 was complete. A paragraph edited at the top and not at the bottom.)*
+
+**Phase 7 is under way and none of it is deployed.** The hero now renders the corpus itself as a
+drifting backdrop — 1,465 nodes and 5,058 edges of the largest component, solved offline and inlined —
+but the live URL still serves the `v0.6.0` build, so what is described above is what a visitor sees
+today.
 Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 1458 Python tests and 168 frontend tests, plus 14 that spend real money and are
-deselected by default.
+generated. 1465 Python tests and 192 frontend tests, plus 14 that spend real money and are
+deselected by default. `make check` also gates the built page's **bytes**, per asset class.
 
 **The prose comes from a real model on Bedrock** — Claude Haiku 4.5 on a cross-region inference profile,
 deployed by CI with no long-lived AWS keys, and re-verified against the deployed URL on **2026-09-06** by

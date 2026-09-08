@@ -1,18 +1,21 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-07
+> ## START HERE — where things stand, 2026-09-08
 >
-> **PHASE 6.5 IS COMPLETE — steps 0 through 8, all on 2026-09-07 — and `v0.6.5` is tagged and pushed.**
-> All ten DoD items are closed. The as-built is
-> `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`; the section below summarizes it and
-> **that doc is the authority**. **Phase 7 is next, and it was split in two on 2026-09-08:**
+> **PHASE 6.5 IS COMPLETE** — all ten DoD items, `v0.6.5` tagged and pushed. As-built:
+> `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`, **and that doc is the authority**.
+>
+> **PHASE 7 WAS SPLIT IN TWO AND IS UNDER WAY — 2026-09-08.**
 > `docs/phases/phase-7-cinematic-surface.md` (v0.8, the build) and
-> `docs/phases/phase-7.5-portfolio-and-writeup.md` (v1.0, the writeup and the report).
-> `ROADMAP.md` §4 carries the decision.
+> `docs/phases/phase-7.5-portfolio-and-writeup.md` (v1.0, the writeup and the report);
+> `ROADMAP.md` §4 carries the decision. **Steps 0, 1 and 3 are DONE. Step 2 was DELETED. Steps 4-8
+> remain.** As-built, step by step, in `phase-7-cinematic-surface-IMPLEMENTATION.md` — read that rather
+> than the summary below.
 >
-> **Measured 2026-09-07, not recalled:** `make check` green — **1461 passed, 0 xfailed**, 14 deselected,
-> mypy clean over **99** source files, frontend **168 passed** across 16 files, root **17 of 18**.
-> Datasets: gold **38**, adversarial **20**, live **56**.
+> **Measured 2026-09-08 at end of day, not recalled:** `make check` green — **1465 passed, 0 xfailed**,
+> 14 deselected, mypy clean over **101** source files, frontend **192 passed** across 18 files, root
+> **17 of 18**. Datasets unchanged: gold **38**, adversarial **20**, live **56**. Asset budget, new
+> today: script **267.9 KB of 320**, graph **2.57 MB of 3.00**, media **0 of 0**.
 >
 > **THE FOUR THINGS A COLD SESSION IS MOST LIKELY TO GET WRONG:**
 >
@@ -36,6 +39,57 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## PHASE 7 IN PROGRESS — the cinematic surface, steps 0, 1 and 3, 2026-09-08
+
+**The as-built is `docs/phases/phase-7-cinematic-surface-IMPLEMENTATION.md` and it is the authority.**
+This section records only what a cold session would otherwise get wrong.
+
+**Step 0 — the asset budget.** `make check` now gates `dist/` bytes in five classes. It found a real
+defect on its first run: `web/public/graph/v0.5.0/graph.json`, 655 KB, still staged beside v0.7.1 and
+being copied into `dist/` and synced to CloudFront. Nothing fetched it, `.gitignore` hid it from every
+diff, and the one thing printing a size printed only the file it had just written. Fixed at source —
+`stage-graph.mjs` prunes stale pins.
+
+**Step 1 — the backdrop treatment. CANDIDATE A, decided by sjtroxel.** The corpus rendered live on a
+canvas. **This deleted step 2 entirely**: no video means no offline renderer, no Playwright or ffmpeg
+in the pipeline, no codec fallbacks. **The `media` budget cap is 0 permanently and that is a guarantee,
+not a placeholder** — `asset-budget.mjs` says so in the cap's own reasoning.
+
+**Step 3 — the backdrop ships.** 1,465 nodes and 5,058 edges of the largest component, solved offline
+by `make backdrop`, packed to 35 KB and **inlined** rather than fetched, because `App.test.tsx` asserts
+the page makes no network request on load and a decoration is a bad reason to relax a guarantee about
+first paint.
+
+### The four findings that outlive these steps
+
+1. **A test that selects `querySelector("canvas")` is silently asserting the page holds ONE canvas.**
+   The backdrop broke ten tests in `explore.test.tsx` that were not about the backdrop — a prototype
+   `getContext` stub returned one shared recording context, and 1,465 arcs a frame landed in the map's
+   recorder. Invisible to any grep. Now scoped to `.map__canvas`.
+2. **A contrast measurement covers the elements you point it at.** The colour preview measured the
+   title and the tagline, so those two were plated and cleared comfortably. The built page put the ask
+   label and the "Trace it" button straight onto a bright network, both unreadable. Two measured, four
+   exposed.
+3. **The plate is 0.92 because it returns the page to its PRE-BACKDROP contrast.** `--ink-faint` on
+   plain `--ground` is 4.98:1; the backdrop took it to 3.42. That is a regression a decoration caused
+   on an element nobody touched, and the repair is to give it back rather than redesign the label
+   around the wallpaper. Now 5.02.
+4. **A generator and a formatter cannot both own a file.** Prettier reflowed the emitted base64,
+   dirtying the tree after every `make backdrop` and breaking a parser with a `KeyError` on a field
+   that was plainly there. `backdropData.ts` is in `.prettierignore`.
+
+### Also today, not part of a step
+
+**Reader-facing prose is American spelling** — 265 replacements across 25 markdown files plus one
+rendered UI string. **Deliberately NOT converted:** `eval/rubrics/*.md` (the judge's prompt — editing
+it moves judged metrics and invalidates the measured judge-human agreement), the eval datasets, the
+artifacts, the stored results, and code identifiers. `Judgement` in particular is a dataclass whose
+field names are serialized into stored result files, which phase 7.5's trend view has to read.
+
+**The home page's own column was wrong and is fixed.** The tagline and footer were capped at the 34rem
+reading measure inside a 46rem column — 544px against 696px — so the footer's rule stopped 152px short.
+Desktop only; under ~34rem both were already full width.
 
 ## PHASE 6.5 COMPLETE — the behavioral half, and a live suite that gates again, 2026-09-07
 

@@ -131,10 +131,17 @@ earlier edit, and it still said "what remains open from phase 6 is step 9's thre
 contradicting the paragraph above it, which says all three closed. Both are the ordinary failure mode this
 section keeps re-learning: a paragraph edited at the top and not at the bottom.)*
 
-**PHASE 7 IS NEXT, and it is now two phases.** `phase-7-cinematic-surface.md` (v0.8) is the build; its
-IMPLEMENTATION doc was written 2026-09-08 and is **awaiting approval to build, with no code written
-against it yet**. `phase-7.5-portfolio-and-writeup.md` (v1.0) carries the half that left and its
-IMPLEMENTATION doc is deliberately not written yet.
+**PHASE 7 IS UNDER WAY, and it is now two phases.** ~~awaiting approval to build, with no code written
+against it yet~~ was true for about an hour on 2026-09-08 and is **stale**.
+`phase-7-cinematic-surface.md` (v0.8) is the build: **steps 0, 1 and 3 are done**, step 2 was
+**deleted**, and steps 4 through 8 remain. `phase-7.5-portfolio-and-writeup.md` (v1.0) carries the half
+that left and its IMPLEMENTATION doc is deliberately not written yet — it is written immediately before
+7.5 is built, so it can absorb what 7 teaches.
+
+**Measured 2026-09-08 at end of day, not recalled:** `make check` green — **1465 passed**, 14
+deselected, mypy clean over **101** source files, frontend **192 passed** across 18 files, root 17 of
+18, scripted eval gates **4 passed / 0 failed / 2 N/A of six**. The asset budget, new today, reports
+script **267.9 KB of 320**, graph **2.57 MB of 3.00**, media **0 of 0**.
 
 **The corpus has a second source, and `contested` is reachable.** Artifact **v0.7.1 is pinned** —
 `graph/memory.py:34`, `ingest/wikidata.py:59` and the SPA's `GRAPH_PIN` all read it. 1,479 nodes and

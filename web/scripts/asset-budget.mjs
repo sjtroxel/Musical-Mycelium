@@ -63,10 +63,13 @@ export const BUDGET = {
     cap: 0,
     observed: 0,
     why:
-      "**Deliberately zero until phase 7 step 1 measures the candidates.** Zero is not a placeholder: " +
-      "it means no media may ship until a number is chosen from what the rendered treatments actually " +
-      "weigh. Picking the cap now would be picking it from taste, which is the thing this file exists " +
-      "to stop. The build fails the moment a backdrop lands without that decision having been made.",
+      "**PERMANENTLY ZERO as of 2026-09-08: this site ships no video.** Phase 7 step 1 measured four " +
+      "backdrop treatments and sjtroxel chose candidate A, which renders the corpus on a canvas at " +
+      "runtime, so there is nothing to encode and step 2 was deleted rather than deferred. " +
+      "*(This string read 'deliberately zero until phase 7 step 1 measures the candidates' until that " +
+      "step landed. It was correct when written and became an instruction to go pick a number that " +
+      "should never be picked -- the exact shape of stale rule this repo keeps re-learning.)* For " +
+      "scale, had B been chosen: 293 KB for ten seconds at 640 wide, 12.4 MB at 1600.",
   },
   shell: {
     cap: 32 * KB,
