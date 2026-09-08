@@ -19,12 +19,15 @@ Three of them are the load-bearing ones:
 from __future__ import annotations
 
 import dataclasses
+import json
+import os
 from collections.abc import Callable
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
-from musical_mycelium.agent.llm import LLM, LLMResponse, ScriptedLLM
+from musical_mycelium.agent.llm import LLM, LLMResponse, ScriptedLLM, Usage
 from musical_mycelium.eval import gold
 from musical_mycelium.eval import suite as suite_module
 from musical_mycelium.eval.budget import EvalBudget
@@ -619,3 +622,61 @@ def test_an_incomplete_run_still_refuses_to_gate(
     assert "did not finish" in text
     assert cases[2].case_id in text, "the empty aborted_reason must not swallow which case failed"
     assert "finish ()" not in text, "an empty reason was interpolated into the message"
+
+
+# --- the dollar figure a billable run records -------------------------------------------------------
+#
+# Phase 6.5 DoD #8: "every billable run records a dollar figure." Added 2026-09-07 at step 8, because
+# the audit found it unmet: the confirmation PROMPT showed a cost and the result file recorded only
+# tokens, which is displaying a number rather than recording one. The five baseline runs of 2026-09-07
+# each printed a cost and left no trace of it.
+
+
+def test_a_priced_run_records_what_it_cost(result: SuiteResult) -> None:
+    """Derived from the measured tokens and the configured price, not from the spend estimate.
+
+    The estimate is deliberately ~2x conservative (`live.py`) because it gates consent; this is what
+    the run actually cost, so the two must never be confused for one another.
+    """
+    prices = json.dumps({"priced-model": {"input": 1.0, "output": 5.0}})
+    with mock.patch.dict(os.environ, {"MYCELIUM_TOKEN_PRICES": prices}):
+        run = dataclasses.replace(
+            result,
+            model_id="priced-model",
+            usage=Usage(input_tokens=1_000_000, output_tokens=1_000_000),
+        )
+        assert run.estimated_usd == 6.0
+        assert run.to_json()["usage"]["estimated_usd"] == 6.0
+
+
+def test_an_unpriced_model_records_no_dollar_figure_rather_than_a_guess(
+    result: SuiteResult,
+) -> None:
+    """`None`, never an approximation from a similar model.
+
+    `api/telemetry.py` makes the argument at length: tokens are measured and cannot go stale, dollars
+    are an interpretation with an expiry date, and a figure that is sometimes real and sometimes
+    invented is worse than one that is sometimes absent. A scripted run lands here too, correctly --
+    it is free, so it has no cost to record.
+    """
+    with mock.patch.dict(os.environ, {"MYCELIUM_TOKEN_PRICES": "{}"}):
+        run = dataclasses.replace(result, model_id="not-in-the-price-table")
+        assert run.estimated_usd is None
+        assert run.to_json()["usage"]["estimated_usd"] is None
+
+
+def test_the_token_counts_are_unaffected_by_whether_a_price_exists(
+    result: SuiteResult,
+) -> None:
+    """Tokens are the ground truth and the dollar figure is derived from them. A pricing change must
+    never move a measurement."""
+    with mock.patch.dict(os.environ, {"MYCELIUM_TOKEN_PRICES": "{}"}):
+        unpriced = result.to_json()["usage"]
+    prices = json.dumps({result.model_id: {"input": 1.0, "output": 5.0}})
+    with mock.patch.dict(os.environ, {"MYCELIUM_TOKEN_PRICES": prices}):
+        priced = result.to_json()["usage"]
+
+    assert unpriced["estimated_usd"] is None
+    assert priced["estimated_usd"] is not None
+    for key in ("input_tokens", "output_tokens", "total_tokens"):
+        assert unpriced[key] == priced[key]

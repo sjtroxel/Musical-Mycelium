@@ -147,6 +147,15 @@ disagreement needs two sources and every edge had exactly one. That was correct.
 DBpedia, so the precondition A1 named has arrived**: `contested` left `agent/claims.py:UNREACHABLE` at
 artifact v0.7.0 and **2 pairs are contested**. `checks_disagree` is still declared there.
 
+**AN ANSWER CAN SAY IT AS OF 2026-09-07, phase 6.5 step 4.** A traversal that crosses a contested pair
+emits a `contested` event before the first prose token, naming both directions and both sources and
+picking no winner, and `ContestedDisclosure` gates that it never happens silently. Two things have **not**
+changed and are the easy ones to get wrong: it is still **never a claim** — `checks_disagree` remains
+declared `UNREACHABLE` and the model may be *told* the graph holds a disagreement but may never *propose*
+one — and it is still **not in the prose**, because `synthesize` takes exactly one claim-bearing
+parameter and handing it a disagreement would reintroduce the claims-first leak. The disagreement rides
+beside the narration, not inside it.
+
 **`contested` means two DIFFERENT sources assert opposite directions for one pair.** It does **not** mean
 a reciprocal pair exists — v0.7.0 holds **6 reciprocal pairs and only 2 are contested**; the other four
 are a single source describing mutual influence, which between genres is often a real claim. The loose

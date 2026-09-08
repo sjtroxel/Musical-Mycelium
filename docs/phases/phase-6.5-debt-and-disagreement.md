@@ -63,6 +63,13 @@ Today the answers are no, no, and no:
   > Full diagnosis in `phase-6.5-debt-and-disagreement-IMPLEMENTATION.md` §3.0 and §3.3.
 - **Proof:** the live suite reports `NOT GATED` at v0.7.1, and no eval case anywhere exercises `contested`.
 
+> **ALL THREE ANSWERED, 2026-09-07 — the phase closed on its own question.** Disagreement: a `contested`
+> event names both directions and both sources (step 4). Refusal: `gold_v0_1_020` is diagnosed from a
+> recorded trace — the model types *fentanyl* for *femtanyl* — and is excluded from the gates with the
+> cause written down (step 3). Proof: the live suite gates all six properties against bounds measured
+> over five identical runs (step 7), and two gold cases plus a gated `contested_disclosure` metric
+> exercise disagreement end to end (steps 5 and 6).
+
 ## 3. Delivers
 
 Ordered by dependency. Tier 2 cannot start before tier 1; tier 3 cannot be measured before tier 2 settles.
@@ -236,6 +243,11 @@ Each of these is a real fork, and none should be settled by whoever happens to b
 | Tier 3: five live runs for the floor and the set | **~$2.50**, and roughly **3 hours** of wall clock at 9 RPM |
 | A judged tier 2 at the freeze | a few cents |
 | **Phase total** | **under $4** |
+
+**ACTUAL, 2026-09-07: $2.61 across five runs of the 56-case set, ~2.4 hours** — inside the estimate
+below, and cheaper per case than projected because the model issued ~4.7 requests per case rather than
+the estimated 7. Wall clock was the real cost exactly as predicted. The figure below is the estimate as
+it stood before the runs and is kept as a record of it.
 
 The measured per-run figure is **~$0.42** at 45 cases against the v0.7.1 corpus, scaled from the
 2026-09-06 run's 348,625 tokens. It will rise as tier 2 adds cases. **Wall clock, not dollars, is the real

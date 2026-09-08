@@ -156,6 +156,83 @@ corpus in part 2.
 
 ---
 
+## PHASE 6.5 COMPLETE — the behavioural half, and a live suite that gates again, 2026-09-07
+
+**Verified state:** `make check` green — **1458 passed, 0 xfailed**, 14 deselected, mypy clean over 99
+source files, frontend **168** across 16 files, root 17 of 18. Scripted gates **4 passed / 0 failed /
+2 N/A of SIX**. Live gates: **all six pass** on all five baseline runs. Full as-built, step by step, in
+`docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md` — **read that rather than restating it.**
+
+### Every DoD item, with where it was closed
+
+1. **`contested` in an answer** — step 4. A distinct SSE event before the first prose token, naming both
+   directions and both sources, picking no winner. **Never a claim**, and deliberately **not in the
+   prose**: `synthesize` takes exactly one claim-bearing parameter and handing it a disagreement would
+   reintroduce the claims-first leak. `checks_disagree` is still declared `UNREACHABLE`.
+2. **`gold_v0_1_020`** — step 3. Diagnosed from a recorded trace: the model calls
+   `resolve_node(name="fentanyl")`, the opioid, for a query saying *femtanyl*. Not a corpus, graph or
+   tool defect — `trace_lineage` answers it in one call. Excluded from the gates with the cause written
+   down; **still in the dataset and still scored.**
+3. **Three refusal states** — step 2. A run that gathered nothing no longer speaks in the corpus's voice.
+4. **`ResolveSource` verifies a DBpedia URI** — step 4, through the seam widened at step 1.
+5. **The datasets** — step 5, two sittings. Gold **29 → 38**, adversarial **18 → 20**, live **45 → 56**.
+   `dbpedia_only` went from 4 cases (below the n<5 floor) to **11**, level with `wikidata_only`.
+6. **A gated live run** — step 7. Five identical runs, **$2.61, ~2.4 hours**, bounds written from the
+   measured floor.
+7. **The `xfail` is gone** — step 7, because the invariant holds. It XPASSed the moment a matching
+   baseline landed, exactly as its own reason predicted.
+8. **Every billable run records a dollar figure** — steps 0 and 8. Step 0 configured the prices; **the
+   step 8 audit found the result file recorded only tokens**, which is displaying a figure rather than
+   recording one, and closed it.
+9. **Copy** — step 4 for the disagreement surfaces, on the day it landed; step 8 for the rest.
+10. **ROADMAP and this file** — step 8.
+
+### The findings that outlive the phase
+
+**A footnote that does not support the claim attached to it.** Wikipedia hangs two citations on a
+seven-artist list for Molly Grace; the Armenian Mirror-Spectator article was **opened** and names none of
+them. The gold set's `honest_limits` says nobody opens these sources. This time one was, and it did not
+say what the footnote implied. Flagging it `source_uncited` would have understated it.
+
+**`Joy Orbison` / `Roy Orbison` — a live failure no metric can catch.** Eight label pairs sit one edit
+apart in this corpus. Roy has zero sourced influences and Joy has three, so a one-character slip turns a
+correct refusal into a confident answer about a different person at **100% groundedness and 100% citation
+resolution**. `adv_019` exists for it. **Groundedness is a provenance guarantee, not a relevance one**,
+and this is the sharpest demonstration the project has.
+
+**A near-miss resolver was measured and REJECTED.** The obvious fix for the femtanyl bug is to suggest
+near labels. At edit distance 1 the corpus holds 8 real collisions including `funk rock`/`punk rock`;
+at distance 2, 149. Suggesting near labels would trade an honest refusal for an undetectable grounded
+wrong answer.
+
+**The zero-variance trap, caught a SECOND time and proved rather than suspected.** `traversal_recall`
+read 97.1% in all five runs. Per case: 37 at 1.0 every run, `gold_v0_1_020` at 0.143 every run. **A
+zero-variance number is a reason to ask what is constant.**
+
+**The fifth run earned its money.** `adv_018` failed runs 1-3 and passed 4-5. Three runs would have
+recorded a coin as a reproducible failure — the exact error the previous floor made.
+
+**A recorded reason was wrong and testing it is what found that.** The first justification written into
+the `refusal_accuracy` bound claimed the exclusion improved sensitivity to a new false refusal. Measured:
+2 of 5 runs either way — identical. The reason that actually holds is durability: without the exclusion,
+the gate would **silently gain a spare case of slack the day `gold_v0_1_020` is fixed**. Corrected in
+place. `test_every_live_bound_records_why_it_is_where_it_is` enforces that a reason exists; nothing can
+enforce that it is true.
+
+### Still open, and deliberately
+
+- **The held-out set was NOT run.** Still sealed, still pinned 0.5.0, **run count 1**. Re-running it after
+  a corpus change measures something the first run did not. Default remains **do not run**.
+- **`adv_008` was correct in 1 of 5 runs** — close enough to reproducible that the next baseline should
+  check whether it has become one. It is **inside** the gate, not excluded: excluding a case for being
+  noisy is how a gate stops measuring what is broken.
+- **`traversal_precision` (11.4pp spread) is not gated** and the floor is why.
+- **The two genre-only tool descriptions** (`get_influences`, `trace_lineage` say "genre" where three
+  sibling tools say "genre or artist") are a real defect, known **not** to be the femtanyl cause, and
+  deliberately not fixed inside a phase that was watching a related case.
+- **`-bedrock.json` result files stay gitignored** (§5.6 undecided); the five baseline runs exist on one
+  laptop, and `noise_floor.json` names them.
+
 ## PHASE 6.5 STEP 4 — contested is reachable in an ANSWER, 2026-09-07
 
 **CLOSED: the keystone.** A traversal that crosses a pair two sources disagree about now emits a

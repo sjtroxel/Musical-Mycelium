@@ -43,6 +43,7 @@ from typing import Any
 
 from musical_mycelium.agent.claims import Claim
 from musical_mycelium.agent.llm import LLM, Usage
+from musical_mycelium.api.telemetry import load_prices
 from musical_mycelium.eval import runner
 from musical_mycelium.eval.budget import BudgetExceeded, EvalBudget
 from musical_mycelium.eval.metrics import (
@@ -232,6 +233,18 @@ class SuiteResult:
         return len(self.results)
 
     @property
+    def estimated_usd(self) -> float | None:
+        """What this run cost at the prices configured when it ran, or ``None`` if none were.
+
+        Rounded to six decimal places rather than left at full float precision: the input is a token
+        count and a price per million, so digits beyond that are arithmetic noise rather than measurement.
+        """
+        price = load_prices().get(self.model_id)
+        if price is None:
+            return None
+        return round(price.usd_for(self.usage), 6)
+
+    @property
     def cases_correct(self) -> int:
         return sum(1 for result in self.results if result.correct)
 
@@ -286,6 +299,18 @@ class SuiteResult:
                 "input_tokens": self.usage.input_tokens,
                 "output_tokens": self.usage.output_tokens,
                 "total_tokens": self.usage.total_tokens,
+                # Phase 6.5 DoD #8: "every billable run records a dollar figure". Until 2026-09-07 the
+                # confirmation PROMPT showed one and the result file did not, which is displaying a
+                # number rather than recording it -- the five baseline runs each printed a cost and
+                # left no trace of it.
+                #
+                # `null` when no price is configured for this model, never a guess, for the reason
+                # `api/telemetry.py` gives at length: tokens are measured and cannot go stale, dollars
+                # are an interpretation with an expiry date, and a figure that is sometimes real and
+                # sometimes invented is worse than one that is sometimes absent. The token counts above
+                # remain the ground truth; this is derived from them and from prices as they stood on
+                # the day of the run.
+                "estimated_usd": self.estimated_usd,
             },
             "per_case": [
                 {

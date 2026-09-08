@@ -1147,7 +1147,7 @@ issued 255-262 / $0.501-$0.539. A spend gate should quote the ceiling: the numbe
 the worst case they are consenting to, and tuning it toward the mean would make the prompt more accurate
 and the consent weaker.
 
-### Step 8 — Copy, docs, release
+### Step 8 — Copy, docs, release — **DONE 2026-09-07**
 
 The sweep, with the phase 6 step 10 finding applied: **a stale rule outlives the stale sentences it
 produces**, so the sweep reads instruction files first, not last. `CLAUDE.md`, the three `.claude/rules/`
@@ -1166,6 +1166,79 @@ DoD #9 and #10. The release itself is a separate decision, as it was in phase 6.
 paragraph per step, added when the step lands. It is the cold-articulation rep and it is much harder to
 reconstruct in December.
 
+#### 8.0 As built — 2026-09-07. **STEP 8 DONE. PHASE 6.5 COMPLETE.**
+
+**Verified:** `make check` green — **1461 passed, 0 xfailed**, 14 deselected, mypy clean over 99 source
+files, frontend **168** across 16 files, root **17 of 18**, terraform valid. Scripted gates
+**4 passed / 0 failed / 2 N/A of six**.
+
+**1. THE AUDIT FOUND DoD #8 UNMET, and I would have signed it off.** *"Every billable run records a
+dollar figure."* Step 0 configured the prices and the confirmation **prompt** printed one — which is
+**displaying** a figure, not recording it. The result file carried only token counts, so all five
+baseline runs printed a cost and left no trace of it. Closed here: `SuiteResult.estimated_usd` derives
+from the measured tokens and the configured price, lands in `usage.estimated_usd`, and is **`null`**
+rather than a guess when no price exists for that model. Verified against run 5's real usage —
+**$0.501448**, matching the hand computation exactly — and both locks broken once.
+
+This is the value of auditing a DoD against the artefact rather than against memory of having done the
+step. The step was done; the requirement was not met.
+
+**2. Instruction files first, because a stale rule outlives the sentences it produces.** That is phase 6
+step 10's finding and it applied directly: **`.claude/rules/evals.md` said "Five gates exist; the free
+every-commit run blocks on THREE of them"** and loads into every session in this repo. Amended, along
+with its blocking list (which still described `traversal_recall` and `refusal_accuracy` as "within 5pp"
+bands — both abandoned as arithmetically unsatisfiable, with the strikethroughs kept because the reason
+generalises), and its contested-metric paragraph, which said a contested metric was "NOT yet in this
+catalog".
+
+**The line most worth having amended is the one that now forbids its own kind of error**: *"Do not write
+a gate count in prose anywhere, including this line ... and this sentence has now been wrong once for
+exactly that reason."*
+
+**3. The zero-variance trap is now recorded as a recurrence, not an anecdote.** `.claude/rules/evals.md`
+carried it as a single historical finding; it now records that it happened **again** at the next
+baseline, on a corpus three times larger with a different case count, and instructs treating it as the
+**default hypothesis** for any 0.0pp spread rather than as a curiosity. Added beside it: five runs is
+the floor, because `adv_018` failed three and passed two.
+
+**4. Surfaces corrected.** `README.md` (test counts 1330/159 -> 1461/168; the "paid live suite gates
+nothing" paragraph rewritten, and it now leads with what the five runs *bought* rather than with the
+gates themselves). `CLAUDE.md` (an answer can say it; still never a claim, still not in the prose).
+`docs/ROADMAP.md` (the 6.5 row marked complete, the build-status block rewritten, the "gates nothing"
+item struck through and replaced with the `traversal_recall` warning). `docs/KNOWN-GAPS.md` (a closure
+block: every DoD item with where it closed, the findings that outlive the phase, and what stays open).
+The phase 6.5 **scope doc** was amended in place rather than rewritten — its §2 asked three questions
+and answered "no, no, and no"; a dated block records all three now answered.
+
+**5. The plain-English write-up landed in `docs/eval-suite-explained.md`** rather than a new file, as
+§5.0 said it would. It covers the four things a person would actually ask about: the system can say its
+sources disagree, refusals stopped lying about the graph, the femtanyl bug and why the obvious fix was a
+trap, and what five identical runs cost and revealed. Written to be said out loud cold, which is the
+point of it.
+
+**6. What is NOT done, deliberately: the release.** Tagging `v0.6.5` and deploying is a separate
+decision, as it was in phase 6. Nothing in this phase moved the artifact pin, the infrastructure or the
+deployed image, so the live site is unaffected by everything here until someone chooses to deploy.
+
+##### The phase, in one place
+
+| DoD | closed at |
+|---|---|
+| 1. `contested` in an answer | step 4 |
+| 2. `gold_v0_1_020` diagnosed and excluded | step 3 |
+| 3. Three refusal states | step 2 |
+| 4. `ResolveSource` verifies DBpedia | step 4 |
+| 5. Datasets exercise contested / ambiguous / `dbpedia_only` at n>=5 | step 5 |
+| 6. A gated live run on a measured set | step 7 |
+| 7. The `xfail` gone because the invariant holds | step 7 |
+| 8. Every billable run records a dollar figure | steps 0 and **8** |
+| 9. No copy claims what the system cannot do | steps 4 and 8 |
+| 10. ROADMAP row and `KNOWN-GAPS` | step 8 |
+
+Gold **29 -> 38**, adversarial **18 -> 20**, live **45 -> 56**, gates **5 -> 6**, `make check`
+**1330 -> 1461**. Total Bedrock spend for the phase: **$2.65** — $2.61 for the baseline and four cents
+of wiring checks.
+
 ## 7. Decisions this plan does not make
 
 Six from the scope doc §5. This plan carries a recommendation on two and leaves four open.
@@ -1176,8 +1249,8 @@ Six from the scope doc §5. This plan carries a recommendation on two and leaves
 | 5.2 | Contested metric — gated, tracked, or absent | **CLOSED 2026-09-07: GATED**, as a property rather than a rate, which is what dissolves the denominator problem. Free on the scripted run. §6.0 item 11. |
 | 5.3 | Is `gold_v0_1_020` fixable | Open by construction. Step 3 diagnoses; the decision follows the diagnosis and not the reverse. |
 | 5.4 | How many `dbpedia_only` gold cases | **CLOSED 2026-09-07: six.** Gold ends at 38 cases, the live set at 54. Chosen for margin above the n<5 floor, not for a round total. |
-| 5.5 | Held-out set at the freeze | **Not made here, and no step depends on it.** Run count is 1. Default remains **do not run**. His alone, at the freeze. |
-| 5.6 | Do `-bedrock.json` runs stay gitignored | Open. Step 7 creates five more of them, so it is decided **before** step 7 runs, not after. |
+| 5.5 | Held-out set at the freeze | **CLOSED 2026-09-07: NOT RUN.** Still sealed, still pinned 0.5.0, run count still **1**. No step depended on it and none was tempted to. |
+| 5.6 | Do `-bedrock.json` runs stay gitignored | **STILL OPEN — and step 7 ran anyway, which is the honest record.** Five more result files now exist on one laptop, named by `noise_floor.json`, reproducible only by spending $2.61 again. The transcripts ARE committed; the results are not. Carried to a later phase. |
 
 ## 8. Not in this phase
 

@@ -54,7 +54,7 @@ so both columns are labelled. Reading one as the other is the confusion this hea
 | **4** `eval-suite` **DONE 2026-08-24** | **v0.4** | **v0.5.0** (unchanged) | The eval suite proper | Independent scorers over a pinned artifact |
 | **5** `spa-and-visualization` **DONE 2026-09-02** | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
 | **6** `density-and-coverage` **DONE 2026-09-06, `v0.6.0` deployed** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
-| **6.5** `debt-and-disagreement` **scoped 2026-09-06** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6: `contested` in an answer, the refusal defects, a measured live gate | Agent package, which phase 6 DoD #6 forbade |
+| **6.5** `debt-and-disagreement` **COMPLETE 2026-09-07** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6, delivered: `contested` reaches an answer, three honest refusal states, `ResolveSource` verifies DBpedia, 9 gold + 2 adversarial cases, a sixth gate, and a live suite gated on a measured floor | Agent package, which phase 6 DoD #6 forbade |
 | **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |
 
 **Phases 3, 4 and 5 do not cut a new artifact.** The corpus does not change, and re-cutting it would
@@ -96,10 +96,16 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-09-06
+### Where the build actually is — 2026-09-07
 
-**Phases 0 through 5 are COMPLETE. PHASE 6 IS BUILT — steps 0 through 10 are all done.** Tier 1 live at
-v0.7.1 (45 cases) and judged tier 2 both ran 2026-09-06, and the copy audit closed the same day. What
+**Phases 0 through 5 are COMPLETE. PHASE 6 IS BUILT — steps 0 through 10 are all done. PHASE 6.5 IS
+COMPLETE — steps 0 through 8, all in one day, 2026-09-07.** Its as-built is
+`docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`; **read that rather than restating it
+here.** The three decisions phase 6 left open are all now closed: the live threshold set was measured,
+the noise floor was re-measured with it, and **the held-out set was NOT run and stays sealed at run
+count 1.**
+
+Tier 1 live at v0.7.1 (45 cases) and judged tier 2 both ran 2026-09-06, and the copy audit closed the same day. What
 **`v0.6.0` is tagged at `51f2c21` and deployed** — run `34058614241`, verified by hand: the deployed
 `/health` serves artifact 0.7.1 with 7 components and 2 contested pairs, the SPA bundle carries the
 matching pin, and a real Bedrock query streamed a claim and its narration. What remains open from phase 6
@@ -122,11 +128,16 @@ stated precondition arriving**: two pairs are now contested between sources.
 2. **DO NOT DEPLOY is LIFTED — step 8, 2026-09-05.** Both pins read `0.7.1`, with
    `web/public/graph/v0.7.1/` staged. ~~The frontend pin deliberately lags at `0.5.0`~~ was true until
    then and is **stale — do not write it again.** A deploy is a step 10 act, not a casual one.
-3. **The LIVE suite currently gates nothing, and the 2026-09-06 run cleared nothing.** `thresholds.py`
-   picks a set by `case_count` — baseline 41, run 45 — so it came back **`NOT GATED`, zero of five
-   evaluated**. 100% groundedness and 100% citation resolution are observations, not passed gates. The
-   **scripted** every-commit gates in `make check` are unaffected at 3 passed / 0 failed / 2 N/A; do not
-   read one for the other. Editing the set to match is not an option. Decision open at §9.4.
+3. **The LIVE suite GATES AGAIN as of 2026-09-07, and there are SIX properties, not five.**
+   ~~gates nothing~~, ~~zero of five evaluated~~: both stale, both false since step 7. Bounds were
+   re-measured over five identical runs of the 56-case set ($2.61, ~2.4 hours) and all five runs pass
+   all six gates. `contested_disclosure` joined at step 6. The **scripted** every-commit gates read
+   **4 passed / 0 failed / 2 N/A of six**; do not read one for the other.
+
+   **The number most likely to be misread is `traversal_recall` at 97.1%.** It was identical in all
+   five runs and that is NOT stability: 37 cases score perfectly every run and `gold_v0_1_020` fails
+   identically every run. `eval/thresholds.json` gates it **per case over those 37**, never as a band.
+   A threshold written off the apparent 0.0pp spread would fire the first time that case is fixed.
 
 `docs/KNOWN-GAPS.md` newest-first carries the as-built for every step; **read it rather than restating
 it here.**

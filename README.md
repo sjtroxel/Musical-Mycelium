@@ -24,7 +24,7 @@ Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 1330 Python tests and 159 frontend tests, plus 14 that spend real money and are
+generated. 1458 Python tests and 168 frontend tests, plus 14 that spend real money and are
 deselected by default.
 
 **The prose comes from a real model on Bedrock** — Claude Haiku 4.5 on a cross-region inference profile,
@@ -116,12 +116,19 @@ hop, in whichever order you name them.
   edges and zero outgoing ones, so the graph genuinely cannot answer it.
 - **Evaluation is a first-class deliverable.** Because the ground truth is a graph we own, the headline
   correctness metrics are deterministic dictionary lookups rather than judged text comparisons. They
-  cost nothing and run on every commit, where they gate **three** of five correctness properties — the
-  other two need a real model and therefore money. **The paid live suite gates nothing at artifact
-  v0.7.1**: its thresholds were measured over a 41-case development set and the set is now 45 cases, so a
-  live run reports `NOT GATED` rather than a number measured against a different set. Re-measuring that
-  baseline is deliberately deferred until the datasets stop moving. Skipped is not passed, and the report
-  says so in those words.
+  cost nothing and run on every commit, where they gate **four** of six correctness properties — the
+  other two need a real model and therefore money. **The paid live suite gates again as of
+  2026-09-07**: its bounds were re-measured over five identical runs of the current 56-case set at
+  artifact v0.7.1, $2.61 of Bedrock time, and all six properties are gated on a live run.
+
+  What the five runs bought is worth more than the gates. Four of 56 cases changed verdict between
+  identical runs, and the number of claims an answer rests on swung 17% — 182 to 218 — while
+  groundedness stayed at 100% every time. One case had failed three runs straight and passed the last
+  two, so stopping at three would have recorded a coin as a permanent defect. **And `traversal_recall`
+  read an identical 97.1% in all five runs, which is not stability: 37 cases score perfectly every run
+  and one fails identically every run.** A threshold written off that apparent steadiness would fire the
+  first time the broken case is fixed. Skipped is still not passed, and the report says so in those
+  words.
 
 Stack: Python 3.13 on AWS Lambda as a container image, Bedrock for the agent, Terraform for everything,
 GitHub Actions with OIDC for deploys and no long-lived keys. S3 + CloudFront for the frontend, which

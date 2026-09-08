@@ -171,3 +171,88 @@ Because the ground truth is a graph we own, correctness is a lookup rather than 
 that genuinely needs an opinion is judged by a separate model whose agreement with a human has been
 measured and is printed beside every number it produces; and no movement is called progress until it is
 larger than the noise floor that was measured before any threshold existed.
+
+---
+
+## What phase 6.5 added, in the same plain English
+
+*Written 2026-09-07, the day the phase closed. Phase 4 built this suite; phase 6.5 is the first time it
+was pointed at a corpus with two sources in it, and several things that had been true stopped being true.*
+
+### The system can now say its sources disagree
+
+The graph is built from two places now — Wikidata and DBpedia. Mostly they agree, or only one of them
+has anything to say. But for two pairs of genres they flatly contradict each other: one says electropop
+came out of electroclash, the other says the opposite. Both are cited. Neither is obviously wrong.
+
+Until this phase the system knew that and could not say it. The disagreement was computed, displayed as a
+statistic on the coverage panel — "2 contested pairs" — and completely absent from any actual answer. Ask
+where electropop came from and you got a confident answer that looked exactly like every other answer.
+
+Now the answer carries a note: *these two sources disagree about this, here is what each one says, and
+this graph is not going to tell you which is right.* Both directions get identical weight, on purpose.
+Picking a winner would be inventing a fact.
+
+**What it deliberately does not do is put that in the prose.** The prose is written by the AI model, and
+the model is only ever shown claims that survived the checking step. If we handed it a disagreement, it
+could write sentences about it that nothing had checked. So the disagreement sits *beside* the written
+answer rather than inside it — the page shows it, the model never sees it.
+
+### Refusals stopped lying about the graph
+
+When the system can't answer, it says so. That was already true. What was wrong was *what* it said: every
+refusal was phrased as "this graph has no sourced answer", even when the graph had plenty and that
+particular attempt had simply come up empty.
+
+There is a real difference between "we looked and there is nothing here" and "this run didn't find it",
+and the second was being reported as the first. Two measured examples: the system told users acid jazz
+had no documented influences when the graph holds five, and said the same of an artist with four. Both
+were false statements about the corpus, produced by a run that had a bad afternoon.
+
+There are three messages now, and only one of them claims the graph is empty — the one where it actually is.
+
+### The most interesting bug of the phase
+
+One test case had been failing for weeks: *"How does femtanyl connect back to Woody Guthrie?"* — femtanyl
+being a musician. It failed 16 times out of 17. Everyone assumed the chain was too long, or the corpus
+too thin.
+
+It was neither. We started recording what the model actually *did* rather than just what it produced, ran
+the case once, and the answer was immediate: the model typed **fentanyl** — the drug — because that is the
+far more common word. That name isn't in the graph, so it got nothing back, and gave up.
+
+Nothing was broken. The graph, the search, and the path-finding all answer that question perfectly in a
+single step. The model just mistyped the name of the thing it was asked about.
+
+**The obvious fix turned out to be a trap.** If someone types a name we don't have, why not suggest the
+close ones? Because we measured what "close" means in this corpus, and found eight pairs of *real*
+entities one character apart — including `funk rock`/`punk rock`, and `Joy Orbison`/`Roy Orbison`, who are
+a contemporary electronic producer and a 1960s rock legend. Suggesting near-matches would trade an honest
+"I don't know" for a confident, perfectly-cited answer about the wrong person. **That is the worst trade
+this project can make**, because every check we have would pass it.
+
+### Why five identical runs, and what they cost
+
+The suite has thresholds — numbers that decide whether a change made things worse. Setting them requires
+knowing how much the results move when *nothing* changes, because a threshold tighter than the natural
+wobble fires at random and teaches everyone to ignore it.
+
+So: five identical runs, $2.61, about two and a half hours. What they showed:
+
+- **Four of 56 questions changed answer between identical runs.** Same code, same data, same question.
+- **The amount of evidence behind an answer swung 17%** — some runs gathered 182 supporting facts, others
+  218 — while the accuracy of that evidence stayed at 100% every time.
+- **One case failed three runs in a row and then passed twice.** Had we stopped at three runs, we would
+  have written it down as permanently broken. It is a coin.
+
+And the finding worth the whole exercise: one score came back *identical* in all five runs, which looks
+like the most reliable number in the set. It isn't. Thirty-seven questions score perfectly every time and
+one fails identically every time, and the average of those two things never moves. **A number that never
+changes is a reason to ask what is stuck, not a reason to trust it** — and this is the second time that
+exact trap has been caught in this project.
+
+### The one-sentence version
+
+The system can now tell you when its sources disagree, it stopped claiming the graph is empty when it
+isn't, and its pass/fail thresholds are set from measured noise rather than from hope — which cost $2.61
+and revealed that a fifth of what the suite reports moves on its own.
