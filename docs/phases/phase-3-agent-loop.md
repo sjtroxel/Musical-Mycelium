@@ -63,7 +63,7 @@ groundedness gate at 100%" is fully claimable** (`ROADMAP.md` §1).
 >   model output anyway, so the dependency already exists there.
 >
 > **The resume line is NOT claimable at `v0.3.0-local`.** `planning/09` §3 puts the resume-ready threshold
-> at v0.3–v0.4 and notes September timing favours claiming it early, so this is a real cost of the split
+> at v0.3–v0.4 and notes September timing favors claiming it early, so this is a real cost of the split
 > and it is recorded rather than glossed. The mitigating fact is that the alternative was not "claim it
 > sooner" — it was "build nothing for an unknown number of days."
 >
@@ -244,7 +244,7 @@ v0.5.0.**
 ## Definition of done
 
 > **AMENDED 2026-08-07 by A1 and A4.** Item 3 is renamed to what the corpus can support. Items 5, 6 and 8
-> each split along the Bedrock line, because each had a deterministic half and a model-behaviour half
+> each split along the Bedrock line, because each had a deterministic half and a model-behavior half
 > welded together. **LOCAL** items are the shipping gate for `v0.3.0-local`; **BEDROCK** items defer to
 > `v0.3.0`, with phase 4 as their named home.
 

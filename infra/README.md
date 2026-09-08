@@ -57,7 +57,7 @@ aws budgets describe-budgets --account-id "$(aws sts get-caller-identity --query
 ```
 
 Terraform expects the names `musical-mycelium-monthly-5`, `-10`, and `-20`. If the existing names
-match, import them (this happens after step 2, once `main/` is initialised):
+match, import them (this happens after step 2, once `main/` is initialized):
 
 ```bash
 acct="$(aws sts get-caller-identity --query Account --output text)"

@@ -170,7 +170,7 @@ structure and states the constraint honestly; it does not fix it.
    > > direction entirely) while a later one read *"He **cites** David Bowie, Elton John, Freddie
    > > Mercury and Queen among his music **influences**."*
    > >
-   > > Re-labelled on full evidence, the 60-row sample is **43 ASSERTS / 12 EXPOSURE / 5 NO**. So the
+   > > Re-labeled on full evidence, the 60-row sample is **43 ASSERTS / 12 EXPOSURE / 5 NO**. So the
    > > prose check accepts edges that are supported at some level **92% of the time**, not 77%, and the
    > > genuine junk rate is **8%**. The quoted junk — the recording truck, the pronoun, the monarch —
    > > was real *at the sentence level*, but most of those **edges** had proper evidence elsewhere in
@@ -194,11 +194,11 @@ structure and states the constraint honestly; it does not fix it.
    > This *predicts* the filter's error shape rather than merely describing it. `ASSERTS` has a bounded
    > vocabulary — *influenced, inspired, cited, credits, idol* — because it is defined by explicit
    > textual markers, which is why precision reaches 98%. `NO` is checkable by absence. **All eleven of
-   > the filter's misses landed in `EXPOSURE`, because you cannot pattern-match a judgement call.** The
+   > the filter's misses landed in `EXPOSURE`, because you cannot pattern-match a judgment call.** The
    > recall gap is not a gap in the patterns; it is co-extensive with the subjective tier.
    >
    > **Consequence worth stating before anyone reaches for a model: an LLM would not make `EXPOSURE`
-   > objective.** It would substitute a model's judgement for his. That may be an acceptable trade, but
+   > objective.** It would substitute a model's judgment for his. That may be an acceptable trade, but
    > it must be described as delegating a subjective call, never as "getting it right".
    >
    > **So the product claim becomes one layer deeper than "grounded":** the top tier is what the source
@@ -259,8 +259,8 @@ structure and states the constraint honestly; it does not fix it.
    > the documented-contact class A6.3's floor exists to admit — so it is a partial version of the move
    > already ruled out.
    >
-   > **Consequence: the standard the held-out set is labelled against is A6.3's floor, unchanged.** No
-   > amendment to the label rules, no re-label of the 60-row gold set. The 37 sealed rows can be labelled
+   > **Consequence: the standard the held-out set is labeled against is A6.3's floor, unchanged.** No
+   > amendment to the label rules, no re-label of the 60-row gold set. The 37 sealed rows can be labeled
    > against the same standard rows 1–13 already were.
    >
    > > **A6.4.1 — the future model pass, as he framed it, and it is NOT the option that was rejected.**
@@ -273,33 +273,33 @@ structure and states the constraint honestly; it does not fix it.
    > > Deferred, not scheduled. It stays offline, one-time, local, and never in the agent loop, so
    > > invariant 1 and Tier-1 eval cost are untouched. **Latency is not a constraint on it** — ingest is
    > > a batch job, so cost and throughput bind, not speed. And it would be validated against this same
-   > > hand-labelled set, which is the reason the labelling work is required either way.
+   > > hand-labeled set, which is the reason the labeling work is required either way.
    > >
    > > **The measured miss rate from the held-out set is what decides whether it is worth building.**
    > >
-   > > **A6.4.2, 2026-08-06, during held-out labelling — the case for that pass got sharper, and the
+   > > **A6.4.2, 2026-08-06, during held-out labeling — the case for that pass got sharper, and the
    > > split is now clean.** `ASSERTS` reaches 98% precision / 81% recall because influence vocabulary
    > > is *bounded*: cites, credits, influenced, inspired, idol. Patterns genuinely reach it, and no
    > > model is needed there.
    > >
-   > > `EXPOSURE` is the opposite, and labelling row 22 (`Donald Glover <- Justice`) showed why. The
+   > > `EXPOSURE` is the opposite, and labeling row 22 (`Donald Glover <- Justice`) showed why. The
    > > floor's second prong — **engagement**, as distinct from contact — is satisfied by a speaker
    > > demonstrating first-hand familiarity with music. *"if you went to a Justice show, the kids were
    > > losing their minds"* records engagement without containing a single contact verb. There is no
-   > > word list for it. It is a semantic judgement about what a passage shows, which is the one thing
+   > > word list for it. It is a semantic judgment about what a passage shows, which is the one thing
    > > a small model does well and a pattern provably cannot.
    > >
-   > > **So the division of labour is now specific rather than speculative: patterns own `ASSERTS`, a
+   > > **So the division of labor is now specific rather than speculative: patterns own `ASSERTS`, a
    > > model pass would own `EXPOSURE` recall only.** That is a narrower and more defensible scope than
    > > "put an LLM in the ingest path", and it keeps the deterministic filter as the thing of record.
    > >
    > > It does not change what happens tonight. The model pass would still be validated against this
-   > > same hand-labelled set, so **the labelling is a prerequisite for it, not an alternative to it.**
+   > > same hand-labeled set, so **the labeling is a prerequisite for it, not an alternative to it.**
 
    > **A6.5, 2026-08-06 — THE HELD-OUT MEASUREMENT. The first non-training number this filter has
    > ever had, and the objective/subjective split held on unseen data.**
    >
-   > The 50-row held-out set was labelled to completion against the A6.3 floor as settled by A6.4.
+   > The 50-row held-out set was labeled to completion against the A6.3 floor as settled by A6.4.
    > One row was excluded (row 41, empty object label), leaving **49 scored**.
    >
    > | metric | training (60-row gold) | **held-out (49 rows)** |
@@ -318,7 +318,7 @@ structure and states the constraint honestly; it does not fix it.
    > **`EXPOSURE` collapsed to 20%.** Eight of the ten disagreements are `EXPOSURE` rows the filter
    > called `NONE`. This is A6.3's prediction *confirmed on unseen data* rather than restated: the tier
    > defined by explicit textual markers is reachable by patterns; the tier defined by a reader's
-   > judgement is not. Under A6.4 that gap is published, not tuned away, and **20% is the number that
+   > judgment is not. Under A6.4 that gap is published, not tuned away, and **20% is the number that
    > gets published.**
    >
    > **The single false assertion is row 42** (`Alexander Hawkins <- Cecil Taylor`), and it is
@@ -360,7 +360,7 @@ structure and states the constraint honestly; it does not fix it.
    > > renamed to `final`, both files now carry a top-level `label_field` key, and the measurement was
    > > recomputed through it to confirm the identical 80% agreement.
 
-   > **A6.6, 2026-08-06 — defects found by labelling, all of them his catches.** The pattern from
+   > **A6.6, 2026-08-06 — defects found by labeling, all of them his catches.** The pattern from
    > 8/5 repeated: hand-reading the evidence is what finds the extraction bugs.
    >
    > - **Abbreviation truncation was still present in the STORED evidence though fixed in code** —
@@ -381,7 +381,7 @@ structure and states the constraint honestly; it does not fix it.
    >   musical development"* states the effect on **Harrison** while the edge is on **The Beatles**.
    >   Ruled `ASSERTS` because it occurred while the band was active. This will recur on band articles.
 
-   > **Two further name collisions found while labelling, both the `Them` shape:** `Queen` matched
+   > **Two further name collisions found while labeling, both the `Them` shape:** `Queen` matched
    > *"performed at the **Queen's** Platinum Jubilee concert"*, and one candidate carried an **empty
    > object label**, meaning an entity with no English label cleared the type filter. Band names that
    > are common English words are a systematic hazard on this axis, not a curiosity.

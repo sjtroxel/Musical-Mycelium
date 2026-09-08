@@ -51,7 +51,7 @@ What `/lineage` streams is a *trace*: `plan`, `tool`, `claim`, `rejected`, `path
 client can reconstruct the walked path and the approved claims from that, which is enough for **DoD #3**
 (render the returned subgraph, highlight the walked path in order). It is **not** enough for **DoD #4** —
 pan, zoom, **follow an edge** — because following an edge to a node the query never touched requires
-neighbour data the stream never sent.
+neighbor data the stream never sent.
 
 `GraphStore.neighbors(node_id, direction)` has existed since phase 2. Nothing exposes it over HTTP.
 Resolution is §4.2.
@@ -178,7 +178,7 @@ the Kate Bush pair merged into a single chip.
   what a non-technical visitor should meet first, not a gap in the system.
 - **Five is the floor of `SPEC.md` §2.1's "5–7" range**, and it landed there as a side effect of merging
   the pair rather than as a count decision. A sixth slot is open. If step 2 wants one, "Who influenced
-  U2?" answers with six gated claims and would put a recognisable name on the screen — but it is not
+  U2?" answers with six gated claims and would put a recognizable name on the screen — but it is not
   needed for the DoD and does not block.
 
 **Every chip is validated against the pinned artifact before it ships**, per the standing rule adopted
@@ -317,7 +317,7 @@ Stated as uncertain rather than smoothed over.
 
 1. **Whether a 458-node component renders legibly at all.** The largest component is 458 nodes and the
    whole graph is 973 in 169 components. Nobody has drawn this yet. It is plausible the honest answer is
-   that the map shows a *neighbourhood* rather than the graph, and that would be a finding rather than a
+   that the map shows a *neighborhood* rather than the graph, and that would be a finding rather than a
    failure. Step 4 draws it before step 5 designs around it.
 2. **Whether the engine choice survives contact.** `planning/06` §6 argues WebGL because v1.0's signature
    moment wants smooth camera work at scale. But 973 nodes is small, and canvas would be materially less
@@ -392,8 +392,8 @@ Four EMF records in `MusicalMycelium`. **DoD 0 met; phase 4 DoD #8 fully closed;
 3. **The smoke test cannot catch a synthesis regression.** It queries a bare noun (`thrash metal`), and
    both its calls emitted a traversal EMF record and **no synthesis record** — nothing was narrated. The
    streaming ratio passes anyway because TTFB is the `plan` frame. Confirmed live: the planner returns
-   `query_kind: "coverage"`, approves two claims, emits `refused`, and never synthesises — **correct loop
-   behaviour on a query that asks nothing**, and a badly chosen gate query. Owed: a real question as the
+   `query_kind: "coverage"`, approves two claims, emits `refused`, and never synthesizes — **correct loop
+   behavior on a query that asks nothing**, and a badly chosen gate query. Owed: a real question as the
    smoke query, with the coverage-shaped one kept as a second check rather than discarded.
 4. **The buffering assertion warns rather than fails**, and the `/lineage` calls omit `curl -f`, so a 500
    would pass too. A green smoke test does not prove streaming; the numbers did.
@@ -506,7 +506,7 @@ distribution. One apply, no wildcard window, nothing to remember to come back fo
 | a deep link to a path with no object | `200` — `custom_error_response` returns `/index.html` |
 
 The 403 is the one worth stating plainly: the bucket policy conditions on `AWS:SourceArn` and all four
-public-access-block settings are on, so the private-bucket-plus-OAC shape is confirmed by behaviour
+public-access-block settings are on, so the private-bucket-plus-OAC shape is confirmed by behavior
 rather than by reading the config back.
 
 **The smoke test ran against the deployed URL for the first time** — step 0's follow-up built it but
@@ -567,7 +567,7 @@ answered on 2026-08-24, so only §2.2 needed the chip-row resolution.
 
 3. **The refusal and the answer are the same React component.** DoD 10 requirement 1 is "no error
    chrome, ever", and an absence enforced by convention decays. One component makes it structural: the
-   only thing that differs is wording. There is no colour, border or weight in `.panel` that keys off
+   only thing that differs is wording. There is no color, border or weight in `.panel` that keys off
    refusal.
 
 **Verified by breaking, per the practice adopted 2026-08-14.** Every lock here was deliberately broken,
@@ -637,9 +637,9 @@ and it has not been extended: the fix is that the limitation is now stated where
    `kate-bush-descendants.sse`, captured from Bedrock, and the test additionally asserts the panel shows
    **7** claims so a substituted fixture fails instead of passing.
 
-**The lesson to carry, and it is not "add more tests":** a fixture that cannot perform the behaviour
+**The lesson to carry, and it is not "add more tests":** a fixture that cannot perform the behavior
 under test will make the whole suite agree with itself. Before believing a green suite about agent
-behaviour, ask which provider produced the evidence.
+behavior, ask which provider produced the evidence.
 
 **Not changed:** the product. DoD 1, 2, 5 and 10 hold on the deployed stack, and did throughout.
 
@@ -677,8 +677,8 @@ that steps 5, 6 and 7 are the entire remaining design arc, that is the trade wor
 
 **Rejected, with reasons, so they are not re-litigated:**
 
-- **Cosmograph — licence, not merit.** npm reports `CC-BY-NC-4.0`. A public site backing a job search is
-  at best ambiguous under a non-commercial licence, and this project's pitch is correct attribution
+- **Cosmograph — license, not merit.** npm reports `CC-BY-NC-4.0`. A public site backing a job search is
+  at best ambiguous under a non-commercial license, and this project's pitch is correct attribution
   (`.claude/rules/graph-semantics.md`). Not evaluated further.
 - **Sigma v4 — beta only.** npm `latest` is `3.0.3`; the newest v4 is `4.0.0-beta.5`. Portfolio
   infrastructure that has to stay live through a job search does not run a beta renderer.
@@ -712,7 +712,7 @@ Measured from the pinned artifact before anything was drawn, to answer §9 uncer
 The cause is not a defect: only **P737** is ingested, and P737 does not cross the artist/genre boundary.
 Genre membership is **P136**, which is not in the corpus. `CLAUDE.md` states the thesis as *"underneath
 they are one connected organism"* — **on artifact v0.5.0 that is not drawable**, and the honest answer to
-§9 uncertainty 1 is that the map shows a *neighbourhood*, which the uncertainty explicitly allowed for as
+§9 uncertainty 1 is that the map shows a *neighborhood*, which the uncertainty explicitly allowed for as
 a finding rather than a failure. Steps 4, 5 and 9 are all shaped by this. Whether it is worth a P136 cut
 is a **phase 6** question and is not smuggled into this phase (§11).
 
@@ -748,7 +748,7 @@ previews are the same trap again.
 
 **The lesson, stated for the steps that follow:** a design preview is an instrument, and an unverified
 instrument produces a confident wrong reading rather than no reading. Before treating a preview's feel as
-evidence about an engine, confirm the preview can perform the behaviour being judged. This is the same
+evidence about an engine, confirm the preview can perform the behavior being judged. This is the same
 finding as step 2's `acid-jazz-answer.sse` fixture, arriving from a different direction, two days later.
 
 ### Step 4 — the graph data path and the first real render — DONE 2026-08-29
@@ -808,7 +808,7 @@ quietest way this screen could lie. One comparison.
    Q636 and using it would have filled the hole — and would have been the interface asserting it knew
    which node the run meant when the run never established it. **No map is the honest answer**, and it
    is what ships. Against Bedrock the same query resolves the node first and the refusal *would* draw a
-   neighbourhood, which is why `toolNodeIds` exists at all.
+   neighborhood, which is why `toolNodeIds` exists at all.
 2. **`forceCenter` is wrong for this corpus and `forceX`/`forceY` are right.** 169 disjoint components
    (step 3) means a disconnected piece under `forceCenter` drifts off screen with nothing pulling it
    back.
@@ -819,7 +819,7 @@ quietest way this screen could lie. One comparison.
 
 #### What was deliberately not done
 
-No pan, zoom, drag or follow-an-edge (step 8). No palette work (step 6) — every colour is read from the
+No pan, zoom, drag or follow-an-edge (step 8). No palette work (step 6) — every color is read from the
 CSS custom properties so step 6 has one place to change. No motion (step 7), though
 `prefers-reduced-motion` settles the layout without animating rather than being retrofitted later.
 `d3-force` is the only dependency added: step 3 said four d3 modules would land here, and the other
@@ -905,7 +905,7 @@ to A there. A design system that becomes a different design system on two of six
 one that never claimed chronology, and steps 6 and 7 would have to be built twice.
 
 **D over C** on the value this codebase already committed to one layer down: `subgraph.ts` sorts the
-context neighbourhood by label *"so the same answer draws the same map twice"*, and a settling
+context neighborhood by label *"so the same answer draws the same map twice"*, and a settling
 simulation put that straight back. D is a pure function of the graph. A screenshot in a writeup now
 matches what a visitor sees, `prefers-reduced-motion` needs no branch because there is no settling
 animation to suppress, and step 7's motion animates between known positions rather than racing a
@@ -943,7 +943,7 @@ direction in `layerOf` fails 4 tests and only those; treating a missing year as 
    simulation reads, so with no simulation nothing moved.
 
 This is 2026-08-28 for the third time, and the lesson has now been re-learned twice at the same cost.
-**The rule that actually generalises: a check must be able to distinguish the behaviour it is
+**The rule that actually generalizes: a check must be able to distinguish the behavior it is
 asserting from the nearest thing that looks like it.** "Pixels changed" cannot tell a drag from a
 pan, and "pixels were lit" cannot tell a drawn graph from a drawn axis with no graph on it. Both
 passed. Both were wrong. Write the check so the near-miss fails it.
@@ -951,7 +951,7 @@ passed. Both were wrong. Write the check so the near-miss fails it.
 #### Open after this step
 
 - **The context column reads as a regimented stack.** Ten unlabelled context nodes at one x are a
-  vertical line rather than a neighbourhood. The force layout scattered them, which read better; the
+  vertical line rather than a neighborhood. The force layout scattered them, which read better; the
   caption carries the meaning either way. Step 6 or 8's item, named rather than fixed here.
 - **The 458-node component is a hairball in every one of the four layouts**, and in C and D nodes
   overflow the box vertically. It is unreachable from any chip and was not designed for.
@@ -974,7 +974,7 @@ and `planning/06` §4 says to run the `dataviz` skill rather than hand-roll them
 
 ### Step 6 — type chosen, palette briefed — 2026-08-30
 
-**Type is decided and applied. Colour is briefed, not built.**
+**Type is decided and applied. Color is briefed, not built.**
 
 #### Type — option A, system sans
 
@@ -1014,7 +1014,7 @@ and sober-and-unvisited is the outcome that is already happening. His instinct h
 argument on current evidence.
 
 **Deliberately NOT decided here: verification tiers stay uncoded.** `HAND` / `PROSE_AUTO` /
-`ASSERTS_AUTO` / `EXPOSURE_AUTO` are the obvious next thing to put on a colour ramp, and a
+`ASSERTS_AUTO` / `EXPOSURE_AUTO` are the obvious next thing to put on a color ramp, and a
 light-to-dark ramp reads as confidence. The tiers say **how hard ONE source was checked, never how
 many sources agree** (`.claude/rules/grounding-and-claims.md`). Encoding them as a ramp would make
 the picture assert the opposite of the truth to anyone who does not read the caption. If a later step
@@ -1023,7 +1023,7 @@ wants them visible, it needs a non-ramp encoding and its own justification.
 #### Also open from the palette check
 
 **`--rule` is 1.25:1 against the ground in BOTH light and dark**, measured with the `dataviz`
-validator. That colour does two different jobs: page borders, where 1.25:1 is correct because a
+validator. That color does two different jobs: page borders, where 1.25:1 is correct because a
 separator is not information, and **map context edges, where it is content the caption counts out
 loud** — "the faint lines are 10 further connections." At 1.25:1 a visitor cannot find them. The fix
 is to split the token by job rather than to lift it globally. Folded into the palette work.
@@ -1067,9 +1067,9 @@ back. Recording the exchange because the reasoning is worth more than the outcom
   stated too strongly by me and pointed the other way.
 - What distinguishes a refusal is **what it says and what it shows** — Kate Bush drawn as connected,
   her seven incoming edges listed, the gap attributed to Wikidata, and the paired query answering
-  immediately after. A sentence does not have to be learned; a colour does.
+  immediately after. A sentence does not have to be learned; a color does.
 
-**`.status--failed` keeps its own colour and that is not an exception.** A transport failure is a
+**`.status--failed` keeps its own color and that is not an exception.** A transport failure is a
 real error and is allowed to look like one. The distinction between "the request broke" and "the
 sources are silent" predates this palette and survives it.
 
@@ -1104,7 +1104,7 @@ Haiku 4.5). The live API was stopped immediately afterwards and confirmed not li
 **An unplanned property worth keeping.** The refusal panel contains **no magenta except the node
 itself**, because magenta is reserved for gate-approved claims and a refusal has none. The answer
 panel below it is vivid. So the two states are visually distinct **as a consequence of the accent
-meaning something**, not because a refusal was given its own colour. That is the distinction
+meaning something**, not because a refusal was given its own color. That is the distinction
 sjtroxel's orange-and-warning proposal was reaching for, arrived at without borrowing the alert
 vocabulary — and it is free, because it falls out of the rule that hue encodes gate approval.
 
@@ -1112,7 +1112,7 @@ vocabulary — and it is free, because it falls out of the rule that hue encodes
 requirement 3 as FAILED. The copy satisfies it well; the regex looked for "sources record" as
 adjacent words and the sentence reads "the state of the sources". Following the first two, the
 pattern is now unmistakable and is written at the top of step 5's record: **a check must be able to
-distinguish the behaviour it asserts from the nearest thing that resembles it** — and, added here,
+distinguish the behavior it asserts from the nearest thing that resembles it** — and, added here,
 **a check written against remembered copy will fail on real copy.** Assert the property, not the
 phrasing.
 
@@ -1189,7 +1189,7 @@ argued, and he was right about the screen:
 the subject moves 65px on screen and only 34 come from its layout position changing. It smoothed half
 and hard-cut the other half, so the eye saw a jump either way. **`full` was not losing a fair
 comparison — it was not doing its own job.** Fixed by making the camera data (`View`) and
-interpolating scale, centre, origin and canvas height per frame. Only then were the two modes
+interpolating scale, center, origin and canvas height per frame. Only then were the two modes
 genuinely different, and `full` was the immediate pick.
 
 **The general lesson, and it is the one to carry into step 8:** *"they look the same"* is a report
@@ -1225,7 +1225,7 @@ One is worth recording because it nearly went the other way: the camera test **f
 working implementation** at first. Its fixture added two nodes, which is too few — with a short
 column the scale is bound by the horizontal fit and both heights clamp to the 260px minimum, so `k`
 was 1.713 for both pictures and there was no camera movement to smooth. A fixture too small to
-exercise the behaviour looks exactly like a broken implementation. It now grows a column to thirteen,
+exercise the behavior looks exactly like a broken implementation. It now grows a column to thirteen,
 which is the shape the real acid jazz answer has.
 
 #### Open
@@ -1281,9 +1281,9 @@ principle that four undeployed steps is the wrong foundation to add a fifth to.
 Every lock was broken on purpose, run, and restored. **Three of them did not fail, and each was a
 real defect in the test rather than in the code:**
 
-1. **`clampView`'s first rule had a docstring describing behaviour it did not have, and the test
+1. **`clampView`'s first rule had a docstring describing behavior it did not have, and the test
    guarding it passed with the rule deleted.** It asserted a *minimum overlap* — an inequality that
-   held either way. Replaced with a rule that is provably conflict-free (the content's centre stays
+   held either way. Replaced with a rule that is provably conflict-free (the content's center stays
    on screen, which is a point clamped into a rectangle) and an assertion that is an *equality* on
    where the map comes to rest.
 2. **The Recenter test asserted that the button disappeared, not that the camera reset.** It passed
@@ -1292,20 +1292,20 @@ real defect in the test rather than in the code:**
 3. **Two break patterns silently failed to match** because the file had been reformatted, so the
    "test caught it" reading was unearned. Both were re-run against the real text.
 
-**The tell in cases 1 and 2 is the same and it generalises: each assertion was weaker than the
-behaviour it was named after** — a bound instead of a resting place, a label instead of a pixel.
+**The tell in cases 1 and 2 is the same and it generalizes: each assertion was weaker than the
+behavior it was named after** — a bound instead of a resting place, a label instead of a pixel.
 
 #### One design flaw found by a failing test, and fixed rather than asserted around
 
 `follow` originally opened the node you came *from*. Following an edge out of a walked node then
 revealed nothing at all, because the automatic pass has already expanded every walked node's
-neighbourhood — `opened` stayed 0 and the test asserting that wandering reaches new corpus failed.
+neighborhood — `opened` stayed 0 and the test asserting that wandering reaches new corpus failed.
 The map was behaving exactly as written and the writing was wrong. It now opens **both** ends, so
 arriving somewhere shows what is there.
 
 The test fixture had the matching problem: at six nodes, nothing in it is more than one hop from a
 walked node, so no implementation could have discovered anything. It gained a node two hops out. **A
-fixture too small to exercise the behaviour looks exactly like a broken implementation** — the same
+fixture too small to exercise the behavior looks exactly like a broken implementation** — the same
 sentence step 7 ended on, arrived at independently.
 
 #### A formatting mistake worth recording so it is not repeated
@@ -1324,8 +1324,8 @@ formatting-only change belongs in its own commit.
 #### Measurements
 
 - **Highest degree in artifact v0.5.0 is 25, and no node exceeds 30.** So `NEIGHBOURS_PER_OPEN = 30`
-  cannot truncate any single node's neighbourhood: opening a node shows all of its connections or
-  the corpus does not hold them. The automatic neighbourhood keeps its own separate cap of 40.
+  cannot truncate any single node's neighborhood: opening a node shows all of its connections or
+  the corpus does not hold them. The automatic neighborhood keeps its own separate cap of 40.
 - Auto-fit `k` runs 0.77–1.58 on the real chips against a 2.2 cap, which is what the absolute zoom
   bounds of 0.1–10 were calibrated against.
 
@@ -1404,7 +1404,7 @@ Fixed with a specific hover rule.
 
 `make check` **1184 passed, 14 deselected**, mypy clean over 89 files, root **15/18** unchanged, eval
 gates 3 passed / 0 failed / 2 not applicable. Frontend **116**, unchanged — this step added no
-behaviour and no test, which is the correct shape for it.
+behavior and no test, which is the correct shape for it.
 
 ### Step 9 — coverage rendered honestly, 2026-09-01. DoD 7 closed.
 
@@ -1482,7 +1482,7 @@ on the subject. Two of the five canonical chips draw a complete picture.
   serialized contract and is what DoD 9 forbids. `KNOWN-GAPS` records that phase 6 should move it.
 - **A standing defect in the inspector, fixed by the same field.** The reveal button was driven by
   whether the visitor had clicked, not by whether anything was hidden, so a *walked* node — whose
-  neighbours the automatic pass has already drawn — offered a button that revealed nothing. It now
+  neighbors the automatic pass has already drawn — offered a button that revealed nothing. It now
   reads `hidden`, and says "All 2 of its recorded connections are on the map" when there is nothing
   left. The `opened` prop is gone.
 - **`corpus-facts.json` now carries `analyse()`'s output whole**, asserted as one object rather than
@@ -1498,7 +1498,7 @@ the step 8 trap arriving again.
 One break *passed*, and it mattered: counting `hidden` by subtracting from `degree` instead of
 filtering against `drawn` broke nothing. The comment claiming the reciprocal-pair test discriminated
 between the two was **wrong and has been corrected** — `edges` and `drawn` are written in lockstep,
-so the two are equivalent today. The test is a behaviour guard on a shape the corpus contains, not a
+so the two are equivalent today. The test is a behavior guard on a shape the corpus contains, not a
 proof that one implementation is right, and it now says exactly that.
 
 Also: the canvas stubs in `explore.test.tsx` and `motion.test.tsx` needed `setLineDash` added. A
@@ -1557,7 +1557,7 @@ grounds that are not preferences:
 
 | | why it lost |
 |---|---|
-| ink noteheads on an accent beam | **most legible at 16px, and rejected** — it paints the nodes in `--ink`, which is the *selection* colour. Same channel collision as step 9's halo |
+| ink noteheads on an accent beam | **most legible at 16px, and rejected** — it paints the nodes in `--ink`, which is the *selection* color. Same channel collision as step 9's halo |
 | hollow noteheads | wrong twice: it is the map's **incomplete-record** encoding, false here; and a beam means an eighth note or shorter, which is never hollow |
 | three circles and two lines, no stems | honest and not musical — reads as beads |
 | a "16px-tuned" heavy-beam variant | **my own tuning made it worse.** Butt caps on a slanted beam produced a wedge and stems overshooting it. Only visible at 170px |
@@ -1569,7 +1569,7 @@ grounds that are not preferences:
    stem. It survived two rounds of previews. Engraved beams end on a **vertical** cut, so the beam is now
    a `<polygon>`, and `mark.test.ts` asserts both end edges are vertical.
 2. **The masthead broke at 360px.** With the title at a fixed `2rem`, "Musical Mycelium" no longer fits
-   beside the mark: it wrapped to two lines, the mark centred itself against the two-line block and
+   beside the mark: it wrapped to two lines, the mark centered itself against the two-line block and
    floated in the middle of the left margin, and the wrapped title sat indented away from the tagline's
    left edge. Now `clamp(1.5rem, 6vw, 2rem)` with `nowrap`; measured single-line and overflow-free at
    320 / 360 / 480 / 1000.
@@ -1582,11 +1582,11 @@ frontend that is a picture must be looked at, and my reasoning about pictures is
 
 The first comparison sheet magnified each 16px rendering to judge it. Every panel came back **blank**,
 and the script reported success: it sampled a 16x16 source rect out of a 32-unit `viewBox`, magnifying an
-empty corner, and the ground colour is the same as the page's so blank looked plausible. The magnifier
+empty corner, and the ground color is the same as the page's so blank looked plausible. The magnifier
 now counts lit pixels and **throws** if any panel is near-empty — 7,533 per panel on the run that
 decided this.
 
-This is step 5's lesson for the third time: *a check must be able to distinguish the behaviour it is
+This is step 5's lesson for the third time: *a check must be able to distinguish the behavior it is
 asserting from the nearest thing that looks like it.* "The image loaded" cannot tell a drawing from a
 blank square.
 

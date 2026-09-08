@@ -95,7 +95,7 @@ Phase 5 is complete and `v0.5.0` is tagged. Five things it settled that this pha
 4. **The corpus is 169 disjoint islands and artists and genres NEVER touch** — 128 components are purely
    artists, 41 purely genres, none mixed, because only P737 is ingested and it does not link the two.
    The consequence phase 5 had to design around: **"one connected organism" is not drawable on v0.5.0**,
-   and the map can only ever show a neighbourhood and say so. **`P136` is the property that would change
+   and the map can only ever show a neighborhood and say so. **`P136` is the property that would change
    this**, and it is a bigger lever on the product's central claim than the second source is. Neither is
    free: both mean a new cut, and a new cut invalidates every published eval number.
 
@@ -162,7 +162,7 @@ Three candidate resolutions, none preselected:
    makes refusal accuracy a headline metric. Risk: `.claude/rules/evals.md` warns that a system which
    refuses everything is useless, and 46 components is a lot of refusing.
 2. **P279 supplies connectivity, P737 supplies lineage.** The taxonomy connects the graph; influence
-   claims stay scarce and separately labelled. Requires the gate to hold two claim types apart in output
+   claims stay scarce and separately labeled. Requires the gate to hold two claim types apart in output
    without ever letting one read as the other — see `.claude/rules/grounding-and-claims.md`.
 3. **Supplement the corpus with a second source** to thicken the influence layer. Largest scope, and it
    opens a licensing surface: MusicBrainz is CC0 on core tables only, Wikipedia text is CC BY-SA and

@@ -27,7 +27,7 @@ the one dataset in this project that an agent must actively refuse to read. Hard
   `eval/results/20260824T120956Z-heldout.json`.** It may be run again at a future freeze **only if
   nothing was tuned in response to that result**, and every run after the first must be reported with the
   run count beside it. A set re-run after a change made because of what it said has stopped measuring
-  generalisation and started measuring how many attempts it took. If you are about to propose a fix whose
+  generalization and started measuring how many attempts it took. If you are about to propose a fix whose
   justification traces back to a held-out number, that is the moment the set dies — say so and let him
   decide, rather than making the change and re-running.
 

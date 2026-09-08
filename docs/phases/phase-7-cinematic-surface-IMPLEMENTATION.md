@@ -72,7 +72,7 @@ budget is negotiated against that number, not against zero.
   eyeballed.
 - `web/previews/` — 20 files. The throwaway-preview pattern phase 5 used to decide palette, layout, type
   and motion in the real app before committing to any of them. Step 1 reuses it.
-- `@media (prefers-reduced-motion: reduce)` at `styles.css:959`, already honoured.
+- `@media (prefers-reduced-motion: reduce)` at `styles.css:959`, already honored.
 
 ## 3. The scope doc, re-read: four places reality moved
 
@@ -83,7 +83,7 @@ Required by the `start-a-phase` skill, and all four are real.
    real Bedrock query streamed a claim and its narration. **This phase inherits a working deployed
    product**, which is the state the scope doc hoped for and could not assume.
 2. **"Polish, no architecture change" undersells it, and the scope doc already said so.** It is right. The
-   guided tour is a new agent behaviour and the backdrop is a new asset class with a new build step.
+   guided tour is a new agent behavior and the backdrop is a new asset class with a new build step.
    Neither touches a seam, so "no architecture change" survives as literally true and useless as a size
    estimate.
 3. **The design brief is not new and this plan is not starting one.** The scope doc treats visual work as
@@ -226,9 +226,9 @@ Six things the plan got wrong or could not see.
 1. **Five classes, not four. `shell` was missing and it is the important one.** The plan listed script,
    style, graph data and media, which leaves `index.html` and three favicons — 10 KB — unclassified. The
    fix is not the 10 KB; it is that **an unrecognised file must land somewhere loud rather than be
-   skipped**. `classify` sends anything it does not recognise to `shell`, which carries the smallest cap,
+   skipped**. `classify` sends anything it does not recognize to `shell`, which carries the smallest cap,
    so a new asset type arriving unannounced fails a build instead of being silently exempt. A budget that
-   ignores what it does not recognise stops covering the thing it was written for, which is the failure
+   ignores what it does not recognize stops covering the thing it was written for, which is the failure
    mode the whole step exists to prevent, reproduced inside the guard itself.
 
 2. **THE BUDGET FOUND A REAL DEFECT ON THE FIRST RUN IT EVER DID, before it had a number in it.**
@@ -249,7 +249,7 @@ Six things the plan got wrong or could not see.
    artifact in `public/`. The number that matters is what lands in `dist/`, and that was **3.21 MB** —
    the pinned artifact plus the ghost from finding 2. **I wrote a cap from the wrong denominator**, and
    the only reason it did not become a wrong committed threshold is that the ghost had to be explained
-   before the number could be set. Measure the thing the gate measures, not its neighbour.
+   before the number could be set. Measure the thing the gate measures, not its neighbor.
 
 4. **The script cap turned out to enforce step 4's recommendation rather than merely coexist with it.**
    320 KB against 230.7 KB used leaves roughly 89 KB. framer-motion is roughly 120 KB before tree-shaking.
@@ -294,7 +294,7 @@ from an earlier version and still being uploaded to the website every time it wa
 it. No test could have caught it, because nothing was looking. That is the entire argument for weighing
 things before you add weight.
 
-### Step 1 — Treatments, behind throwaway previews
+### Step 1 — Treatments, behind throwaway previews — **DECIDED 2026-09-08: CANDIDATE A**
 
 The phase 5 pattern, unchanged: render candidates in the real app, let him decide, keep the decision and
 throw away the code. `web/previews/backdrop.html` and friends.
@@ -330,11 +330,210 @@ changes.
 
 **Done when:** he has picked a treatment in the real running app, and the media budget has a number.
 
-### Step 2 — The backdrop renderer
+#### 1.0 As built — what the plan did not know
 
-`web/scripts/render-backdrop.mjs`. Playwright drives an offscreen page running the real `layout.ts` over
+**Status: the previews are built, verified headlessly, and measured. The step is NOT done**, because
+its deliverable is a decision and the decision is his. Nothing here is committed — `web/previews/` is
+gitignored by the phase 5 decision that previews are throwaway, so `git status` is clean and
+`make check` is untouched at **1461 / 177 / 4 gates passed / budget green**.
+
+Built: `build-data-7.py` (the layout, solved offline), `harness7.js`, `backdrop.html` (all four
+candidates over one mock of the real page), `index7.html` (the landing page and the byte table), and
+`check-7.mjs` (**20 headless checks** plus the encode ladder). Open `web/previews/index7.html` under
+`npm run dev`.
+
+**The `check-5.mjs` rule was honored and it earned its keep three times.** That rule — *confirm a
+preview can PERFORM the behavior being judged*, written after a preview was handed over inert on
+2026-08-28 — is why `check-7.mjs` asserts each candidate actually animates, that reduced motion and a
+streaming run each stop it, that a stopped layer is **drawn rather than blank**, and that the video
+candidates say what to run instead of showing nothing.
+
+Seven things the plan got wrong or could not see.
+
+1. **THE PLAN'S RECOMMENDATION WAS WRONG, AND THE MEASUREMENT IS WHY THE STEP EXISTS.** §8 step 1 said
+   of candidate B: *"this is the one I would build first."* At the resolution the page renders at,
+   candidate B costs **12,414 KB for ten seconds** — roughly **four times the entire current page**,
+   for a decoration. It is not close to viable at 1600 and no amount of taste would have revealed
+   that.
+
+2. **MY EXPLANATION FOR WHY WAS ALSO WRONG, AND I NEARLY WROTE IT DOWN OFF A BROKEN CONTROL.** The
+   hypothesis was that 1,465 dots each oscillating on its own period is the pathological case for
+   inter-frame prediction. So I added `?tw=0` to remove the twinkle and measured. It came back
+   **identical to four significant figures**, which I briefly read as "the twinkle is free."
+
+   **It was not a finding. It was a bug in my own harness.** `chrome()` rebuilds the URL with
+   `history.replaceState` from a fixed list of parameters, so `tw` was stripped before the renderer
+   read it — the two capture passes were byte-identical because they were *the same run twice*.
+   Caught by `cmp` on frame 150, not by reading the code. Fixed by making every parameter round-trip
+   through `sync()`.
+
+   **Re-measured correctly, the answer was the same: 12,414 KB against 12,416 KB.** The twinkle really
+   is free. That coincidence is the part worth keeping — **a broken measurement agreed with the true
+   one, so nothing downstream would have looked wrong**, and the only reason the bug surfaced at all
+   is that two probes printing identical numbers to the byte was too tidy to believe.
+
+3. **The real cause is spatial detail at native resolution, and it is wildly non-linear.**
+   1,465 one-pixel dots and 5,058 hairline edges are close to pure high-frequency energy — a single
+   captured PNG frame is **2.8 MB**. Downscaling averages them into shapes a codec can predict:
+
+   | width | VP9 crf40, 10s | factor |
+   |---|---|---|
+   | 1600 | 12,414 KB | — |
+   | 960 | 1,266 KB | **÷ 9.8** |
+   | 640 | 293 KB | **÷ 4.3** |
+
+   Halving the width divides the file by roughly ten, twice over. **This is the whole media budget
+   question**, and it is a good one to have found in a preview rather than in step 2.
+
+4. **The first render was effectively invisible, and it would have made the comparison meaningless.**
+   The veil shipped at 0.55/0.78 over node alphas of 0.24–0.42, and the screenshot came back
+   near-black with a faint texture. **All four candidates would have looked identical** and any
+   decision taken from it would have been a decision about the veil. The wash is now a **slider** with
+   the number in the URL, which turns the actual design tension — the backdrop only earns its place if
+   it is visible, the text only stays legible if it is not — into something he sets rather than
+   something I picked. Where it lands is a real number owed to this doc.
+
+5. **Candidate C was rendered dimmer than its rivals, which is not a fair control.** It was drawn at
+   five blobs of `0x22` alpha while A was clearly legible under the same veil. **A control that loses
+   because it was drawn faint has not been tested**, and C exists precisely so that "the corpus is the
+   backdrop" has to beat something rather than win by being the only one rendered properly. Now seven
+   blobs at `0x55`, matched by eye against A in the same screenshot.
+
+6. **The chrome bar overlapped the hero on candidates whose note wraps to three lines.** Fixed by
+   measuring the bar rather than hard-coding 132px. Trivial, and listed because it was invisible until
+   a screenshot was actually looked at — which is the same lesson as 4 and 5 arriving a third time.
+
+7. **`build-data-7.py` independently confirmed the corpus figures.** 7 components, **1,465 of 1,479**
+   nodes in the largest, 5,058 edges inside it. Not taken from `CLAUDE.md`; computed from the pinned
+   artifact by a script written for a different purpose. Runs in 2.5 seconds and emits 90 KB.
+
+**The measured table, ten seconds at 30 fps** — the media budget comes out of this and nothing else:
+
+| encode | size | per second | read |
+|---|---|---|---|
+| 1600 · VP9 crf40 | 12,414 KB | 1,241 KB/s | unusable |
+| 1600 · VP9 crf48 | 3,931 KB | 393 KB/s | unusable, and visibly soft anyway |
+| 960 · VP9 crf40 | 1,266 KB | 127 KB/s | plausible; a third of the page again |
+| **640 · VP9 crf40** | **293 KB** | 29 KB/s | **cheap enough to stop thinking about** |
+| 960 · AV1 crf40 | 650 KB | 65 KB/s | half of VP9; slower to decode on old hardware |
+| 960 · H.264 crf28 | 1,186 KB | 119 KB/s | the Safari fallback, and why a second file exists |
+| poster · AVIF | 283 KB | — | measured because DoD 9 makes the poster the LCP element |
+
+**My read, which is not the decision.** At 640 the backdrop reads as depth of field rather than as a
+mistake, and at 313 KB it stops being a budget argument at all. If that holds on his screen, candidate
+D at 640 — video in the hero, nothing behind the working surface — costs about **700 KB all in** with
+a poster and an H.264 fallback, and a **media cap of 1.0 MB** would fit it with room and still refuse
+anything careless. Candidate A remains the only one at literally zero bytes, and it is the one whose
+cost is somebody's battery rather than their bandwidth.
+
+#### 1.1 The decision — sjtroxel, 2026-09-08, from the running previews
+
+**CANDIDATE A. The live canvas drift of the real 1,465-node component.** His words: *"I like A a lot."*
+Also decided in the same sitting: **little or no veil** — *"let people see it"* — and **the motion
+stays prominent**.
+
+**This deletes step 2 and shrinks step 3, which is the largest scope change in the phase so far.**
+Candidate A ships no media at all, so:
+
+| | was planned | now |
+|---|---|---|
+| Step 2 — offline renderer | Playwright + ffmpeg, frame capture, manifest, encode ladder | **not needed** |
+| Step 3 — `Backdrop.tsx` | a `<video>` with poster, `preload`, codec fallbacks | a canvas component |
+| New dev dependencies | Playwright, ffmpeg in the pipeline | **none** |
+| `media` budget cap | a number set from the encode table | **stays 0, permanently** |
+
+A `media` cap of zero stops being a temporary placeholder and becomes a **standing guarantee that this
+site ships no video**, which is a stronger and more honest thing for the budget to say than any number
+would have been.
+
+**A CORRECTION TO MY OWN COPY: candidate A is not "0 extra bytes" in production, and the preview said
+it was.** The preview loads `data-7.json` as its own file, so the claim was true there and false as a
+statement about the built site. In the SPA the corpus is **not** loaded at first paint — DoD 5 forbids
+it and `App.test.tsx` asserts the page requests nothing on load, which is why `useStaticGraph` is gated
+behind `enabled`. A hero backdrop needs positions *before* any run starts. So candidate A costs a small
+**precomputed positions file, about 90 KB as it stands and trimmable**, fetched at load.
+
+That is still **3.2x cheaper than the cheapest viable video** (293 KB at 640) and it reflows to any
+viewport, so nothing about the decision changes. But "free" was wrong and it was my sentence.
+
+**The veil and the node alpha, measured rather than eyeballed — 2026-09-08.** DoD 9 requires contrast
+against the backdrop's **brightest region**, not against `--ground`, so this samples the brightest
+composited pixel in the hero text band and computes WCAG contrast from it:
+
+| veil | node alpha | brightest pixel | `--ink` | `--ink-soft` |
+|---|---|---|---|---|
+| 0 | 1.0 | rgb(218,86,157) | **3.20:1** | 1.76:1 |
+| 0 | **0.6** | rgb(157,77,131) | **4.84:1** | 2.66:1 |
+| 0 | 0.45 | rgb(136,73,121) | 5.65:1 | 3.11:1 |
+| 0.12 | 0.5 | rgb(132,69,116) | 6.00:1 | 3.30:1 |
+| 0.42 | 1.0 | rgb(155,62,116) | 5.54:1 | 3.05:1 |
+
+**The finding: the pixels that fail are a few dozen full-strength genre dots, not the field.** So the
+lever is the dots, not a wash over everything — and that is the lever that keeps *"let people see it"*
+true, because what reads as the corpus is the filaments and clusters, not the hot spots. **At veil 0
+and node alpha 0.6, `--ink` clears the 4.5:1 AA bar at 4.84:1 with no wash at all.** That is the
+setting this plan will build to unless he says otherwise.
+
+**One caveat stated rather than buried:** `--ink-soft` does not clear 4.5:1 against the brightest dot
+at any setting measured. It is the tagline's color. Either the tagline moves to `--ink` where it
+overlaps the backdrop, or it sits where the backdrop is already dark. Step 3 owes an answer.
+
+**`prefers-reduced-motion` is HONORED — decided 2026-09-08, and the round trip is worth recording.**
+He first said *"no need to do prefers-reduced-motion — I LIKE THE MOTION."* Raised back once, because
+the instruction and the intent did not match: honoring the query does not dim anything for him or for
+any visitor who has not switched it on, and `styles.css:959` already ships a global reduced-motion
+block, so dropping it would have been a regression rather than declining to add something.
+
+His answer, verbatim: *"Oh I didn't realize prefers-reduced-motion was a user accessibility thing. in
+that case keep it. but i want most users to have the full-motion experience. only those who have gone
+out of their way to select their accessibility for reduced-motion should have the lesser one."*
+
+**That is exactly what the query does, and the sentence is kept because it is the requirement.** The
+backdrop drifts at full strength for every visitor by default. A visitor who has set Reduce Motion in
+macOS or turned animations off in Windows gets a **still frame of the same graph — drawn, never
+blank**, which `check-7.mjs` already asserts. No third state, no toggle in the UI, no reduced version
+for anyone who did not ask for one.
+
+**The near-miss is the lesson, not the outcome.** A literal reading of the first instruction would have
+shipped an accessibility regression that he did not want and had not been asked about, on the surface
+most likely to be reviewed by another engineer. The instruction was clear; the premise under it was
+not, and the cheap move was to say so once rather than to comply or to override.
+
+#### 1.2 An out-of-order fix: the home page's own column, 2026-09-08
+
+Not a step 1 item, and done anyway because he reported it while looking at the previews. **The real
+SPA's tagline and footer were capped at the 34rem reading measure inside a 46rem column**, so at 1440px
+they ran **544px** against **696px** for the lockup, the ask form, the chips and the coverage panel.
+The page opened and closed narrower than its middle, and the footer's `border-top` stopped 152px short
+of everything above it, which reads as a broken rule rather than as a measure.
+
+Below ~34rem both were already full width, which is exactly why he guessed it might be a desktop-only
+fault. It was.
+
+Widened both to the column rather than narrowing the middle, because **the page's own precedent is
+already full-width small prose** — the coverage panel's paragraphs run the whole 696px at 0.85rem.
+`--measure` is untouched everywhere else, where a claim list genuinely wants a short line. Verified:
+all four blocks now report `left 372, width 696`. Frontend suite **177 passed**, unchanged.
+
+
+
+### Step 2 — The backdrop renderer — **DELETED 2026-09-08, candidate A ships no media**
+
+> **THIS STEP IS DELETED.** Step 1 chose candidate A, which renders on a canvas at runtime and ships no
+> video, so there is nothing to encode. Deleted rather than deferred: the offline renderer existed only
+> to produce a file candidate A does not need. What it would have cost — Playwright and ffmpeg as
+> pipeline dependencies, a manifest, a codec fallback matrix, a poster, and somewhere between 293 KB
+> and 12.4 MB of media — is all avoided. The `media` budget cap **stays 0 permanently**, which turns a
+> placeholder into a standing guarantee that this site ships no video.
+>
+> **What survives:** `build-data-7.py` becomes production work in step 3, because the positions still
+> have to be solved offline. That was always the honest half of this step. The prototype is in
+> `web/previews/`; the plan is kept below, struck through, because the reasoning about determinism and
+> seeds transfers to the positions file unchanged.
+
+~~`web/scripts/render-backdrop.mjs`. Playwright drives an offscreen page running the real `layout.ts` over
 the real pinned graph, captures a fixed frame count from a fixed seed with no wall-clock input, and hands
-the frames to `ffmpeg`.
+the frames to `ffmpeg`.~~
 
 Encodes: **VP9 `.webm`** primary, **H.264 `.mp4`** fallback, **AVIF poster with JPEG fallback**. Output to
 `web/public/media/`, **committed**, so neither CI nor the deploy job needs Playwright or ffmpeg. Both are
@@ -351,10 +550,24 @@ file under `web/` and assets under `web/public/`, both already-existing director
 **Done when:** two consecutive runs at the same pin and seed produce identical manifests, the encoded set
 is inside the step 1 budget, and `make check` still passes with the assets present.
 
-### Step 3 — The backdrop component, and the rules that are tests
+### Step 3 — The backdrop component, and the rules that are tests — **NEXT, and smaller than planned**
 
-`web/src/components/Backdrop.tsx`. A `<video muted playsinline loop preload="none" poster=...>` behind the
-hero, plus `Backdrop.test.tsx`.
+**Rewritten 2026-09-08 after step 1 chose candidate A.** `web/src/components/Backdrop.tsx` is a
+**canvas** component, not a `<video>`: a `requestAnimationFrame` loop drawing precomputed positions,
+with the drift arithmetic split into a pure module the way `graph/motion.ts` already is, so the timing
+is testable in jsdom even though the pixels are not.
+
+**The settings are measured, not chosen at build time** — step 1 §1.1: **veil 0, genre-node alpha 0.6**,
+which puts `--ink` at 4.84:1 against the brightest composited pixel in the hero band. The positions ship
+as a precomputed file of roughly 90 KB, because DoD 5 forbids fetching the 2.6 MB corpus before first
+paint; trimming it is a step 3 task and the asset budget's `graph` class is where it lands.
+
+Rules 1, 3, 4 and 6 below are unchanged. **Rules 2 and 5 are gone with the video** — there is no file to
+withhold on a save-data connection and no poster to be the LCP element. Rule 6 gains a second half from
+the measurement: `--ink-soft` does not clear 4.5:1 against the brightest dot at any setting tried, so
+the tagline either moves to `--ink` where it overlaps the backdrop or sits where the backdrop is dark.
+
+~~A `<video muted playsinline loop preload="none" poster=...>` behind the hero~~, plus `Backdrop.test.tsx`.
 
 Six rules, each one a test, because every one of them is a thing that quietly stops being true:
 
@@ -388,7 +601,7 @@ function of elapsed milliseconds, and drive them from CSS transitions and the ex
 wrong, and a library would make step 6 easier. If he wants the library, the honest cost is the budget line
 and the test coverage, and I will build it that way instead — but it should be chosen, not defaulted into.
 
-**Done when:** every new motion honours `prefers-reduced-motion`, the script budget still passes, and the
+**Done when:** every new motion honors `prefers-reduced-motion`, the script budget still passes, and the
 timing constants carry the same kind of note `EDGE_MS` does — what was tried, what was picked, by whom.
 
 ### Step 5 — The guided tour, agent side

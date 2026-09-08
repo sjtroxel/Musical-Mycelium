@@ -4,7 +4,7 @@
 >
 > **PHASE 6.5 IS COMPLETE — steps 0 through 8, all on 2026-09-07 — and `v0.6.5` is tagged and pushed.**
 > All ten DoD items are closed. The as-built is
-> `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`; the section below summarises it and
+> `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`; the section below summarizes it and
 > **that doc is the authority**. **Phase 7 is next, and it was split in two on 2026-09-08:**
 > `docs/phases/phase-7-cinematic-surface.md` (v0.8, the build) and
 > `docs/phases/phase-7.5-portfolio-and-writeup.md` (v1.0, the writeup and the report).
@@ -37,7 +37,7 @@
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
 
-## PHASE 6.5 COMPLETE — the behavioural half, and a live suite that gates again, 2026-09-07
+## PHASE 6.5 COMPLETE — the behavioral half, and a live suite that gates again, 2026-09-07
 
 **Verified state:** `make check` green — **1458 passed, 0 xfailed**, 14 deselected, mypy clean over 99
 source files, frontend **168** across 16 files, root 17 of 18. Scripted gates **4 passed / 0 failed /
@@ -170,7 +170,7 @@ explicitly that the sentence was an instruction rather than a fact. **Never writ
   `tests/test_api.py`. `noise.py` said `thresholds.json` "gates five things", which
   `.claude/rules/evals.md` forbids by name.
 - **`2,203 of 2,285` is now `2,202 of 2,284`** in `CLAUDE.md` and both rules files — deferred here by
-  step 8 §8.8, caused by `c697712` honouring hand-rejected edges after those sentences were written.
+  step 8 §8.8, caused by `c697712` honoring hand-rejected edges after those sentences were written.
 
 ### Measured while auditing, and worth keeping
 
@@ -363,7 +363,7 @@ than carried. Two dimensions the slicer had never seen:
   default outcome without it.**
 - **`predicate`** — `influence_only` / `membership_only` / `both` / `neither`. `plays_genre` is absent
   from `ALLOWED_PREDICATES`, so a genre known *only* through the artists who play it **must always
-  refuse**, however many edges touch it. That is correct behaviour and in an aggregate it is
+  refuse**, however many edges touch it. That is correct behavior and in an aggregate it is
   indistinguishable from a system refusing because it is broken. **177 of 675 genres (26%) are in that
   state and were invisible until now.**
 
@@ -464,7 +464,7 @@ still have no sourced origins, so candidates are not scarce.
 ### `ambiguous` became reachable, like `contested` before it
 
 The corpus grew `big band` (Q207378) alongside `big band music` (Q105756581) — two distinct Wikidata
-items whose labels normalise to one `label_key`. The lock in `test_adversarial_set` was **kept and now
+items whose labels normalize to one `label_key`. The lock in `test_adversarial_set` was **kept and now
 names that one collision**, so a second fails instead of hiding behind the first. Authoring a case that
 exercises the `ambiguous` branch is now possible and is owed.
 
@@ -679,8 +679,8 @@ pinned eval number reads. Verified on the cut artifact:
   edge is still `PROSE_AUTO`. `verification` is *how strongly one source was checked*; `corroboration` is
   *whether a second source agrees*. Different guarantees, and this project has already corrected
   `CLAUDE.md` and two rules files once for blurring exactly this. There is a test.
-- 2,203 influence edges remain single-source and are labelled as such. *(**2,202 of 2,284** from
-  2026-09-06: `c697712` honoured hand-rejected edges and dropped one after this was written. The
+- 2,203 influence edges remain single-source and are labeled as such. *(**2,202 of 2,284** from
+  2026-09-06: `c697712` honored hand-rejected edges and dropped one after this was written. The
   figure above is left as the record of what was measured that day.)*
 
 ### Owed, deliberately not done here
@@ -847,7 +847,7 @@ Had corroboration moved, the probe would have been wrong.
 `MusicGenre` resources, both matching the figures recorded on 2026-09-02. The endpoint answered in 0.43s
 and shows none of WDQS's degradation. Distinct-pair counts throughout, per the named counting trap.
 
-### Two open plan questions were closed with measurements rather than judgement
+### Two open plan questions were closed with measurements rather than judgment
 
 - **How far growth follows was ambiguous, and is now decided: take the closure.** *"Bounded by what
   `stylisticOrigin` reaches"* did not distinguish one hop from closure. Measured: hop 1 adds 167 genres,
@@ -923,7 +923,7 @@ and it names the one edge so a second divergence fails instead of hiding behind 
   The comparison now folds case, and that **gives up nothing**: a QID is `Q` plus digits, so no two
   distinct QIDs differ by case alone. Measured first: across both artifacts, **zero** edges cite a
   different entity — case was the only mismatch category. The fix is in the checker, not the ingestion,
-  because `source_id` records the URI Wikidata actually returned and normalising it at write time would
+  because `source_id` records the URI Wikidata actually returned and normalizing it at write time would
   make stored provenance differ from retrieved provenance.
 - **`source_snapshot` was empty — 0 entries against 509 genre nodes**, where v0.5.0 had 169.
   `membership.py` omitted it from its `artifact_io.write` call; `artists.py:495` passes it. The builder
@@ -962,7 +962,7 @@ comment. Consistency is back to 16/16.
 
 ### The gold set was re-pinned, and the check its own file demands was run
 
-`gold_v0_1.json` moved to `0.6.0`. Its rule is that re-pinning is only safe if no case's neighbour set
+`gold_v0_1.json` moved to `0.6.0`. Its rule is that re-pinning is only safe if no case's neighbor set
 moved — checked pair-by-pair, not assumed. Run over all **73 distinct nodes the 25 cases touch, in both
 directions**: exactly one moved, Nine Inch Nails losing the deprecated Pink Floyd edge, and **no case
 depends on it** — gold_v0_1_020 walks Q11647 via Q125603 and its claim set is unchanged. No case gained
@@ -1081,7 +1081,7 @@ on v0.6.0 is owed before any threshold near these numbers is touched again.
   row is influence-only for the same C1 reason as the traversal: counting membership would put the
   busiest genre at **160 connections instead of 6**, 154 of them artists who play it.
 
-### What generalises
+### What generalizes
 
 **A default that was right by accident stops being right without changing.** `neighbors()` was correct
 for four phases because the corpus had one predicate. Widening the data, not editing the function, is
@@ -1120,7 +1120,7 @@ exists on disk and nothing reads it except its own tests. Moving the pin and re-
 | isolated nodes | 0 | 0 |
 
 Full as-built in `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §4 steps 1-2. What belongs
-here is what is open and what generalises.
+here is what is open and what generalizes.
 
 ### Open after these steps
 
@@ -1142,7 +1142,7 @@ here is what is open and what generalises.
   membership edges so `isolated_nodes` is still 0. Two different true statements that must not be
   collapsed into one in copy.
 
-### What generalises
+### What generalizes
 
 **Prevention is not repair.** The deprecated-rank filter added to both discovery queries excludes bad
 statements from **new** crawls. The first v0.6.0 build then reported P737 tiers still summing to 950 —
@@ -1158,7 +1158,7 @@ equality against records that were correct about the corpus and simply predated 
 must match exactly. Regenerating the baseline instead would have rewritten a historical number for a
 non-event, which that file's own docstring warns against.
 
-**A bound can filter rather than generalise, and the difference is invisible in aggregate.** Keeping
+**A bound can filter rather than generalize, and the difference is invisible in aggregate.** Keeping
 only P136 objects already in the corpus looked like coarsening. It was arbitrary selection: it kept
 whichever of an artist's genres happened to be among the 169, which is unrelated to which is
 representative. Red Hot Chili Peppers would have shipped as `heavy metal` and nothing else, nine tags
@@ -1184,7 +1184,7 @@ a shared `TF_REQUIRE` macro that demands `IMAGE_TAG`, `LLM_PROVIDER` and `RESERV
 prints the correct invocation when any is missing. **A default that happens to be right today is the
 same trap one variable later**, which is why none of the three was given a Makefile-level default.
 
-**The third variable was worse than the audit realised.** The audit named `image_tag` and `llm_provider`;
+**The third variable was worse than the audit realized.** The audit named `image_tag` and `llm_provider`;
 checking `variables.tf` while writing the guard turned up that `reserved_concurrency` defaults to **5**,
 and `variables.tf:171` records that this account **refuses a reservation of 5** — its whole concurrency
 ceiling is ~10, measured 2026-08-03. So a bare `make tf-apply` had three wrong values, not two, and the
@@ -1205,9 +1205,9 @@ thing here a typo should not be able to reach.
 refuses, and a fully-specified one expands to the right `terraform ... -var ... -var ... -var ...` line.
 `make check` is unaffected at **1189 passed** — `tf-validate` uses none of these variables.
 
-**What is NOT fully closed, and it generalises.** A deny pattern matches a command string, so
+**What is NOT fully closed, and it generalizes.** A deny pattern matches a command string, so
 `Bash(make tf-destroy*)` covers `make tf-destroy` and does not cover `make -C . tf-destroy` or a `cd`
-that precedes it. **The settings deny is defence in depth; the guard inside the Makefile is the half that
+that precedes it. **The settings deny is defense in depth; the guard inside the Makefile is the half that
 cannot be routed around by invoking make differently.** Put the real check in the thing being run, not
 only in the pattern that describes it.
 
@@ -1217,7 +1217,7 @@ only in the pattern that describes it.
 
 Step 9 closed **DoD 7** on 2026-09-01 and never got its own section here; step 10 closed **DoD 9** and
 the release items on 2026-09-02. Both are recorded together. Full as-built in the phase 5 IMPLEMENTATION
-doc §12; what belongs here is what is still open and what generalises.
+doc §12; what belongs here is what is still open and what generalizes.
 
 **Verified state, measured 2026-09-02:** `make check` green — **1189 passed, 14 `costs_money` tests
 deselected**, mypy clean over 89 source files, root **15/18**, terraform valid, eval gates 3 passed / 0
@@ -1261,7 +1261,7 @@ failed requests, no 4xx and no console errors, and all three copied into `dist/`
   knew Makefile targets need their own entries and stopped after one. `Bash(make tf-apply*)`,
   `Bash(make tf-destroy*)` and `Bash(make heldout-seal*)` are now denied — the last because
   `.claude/rules/heldout-set.md` forbids re-sealing outright and it was reachable by the same route.
-  **The generalisation: a deny pattern naming a command does not cover a wrapper that runs it.** Any
+  **The generalization: a deny pattern naming a command does not cover a wrapper that runs it.** Any
   new Makefile target that spends money, mutates infrastructure or touches the sealed set needs its
   own deny line on the day it is written.
 
@@ -1324,7 +1324,7 @@ for any future session that runs `make tf-apply` without reading this.
 silently rebuilding the previous one. That trap is now closed by evidence, not by assumption, and this is
 the cheapest way to check it.
 
-### What generalises
+### What generalizes
 
 **Five layout failures in this phase were invisible to a green suite, and two of them were caused by my
 own "improvement".** Step 9's coverage panel rendering a screen tall above the answer; its `auto-fit`
@@ -1334,10 +1334,10 @@ frontend that is a picture must be looked at, and reasoning about pictures is no
 
 **A checker reported success while displaying nothing, for the third time in this phase.** Step 10's
 first comparison sheet magnified each 16px rendering and every panel came back blank — it sampled a
-16x16 rect out of a 32-unit `viewBox` and the ground colour matches the page, so blank looked plausible.
+16x16 rect out of a 32-unit `viewBox` and the ground color matches the page, so blank looked plausible.
 It now counts lit pixels and throws below a floor. Step 3 sampled every thousandth pixel and produced a
 confident false FAIL; step 5's drag check could not distinguish a drag from a pan. Same shape each time:
-**a check must be able to distinguish the behaviour it asserts from the nearest thing that looks like
+**a check must be able to distinguish the behavior it asserts from the nearest thing that looks like
 it.**
 
 **A number re-derived without its guard reproduced a bug the guard exists to prevent.** Re-checking
@@ -1353,7 +1353,7 @@ and the guard is the part that carries the knowledge.
 **Pan, zoom, select, follow an edge, request an annotation.** Built as **8a** (the viewport), **8b**
 (following and annotating) and **8c** (the formatter and the submit button), with the deploy gap closed
 first — four undeployed steps is the wrong foundation to add a fifth to. Full as-built in the phase 5
-IMPLEMENTATION doc §12. What belongs here is what is still open and what generalises.
+IMPLEMENTATION doc §12. What belongs here is what is still open and what generalizes.
 
 **Verified state, re-measured 2026-09-01:** `make check` green — **1184 passed, 14 `costs_money` tests
 deselected**, mypy clean over 89 source files, root 15/18, eval gates 3 passed / 0 failed / 2 not
@@ -1371,7 +1371,7 @@ the exact future edit it guards — fails the test.
 The break-it counter-practice was run against every lock. **Two locks did not fail when broken**, and
 both were real defects in the assertion:
 
-1. **`clampView`'s rule had a docstring describing behaviour it did not have, and its test passed with
+1. **`clampView`'s rule had a docstring describing behavior it did not have, and its test passed with
    the rule deleted.** It asserted a *minimum overlap* — an inequality that held either way. Replaced
    with a rule that is provably conflict-free and an assertion that is an equality on where the map
    comes to rest.
@@ -1380,16 +1380,16 @@ both were real defects in the assertion:
 3. **Two break patterns silently failed to match** because the file had been reformatted, so reading
    them as "the test caught it" was unearned. **A break that did not apply is not evidence.**
 
-**The tell in 1 and 2 is the same and it generalises: the assertion was weaker than the behaviour it was
+**The tell in 1 and 2 is the same and it generalizes: the assertion was weaker than the behavior it was
 named after** — a bound instead of a resting place, a label instead of a pixel.
 
 ### A design flaw found by a failing test, fixed rather than asserted around
 
 `follow` originally opened the node you came *from*, so following an edge out of a walked node revealed
-nothing — the automatic pass has already expanded every walked node's neighbourhood. The map did exactly
+nothing — the automatic pass has already expanded every walked node's neighborhood. The map did exactly
 what was written and the writing was wrong. It opens both ends now. **The fixture had the matching
 problem**: at six nodes nothing was more than one hop from a walked node, so no implementation could
-have discovered anything. *A fixture too small to exercise the behaviour looks exactly like a broken
+have discovered anything. *A fixture too small to exercise the behavior looks exactly like a broken
 implementation* — step 7's closing sentence, reached again independently.
 
 ### The formatter, and why it had bitten twice before anyone noticed
@@ -1425,9 +1425,9 @@ the served bundle and grepping it rather than by trusting the run.**
 
 ## PHASE 5 STEP 7 — motion is decided and DoD 6 is closed, 2026-08-31
 
-**One motion mode at 850ms per edge, and `prefers-reduced-motion` is honoured in the canvas.** DoD 6
+**One motion mode at 850ms per edge, and `prefers-reduced-motion` is honored in the canvas.** DoD 6
 closed. Full as-built in the phase 5 IMPLEMENTATION doc §12; what belongs here is what is still open
-and what generalises.
+and what generalizes.
 
 **The step was not what the sequence said it was.** It was planned as "add motion to a still picture".
 Replaying the captured fixtures frame by frame first showed **the map was already moving and nobody
@@ -1445,7 +1445,7 @@ hard cuts. The second one is the claims-first invariant becoming visible to a vi
   every render, so each prose token restarted the animation with nothing left to enter and the edge
   snapped to full length mid-draw. **This one was not a StrictMode artifact and would have shipped.**
 
-**The finding that generalises, and it is the fourth instance of the same shape in this phase:** *"they
+**The finding that generalizes, and it is the fourth instance of the same shape in this phase:** *"they
 look the same"* is a report about the screen, never a verdict on the design. Told twice that two modes
 were indistinguishable, the correct response both times was to measure why rather than accept the
 comparison. The second time, the measurement showed **the camera moves more than the nodes do** — on
@@ -1485,7 +1485,7 @@ except the node itself, because magenta is reserved for gate-approved claims and
 The two states are visually distinct *as a consequence of the accent meaning something*, without
 borrowing the alert vocabulary.
 
-**Verification tiers are deliberately NOT on a colour ramp, and this must stay true.** `HAND` /
+**Verification tiers are deliberately NOT on a color ramp, and this must stay true.** `HAND` /
 `PROSE_AUTO` / `ASSERTS_AUTO` / `EXPOSURE_AUTO` are the obvious thing to put on a light-to-dark ramp,
 and a ramp reads as confidence. The tiers say **how hard ONE source was checked, never how many
 sources agree** (`.claude/rules/grounding-and-claims.md`). Encoding them as a ramp would make the
@@ -1527,13 +1527,13 @@ so every chip is either wholly dated or wholly undated. Two findings that outliv
   test, so the map cannot invent dates for the nodes the corpus is thinnest on.
 
 **Still open, and named rather than fixed:** the context nodes now stack in a regimented vertical
-line rather than reading as a neighbourhood; the 458-node component is a hairball in all four
+line rather than reading as a neighborhood; the 458-node component is a hairball in all four
 candidate layouts and unreachable from any chip; **nothing is deployed**, exactly as at step 4.
 
 **Three bugs in this step, all one shape, and the third was found by sjtroxel using the app.** A
 layout drew zero edges and passed a checker that only counted lit pixels. Node drag was broken in
 every preview and a checker reported it working, because it asserted "the picture changed" and
-panning changes the picture too. **The rule that generalises: a check must distinguish the behaviour
+panning changes the picture too. **The rule that generalizes: a check must distinguish the behavior
 it asserts from the nearest thing that looks like it.** Both checks passed; both were wrong.
 
 **Verified:** `make check` **1184 passed, 14 deselected**, mypy clean over 89 files, root 15/18,
@@ -1565,7 +1565,7 @@ step 0 is likewise untouched.
   the SPA *cannot* narrate the static graph is step 8's, per IMPLEMENTATION 4.2, and it is not written.
 - **A refusal draws no map under the local stub**, because the stub never resolves a node and the SPA
   refuses to guess one from `chips.json`. That is deliberate. It also means the refusal map is
-  **unverified against a real model**, where the node does resolve and the neighbourhood would draw.
+  **unverified against a real model**, where the node does resolve and the neighborhood would draw.
   That check costs about a cent on `make dev-live` and has not been run.
 
 ---
@@ -1591,7 +1591,7 @@ This is not a defect and nothing is broken. Only **P737** is ingested and P737 d
 artist/genre boundary; genre membership is **P136**, which is not in the corpus. But it does mean
 **`CLAUDE.md`'s thesis sentence — "underneath they are one connected organism" — is not drawable on
 artifact v0.5.0**, and any visualization copy implying a single connected map would be overstating what
-the corpus holds. The honest shape of the map is a *neighbourhood*. Phase 5 §9 uncertainty 1 explicitly
+the corpus holds. The honest shape of the map is a *neighborhood*. Phase 5 §9 uncertainty 1 explicitly
 allowed for this answer as a finding rather than a failure. **Whether to ingest P136 is a phase 6
 question** and is deliberately not pulled into phase 5 (§11).
 
@@ -1726,7 +1726,7 @@ them as current.
   **Mechanism confirmed live 2026-08-24, and it is not what it first looked like.** The bare noun is not
   failing to parse: the planner returns **`query_kind: "coverage"`** with three deliberate steps —
   `resolve_node`, `describe_node`, `corpus_coverage` — then approves two claims, emits `refused`, and
-  never synthesises. **That is arguably correct behaviour.** "thrash metal" asks nothing, so the agent
+  never synthesizes. **That is arguably correct behavior.** "thrash metal" asks nothing, so the agent
   reports what the graph holds and declines to answer a question it was not asked. The defect is in the
   *smoke test's choice of query*, not in the loop.
 
@@ -1839,7 +1839,7 @@ exact. Every one of those matches the development set's most recent run at the s
   set cannot answer *"does this hold up on older or non-Western material"* — one of the questions a
   held-out set is most wanted for. **Logged, not fixed:** re-drawing for a better slice profile means
   drawing a set chosen for its slice profile, which is a curated set with extra steps. The honest
-  statement is that coverage generalisation is untested, not that it passed.
+  statement is that coverage generalization is untested, not that it passed.
 
 - [x] **`verification_mix` shows `HAND=0`.** No held-out claim rests on a hand-verified edge. That is
   `not_sought` behaving as documented, not a defect.
@@ -2103,7 +2103,7 @@ because both were only ever waiting on the same wiring plus the same billable ru
   is the live half: **this is now blocked behind Bedrock only, not behind the gold set.**
 
   **Sharpened 2026-08-16.** The metric now runs over all 25 gold cases and reads 100%, and that number is
-  worth nothing as a traversal result. `expected_path` is exactly the one-hop neighbourhood of the subject
+  worth nothing as a traversal result. `expected_path` is exactly the one-hop neighborhood of the subject
   on every case, so any trace that makes one correct tool call scores perfectly — the trace policy
   provably cannot read the answer (`test_the_trace_policy_cannot_see_the_answer`), but non-circularity is
   not sufficiency. `traversal_recall`, `traversal_precision` and `plan_adherence` are listed in
@@ -2227,21 +2227,21 @@ the resumability contract, the blindness rule — is in
   development" about an artist while the other wrote "his distinctive approach" and dropped "came out
   of" entirely. **So the genre-hardcoding defect is NON-deterministic and the direction defect IS** —
   `003`/`028` produced near-identical garbage from the same prompt. Do not describe them as one
-  behaviour; an assistant collapsed them on 8/20 and was corrected.
+  behavior; an assistant collapsed them on 8/20 and was corrected.
 
-  One item at a time, one judgement each; labels written after each item so a dead session
+  One item at a time, one judgment each; labels written after each item so a dead session
   loses nothing; `make eval-label ARGS='status'` reports where it is on resume. **The cadence in use is
   not the one the phase doc anticipated** — he reads each item rendered in the session rather than in his
-  own terminal, and supplies both judgements himself. **No score is pre-filled for him**, deliberately: a
-  pre-filled judgement would make his labels partly the assistant's, and the agreement figure would then
+  own terminal, and supplies both judgments himself. **No score is pre-filled for him**, deliberately: a
+  pre-filled judgment would make his labels partly the assistant's, and the agreement figure would then
   partly measure Claude-against-Nova rather than human-against-judge, undetectably after the fact. The
   original "from a draft I pre-fill" wording was written for the gold set, where the drafts were
-  *lookups* he verified; here the draft would be the judgement itself, which is the thing being measured.
+  *lookups* he verified; here the draft would be the judgment itself, which is the thing being measured.
 
   **`judge_pool_v1_011` and `012` are ANCHORED LABELS and this must travel with the agreement figure —
   2026-08-20.** At the start of the second sitting the assistant read the phase doc's "from a draft I
   pre-fill" wording, did not check whether a later session had narrowed it, and pre-filled both
-  judgements on those two items before he answered. The rule above is exactly what that violates. He
+  judgments on those two items before he answered. The rule above is exactly what that violates. He
   overrode the draft on `011` (drafted 3, he gave 5) and gave independent reasoning on `012`, and he
   ruled to keep both rather than rebuild the pool — but the point of the rule is that independence is
   not checkable after the fact, so **2 of 30 labels are anchored and the agreement figure inherits it.**
@@ -2377,7 +2377,7 @@ deliberately and watched to fail before being restored.** `make check` 1103 pass
 
 **The frozen pool is untouched and the 30 labels stand** — the pool holds prose captured on 8/19, and
 nothing in `loop.py` can reach it. What goes stale is the judged *score* averages, which describe the
-pre-fix agent and must be labelled as such. The agreement figure survives, because it validates the
+pre-fix agent and must be labeled as such. The agreement figure survives, because it validates the
 judge rather than the agent.
 
 **Verified against a real model the same day, on the same case ids the pool used** — so this is a
@@ -2479,7 +2479,7 @@ is not a measured rate, and the next full 41-case run is what would make it one.
   West African music influence American genres?", the agent answered about blues rock instead of naming
   the gap, with `plan_divergence: 13`, the highest in the pool. `refusal_correct: false`, `correct:
   false`; the deterministic suite caught it. Both near-miss and coverage-honesty refusals are failing by
-  substituting a well-covered neighbour, which is the single behaviour `must_name_gap` exists to force.
+  substituting a well-covered neighbor, which is the single behavior `must_name_gap` exists to force.
 
 #### Found by the first judge run — where Nova and he disagree, 2026-08-20
 
@@ -2517,7 +2517,7 @@ scattered.** Three causes, and only the first is a rubric problem.
   answer. **Be precise about what happened: Nova did not obey the injection, it mis-attributed the
   injected text to the answer and marked the answer down for it.** The agent resisted this same
   injection cleanly (`adv_016`, `correct: true`, `plan_divergence: 0`), so the unguarded judge was the
-  weaker half of the pipeline. Fixed by fencing the question, labelling it untrusted **before** it
+  weaker half of the pipeline. Fixed by fencing the question, labeling it untrusted **before** it
   appears, and adding the same instruction to `JUDGE_SYSTEM`. Both properties are test-locked and both
   locks were broken deliberately and watched to fail. **This is not a rubric change** — `rubric_digest`
   hashes `rubrics/*.md` only — so the 30 labels are untouched and a re-judge is legitimate.
@@ -2547,7 +2547,7 @@ judge runs now exist**, and the second and third were produced from **byte-ident
 - [x] **The judge is NOT deterministic at temperature 0. Measured, not inferred.** `JUDGE_TEMPERATURE
   = 0.0` is set at `agent/llm.py:70`, is applied by role rather than by caller discipline
   (`llm.py:803`), and is verifiably sent. Runs 2 and 3 still disagreed on **3 of 30**
-  `citation_support` judgements (`009`, `011`, `020`) and **7 of 30** `narrative_quality` scores;
+  `citation_support` judgments (`009`, `011`, `020`) and **7 of 30** `narrative_quality` scores;
   **23 of 30 items were identical on both scales.**
 
   **The proof that the inputs were identical is independent of any reasoning about the tree:
@@ -2670,7 +2670,7 @@ narrower than the sentence sounds, and the narrowness is the gap.
 
 - [x] **A real model ignores an injected node label.** One case (`adv_014`), one channel, one model, one
   run. The test's own docstring states the limit correctly: `gate()` would refuse the forbidden triple
-  whether or not the model honoured the delimiter, so a pass is defence in depth **confirmed**, not
+  whether or not the model honored the delimiter, so a pass is defense in depth **confirmed**, not
   discovered.
 - [ ] **`adv_015` has no live counterpart.** The hostile stub tool is exercised only under
   `tests/test_untrusted.py`. The second injection channel has never met a real model.
@@ -2680,7 +2680,7 @@ narrower than the sentence sounds, and the narrowness is the gap.
   resistance is satisfied on real model output for the first time.
 
   Read it for what it is. Five planted cases is a rate with a small denominator, and the strongest of
-  the channels is still structural rather than behavioural: a fabricated edge cannot reach the gate
+  the channels is still structural rather than behavioral: a fabricated edge cannot reach the gate
   through a tool call at all, because `ToolResult.proposals` is built from real artifact edges. What
   the live run adds is that a real model, given an injected instruction in the user query
   (`adv_016`), did not manufacture the forbidden triple through the one channel where it could have —
@@ -2708,9 +2708,9 @@ narrower than the sentence sounds, and the narrowness is the gap.
   `src/musical_mycelium/agent/llm.py:22` · `src/musical_mycelium/agent/__init__.py:45` ·
   `docs/phases/phase-1-walking-skeleton-IMPLEMENTATION.md:20` and `:394`
 
-  What replaced them is narrower, not wider: **the loop is live-verified end to end, real-model behaviour
+  What replaced them is narrower, not wider: **the loop is live-verified end to end, real-model behavior
   is demonstrated but not measured, and the deployed URL still runs the template stub.** Verified by a
-  whitespace-normalised search rather than a line-based grep — the sixth site was invisible to the
+  whitespace-normalized search rather than a line-based grep — the sixth site was invisible to the
   original grep because the phrase wrapped across two lines, which is how the earlier count of five
   happened.
 
@@ -2743,7 +2743,7 @@ narrower than the sentence sounds, and the narrowness is the gap.
   The exposure is narrow — that run's subject was `acid jazz`, gold case 002, authored ten days earlier —
   but the gold set is now clean **by procedure**, not by construction. The held-out set is the narrower
   case: it was drawn 2026-08-14 with every field read out of the pinned artifact and no authored
-  judgement anywhere in it, so it has no contamination surface of this kind to begin with.
+  judgment anywhere in it, so it has no contamination surface of this kind to begin with.
   Recorded in the dataset's own `provenance.honest_limits` rather than only here. **The sentence that
   stood here until 2026-08-24 — "Step 8, the full evaluated run, still has not happened" — is stale:
   step 8 ran on 2026-08-24 and so did step 9.**
@@ -2769,7 +2769,7 @@ Decision A1; not to be re-litigated.
 
 **Every claim the adversarial set produces is `HAND` verified — all seven of them.** The set never touches
 a `PROSE_AUTO` edge, which is the overwhelming majority of the corpus, so the baseline says nothing about
-behaviour on machine-verified edges. That is a gap in the **dataset**, not the code, and it belongs to the
+behavior on machine-verified edges. That is a gap in the **dataset**, not the code, and it belongs to the
 gold set. A test fails if the mix ever changes, so it cannot quietly stop being true.
 
 **Grounded means provenance, not truth.** Every edge traces to a checkable source. Wikidata can still be
@@ -2804,7 +2804,7 @@ all found while authoring gold cases on 2026-08-14: `Deep Purple → Led Zeppeli
 `The Rolling Stones → Robert Johnson` (a cover in a track listing), `Rina Sawayama → Lady Gaga` (a cover
 and a remix credit), `The Velvet Underground → David Bowie` (both). This is consistent with the filter's
 measured 97% precision — roughly 23 such edges are expected across 760 — so it is the filter working as
-documented, not breaking. It is recorded because a gold case must claim its subject's neighbours
+documented, not breaking. It is recorded because a gold case must claim its subject's neighbors
 *exactly*, so each one silently disqualifies that node as a gold subject. **Related method note: judge an
 edge on all of its matched sentences, not the first two.** `The Beatles → Bob Dylan` looks like it rests
 on Dylan introducing them to cannabis until sentence seven turns out to be a real assertion.

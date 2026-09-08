@@ -57,7 +57,7 @@ is a cost control and not just tidiness.
 
 ## Why the refusal was the hardest part
 
-The system declines to answer when the corpus has no sourced edge, and refusing is correct behaviour
+The system declines to answer when the corpus has no sourced edge, and refusing is correct behavior
 rather than a failure. But a casual visitor's first read of a declined answer is *this thing is broken*,
 and losing that argument on the first screen loses the whole point of the project.
 
@@ -67,7 +67,7 @@ invents. So the refusal is staged instead, under five rules:
 1. **No error chrome, ever.** Same card, same typography, same weight as an answer. This is enforced
    structurally: the refusal and the answer are *the same React component*, and the only difference is
    the wording inside it. Two components would drift, and the drift always goes one way — a warning
-   colour, an icon, a lighter weight — and by then the visitor has read "broken" before reading a word.
+   color, an icon, a lighter weight — and by then the visitor has read "broken" before reading a word.
 2. **Show what the graph does know.** Kate Bush is *in* the corpus and richly connected; seven artists
    cite her.
 3. **Attribute the gap to the sources, not the software.** "This graph has no sourced answer" — the
@@ -147,7 +147,7 @@ as influence. So the corpus is connected **through the people who play across it
 chain of sourced influence, and copy that lets the second read out of the first is exactly the
 overstatement this whole document exists to avoid.
 
-The map still shows a neighbourhood rather than the whole graph, and still says so — with 1,465 nodes in
+The map still shows a neighborhood rather than the whole graph, and still says so — with 1,465 nodes in
 one component that is now a legibility decision rather than an honesty one.
 
 ## How the map is laid out, and why time is not an axis
@@ -181,7 +181,7 @@ Dark only, neon on near-black. That is a commitment rather than an omission: neo
 and the same hue on a paper-white ground reads as a bright sticker, so a light variant would not be a
 tint of this design but a second and different one.
 
-The load-bearing part is that **the accent colour means `gate-approved`**. The map paints a walked node
+The load-bearing part is that **the accent color means `gate-approved`**. The map paints a walked node
 and a claim the gate passed in the accent, and nothing else, ever. A visitor clicking a faint context
 node must not make it look like one the gate approved — that is the same slide from *traceable* to
 *asserted* that the whole project exists to prevent, arriving through the palette instead of through
@@ -204,7 +204,7 @@ response is to go and find out why, not to conclude the design was subtle.
 What ships is one mode at 850ms: edges draw in the order the agent actually walked them, nodes fade in
 rather than blink on. Because the layout is deterministic there is nothing to race — the motion animates
 between two known positions. `prefers-reduced-motion` needs no special branch in the layout for the same
-reason, and where it does apply it is honoured.
+reason, and where it does apply it is honored.
 
 ## The map admits what it is not showing
 
@@ -289,7 +289,7 @@ price; a nicer address means registering a real domain, which is phase 7.5 — a
 $12–15 a year plus $0.50/month for a hosted zone, which amends the "approximately $0/month" claim rather
 than rounding into it.
 
-The step ordering was a fence, not a schedule: engine, then layout, then colour, then motion. Doing them
+The step ordering was a fence, not a schedule: engine, then layout, then color, then motion. Doing them
 out of order is how a frontend eats a month.
 
 ## How it is tested, and how little
@@ -317,7 +317,7 @@ something is wrong without telling you which thing. They are separate tests now.
 ## How it ships
 
 `terraform apply` creates a private S3 bucket and a CloudFront distribution in front of it. The bucket is
-never public; an Origin Access Control is the only read path, which is verified by behaviour — a direct
+never public; an Origin Access Control is the only read path, which is verified by behavior — a direct
 read of the object returns `403`.
 
 CloudFront serves the SPA. **It does not front the API.** Two origins, two hostnames, deliberately: the

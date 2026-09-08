@@ -77,7 +77,7 @@ hits it.
 
 **Every claim the adversarial set produces is `HAND` verified — all seven of them.** The set never touches
 a `PROSE_AUTO` edge, which is the overwhelming majority of the corpus, so nothing measured to date says
-anything about behaviour on machine-verified edges. That is a gap in the **dataset**, and closing it is a
+anything about behavior on machine-verified edges. That is a gap in the **dataset**, and closing it is a
 gold-set authoring requirement: the gold set must include `PROSE_AUTO` and `EXPOSURE_AUTO` edges, not only
 hand-read ones.
 

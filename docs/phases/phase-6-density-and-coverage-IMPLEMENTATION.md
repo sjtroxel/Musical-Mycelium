@@ -107,7 +107,7 @@ so the two sources can be compared in a shared identifier space without name mat
 |---|---|---|---|
 | **corroborates** an existing corpus edge | **80** | 80 | a genuine second source on 60% of the genre axis |
 | **new** — DBpedia has it, the corpus does not | **1,100** | 237 | **8.2x the corpus's own genre edge count**, and 1.2x its entire influence layer |
-| corpus has it, DBpedia does not | 53 | 53 | stays single-source and must stay labelled as such |
+| corpus has it, DBpedia does not | 53 | 53 | stays single-source and must stay labeled as such |
 | **DBpedia asserts the opposite direction** | **2** | 2 | **`contested` is reachable** |
 
 **Three of the four rows did not move, and that is a consistency check rather than a coincidence.**
@@ -157,7 +157,7 @@ still not ingested and this phase does not change that.**
 The reasoning, in the order it actually ran:
 
 1. **Resolution 1 (narrow to component-local lineage) is what the product already does, and it stays
-   true.** It is not a resolution so much as the honest description of current behaviour. It was the
+   true.** It is not a resolution so much as the honest description of current behavior. It was the
    strongest option in July when the largest component held 44 genres. It is the weakest now: the largest
    component holds 458 nodes and refusing across components refuses far less than it used to. Adopting it
    as *the* answer would mean declaring the corpus finished, which §2.1 shows is true of Wikidata P737 and
@@ -221,7 +221,7 @@ or `make tf-destroy`, which run the bare commands. `Bash(make tf-apply*)`, `Bash
 
 **The Makefile half.** `tf-plan`, `tf-apply` and `tf-destroy` now **refuse rather than default**. All
 three of the variables at issue have a Terraform default that disagrees with the deployed stack, and the
-third one was worse than the audit realised:
+third one was worse than the audit realized:
 
 | variable | Terraform default | live stack | what the default does |
 |---|---|---|---|
@@ -241,9 +241,9 @@ is unrecoverable and it is the one thing in this repo a typo should not be able 
 
 **What is still not fully closed, stated rather than glossed.** A deny pattern is matched against the
 command string, so `Bash(make tf-destroy*)` covers `make tf-destroy` and not `make -C . tf-destroy` or a
-`cd` that precedes it. **The settings deny is defence in depth; the guard inside the Makefile is the half
+`cd` that precedes it. **The settings deny is defense in depth; the guard inside the Makefile is the half
 that cannot be routed around by invoking make differently.** That is the argument for putting the real
-check in the thing being run rather than only in the pattern that describes it, and it generalises to
+check in the thing being run rather than only in the pattern that describes it, and it generalizes to
 every future target this phase adds.
 
 ### Step 1 — Record the connectivity decision — **DONE 2026-09-02**
@@ -255,7 +255,7 @@ reads it from, as **decision C1**:
 |---|---|
 | `docs/graph-semantics.md` §5.2 | **the canonical record.** §5 posed the question in July and said it was open and belonged to sjtroxel; §5.2 closes it, with the Wikidata-ceiling finding, the DBpedia counts, the P136-over-P279 argument, and what the decision does *not* settle |
 | `docs/graph-semantics.md` §6 | the phase 6 consequence bullet now names the two properties and points at §5.2 |
-| `docs/ROADMAP.md` §4 | two dated decision-history entries — C1, and the step 0 deny-pattern generalisation |
+| `docs/ROADMAP.md` §4 | two dated decision-history entries — C1, and the step 0 deny-pattern generalization |
 | `CLAUDE.md` | the thesis paragraph, amended |
 | `README.md`, `docs/spa-explained.md` | status, and a dated forward-note on the section that goes stale at step 2 |
 
@@ -334,7 +334,7 @@ Wikidata statement carries a reference** — 17 of 18 referenced pairs read as c
 unreferenced.
 
 n=30, judged by an agent rather than from hand-read sources: **a direction, not a rate**, and it ships
-labelled that way. It is enough to justify **two tiers rather than one**, so the row carries the
+labeled that way. It is enough to justify **two tiers rather than one**, so the row carries the
 difference instead of averaging a 94%-clean population together with a 42%-clean one.
 
 **One call in that sample was wrong and sjtroxel caught it.** `McFly -> punk rock` was scored a data
@@ -351,7 +351,7 @@ The fix reached only rows nobody was worried about.
 
 `wikidata.deprecated_statements` is the repair half: a cut that inherits edges re-checks them. The
 rebuild dropped `Nine Inch Nails influenced_by Pink Floyd` and `ASSERTS_AUTO` moved 760 to **759**.
-**Generalises: a guard added to the producer does not reach data the consumer inherited.**
+**Generalizes: a guard added to the producer does not reach data the consumer inherited.**
 
 #### A frozen record versus a widened schema
 
@@ -453,7 +453,7 @@ nodes — from `membership.py` omitting the argument. Builder fixed, artifact re
 node revisions already inside `graph.json`, `graph.json` itself untouched.
 
 **Three adversarial cases re-authored** (`rock` → `black`, `raga` → `dastgah`, `afrobeat` → `juju`) and
-the gold set re-pinned after the pair-by-pair neighbour check its own file requires. Behind them was a
+the gold set re-pinned after the pair-by-pair neighbor check its own file requires. Behind them was a
 quieter bug: the attack scripts in `eval/harness.py` still named the retired subjects, and the only
 symptom was `gate_rejections_consistent` slipping 16 → 15 while every headline metric held.
 
@@ -543,11 +543,11 @@ in a buried credits page." So:
 - The SPA displays the attribution and links back. Step 8.
 - **A `DATA-LICENSES.md` is added**, because the repo `LICENSE` is MIT and that covers the code. The
   artifact is now a mixture: Wikidata is CC0, DBpedia is CC BY-SA 3.0. Stating which parts are under which
-  licence is cheap now and awkward later, which is exactly what §4.3 predicts.
+  license is cheap now and awkward later, which is exactly what §4.3 predicts.
 - **Named as uncertain in §9:** whether incorporating CC BY-SA data into a committed artifact in an
   MIT-licensed repo creates a share-alike obligation on the artifact is a real question and I am not
   qualified to answer it. The plan takes the conservative position — attribute, link back, and state the
-  per-source licence — which is defensible regardless of how the question resolves.
+  per-source license — which is defensible regardless of how the question resolves.
 
 ### Step 5 — Corroboration and `contested` — **DONE 2026-09-04**
 
@@ -640,7 +640,7 @@ Six things the plan got wrong or could not see, recorded because the corrections
    a refusal, because it passes the whole question to `resolve_node` as the name. It is left at v0.5.0
    and **owed a decision** — see 8.9.
 5. **`corpus-facts.json`'s `coverage`/`density` split is not stale** and the plan said it was.
-   `Coverage.as_dict()` deliberately serialises 10 of 14 fields; it is the wire contract. Corrected in
+   `Coverage.as_dict()` deliberately serializes 10 of 14 fields; it is the wire contract. Corrected in
    8.5 rather than silently.
 6. **The first draft of the generator got the influence DIRECTION backwards** — counting nodes untouched
    in either direction (120) instead of nodes that are never a subject (723). That is the project's named
@@ -717,7 +717,7 @@ all of that is provenance the map never draws.
 `NodeInspector` renders edges read from the static graph, so dropping `source_id` means an inspected
 edge either loses its link back or needs a second fetch to recover it — and 8.7 has this step adding a
 *visible CC BY-SA attribution and link-back*, which is the same bytes. §9.3's two options were "a second
-generated file" or "fetch a neighbourhood on demand"; there is a third that did not exist when §9.3 was
+generated file" or "fetch a neighborhood on demand"; there is a third that did not exist when §9.3 was
 written, which is **ship the projection and keep provenance on the claim stream only**, since a
 gate-approved claim already carries its `source_ids` through the SSE frames.
 
@@ -799,7 +799,7 @@ against v0.7.1 this morning.
 
 **`subgraph.ts:112` — `NEIGHBOURS_PER_OPEN = 30`. This is a live defect, not a stale comment.** Its
 docstring promises: *"the highest degree in artifact v0.5.0 is 25 and no node at all exceeds 30, so this
-budget cannot truncate any single node's neighbourhood: opening a node shows all of its connections or
+budget cannot truncate any single node's neighborhood: opening a node shows all of its connections or
 the corpus does not hold them."* Measured at v0.7.1, undirected degree over all predicates:
 
 ```
@@ -814,7 +814,7 @@ Note that max *influence-only* degree is **55**, so if 8.2 splits the budgets by
 side is far cheaper to keep honest than the combined one.
 
 **`subgraph.ts:104` — `MAX_CONTEXT_NODES = 40`.** Justified by "the largest component is 458 nodes and
-the median degree is 1, so the neighbourhood of a hub such as The Beatles (degree 25) would swamp a
+the median degree is 1, so the neighborhood of a hub such as The Beatles (degree 25) would swamp a
 three-node answer". Largest component is now **1,465 of 1,479 nodes**. 40 remains a legibility number
 and probably remains right; the reasoning under it is stale and must be re-derived rather than left.
 
@@ -892,7 +892,7 @@ density figures, so the generated file should carry `analyse()`'s fields as one 
 reproducing `corpus-facts.json`'s stale `coverage` / `density` split.~~
 
 **Corrected 2026-09-05 while building it: the split is NOT stale and must be kept.** `Coverage`
-carries 14 fields but `Coverage.as_dict()` deliberately serialises only 10 — the density three plus
+carries 14 fields but `Coverage.as_dict()` deliberately serializes only 10 — the density three plus
 `connections` are excluded. `as_dict()` is the **wire contract**: it is what `corpus_summary()` puts
 on `/health` and on the `done` frame. So `corpus-facts.json`'s `coverage` block is "what the API
 serves" and its `density` block is "what the panel computes beyond that", which is a real boundary
@@ -944,12 +944,12 @@ in behind them.
 step 8."* Grepping `web/src` for `CC BY-SA`, `creativecommons`, `Wikipedia`, `DBpedia` or `attribution`
 returns **nothing** — it is genuinely absent, not merely thin.
 
-The obligations, from `DATA-LICENSES.md` §conclusion, are that per-source licences are stated, every
+The obligations, from `DATA-LICENSES.md` §conclusion, are that per-source licenses are stated, every
 CC BY-SA row carries a resolvable link back, and **the attribution is displayed in the product rather
 than buried**. `.claude/rules/graph-semantics.md` adds: *"not in a buried credits page."* Two sources
 now carry it — `dbo:stylisticOrigin` edges under **CC BY-SA 3.0**, and `infobox_year` /
 `infobox_countries` under **CC BY-SA 4.0** with `infobox_source` as the link. Both versions get named;
-they are different licences.
+they are different licenses.
 
 #### 8.8 The copy audit that belongs to this step
 
@@ -977,7 +977,7 @@ fixed here rather than left for a sweep to find:
 **A discrepancy found while measuring, which belongs to step 10 but is recorded here because this is
 where it was found.** `CLAUDE.md`, `.claude/rules/grounding-and-claims.md` and `.claude/rules/evals.md`
 all state **"2,203 of 2,285 influence edges are single-source"**. The store reports **2,284 influence
-edges and 2,202 single-source** at both v0.7.0 and v0.7.1. Commit `c697712` ("honour hand-rejected
+edges and 2,202 single-source** at both v0.7.0 and v0.7.1. Commit `c697712` ("honor hand-rejected
 edges") rewrote v0.7.0's `graph.json` after those sentences were written and dropped one edge. The
 figures to carry forward are **2,284 and 2,202**; corroborated stays **82**. Round down, as always.
 
@@ -1161,7 +1161,7 @@ the held-out set (§9.7, untouched, and its default is still not to run).
 `make eval-judge`, `make eval-tier2` and `make eval-heldout` all **spend money** and **none of the three
 is in `.claude/settings.json`'s deny list**, while `Bash(make *)` sits in `allow`. `make eval-live`,
 `make heldout-seal`, `make tf-apply` and `make tf-destroy` are denied; these three were missed because
-they predate step 0, which only generalised the rule for targets *added* in this phase.
+they predate step 0, which only generalized the rule for targets *added* in this phase.
 
 Step 9 is the step that runs tier 2, so this is fixed first. Three deny lines, no other change.
 `eval-heldout` matters most of the three: it is the one target that both spends money and touches the
@@ -1234,7 +1234,7 @@ Every judged number is reported as a **range** with its inherited agreement figu
 #### 9.7 The held-out set — his decision, and this plan still does not make it
 
 The facts are in 9.9 and are unchanged. The plan's default remains **do not run it**, and to state in the
-release that held-out generalisation was measured at v0.5.0 and is untested at v0.7.1.
+release that held-out generalization was measured at v0.5.0 and is untested at v0.7.1.
 
 If he decides to run it: `make heldout-check` goes first. It needs the key, decrypts in memory, and
 prints **case ids and problem codes only** — never content — which is exactly the question worth asking,
@@ -1274,7 +1274,7 @@ corpus that no longer exists. The relevant facts, stated so the decision is made
 - But a re-run against a *different corpus* measures something the first run did not, and its 2 refusal
   cases mean one flip moves refusal accuracy 50 points against a measured noise floor of 12.5.
 
-**The plan's default is to not run it**, and to state in the release that held-out generalisation was
+**The plan's default is to not run it**, and to state in the release that held-out generalization was
 measured at v0.5.0 and is untested at v0.7.1. That is honest and it costs nothing. Overriding the default
 is his call, made deliberately at the freeze, not incidentally mid-phase.
 
@@ -1310,7 +1310,7 @@ The sketch's four families were all real. Eight things it could not see:
    against a **seven**-value corpus. The note describing the defect did not prevent the defect.
 4. **The measured corpus disagrees with three rules files, and step 8 predicted it.** `CLAUDE.md` and
    both `.claude/rules/` files said "2,203 of 2,285 influence edges are single-source"; the store reports
-   **2,202 of 2,284**, because `c697712` honoured hand-rejected edges after those sentences were written.
+   **2,202 of 2,284**, because `c697712` honored hand-rejected edges after those sentences were written.
    Corrected here, per §8.8's hand-off. Round down, as always.
 5. **The component structure measured, not assumed.** 7 components: **one mixed component holding all 804
    artists and 661 of 675 genres**, and six genre-only components holding **14 genres between them**.
@@ -1372,7 +1372,7 @@ regenerate the sentences.
   pessimism."* That was true and rigorous when written; it is the single most confidently-wrong paragraph
   in the repo today, and A1's closure has to be stated **as its precondition arriving**, not as a reversal.
 - **`web/src/graph/layout.ts:10`** — *"artists and genres sit in disjoint components"*, present tense.
-  Step 8 amended its neighbours but missed this one.
+  Step 8 amended its neighbors but missed this one.
 
 #### 10.3 Code that is copy
 
@@ -1608,7 +1608,7 @@ sjtroxel's call.
 Stated as uncertain rather than smoothed over, per the skill.
 
 1. **Whether CC BY-SA data in a committed artifact creates a share-alike obligation on an MIT repo.** Real
-   question, outside my competence. The plan attributes, links back, and states per-source licences, which
+   question, outside my competence. The plan attributes, links back, and states per-source licenses, which
    is conservative and defensible either way. Worth a real answer before v1.0.
 2. **Whether 672 of 804 artists is explained by P737 objects sitting outside the P136 bound.** Plausible,
    unverified, and it must be verified before the number is published.
@@ -1635,7 +1635,7 @@ Stated as uncertain rather than smoothed over, per the skill.
      changes on account of this. **Deciding it now costs nothing and rules out discovering it at the
      layout stage**, which is what this entry was flagged early to prevent.
    - **Not yet decided and deliberately left open:** whether the projection is a second generated file
-     or the map fetches a neighbourhood on demand. That is a genuine step 8 design question, it does not
+     or the map fetches a neighborhood on demand. That is a genuine step 8 design question, it does not
      block step 4, and picking it now would be guessing at frontend needs a month early.
    - **Re-measured 2026-09-05, at step 8, and the reasoning above needs one correction: it argued from
      RAW megabytes and the wire cost is gzipped.** v0.7.1 full is 2,694,624 raw but **187,294 gzipped**;
@@ -1684,7 +1684,7 @@ request/second and the DBpedia pass is the largest ingestion this project has do
 
 **The guardrail:** `make eval-live`, `make tf-apply`, `make tf-destroy` and `make heldout-seal` are all in
 the `deny` list as of step 0. Any new target added in this phase that spends money, mutates infrastructure
-or touches the sealed set gets its own deny line **on the day it is written**, per the generalisation
+or touches the sealed set gets its own deny line **on the day it is written**, per the generalization
 recorded in `KNOWN-GAPS.md`: a deny pattern naming a command does not cover a wrapper that runs it.
 
 ---

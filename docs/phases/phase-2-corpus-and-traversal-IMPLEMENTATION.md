@@ -243,7 +243,7 @@ same distinction `graph/structure.py` drew between undirected components and dir
 up. Found by running it, not by reading it.
 
 **3. The signature query in `SPEC.md` 2.2 refused when typed verbatim.** "How is the blues connected to
-heavy metal?" — `the blues` resolves, `heavy metal` does not, because the node is labelled *heavy metal
+heavy metal?" — `the blues` resolves, `heavy metal` does not, because the node is labeled *heavy metal
 music*. **32 of the 169 nodes carry that suffix**, so roughly one node in five was unreachable by its own
 name. `label_key` makes a trailing "music" optional on both sides; it produces **zero** collisions across
 v0.2.0, checked before it was written, and two nodes agreeing under it is a refusal rather than a coin
@@ -310,7 +310,7 @@ allowed to answer no** (scope doc A6). "This needs a model in the loop" is a pub
 a failure — but it would be a finding about a Tier-1 filter that is currently free and deterministic,
 so it is a real architectural fork rather than a detail.
 
-**Four defects found by hand-labelling, three of them in this project's own code.** Every one was
+**Four defects found by hand-labeling, three of them in this project's own code.** Every one was
 surfaced by sjtroxel reading evidence and asking why it looked wrong, and none would have been found by
 running the pipeline and inspecting counts:
 
@@ -326,7 +326,7 @@ sampling artifact in the evidence display produced a false finding about the dat
 until a human read the underlying article. Counts and rates would never have caught it.
 
 **A defect found on the way, and it is a keeper regardless of how the filter turns out.**
-`Tier.MISLINKED`: Wikidata's `Q58462848` is labelled **TheGrefg** and its English sitelink points at the
+`Tier.MISLINKED`: Wikidata's `Q58462848` is labeled **TheGrefg** and its English sitelink points at the
 **Lola Índigo** article. Real collaborators, two different people, confirmed independently. The redirect
 guard structurally cannot see this — the sitelink resolves cleanly, so requested and resolved titles
 agree, and the divergence is between the entity's *label* and its *link*. Worse, `check_edge` folds the
@@ -471,8 +471,8 @@ measured no a publishable outcome.
 finally measured — zero true positives, three false. The same trap is open here and wider, because a
 cue list is easy to write and feels obviously right. So:
 
-1. **A hand-labelled sample of ~100 candidate artist edges**, drawn from the 300-slice already crawled
-   (73 accepted, plus ORPHAN cases so recall is measurable and not just precision). Each labelled
+1. **A hand-labeled sample of ~100 candidate artist edges**, drawn from the 300-slice already crawled
+   (73 accepted, plus ORPHAN cases so recall is measurable and not just precision). Each labeled
    **ASSERTS / DOES NOT**, by hand, against the actual sentence. Nothing is built until this exists.
    The sample is committed, because a filter measured against a sample nobody can re-inspect is a
    number with no provenance.
@@ -510,7 +510,7 @@ about which half of the problem was hard.**
 
 **The first conclusion was overstated and is corrected in scope doc A6.2.** It rested on judging each
 edge by one supporting sentence, and **38% of prose-accepted artist edges carry more than one** (one
-carries sixteen). Re-labelled on full evidence the sample is **43 ASSERTS / 12 EXPOSURE / 5 NO**, so
+carries sixteen). Re-labeled on full evidence the sample is **43 ASSERTS / 12 EXPOSURE / 5 NO**, so
 the prose check accepts something genuinely supported **92%** of the time and the junk rate is **8%**,
 not the ~25% first reported. `classify_all()` now takes the strongest verdict across all sentences,
 which is the correct unit; `classify()` alone is not.
@@ -526,7 +526,7 @@ same set:**
 | `ASSERTS` recall specifically | 81% |
 
 **The result that matters is the shape of the errors, not the headline.** One false positive; eleven
-false negatives. Every false negative is the same thing: an edge sjtroxel labelled `EXPOSURE` under the
+false negatives. Every false negative is the same thing: an edge sjtroxel labeled `EXPOSURE` under the
 rule that **collaboration, touring together, covering a song and shared presence all count**. Wu-Tang
 as guest stars; Mahalia Jackson in the Franklin household; a Big Star cover; Cartel on a tour; a Kanye
 verse; twelve sentences of Stones-versus-Beatles rivalry.
@@ -540,7 +540,7 @@ verse; twelve sentences of Stones-versus-Beatles rivalry.
 #### 6b — the decision, then the held-out number. **THE NEXT SESSION'S WORK.**
 
 **The 35 unlabelled held-out rows are sealed and must stay sealed until the decision below is made.**
-Labelling them under a standard that is about to change spends a set that can only be spent once.
+Labeling them under a standard that is about to change spends a set that can only be spent once.
 
 **The decision, and it is a product decision as much as a technical one** — it sets what "grounded"
 means on the artist axis:
@@ -550,10 +550,10 @@ means on the artist axis:
 2. **Narrow `EXPOSURE` to its lexical core** — *listened to, fan of, grew up with, discovered* — and
    put collaboration and proximity out of scope entirely. Keeps a tier, at the cost of a definition
    narrower than the one A6.1 recorded, which means A6.1 gets amended and the 60-row gold set gets
-   re-labelled against the narrower rule.
+   re-labeled against the narrower rule.
 3. **An LLM in the ingest path, for the `EXPOSURE` tier only.** Offline, one-time, local — never in the
    agent loop, so invariant 1, the deterministic gate and Tier-1 eval cost are untouched. It would need
-   validating against this same gold set, which is why the labelling was worth doing either way.
+   validating against this same gold set, which is why the labeling was worth doing either way.
 4. **Keep the broad definition, accept the under-catch, and publish the miss rate.** No amendment, no
    re-label, no spend: ingest what the patterns reach and state plainly that proximity expressed in
    ways a pattern cannot see is missed. **This is the option most in keeping with how this project has
@@ -614,7 +614,7 @@ survives *is* the finding.
 >
 > **Timing was the argument for doing it immediately rather than filing it.** Changing a tool's name,
 > description, or return shape after Bedrock works invalidates any eval baseline that measured tool-use
-> behaviour. No such baseline exists yet, because no real model has ever run. The change cost 33
+> behavior. No such baseline exists yet, because no real model has ever run. The change cost 33
 > mechanical references and one `make check`; in three weeks it would have cost a re-baseline.
 >
 > **The refusal strings are axis-neutral now** — they said "the genre is not in this graph", which on a

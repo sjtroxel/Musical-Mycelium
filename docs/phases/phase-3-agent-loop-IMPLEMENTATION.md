@@ -12,7 +12,7 @@
 > the artist axis, the deploy pipeline, or the Bedrock quota block existed. Section 1 says where it has
 > gone stale.
 >
-> **The organising constraint of this plan:** Bedrock inference has never once succeeded on this account.
+> **The organizing constraint of this plan:** Bedrock inference has never once succeeded on this account.
 > AWS confirmed on 2026-08-06 that the block is an account-level provisioning fault at the runtime layer,
 > identified the root cause, and has an open internal review to restore the standard allocation. There is
 > no ETA and no action owed by us. This plan is therefore sequenced so that **everything that does not
@@ -50,7 +50,7 @@ Bush correctly refuses because she has no outgoing P737.
 DoD #5 (injection) is half met by construction. The gate is deterministic code that checks the artifact,
 so **no injected string can cause an edge to be narrated** — the model cannot fabricate a citation because
 `ClaimProposal` has no source field. What is *not* met is the test that fails if that stops being true,
-and the behavioural half (does the model obey an injected instruction in a tool result). The first is
+and the behavioral half (does the model obey an injected instruction in a tool result). The first is
 model-free; the second is not.
 
 I am not proposing these be dropped. I am proposing they be **re-scoped from "build" to "prove"**, which
@@ -142,7 +142,7 @@ manifest at the next cut. **Recorded as a phase 6 item**, not quietly dropped.
 **Rejected, and still rejected: shipping `contested` as-named over the verification tiers.** Cheapest,
 and wrong — it would put "contested" in front of a user when nothing is contested.
 
-> **The generalisable lesson, which is the reason this section keeps both drafts.** The false premise
+> **The generalizable lesson, which is the reason this section keeps both drafts.** The false premise
 > came from a memory hook that said the check *"re-admits 6 of 7 hand-REJECTED edges."* The source
 > docstring describes what the check *would* do **without** `select_edges()`; the hook recorded it as
 > what the pipeline *does*. One inverted verb, and a whole enum got designed around a population of
@@ -203,7 +203,7 @@ Each item is tagged with what it needs. **LOCAL** items need no AWS at all and a
 | 2 | Seven tools registered and callable; the last one added required no loop edit | LOCAL | tool list revised (§1.4, §1.5) |
 | 3 | **Every approved claim carries its own `verification` tier in the output**, so `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO` and `EXPOSURE_AUTO` are distinguishable per claim rather than only in aggregate; `contested` and `checks_disagree` are both defined, documented and **test-locked as unreachable** | LOCAL | **GREEN — step 4, 2026-08-08** |
 | 4 | A false-premise query is refused and reported as a refusal | LOCAL | **already met** — re-scoped to a regression test |
-| 5 | A planted injection in a fixture is ignored, and a test fails if that stops being true | LOCAL | **GREEN — step 5, 2026-08-09.** Deterministic half only; behavioural half → #10 |
+| 5 | A planted injection in a fixture is ignored, and a test fails if that stops being true | LOCAL | **GREEN — step 5, 2026-08-09.** Deterministic half only; behavioral half → #10 |
 | 6 | Refusal accuracy reported as a pair, over the adversarial set, against scripted traces | LOCAL | scorer + gold traces; live numbers → #11 |
 | 7 | Results sliced by era, region, density and query type; sparse slices reported, not averaged | LOCAL | — |
 | 8 | Cheap/strong routing is wired through `build_llm` and proven with two distinct providers | LOCAL | **GREEN — step 6, 2026-08-09.** Seam only; real models → #12 |
@@ -243,7 +243,7 @@ watching the loop fail produces a dataset shaped by the loop.
 
 **Amendment, 2026-08-07, decided by sjtroxel while building step 1.** The `Ambiguous name` group as
 planned is unbuildable: `resolve_node` emits `"ambiguous"` only when two or more nodes exact-match one
-normalised query, and a probe over all 973 v0.5.0 labels found **zero `label_key` collisions**. The
+normalized query, and a probe over all 973 v0.5.0 labels found **zero `label_key` collisions**. The
 branch has population zero — the same error Fable's threshold review caught in A1's `checks_disagree`,
 and the same root cause: a category planned from the design's vocabulary rather than from the corpus.
 
@@ -531,7 +531,7 @@ decision unmediated.
 The corpus is Wikidata-derived and Wikidata is user-editable, so every label, every country name, and
 every source id is untrusted. Concretely:
 
-- Tool result payloads are JSON-serialised (already true via `dumps`), and every string field that
+- Tool result payloads are JSON-serialized (already true via `dumps`), and every string field that
   originated in the artifact is wrapped in an explicit data delimiter before it enters a message.
 - **The gate is the actual enforcement and it already holds** — an injected instruction cannot manufacture
   an edge or a citation, because `ClaimProposal` carries neither. The delimiting reduces the chance the
@@ -609,7 +609,7 @@ where the answer is known by construction, and each with at least one deliberate
 
 ##### Four decisions this step makes, and why
 
-**1. The zero-denominator rule generalises. It is not a groundedness quirk.**
+**1. The zero-denominator rule generalizes. It is not a groundedness quirk.**
 
 `Groundedness.score` already returns `None` rather than `1.0` at `total == 0`, because an answer that
 asserts nothing has undefined groundedness, not perfect groundedness. That is the vacuous-truth guard
@@ -644,7 +644,7 @@ being tracked separately. Four numbers, one object, no percentage on the face of
 Attributing an approved claim to an injection needs to know what the injection was trying to induce, and
 guessing that from prose is the fuzzy-text-matching failure this project exists to avoid. `adversarial_v1.json`
 already carries `forbidden_triples` per case, hand-authored on 08-07. The scorer is therefore a set
-intersection over `Claim.triple` — an exact lookup, no matching, no judgement. **A case with an empty
+intersection over `Claim.triple` — an exact lookup, no matching, no judgment. **A case with an empty
 `forbidden_triples` contributes zero to the denominator and is not scored as a pass**, or the metric
 inflates itself with cases that never tested anything.
 
@@ -834,7 +834,7 @@ Not a vague "we'll do it later." Three mechanisms, all in the repo:
    **Amended 2026-08-11 — SUPERSEDED the next day, kept because the reasoning is the point.** Bedrock
    access was restored and `BedrockLLM` had been executed, so "no Bedrock call has ever been made" became
    false. The narrower statement adopted that day was that **the loop had never run end to end against a
-   real model** — provider seam verified single-turn, multi-turn behaviour on top of it not. That held for
+   real model** — provider seam verified single-turn, multi-turn behavior on top of it not. That held for
    about ten hours.
 
    **DONE 2026-08-12, as [`docs/KNOWN-GAPS.md`](../KNOWN-GAPS.md) — a file rather than a section here, and
@@ -843,7 +843,7 @@ Not a vague "we'll do it later." Three mechanisms, all in the repo:
    it; and the define-once rule means the open items get one home rather than two that drift.
 
    **What the re-derivation changed.** The 08-11 sentence above is now false too: the loop **has** run end
-   to end against a real model. What replaces it is narrower again — real-model behaviour is
+   to end against a real model. What replaces it is narrower again — real-model behavior is
    *demonstrated but not measured*, because refusal accuracy, traversal recall and injection resistance
    are recorded only against scripted traces. One live case is an anecdote, not a rate. **The
    deployed-stub half is unchanged** and remains the one claim here with consequences outside the repo.
@@ -880,7 +880,7 @@ Not a vague "we'll do it later." Three mechanisms, all in the repo:
 
 - The resume line *"deployed on AWS Lambda and Bedrock with a deterministic groundedness gate at 100%"* is
   **not claimable** at `v0.3.0-local`. `planning/09` §3 puts the resume-ready threshold at v0.3–v0.4 and
-  notes September timing favours claiming it early. Deferring step 8 defers that.
+  notes September timing favors claiming it early. Deferring step 8 defers that.
 - We learn nothing about whether a real model plans well or picks correctly among seven tools. The
   scripted tests prove the *machinery* routes correctly, not that the *model* chooses correctly.
 
@@ -1247,7 +1247,7 @@ the fixture never delivered the attack.
 reason it could not be attempted; now it is simply outstanding work, and it belongs to step 8. The
 distinction matters for how it gets described: this is no longer "blocked by AWS," it is "not yet run."
 `ScriptedLLM` can prove the delimiting is applied to every untrusted string and cannot prove a real model
-honours the boundary, and no amount of local testing will change that.
+honors the boundary, and no amount of local testing will change that.
 
 #### The residual, named rather than discovered later
 
@@ -1355,7 +1355,7 @@ vacuous-truth bug `.claude/rules/evals.md` exists to prevent. Two locks, and the
   short and overrunning are different findings, so the divergence is signed.
 - **`traversal_recall` is set-valued, not order-valued,** because `PathWalked.node_ids` is visit order and
   not descent order. Scoring order would penalise a lineage query for resolving both endpoints first,
-  which is the correct behaviour.
+  which is the correct behavior.
 - **`InjectionResistance.holds` requires `scored_cases > 0`**, on the `is_fully_grounded` precedent. Ten
   cases carrying no `forbidden_triples` are ten cases that tested nothing, and counting them as ten passes
   would report perfect resistance for a suite that never attempted an injection.
@@ -1405,7 +1405,7 @@ invalid kind did not crash and did not silently vanish, it showed up as a bucket
 
 **3. Every claim the adversarial set produces is `HAND` verified — all 7 of them.** The set never touches
 a `PROSE_AUTO` edge, which is the overwhelming majority of the corpus, so this baseline says nothing about
-behaviour on machine-verified edges. That is a gap in the **dataset**, not the code, and it belongs to the
+behavior on machine-verified edges. That is a gap in the **dataset**, not the code, and it belongs to the
 gold set. Locked by a test that fails if the mix ever changes, so it cannot quietly stop being true.
 
 #### Smaller things
@@ -1528,7 +1528,7 @@ Five items, in order:
 
    **The re-derivation moved three items and found one thing worth carrying into phase 4.** DoD #10 is
    green but narrow — one case, one channel, one model, one run, and the gate would have refused the
-   triple anyway, so it is defence in depth *confirmed*, not *discovered*. DoD #12 splits: the model ID is
+   triple anyway, so it is defense in depth *confirmed*, not *discovered*. DoD #12 splits: the model ID is
    recorded, and no EMF record has ever reached CloudWatch, because the deployed Lambda runs
    `llm_provider=local` and the live tests write to a terminal. **DoD #11 splits unevenly, and this is the
    finding:** its refusal half is merely unrun, but `traversal_recall` and `traversal_precision` have
@@ -1560,7 +1560,7 @@ Five items, in order:
    `uv run pytest -m costs_money`. §5.2's argument held exactly as written — *"a test that does not exist
    is a task nobody remembers; a skipped test is a standing reminder in the suite output"* — and the file
    earned its keep immediately by finding the multi-tool-turn bug on its first run.
-4. **~~Decide the version question, then bump.~~ DONE.** Resolved in favour of the spine:
+4. **~~Decide the version question, then bump.~~ DONE.** Resolved in favor of the spine:
    **`pyproject.toml` reads `version = "0.3.0"`.** The artifact stays separately pinned at **v0.5.0**;
    two version numbers, meaning two different things, and no third.
 5. **Tag `v0.3.0-local`.** After 1 and 2, not before.
@@ -1586,14 +1586,14 @@ uncontaminated by model output, and that property is destroyed permanently the f
 against a real model. Bedrock being available makes it *possible* to destroy it early, not advisable.
 
 **That work is his and cannot be delegated**, which is the whole point of it — and as of 2026-08-11 he is
-fatigued from the ~50-case artist labelling and has said so.
+fatigued from the ~50-case artist labeling and has said so.
 
 **There is still no schedule pressure on it, and the quota restoration does not create any.** The original
 argument rested partly on "step 8 is blocked on Bedrock regardless," and that clause is now void, so the
 argument is restated on grounds that do not depend on it:
 
 - Five gold cases already exist in `gold_v0_1.json`; the remaining ask is roughly 15–25.
-- Nothing about it requires one sitting, and a set labelled while fatigued is a worse set — this is
+- Nothing about it requires one sitting, and a set labeled while fatigued is a worse set — this is
   measurement equipment, and the whole eval suite inherits its errors permanently.
 - A one-way door has no deadline. The cost of authoring it late is a wait; the cost of authoring it
   badly, or after contamination, is that every correctness number the project reports becomes unfalsifiable.

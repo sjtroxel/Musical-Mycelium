@@ -308,7 +308,7 @@ broken once each and watched to fail. Five failed. The sixth — removing the sk
 nodes out of the resource index — **failed nothing**, because the assertion was written against the
 pinned corpus. 855 of 1,479 nodes carry `dbpedia_resource=""`, so with the skip gone they would all key
 on `""`, all collide, and the ambiguity rule from finding 3 would exclude them anyway.
-`node_by_resource("")` returned `None` either way. **The assertion was true while the behaviour it names
+`node_by_resource("")` returned `None` either way. **The assertion was true while the behavior it names
 was broken**, and with exactly one unaligned node it would have returned that node.
 
 Rewritten against a synthetic corpus holding exactly one unaligned node, where the collision rule cannot
@@ -423,7 +423,7 @@ known this case is a coin since before the noise floor was measured**, and the s
 and this plan all restated "reproducible" anyway.
 
 `noise_floor.json` files it under `reproducible_failure_ids`, and **that classification is correct for
-the five runs it summarises** — they were all on one afternoon, one revision, and all failed. The defect
+the five runs it summarizes** — they were all on one afternoon, one revision, and all failed. The defect
 is in reading a five-run window as a permanent property. `thresholds.json:126` calls it *"a tracked
 reproducible product bug"* and **both words are wrong**: not reproducible (1 in 12 answers), and not
 demonstrably a product bug (see finding 2).
@@ -528,9 +528,9 @@ read as a measured zero.**
 **One of the new tests was decorative and a break found it.** Emptying `visited` and `rejections` inside
 `build` failed nothing, because the assertions were `isinstance(..., tuple)` and `()` is a tuple.
 Replaced with a field-by-field comparison against the `CaseRun` the transcript was built from; the
-arguments test now asserts on the serialised JSON, because a mutation that dropped arguments in
+arguments test now asserts on the serialized JSON, because a mutation that dropped arguments in
 `to_json` also passed. This is the second time in this phase that asserting a type passed for asserting
-a behaviour — see §1.0 finding 4.
+a behavior — see §1.0 finding 4.
 
 #### 3.3 THE CAUSE, read from a trace — 2026-09-07, run `20260907T181311Z`
 
@@ -552,7 +552,7 @@ rejections    : []
 
 **Every hypothesis in §3.0 is dead.** Path length is irrelevant — it never reached a traversal tool. The
 genre-only tool descriptions (§3.0.6) are irrelevant for the same reason. The artist axis is fine. And
-the non-determinism is explained: whether a model transcribes an unusual spelling or normalises it to the
+the non-determinism is explained: whether a model transcribes an unusual spelling or normalizes it to the
 common word is sampling variance, which is what a 2-in-13 success rate looks like.
 
 **The `did_you_mean` asymmetry, which is real and is NOT being fixed.** `resolve_node` has two failure
@@ -562,7 +562,7 @@ all**. The graph held a label one edit away and told the model only that its gue
 #### 3.4 The near-miss resolver was MEASURED and REJECTED
 
 The obvious fix is to suggest near labels on the zero-candidate branch. Measured over the 1,479 distinct
-normalised labels at v0.7.1 before deciding:
+normalized labels at v0.7.1 before deciding:
 
 | edit distance | pairs of REAL entities that collide |
 |---|---|
@@ -678,7 +678,7 @@ the gate refused. Before, so a reader sees it while the narration streams — th
 telling a reader twice that two sources disagree reads as two disagreements.
 
 **5. The frontend was bounded to what the event forced, and the styling took two passes.**
-`ContestedNotice` is **not** a warning colour. A contested pair is not an error or a degraded answer — it
+`ContestedNotice` is **not** a warning color. A contested pair is not an error or a degraded answer — it
 is two cited sources that disagree, which is among the more interesting things this corpus holds. Amber
 would tell a reader the answer is worse. Phase 5 decided a refusal shares the answer's styling for
 exactly this reason, and the same argument applies. **The two directions carry identical styling: making
@@ -688,7 +688,7 @@ one heavier would pick a winner in CSS.**
 every claim row uses, so the block read as more of the same; sjtroxel looked at it running and said
 "hardly noticeable", which was correct. The fix needed a measurement to find, not a darker fill:
 **against `--card`, every dark fill on this ground sits at ~1.05:1**, `--accent-soft` included. No
-background separates by luminance here, so a new fill colour would have changed nothing.
+background separates by luminance here, so a new fill color would have changed nothing.
 
 **So the signal is the left rule and the source names at full strength**, and the block gets a second
 accent token, `--contested: #5cd8ff`. Electric cyan rather than the lavender first considered, because
@@ -715,7 +715,7 @@ rather than two things depending on which source a claim happened to cite. The C
 carried on **both** outcomes — a URI that resolves to nothing is still a DBpedia URI, and attribution is
 not conditional on the lookup succeeding.
 
-**9. DoD #9 honoured the day item 1 landed, not at step 8.** Six surfaces said an answer cannot express a
+**9. DoD #9 honored the day item 1 landed, not at step 8.** Six surfaces said an answer cannot express a
 disagreement, and all six were true when written: `README.md`, `docs/SPEC.md` (twice),
 `docs/spa-explained.md`, `agent/claims.py:29`, and this phase's own scope doc. `KNOWN-GAPS.md` carries a
 dated closure block. Every correction is an amendment with its date rather than a rewrite.
@@ -793,7 +793,7 @@ against 48% of corpus genres, below the slicer's own n<5 floor. The ~12x oversam
 **1. The ambiguous case cannot be a gold case, and this was found before authoring rather than after.**
 `big band` (Q207378) has 3 parents, so `corpus_can_answer` is true, which forces `expected_refusal: false`
 — but `resolve_node("big band")` returns `ambiguous`, so the agent refuses every time. That is a
-guaranteed false refusal: a second `gold_v0_1_020`, penalising behaviour that is **correct**. It moves to
+guaranteed false refusal: a second `gold_v0_1_020`, penalising behavior that is **correct**. It moves to
 the adversarial set, whose schema carries `resolution.reason` for exactly this. The repo had already seen
 it coming — `test_the_ambiguous_branch_is_still_unreachable` fired at v0.7.1, was deliberately kept, and
 its docstring says the case is owed.
@@ -900,7 +900,7 @@ somebody else. **`forbidden_triples` could NOT be used and that is a real limit 
 requires those triples to be genuinely absent from the corpus, and this attack's danger is approving
 triples the corpus DOES hold about the wrong subject. Recorded rather than worked around. `Joy Orbison`
 is deliberately *not* a forbidden prose string: an answer that refuses and then notes a similarly-named
-artist exists is good behaviour.
+artist exists is good behavior.
 
 **3. `adv_020` — big band, and the repo asked for it by name.**
 `test_the_ambiguous_branch_is_still_unreachable` fired at v0.7.1, was deliberately kept, and its
@@ -1075,7 +1075,7 @@ unstable     : adv_008 1/5   adv_018 2/5   gold_v0_1_035 3/5   gold_v0_1_026 4/5
 a reproducible failure** — precisely the error step 3 found in the previous floor, where five identical
 failures on one afternoon were filed as permanent for a case that has since answered twice.
 
-##### The bounds, and the one judgement in them
+##### The bounds, and the one judgment in them
 
 Four are arithmetic. `refusal_accuracy` is the decision, taken by sjtroxel: **exclude
 `gold_v0_1_020`, keep every unstable case inside the gate.**
@@ -1138,7 +1138,7 @@ described the denominators as "41 with 16 / 25 with 3"; both halves had moved (5
 the docstring's own argument arriving as evidence. `live.py` claimed subsets are compared "against the
 41-case baseline". Historical records in `eval/__init__.py` were **stamped, not rewritten**.
 
-**Behaviour changed by the bigger set, recorded where it matters:** one live run now answers ~36 of 56
+**Behavior changed by the bigger set, recorded where it matters:** one live run now answers ~36 of 56
 cases rather than 25 of 41, so a 30-item tier 2 pool is reachable from a **single** run. `labelling.py`
 said it needed two.
 
@@ -1156,7 +1156,7 @@ files, `README.md`, `SPEC.md`, `docs/spa-explained.md`, `KNOWN-GAPS.md`, and the
 **One correction carried into this sweep from 2026-09-07.** `.claude/rules/evals.md` records the gold set
 as **"25 cases / 67 claims"** from the 2026-08-24 as-built. Measured today it is **29 cases / 66 claims**,
 and after step 5 it is **38**. The case count moved with the phase 6 refusal rebuild; **where the 67th
-claim went has not been chased**, and it plausibly tracks `c697712` honouring hand-rejected edges — the
+claim went has not been chased**, and it plausibly tracks `c697712` honoring hand-rejected edges — the
 same commit that moved 2,285 influence edges to 2,284 — but that is a guess and the sweep verifies it
 rather than repeating it.
 
@@ -1188,7 +1188,7 @@ step 10's finding and it applied directly: **`.claude/rules/evals.md` said "Five
 every-commit run blocks on THREE of them"** and loads into every session in this repo. Amended, along
 with its blocking list (which still described `traversal_recall` and `refusal_accuracy` as "within 5pp"
 bands — both abandoned as arithmetically unsatisfiable, with the strikethroughs kept because the reason
-generalises), and its contested-metric paragraph, which said a contested metric was "NOT yet in this
+generalizes), and its contested-metric paragraph, which said a contested metric was "NOT yet in this
 catalog".
 
 **The line most worth having amended is the one that now forbids its own kind of error**: *"Do not write

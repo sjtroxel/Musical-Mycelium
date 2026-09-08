@@ -178,7 +178,7 @@ exist: sealed means sealed, including from me and from Opus.
 ### 4.4 A2, A3, A4 — endorsed, with three small notes
 
 - **A2 (seven tools):** right list, right drops. Semantic search over a 973-node corpus with working
-  label resolution would be complexity spent making the honest-refusal behaviour *worse*, and text
+  label resolution would be complexity spent making the honest-refusal behavior *worse*, and text
   retrieval has no text to retrieve. `get_descendants` genuinely closes a hole (`Direction.INFLUENCED`
   has had zero tool exposure since phase 2 — confirmed in `tools.py`). One note: the loop's
   `SYSTEM_PROMPT` still opens *"You answer questions about where music **genres** came from"* — written

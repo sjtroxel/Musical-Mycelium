@@ -860,7 +860,7 @@ export function GraphView({
             Those are corpus too, and no more part of this answer than the rest.
           </>
         )}
-        {graph.truncated && " The neighbourhood is larger than what is drawn here."}
+        {graph.truncated && " The neighborhood is larger than what is drawn here."}
         {/* Step 9, DoD 7. The encoding needs one sentence or it is decoration, and the sentence has
             to be conditional: on a map where nothing is marked, explaining a mark nobody can see
             would teach a visitor to look for something that is not there. When nothing is marked

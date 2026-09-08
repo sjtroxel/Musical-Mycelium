@@ -66,7 +66,7 @@ Four hops from bebop to physics. A second branch runs `music -> work -> artifici
 |---|---|
 | music of North America, music of Jamaica, music of Spain | geography |
 | popular music | market category |
-| club/dance music, theatre music | function |
+| club/dance music, theater music | function |
 | Christian music | religion |
 | polyphony | musical form |
 | musical drama | format |
@@ -269,7 +269,7 @@ re-admitted five edges a human had thrown out.
 ### 4.10 The shipped corpus — artifact v0.2.0
 
 138 accepted, minus 5 hand-rejected edges the check re-admitted, **= 133 edges over 169 genres.**
-`groove metal <- thrash metal` — §4.6's false rejection — is re-admitted and labelled `HAND`, because a
+`groove metal <- thrash metal` — §4.6's false rejection — is re-admitted and labeled `HAND`, because a
 human read the sentence.
 
 | verification | count | what it means |

@@ -327,7 +327,7 @@ concurrency, but it is not a correctness ceiling and should not be described as 
 | `src/musical_mycelium/ingest/artifact.py` | Artifact + manifest writer, sha256, immutability guard, hash verification. **Built 2026-08-02** |
 | `src/musical_mycelium/graph/schema.py` | **Added during the build, not in the original plan.** The artifact contract: `Node`, `Edge`, `Manifest`, `Artifact`. Lives in `graph` because `ingest -> graph` is the only safe direction |
 | `src/musical_mycelium/graph/store.py` | `GraphStore` protocol + the `Direction` enum. **Built 2026-08-02** |
-| `src/musical_mycelium/graph/memory.py` | `InMemoryGraphStore`, name normalisation, the memoised `default_store()`. **Built 2026-08-02** |
+| `src/musical_mycelium/graph/memory.py` | `InMemoryGraphStore`, name normalization, the memoised `default_store()`. **Built 2026-08-02** |
 | `src/musical_mycelium/agent/claims.py` | `ClaimProposal`, `Claim`, `Rejection`, `GateResult`, and the deterministic `gate()`. **Built 2026-08-02** |
 | `src/musical_mycelium/agent/tools.py` | `Tool` protocol, `ToolResult`, the two tools, the registry. **Built 2026-08-02** |
 | `src/musical_mycelium/agent/llm.py` | `build_llm()` + `BedrockLLM` (Converse/ConverseStream) + `ScriptedLLM`. **Built 2026-08-02; `BedrockLLM` unexecuted** |
@@ -393,7 +393,7 @@ response**, which surfaced three envelope fields the documented shape had not me
 `metrics` block, and cache-token keys). None broke the parser.
 
 **What step 1 did not prove.** It is a single turn. The loop above the seam was verified separately on
-2026-08-12; what remains untested is real-model *behaviour* measured across a set — refusal accuracy,
+2026-08-12; what remains untested is real-model *behavior* measured across a set — refusal accuracy,
 traversal recall, injection resistance as a rate — which is tracked in `docs/KNOWN-GAPS.md`, not here.
 
 ## 8. Testing
@@ -521,4 +521,4 @@ Steps 2 through 8 need no AWS. If the quota clears mid-build, step 1 slots in ah
 **What actually happened:** the quota did not clear mid-build. It cleared on 2026-08-11, after steps 2–8
 were complete and after phases 2 and 3's local work had shipped on top of them, so step 1 ran last of all.
 The ordering rule was never exercised and the plan still worked, because the thing it protected — not
-serialising the whole build behind an external dependency — was the part that mattered.
+serializing the whole build behind an external dependency — was the part that mattered.

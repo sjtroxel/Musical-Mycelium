@@ -123,7 +123,7 @@ is waiting on, so nothing here is a surprise later.
 | "Who influenced Kate Bush?" | A, **artist axis** | **Nothing — the axis shipped 2026-08-06, phase 2 step 6c.** But the query now **correctly refuses**, and that is the answer rather than a defect: Kate Bush has **zero outgoing P737 and seven incoming**, so the corpus records who *she* influenced and not who influenced *her*. See the note below. |
 | "What came out of Jamaican ska?" | A, descendants | Ska is absent entirely, and the descendant direction is not walked at v0.1 |
 | "Trace the roots of Brazilian tropicália." | A, origins | 1 edge, fails the prose check. Needs corpus expansion |
-| "How is the blues connected to heavy metal?" | **C, path** | **Nothing — delivered 2026-08-05, phase 2 step 5.** It answers end to end through `trace_lineage`, with both hops gated and cited. *(Corrected 2026-08-04: this said phase 5, written while `path()` was a phase-1 deferral. The ROADMAP assigns multi-hop traversal to phase 2; phase 5 consumes it for the guided tour.)* *(Amended 2026-08-02: the chain originally read through to `extreme metal`; that edge was rejected on hand-reading as taxonomic, so the path is two hops, not three.)* *(2026-08-05: typed verbatim, this query first **refused** — the node is labelled `heavy metal music` and 32 of 169 labels carry that suffix. `label_key` now makes a trailing "music" optional on both sides.)* |
+| "How is the blues connected to heavy metal?" | **C, path** | **Nothing — delivered 2026-08-05, phase 2 step 5.** It answers end to end through `trace_lineage`, with both hops gated and cited. *(Corrected 2026-08-04: this said phase 5, written while `path()` was a phase-1 deferral. The ROADMAP assigns multi-hop traversal to phase 2; phase 5 consumes it for the guided tour.)* *(Amended 2026-08-02: the chain originally read through to `extreme metal`; that edge was rejected on hand-reading as taxonomic, so the path is two hops, not three.)* *(2026-08-05: typed verbatim, this query first **refused** — the node is labeled `heavy metal music` and 32 of 169 labels carry that suffix. `label_key` now makes a trailing "music" optional on both sides.)* |
 
 **On the Kate Bush row, resolved 2026-08-07.** It had read "Blocked on: the ~31k artist-level P737 edges.
 Phase 2" since 2026-08-02, which was stale from the moment the axis landed — a canonical doc asserting a
@@ -254,7 +254,7 @@ implementing against the stale table would have built a two-value enum.)*
 
 It is **required, with no default**, and the tiers are ordered by strength but are **not points on one
 scale**. `HAND` and `ASSERTS_AUTO` rest on what a source *states*; `EXPOSURE_AUTO` rests on what a
-reader would reasonably *infer*, which is a different kind of claim and is why it is labelled rather
+reader would reasonably *infer*, which is a different kind of claim and is why it is labeled rather
 than merged. `PROSE_AUTO` is strictly weaker than `HAND`: the check confirms the article names the
 object in body prose but cannot judge whether the sentence *asserts* influence.
 
@@ -327,7 +327,7 @@ Relating two genres is still a capability *within* a component, and two nodes in
 still have no sourced path at all — the constraint did not disappear, it stopped being the dominant
 fact. `max_path_hops` is the deepest chain `path()` can return anywhere in the corpus. Publishing both
 is what keeps an empty answer legible as a **boundary rather than a failure** — which matters because
-refusal is correct behaviour here and has to be distinguishable from breakage.
+refusal is correct behavior here and has to be distinguishable from breakage.
 
 *(Values refreshed **2026-09-06**, measured. They read 41 / 31 / 10 / 2 at v0.2.0 and 169 / 458 / 16 / 6
 at v0.5.0, and the jump to 7 / 1,465 / 10 / 12 is **two separate causes, not one**: phase 6 step 2 added

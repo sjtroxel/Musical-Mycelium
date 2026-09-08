@@ -28,7 +28,7 @@ marketing word. Hard rules:
   of baseline~~ **in cases**. Everything else is tracked, not gated. A suite that blocks on everything
   gets disabled within two weeks; a suite that blocks on nothing gets ignored.
   *(The two "within 5pp" phrasings were abandoned as arithmetically unsatisfiable and the strikethroughs
-  are kept because the reason generalises. With 20 refusal cases one case IS 5pp, so a 5pp band cannot
+  are kept because the reason generalizes. With 20 refusal cases one case IS 5pp, so a 5pp band cannot
   fire on less than one case and one case already reaches it. Traversal is per case for a different
   reason — see the zero-variance trap below. **`traversal_precision` is measured and NOT gated**: its
   floor is 11.4pp, so a 5pp band there would fire on chance alone.)*
@@ -65,7 +65,7 @@ marketing word. Hard rules:
 
   **A second lesson from the same baseline: five runs is the floor for a reason.** `adv_018` failed runs
   1-3 and passed runs 4-5. Three runs would have recorded a coin as a reproducible failure — which is
-  exactly what the 2026-08-17 floor did to `gold_v0_1_020`'s neighbours and had to be corrected.
+  exactly what the 2026-08-17 floor did to `gold_v0_1_020`'s neighbors and had to be corrected.
 - **The judge must be validated and must not be the generator's family.** Hand-label 30 items, report
   judge-human agreement permanently next to every judged metric. An LLM-judge score with no measured
   agreement is decoration. Use a non-Anthropic model on Bedrock (Nova, Llama, Mistral, DeepSeek) to avoid

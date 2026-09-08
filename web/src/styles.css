@@ -127,7 +127,15 @@ code {
 }
 
 .masthead__tagline {
-  max-width: var(--measure);
+  /* Spans the column rather than the reading measure. Reported by sjtroxel 2026-09-08: at 1440px the
+     tagline and the footer both stopped at 544px while the lockup, the ask form, the chips and the
+     coverage panel all ran to 696px, so the page opened and closed 152px narrower than its middle and
+     the footer's rule visibly ended short of everything above it. Below ~34rem both were already full
+     width, which is why it read as a desktop-only fault.
+
+     Widening rather than narrowing the middle, because the page's own precedent is already full-width
+     small prose -- the coverage panel's paragraphs run the whole 696px at 0.85rem. `--measure` stays
+     what it is for the answer surfaces, where a claim list genuinely wants a short line. */
   margin: 0 0 2.25rem;
   color: var(--ink-soft);
 }
@@ -687,7 +695,8 @@ code {
 /* --- footer --- */
 
 .footer {
-  max-width: var(--measure);
+  /* Full column width -- see `.masthead__tagline`. The border-top is the visible half of that bug: a
+     rule capped at the reading measure reads as a rule that stopped, not as a measure. */
   margin-top: 3rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--rule);

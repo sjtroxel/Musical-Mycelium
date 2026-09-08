@@ -42,7 +42,7 @@ every future addition lands in a slot that already exists.
 
 **Two version lines, and they are independent.** The **product** version tracks phases; the **artifact**
 version tracks the corpus. They have now crossed — phase 3 ships product v0.3.0 against artifact v0.5.0 —
-so both columns are labelled. Reading one as the other is the confusion this header exists to prevent.
+so both columns are labeled. Reading one as the other is the confusion this header exists to prevent.
 *(Clarified 2026-08-07, phase 3 scope-doc amendment A3. Doc fix only.)*
 
 | Phase | Product version | Artifact pin | What thickens | Which seam absorbs it |
@@ -139,7 +139,7 @@ IMPLEMENTATION doc is deliberately not written yet.
 **The corpus has a second source, and `contested` is reachable.** Artifact **v0.7.1 is pinned** —
 `graph/memory.py:34`, `ingest/wikidata.py:59` and the SPA's `GRAPH_PIN` all read it. 1,479 nodes and
 5,066 edges, against v0.5.0's 973 and 950. The influence layer went 949 edges to **2,284** (measured 2026-09-06; 2,285 was the count before
-`c697712` honoured hand-rejected edges),
+`c697712` honored hand-rejected edges),
 components 169 to **7**, and the deepest chain 6 hops to **12**. Decision **A1 is closed by its own
 stated precondition arriving**: two pairs are now contested between sources.
 
@@ -277,7 +277,7 @@ single-turn, streaming with real usage, and a real tool-use turn — and as of 2
 on top of it is verified too: plan, multi-tool traversal, gate, synthesis and prose, end to end against a
 real model.
 
-*(Corrected 2026-08-24. This paragraph continued "What is not demonstrated is real model behaviour
+*(Corrected 2026-08-24. This paragraph continued "What is not demonstrated is real model behavior
 **measured across a set**: refusal accuracy, traversal recall and injection resistance are recorded only
 against scripted traces." **That has been false since 2026-08-16.** Phase 4 measured all three against a
 live model over the 41-case development set, took a noise floor over five identical runs, ran a judged
@@ -350,7 +350,7 @@ not.)*
   `make tf-apply` / `make tf-destroy` run exactly those. The wrappers are now denied and the Makefile
   targets refuse to guess `image_tag`, `llm_provider` or `reserved_concurrency` rather than defaulting
   them — all three defaults disagreed with the live stack. **The guard inside the thing being run is the
-  half that cannot be routed around by invoking it differently**; the deny pattern is defence in depth.
+  half that cannot be routed around by invoking it differently**; the deny pattern is defense in depth.
 - **2026-08-09 — Delimiting untrusted text needs a return path.** Marking tool payloads without stripping
   the marks off *incoming* tool arguments breaks the walk it was protecting: a model hands a wrapped node
   id straight back and every id-taking tool answers `unknown node`. Found by building phase 3 step 5.
@@ -474,9 +474,9 @@ not.)*
   "grounded slides into correct" failure `CLAUDE.md` forbids. The accepted consequence is that artifact
   `v0.1.0` no longer loads and raises loudly rather than degrading quietly.
 - **2026-08-04 — The gold set was re-pinned to `v0.2.0`, not re-authored.** Safe only because the
-  neighbour set of all five case subjects is identical under both corpora, checked pair by pair rather
+  neighbor set of all five case subjects is identical under both corpora, checked pair by pair rather
   than assumed. The file now carries a `repin_history` note stating the rule for next time: **if a
-  corpus change moves any case's neighbours, re-author rather than re-pin** — re-pinning past a real
+  corpus change moves any case's neighbors, re-author rather than re-pin** — re-pinning past a real
   divergence is how a benchmark silently stops measuring anything.
 - **2026-08-05 — Diameter and path depth are different measurements, and the plan conflated them.**
   Phase 2 §4.4 carried "diameter 14 hops" forward as the traversal depth available to `path()`.

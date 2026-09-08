@@ -35,7 +35,7 @@ it lands, "deployed on AWS Lambda and Bedrock" is not claimable.
 Verified 2026-08-24: `api/app.py` registers exactly two routes, `/health` and `/lineage`. `/lineage`
 streams a *trace* — `plan`, `tool`, `claim`, `rejected`, `path`, `token`, `done` — from which a client can
 reconstruct the walked path and the approved claims. That is enough for DoD #3. It is **not** enough for
-DoD #4's *follow an edge*, which needs neighbour data the stream never sends.
+DoD #4's *follow an edge*, which needs neighbor data the stream never sends.
 
 Resolved without a backend edit: the pinned artifact is **640 KB raw, 56 KB gzipped**, so the whole graph
 ships to the browser as a static asset and the map is client-side. Pan, zoom and follow-edge then cost

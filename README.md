@@ -16,7 +16,7 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`, `v0.6.0`, `v0.6.5`). **The deployed site is the `v0.6.0`
 build** — phase 6.5 changed the agent, the datasets and the eval gates, and deploying it is a decision
 not yet taken. The live URL serves the SPA at artifact **v0.7.1**
-— a streaming cited answer, an explorable map of the neighbourhood around it, and a coverage panel that
+— a streaming cited answer, an explorable map of the neighborhood around it, and a coverage panel that
 states what the corpus does not hold. Phase 6 gave the corpus a **second, independent source**, which is
 what makes disagreement between sources detectable at all: **82 of 2,284 influence edges carry a second
 source and 2 pairs are contested.** What it did **not** do is make an answer able to say so — that is
@@ -66,8 +66,8 @@ Two things are deliberately not done, and saying so is the point of this section
   pairs are derived in `graph/`, served by the corpus summary and shown in the coverage panel. **The
   agent does not read them, no answer will tell you a lineage is disputed, and no eval case exercises
   it.** That is the honest state after phase 6 and it is scheduled work, not a claim in waiting.
-- **Coverage generalisation is untested, and the held-out run is a single observation.** Real-model
-  behaviour *is* now measured rather than demonstrated: 45 development cases against a live model, a
+- **Coverage generalization is untested, and the held-out run is a single observation.** Real-model
+  behavior *is* now measured rather than demonstrated: 45 development cases against a live model, a
   noise floor taken over five identical runs, a judged tier 2 pass with judge-human agreement reported as
   a range beside every judged number, and a sealed held-out set opened once, on 2026-08-24, that came
   back 10 of 10 with every metric matching the development set. That is a real negative on the
@@ -80,7 +80,7 @@ Two things are deliberately not done, and saying so is the point of this section
   set cannot answer "does this hold up on older or non-Western material." That question is open, not
   passed. **Both that run and the noise floor were measured at artifact v0.5.0**, and the corpus is now
   v0.7.1 — roughly three times larger. Neither has been re-measured against it, so no movement in a
-  v0.7.1 number can currently be called noise, and held-out generalisation is untested at this corpus
+  v0.7.1 number can currently be called noise, and held-out generalization is untested at this corpus
   rather than passed on it.
 
 **Coverage is a computed number, not a disclaimer.** The corpus skews Western, anglophone and recent, and

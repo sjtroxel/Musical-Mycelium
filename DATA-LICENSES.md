@@ -1,7 +1,7 @@
-# Data licences
+# Data licenses
 
 `LICENSE` is MIT and covers **the code**. It does not cover the corpus, and from artifact **v0.7.0** the
-corpus is no longer under a single licence: it is a mixture of CC0 and CC BY-SA material. This file says
+corpus is no longer under a single license: it is a mixture of CC0 and CC BY-SA material. This file says
 which parts are under which, because stating it now is cheap and stating it later is awkward —
 `docs/planning/04-RISK-REGISTER.md` §4.3 predicts exactly that.
 
@@ -9,7 +9,7 @@ Written 2026-09-04, at phase 6 step 4, when DBpedia became the second source.
 
 ## What is in the artifact, and under what terms
 
-| part | source | licence | attribution carried |
+| part | source | license | attribution carried |
 |---|---|---|---|
 | Genre and artist **nodes** — id, label, inception, country | Wikidata | **CC0 1.0** (public domain dedication) | `source_id` (QID) + `revision_id` |
 | `influenced_by` edges from **P737** | Wikidata | **CC0 1.0** | `source_id` = statement URI |
@@ -36,7 +36,7 @@ carry a date from that field and 91 a country — values Wikidata's `P571` and `
 Those are **facts extracted from CC BY-SA 4.0 text**, not prose copied from it, and each carries the
 article URL in `infobox_source` as the attribution and link back. They are deliberately in their own
 fields rather than merged into `inception_year` / `countries`, which remain Wikidata-only — so the
-licence of any given value is determined by which field it sits in, not by inspection.
+license of any given value is determined by which field it sits in, not by inspection.
 
 **Article prose itself is still not stored in the artifact** — `graph.json` holds identifiers, labels,
 dates and countries, and no sentences.
@@ -68,10 +68,10 @@ answer. It is recorded as named uncertainty §9.1 in
 
 The position taken is the conservative one, and it is defensible however the question resolves:
 
-- per-source licences are stated (this file),
+- per-source licenses are stated (this file),
 - every CC BY-SA row carries a resolvable link back to its source,
 - the attribution is displayed in the product rather than buried,
-- and the code licence is left alone, because MIT covers the code and the code is not derived from
+- and the code license is left alone, because MIT covers the code and the code is not derived from
   DBpedia.
 
 Worth a real answer before v1.0. It is not worth guessing at now.

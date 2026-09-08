@@ -67,7 +67,7 @@ set and it cannot take a provider. Rather than widen it, extract what is general
 - **`harness.py` delegates to it**, still passing a `ScriptedLLM` built from `build_script`. Its public
   surface and its recorded baseline do not change.
 - **The lock — and this paragraph was wrong, corrected as-built 2026-08-15.** The plan said the baseline
-  drift test would catch any behaviour change in the extraction. **It does not.** Breaking the lock
+  drift test would catch any behavior change in the extraction. **It does not.** Breaking the lock
   deliberately, as the practice requires, is what found this: a runner perturbed to drop the last node
   from every walked path **passed all 852 tests**. `CaseOutcome.visited` is recorded and read by nothing
   — the same root cause as `traversal_recall` never having been scored on any run until 2026-08-12.
@@ -145,7 +145,7 @@ its first JSON field — and the real-model numbers are a separate, stored, manu
   `eval/gold.py`, mirroring what `harness.py` already is for the adversarial 18. Recorded rather than
   made silently.
 - **`traversal_recall` and `traversal_precision` are degenerate under scripting, and the reason is a real
-  finding about the gold set.** `expected_path` turns out to be exactly the one-hop neighbourhood of the
+  finding about the gold set.** `expected_path` turns out to be exactly the one-hop neighborhood of the
   subject on all 25 cases, so a single correct tool call reaches all of it with zero off-path visits.
   The trace policy is uniform and provably cannot read `expected_path` — `test_the_trace_policy_cannot_
   see_the_answer` mutates the field and asserts the script does not move — but non-circularity is not
@@ -163,7 +163,7 @@ its first JSON field — and the real-model numbers are a separate, stored, manu
 
 Three new locks were broken deliberately and watched to fail before being restored, per §7: the
 non-circularity mutation lock, `report.py`'s unmarked-scripted guard, and the budget's abort-not-skip
-behaviour. `make check` is 909 passed, 0 skipped, 7 `costs_money` deselected. Root unchanged at 15/18.
+behavior. `make check` is 909 passed, 0 skipped, 7 `costs_money` deselected. Root unchanged at 15/18.
 
 ### Step 4 — The first billable run (spend, gated)
 
@@ -196,7 +196,7 @@ one command plus one typed word when he sits down to it.
 
 **Measured, replacing the estimate this doc previously had no basis for.** Instrumenting the
 scripted run for real payload sizes: gold is 122 requests / ~149k input tokens, adversarial 57 /
-~76k — and that is the *floor*, since the scripted trace makes two tool calls per case. Modelling a
+~76k — and that is the *floor*, since the scripted trace makes two tool calls per case. Modeling a
 real model at 5–6 turns puts the run at roughly **250–450 requests and 450k–700k input tokens: about
 25–45 minutes of wall clock at 10 RPM, and well under $2.** The `$5–25/run` figure in
 `planning/03` §3.2 and `04` §258 is a *judged*-run number inherited from Patchwork and does not
@@ -213,7 +213,7 @@ run has no TTY and is refused).
 ### Step 4, as-built — the first live run, 2026-08-16
 
 **41 cases, 183 requests, 287,196 tokens (269,547 in / 17,649 out), ~17 minutes, about $0.36.** The
-prompt estimated 287 requests and 29 minutes; the model was ~60% more efficient than modelled, and the
+prompt estimated 287 requests and 29 minutes; the model was ~60% more efficient than modeled, and the
 estimate constants in `live.py` are left deliberately conservative rather than tuned down to match one
 run. `complete: true`, nothing truncated.
 
@@ -240,7 +240,7 @@ The other failure, `gold_v0_1_020`, is a false refusal on the seven-node `femtan
 case. Verified against the corpus: both endpoints resolve exactly and `trace_lineage` returns all seven
 nodes with six proposals, so **the tools could answer it completely.** The model visited one node and
 stopped with zero proposals reaching the gate — a model failure, not a corpus gap, and plausibly the
-same behaviour as the 11 under-executing plan divergences.
+same behavior as the 11 under-executing plan divergences.
 
 **A metric bug the run found in itself.** `traversal_precision` reported 81.9%; the true figure is
 100%. The adversarial set carries no `expected_path`, so precision divided by `len(visited)` — nonzero
@@ -395,7 +395,7 @@ answer — it never raises, because no provenance failure is worth losing a bill
 is the 18pp `traversal_precision` gap between runs 1 and 2: **that gap was a metric fix landing between
 them, not the model**, and nothing in either file said so. Both declare the same dataset, model and
 artifact. `noise.py` now refuses to pool runs whose revisions disagree, and marks the floor
-**provisional** when a revision is `unknown` or dirty — two runs both labelled `24517e1-dirty` can have
+**provisional** when a revision is `unknown` or dirty — two runs both labeled `24517e1-dirty` can have
 come from entirely different working trees, so a matching label is not an identity.
 
 Confirmed against the two real runs before writing this: pooled by hand they reproduce 6.5pp on
@@ -506,7 +506,7 @@ for `traversal_recall` and the true-refusal rate.
 - **Rubric in version control** at `src/musical_mycelium/eval/rubrics/`, with concrete anchors per score
   level, next to the code.
 - **30 hand-labeled items, blind, labeled by him.** This is the phase's only real block on his time.
-  **Cadence, reusing what worked for all 25 gold cases: one item at a time, one judgement each, from a
+  **Cadence, reusing what worked for all 25 gold cases: one item at a time, one judgment each, from a
   draft I pre-fill, never typing JSON.** Labels are collected before the judge is ever run on them.
 - **Agreement is measured and reported permanently**: raw agreement and Cohen's kappa, printed next to
   every judged metric. Enforced structurally — `report.py` raises if asked to render a judged number with
@@ -542,7 +542,7 @@ prose would be the same category error step 5 caught with `SCRIPT_DETERMINED`.
 
 **The cadence contract for 7b, and it is binding on the harness built in 7a:**
 
-- **One item at a time, one judgement each, from a draft I pre-fill. He never types JSON and never types
+- **One item at a time, one judgment each, from a draft I pre-fill. He never types JSON and never types
   a QID.** This is the cadence that carried all 25 gold cases on 2026-08-14 and it is the only reason
   30 items is tractable.
 - **Labels are written after each item, not at the end of the sitting.** A session that dies at item 7
@@ -578,7 +578,7 @@ the catalog scores that answer perfectly.** This is the only place in the suite 
 overstate the evidence" is asked at all. The rubric states both the question and the three things it
 explicitly does not ask, so the divergence from `07` is visible where the scoring happens.
 
-**One item is one answer plus one focus claim, and it carries two judgements.** Citation support is a
+**One item is one answer plus one focus claim, and it carries two judgments.** Citation support is a
 per-claim question (`07` §4.4 samples claims) and narrative quality is a per-answer one; pooling them
 separately would have meant 60 items. Reading the answer is what costs time, not answering two questions
 about it, so one screen carries both and each metric gets its own n=30 — which is exactly what §6 asks
@@ -590,7 +590,7 @@ case once before it takes any case twice, so two runs give 30 items with maximum
 **refuses to build short** unless told to — a smaller n travels with every judged number permanently and
 should be a decision, not a side effect.
 
-**A scripted transcript is refused as a pool source.** `ScriptedLLM` synthesises the fixed string
+**A scripted transcript is refused as a pool source.** `ScriptedLLM` synthesizes the fixed string
 `A grounded answer.`, so a pool built from one would have a human and a model scoring narrative quality
 on a stub and produce an agreement figure that is real, reproducible, and about nothing. Same family of
 error as gating a scripted run on a live-derived traversal number.
@@ -638,7 +638,7 @@ Files: `eval/transcripts.py`, `eval/labelling.py`, `eval/agreement.py`, `eval/ju
 
 1. **The cadence in this doc was wrong for 7b and a later session had already corrected it.** "From a
    draft I pre-fill" was written for the gold set, where the drafts were *lookups he verified*. Here
-   the draft would be the judgement — the thing being measured. KNOWN-GAPS narrowed it to **no
+   the draft would be the judgment — the thing being measured. KNOWN-GAPS narrowed it to **no
    pre-filled scores**; an assistant read this doc, not that one, and anchored two labels before the
    correction landed. **When this doc and KNOWN-GAPS disagree, KNOWN-GAPS is newer and governs.**
 2. **Nothing bound the labels to the rubric, and this doc's own rewrite budget is what made that
@@ -646,7 +646,7 @@ Files: `eval/transcripts.py`, `eval/labelling.py`, `eval/agreement.py`, `eval/ju
    judge-only re-run yields a kappa between a human who read v1 and a judge who read v2, looking
    entirely normal. `Labels.rubric_sha256` now closes it, and the open question it exposes — does a
    rewrite mean re-judging or relabeling — is his to answer, not the code's to answer silently.
-3. **The judged half needed a prompt-injection defence and only a live run revealed it.** The pool
+3. **The judged half needed a prompt-injection defense and only a live run revealed it.** The pool
    contains the adversarial set, and `build_prompt` passed a planted injection into the judge under
    `QUESTION ASKED`. The judge mis-attributed the injected text to the answer. **The agent resisted the
    same injection cleanly** — the judge was the weaker half, and no amount of desk review had found it.
@@ -663,7 +663,7 @@ in `docs/KNOWN-GAPS.md` and are not restated here.** Three things this step taug
 
 1. **The judge is not deterministic at temperature 0, and this is now measured.** Runs 2 and 3 were
    produced from byte-identical prompts — `input_tokens` 67,030 in both, to the token — and disagreed on
-   3 of 30 `citation_support` judgements and 7 of 30 quality scores. `JUDGE_TEMPERATURE = 0.0` is set,
+   3 of 30 `citation_support` judgments and 7 of 30 quality scores. `JUDGE_TEMPERATURE = 0.0` is set,
    applied by role, and sent; it suppresses sampling and does not guarantee determinism on hosted
    inference. **Consequence for anything this phase reports: a judged figure is a range, not a point** —
    kappa 0.44–0.48 and 0.66–0.73 — and the qualitative band, which held across all three runs, is the
@@ -870,7 +870,7 @@ committed and whose output is generated rather than authored.
 
 **Four locks, not one, because the four leak paths are different and a single guard would have to be
 right about all of them.** Each was verified by breaking it deliberately, watching the test fail, and
-restoring — the practice from 2026-08-14, and the only defence against this repo's named failure mode.
+restoring — the practice from 2026-08-14, and the only defense against this repo's named failure mode.
 
 | lock | closes | broken deliberately |
 |---|---|---|
@@ -959,7 +959,7 @@ the limits below before quoting any of it.**
 **The set is now spent for this freeze, and the condition for ever running it again is written into
 `.claude/rules/heldout-set.md`:** it may be re-run at a future freeze **only if nothing was tuned in
 response to this result.** Every run after the first must be reported with the run count. A set re-run
-after a change made because of what it said has stopped measuring generalisation and started measuring
+after a change made because of what it said has stopped measuring generalization and started measuring
 how many attempts it took.
 
 ## 4. Explicitly not in this phase
@@ -1032,7 +1032,7 @@ docs/eval-suite-explained.md           the plain-English write-up (§11), writte
   judged number without an agreement figure, and that the held-out writer cannot emit case content.
 - **Break every new lock deliberately, once.** The baseline drift test, the budget abort, the agreement
   guard, the held-out allowlist. Watch each fail, then restore. This is the practice that worked on 8/14
-  and it is the only reliable defence against the repo's named failure mode — assertions written from a
+  and it is the only reliable defense against the repo's named failure mode — assertions written from a
   mental model and never executed.
 - **Attack the metrics.** The difflib coverage bug is the precedent. Specifically: an empty output must
   not score 100% groundedness (already guarded), a run of zero cases must not report 100% anything, and a
@@ -1103,6 +1103,6 @@ on real model output — all closing together at step 4.
 
 Written as the phase goes, not reconstructed after, per the `start-a-phase` skill: a short jargon-free
 explanation of what an eval suite is, why a graph you own makes correctness a dictionary lookup instead of
-a judgement call, and why a score with no measured noise floor and no measured judge agreement is not a
+a judgment call, and why a score with no measured noise floor and no measured judge agreement is not a
 score. Lands in `docs/` alongside the phase docs. This is the cold-articulation rep and it is the part
 that is genuinely hard to rebuild months later.

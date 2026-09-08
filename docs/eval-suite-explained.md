@@ -27,7 +27,7 @@ soft.
 
 This project mostly does not have to. **We own the graph.** Every influence edge in it came from
 Wikidata, and it is sitting in a file we control. So when the agent claims "bebop was influenced by
-swing", checking it is not a judgement call. It is a dictionary lookup: is that edge in the file, yes or
+swing", checking it is not a judgment call. It is a dictionary lookup: is that edge in the file, yes or
 no.
 
 That one property turns the headline correctness measures into free, instant, deterministic checks:
@@ -95,7 +95,7 @@ development set. That is a real negative on the overfitting question, and it is 
 than a rate: with two refusal cases and no error bar, one flip moves that metric fifty points. The rule
 written afterwards is that the set may only be run again at a future freeze, and only if nothing was
 tuned in response to what it said - because a set re-run after a change made because of its own result
-has stopped measuring generalisation and started measuring how many attempts it took. Two things it
+has stopped measuring generalization and started measuring how many attempts it took. Two things it
 cannot tell us at all: nothing was planted in it, so injection resistance has no held-out evidence; and
 nine of its ten subjects carry no date and no stated region, so it cannot answer whether the system holds
 up on older or non-Western material. That question is open, not passed.
@@ -132,7 +132,7 @@ Two things genuinely cannot be checked by lookup: whether a citation actually *s
 is attached to, and whether the prose is any good. Those are judged by a second model - deliberately a
 non-Anthropic one, so it is not grading its own family's work.
 
-And a judge with no measured agreement is decoration. So 30 items were hand-labelled by the project's
+And a judge with no measured agreement is decoration. So 30 items were hand-labeled by the project's
 author, and the judge was run against those same 30 to see how often it agreed. That agreement figure is
 **printed next to every judged number, permanently**, and the code refuses to render a judged score
 without it.
