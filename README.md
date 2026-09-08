@@ -12,8 +12,10 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-09-06. Phases 0 through **6** are complete and
-tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`, `v0.6.0`). The live URL serves the SPA at artifact **v0.7.1**
+**Deployed, and honestly incomplete.** Last updated 2026-09-07. Phases 0 through **6.5** are complete and
+tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`, `v0.6.0`, `v0.6.5`). **The deployed site is the `v0.6.0`
+build** — phase 6.5 changed the agent, the datasets and the eval gates, and deploying it is a decision
+not yet taken. The live URL serves the SPA at artifact **v0.7.1**
 — a streaming cited answer, an explorable map of the neighbourhood around it, and a coverage panel that
 states what the corpus does not hold. Phase 6 gave the corpus a **second, independent source**, which is
 what makes disagreement between sources detectable at all: **82 of 2,284 influence edges carry a second

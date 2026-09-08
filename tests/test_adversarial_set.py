@@ -350,10 +350,16 @@ def test_the_ambiguous_branch_is_still_unreachable(store: InMemoryGraphStore) ->
     - the lock is **kept, not deleted**, and now names the one collision the corpus actually has, so a
       *second* one fails here instead of hiding behind the first -- the same shape as the named Nine
       Inch Nails edge in ``test_graph_store``;
-    - **authoring real ambiguity cases is now possible and is owed.** The two ``near_miss_substitution``
-      cases are still written against the reachable "no exact match" branch and remain valid; what is
-      missing is a case that exercises the ``ambiguous`` branch with a query a real user would type.
-      That is dataset authoring and it belongs to sjtroxel.
+    - ~~**authoring real ambiguity cases is now possible and is owed.**~~ **DONE 2026-09-07, phase 6.5
+      step 5: ``adv_020``**, "Where did big band come from?", in its own ``ambiguous_resolution`` group
+      of one -- deliberately one, because exactly one ``label_key`` collision exists and a group of one
+      is honest about how thin the branch is. The two ``near_miss_substitution`` cases are still written
+      against the reachable "no exact match" branch and remain valid; ``adv_019`` joined them for a
+      third mechanism, a model transcribing the wrong one of two names that BOTH resolve.
+
+      **This bullet said "is owed" for a day after it was paid.** Left visible rather than deleted: an
+      instruction that outlives its task is the defect this repo keeps catching, and the record of one
+      is more use than a clean line.
     """
     by_key: dict[str, list[str]] = defaultdict(list)
     for node in Artifact.load(artifact_directory()).nodes:

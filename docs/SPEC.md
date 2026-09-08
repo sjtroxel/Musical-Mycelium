@@ -156,7 +156,8 @@ Three things this section predicted correctly and one it did not:
 - The Kate Bush follow-up landed exactly as the paragraph above proposed: **the refusal and the
   descendants query are one chip, run in sequence on a single click.** `get_descendants` shipped with
   phase 3, so nothing blocked it.
-- Every "blocked on a second source" row is still blocked, and none of them is on the screen.
+- Every "blocked on a second source" row was still blocked, and none of them was on the screen.
+  **UNBLOCKED 2026-09-07 — see the amendment below.**
 
   > **Amended 2026-09-06, phase 6 step 10 — the blocker is half gone, and only half.** DBpedia landed at
   > artifact v0.7.0, so **the corpus now holds disagreement: 82 corroborated edges and 2 contested
@@ -164,8 +165,16 @@ Three things this section predicted correctly and one it did not:
   > `contested` is derived in `graph/`, served by the corpus summary and drawn in the coverage panel as a
   > **corpus-level statistic**, and **nothing in `agent/` read it**. A chip is a query, a query produces
   > an answer, and no answer could say the sources disagree. **Closed 2026-09-07, phase 6.5 step 4** — an
-  > answer that crosses a contested pair now emits a `contested` event. Until it
-  > lands, these rows stay blocked and the reason recorded here is the accurate one.
+  > answer that crosses a contested pair now emits a `contested` event, and `contested_disclosure` gates
+  > that it never happens silently.
+  >
+  > ~~Until it lands, these rows stay blocked and the reason recorded here is the accurate one.~~
+  > **That sentence was correct when written and became an ORDER TO STATE SOMETHING FALSE the moment
+  > step 4 landed — caught at the 2026-09-07 handoff, hours after a half-edit had corrected the clause
+  > above it and left this one standing.** It is the same defect phase 6 step 10 recorded about
+  > `169 disjoint components`, committed again by the person who wrote that record. A stale instruction
+  > is invisible to a grep for the fact it protects, because it reads as guidance. **These rows are no
+  > longer blocked.**
 - **U2 is not on the chip row.** The paragraph above says it "answers with six gated claims"; the
   artifact holds **nine** incoming edges for `Q396` today. Not a contradiction — claims are what survives
   the gate, not what the graph holds — but the two numbers are counting different things, and the chip
@@ -175,6 +184,12 @@ Three things this section predicted correctly and one it did not:
   > a chip-selection call, not a contract change, and the strongest candidate for it is a **contested**
   > chip that cannot be built yet. Filling it now with an ordinary artist would spend the slot on the
   > weaker demo a fortnight before the better one becomes possible.
+  >
+  > **THE BLOCKER IS GONE AS OF 2026-09-07.** A contested chip is now buildable: ask
+  > *"Where did electropop come from?"* and the answer carries a `contested` block naming both
+  > directions and both sources. The slot is **still open and still his call** — this note only records
+  > that the reason for waiting has expired, and that the better demo the 2026-09-06 note was holding
+  > the slot for now exists. It is a natural candidate for phase 7.
 
 One line, because a scope fence does more work than a feature list:
 

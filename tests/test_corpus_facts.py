@@ -101,8 +101,9 @@ def test_most_of_the_corpus_records_no_influences(
 
     **The underlying argument survives and the WORD does not.** Nearly half the corpus recording nothing
     still makes a missing edge weak evidence of a missing influence. But any copy saying "most" is now
-    wrong, and rewriting it is owed at step 8 -- DoD #8, arriving from the unfamiliar direction of copy
-    that *understates* the corpus rather than overstating it.
+    wrong, and rewriting it ~~is owed at step 8~~ **was done at phase 6 step 8** -- DoD #8, arriving
+    from the unfamiliar direction of copy that *understates* the corpus rather than overstating it.
+    ``StepPanel.tsx`` now records that the word is no longer available and why.
     """
     share = facts["nodes_without_recorded_influences"] / len(node_ids)
     assert 0.4 < share < 0.5, (
@@ -220,8 +221,13 @@ def test_the_corpus_is_thin_in_the_way_the_panel_says_it_is(
       v0.5.0 had before the membership crawl. The commonest genre once again has exactly one recorded
       connection, and it got there by the zero bucket shrinking rather than by anything moving up.
 
-    Every one of those is copy on a screen, and rewriting it is owed at step 8. This is the corpus
-    outgrowing its own disclaimers, which is a better problem than the reverse and still a problem.
+    Every one of those is copy on a screen, and rewriting it ~~is owed at step 8~~ **was done at phase
+    6 step 8**. This is the corpus outgrowing its own disclaimers, which is a better problem than the
+    reverse and still a problem.
+
+    *(Both "is owed" lines in this file survived their own completion by a phase and were caught at the
+    2026-09-07 handoff. An instruction that outlives its task reads as guidance and is invisible to a
+    grep for the fact it protects -- the defect this repo keeps re-catching, in a third file.)*
     """
     density = facts["density"]
     total = len(genre_degrees)

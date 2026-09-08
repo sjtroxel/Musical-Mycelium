@@ -1,160 +1,38 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-06
+> ## START HERE — where things stand, 2026-09-07
 >
-> **PHASE 6 IS BUILT — steps 0 through 10 are all done.** What remains of it is **the `v0.6.0` tag and
-> the deploy**, both deliberately deferred on 2026-09-06, plus step 9's three open decisions. The
-> as-builts are `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0 and §10.0.
-> **`docs/phases/phase-6.5-debt-and-disagreement.md` is the next phase and the authority on what phase 6
-> could not close** — its DoD #6 forbade agent edits and phase 7's scope doc refuses the work outright.
-> **Measured 2026-09-06, not recalled:** `make check` **1330 passed, 1 xfailed** (deliberate — the live
-> gateability lock, see the step 9 section), 14 deselected, mypy clean over 98
-> source files, frontend **159 passed** across 15 files, root 17 of 18. The **scripted** every-commit
-> gates inside `make check` are **3 passed / 0 failed / 2 N/A** and are unaffected by any of this — the
-> **live** suite is the one that now matches no threshold set. Do not read one for the other.
+> **PHASE 6.5 IS COMPLETE — steps 0 through 8, all on 2026-09-07 — and `v0.6.5` is tagged and pushed.**
+> All ten DoD items are closed. The as-built is
+> `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`; the section below summarises it and
+> **that doc is the authority**. **`docs/phases/phase-7-polish-and-portfolio.md` is the next phase.**
 >
-> **Three things that are easy to get backwards:**
+> **Measured 2026-09-07, not recalled:** `make check` green — **1461 passed, 0 xfailed**, 14 deselected,
+> mypy clean over **99** source files, frontend **168 passed** across 16 files, root **17 of 18**.
+> Datasets: gold **38**, adversarial **20**, live **56**.
 >
-> 1. **DO NOT DEPLOY is LIFTED — step 8, 2026-09-05.** Both pins read `0.7.1`: the backend in
->    `graph/memory.py` and `ingest/wikidata.py`, the SPA through `GRAPH_PIN` in `graph/staticGraph.ts`,
->    with `web/public/graph/v0.7.1/` staged. **The line "the frontend pin deliberately lags at 0.5.0" is
->    stale — never write it again.** A deploy is still a step 10 act, not a casual one.
-> 2. **`contested` is REACHABLE and means two DIFFERENT sources disagree.** 6 reciprocal pairs, only
->    **2** contested. "A reciprocal pair exists" overcounts by 3x.
-> 3. **THE LIVE SUITE GATES NOTHING RIGHT NOW, and the 9/6 run cleared nothing.** `thresholds.py` picks
->    a set by `case_count` before any denominator check: the baseline is 41 cases, the run scored 45, so
->    **`NOT GATED` — zero of five evaluated.** `edge_groundedness` 100% and `citation_resolution` 100%
->    are observations, not passed gates. Four extra gold cases did this. **Editing `case_count` or
->    `expected_refusals` to make the set match is not on the table** — see the step 9 section.
+> **THE FOUR THINGS A COLD SESSION IS MOST LIKELY TO GET WRONG:**
 >
-> ### Done 2026-09-06
+> 1. **There are SIX gates, not five, and the LIVE suite gates again.** Bounds were re-measured over
+>    five identical runs of the 56-case set ($2.61, ~2.4 hours) and all five pass all six. Scripted
+>    every-commit gates read **4 passed / 0 failed / 2 N/A of six**.
+>    `eval/thresholds.py:GATE_NAMES` is the authority on the count — do not write a number in prose.
+> 2. **`traversal_recall` at 97.1% is NOT a stable metric.** It read identically in all five runs
+>    because 37 cases score perfectly every run and `gold_v0_1_020` fails identically every run. It is
+>    gated **per case over those 37**, never as a band. This is the second time this trap has been
+>    caught here.
+> 3. **`gold_v0_1_020` is diagnosed, not mysterious.** The model types *fentanyl* for *femtanyl*. The
+>    corpus, `store.path()` and every tool answer it correctly in one call. It is excluded from the
+>    refusal and traversal gates with the cause recorded, and **it is still in the dataset and still
+>    scored**.
+> 4. **A near-miss resolver was measured and REJECTED.** Eight real label pairs sit one edit apart,
+>    including `Joy Orbison`/`Roy Orbison`. Do not re-propose it without reading that measurement.
 >
-> 1. **Deny lines for `make eval-judge`, `make eval-tier2`, `make eval-heldout`** — all three spend money
->    and none was denied, while `Bash(make *)` is allowed. `eval-heldout` was the one that mattered: it
->    spends money *and* touches the sealed set.
-> 2. **The stale "step 8 is next" text cleared** — this block and `ROADMAP.md`.
-> 3. **Tier 1 live at v0.7.1 (45 cases, `62a949e`) and judged tier 2 (20 items, Nova Pro).** Both clean,
->    both recorded. Tier 1's result is **gitignored by design** (`.gitignore:79`), so its numbers survive
->    only in the step 9 section — the tier 2 result and the transcript are committed.
+> **The held-out set was NOT run and stays sealed** — pinned 0.5.0, run count **1**. Default: do not run.
 >
-> ### THE THREE OPEN DECISIONS — his, none urgent, none made
->
-> 1. **The live threshold set (§9.4).** Leave the suite un-gated on live runs and say so in the release,
->    or spend ~$2.50 on five runs to measure a v0.7.1 baseline. Not a threshold edit either way.
-> 2. **The noise floor (§9.5)** — stale at v0.5.0 / `f84453a`. The same five runs buy both this and #1.
->    Until re-measured, **no v0.7.1 movement may be called noise.**
-> 3. **The held-out set (§9.7)** — untouched on 9/6, never read, still pins `0.5.0`. Run once, 2026-08-24,
->    10/10. The default remains **do not run it**, and to state that generalisation is untested at v0.7.1.
->
-> ### Owed — NOW SCHEDULED INTO PHASE 6.5, scoped 2026-09-06
->
-> **`docs/phases/phase-6.5-debt-and-disagreement.md` is the authority on all of this**, including which
-> items are deliberately out and which are decisions rather than tasks. It exists because phase 6's DoD #6
-> forbids agent edits and phase 7's scope doc refuses the work outright, so the debt had nowhere to live.
-> §10 of that doc is the full inherited inventory with a disposition against every line. **Read it rather
-> than re-deriving this list.** The one item that stays with phase 6 is the step 10 copy sweep.
->
-> - **Gold cases whose subjects are `dbpedia_only`.** The slicing audit measured the gold set
->   over-sampling the Wikidata half **~12x** — see the step 7 section. Real authoring; five cases were
->   proposed and deferred on purpose.
-> - **The two contested gold cases** — electropop/electroclash and western music/New Mexico music. **STILL
->   BLOCKED, and step 8 did NOT unblock them** (checked 2026-09-06, after this file briefly said it had).
->   Step 8 shipped a **corpus-level** contested display in `CoveragePanel`; `agent/loop.py` and the
->   synthesis path never read `corroboration`, so an answer still cannot say the sources disagree. The
->   enabling piece is an agent change, which **DoD #6 forbids this phase**. Phase 7 at the earliest.
-> - **A case exercising the `ambiguous` branch**, now that `big band` / `big band music` made it
->   reachable.
-> - **The `ResolveSource` tool cannot verify a DBpedia URI** — needs a reverse lookup `GraphStore` does
->   not expose.
-> - **The step 10 copy sweep.** Step 8 fixed the three SPA sentences its own changes falsified (§8.8);
->   the full DoD #8 pass across docs, README and rules is still owed.
-
-Written 2026-08-12, at the phase 3 release step. Required by
-`docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §5.1, which asks that the tag ship with the open items
-named and the residual gaps stated plainly.
-
-**Updated 2026-08-14** when the gold set was completed and again when the held-out 10 was drawn and
-sealed, and **2026-08-16** at phase 4 steps 3 and 4. Every claim below was re-derived against the repo
-rather than copied forward.
-
-**Updated 2026-08-17** at phase 4 step 6, part 1, and **2026-08-18** at step 5 — thresholds are written
-and `make eval` blocks. **Updated 2026-08-19** when step 7 was split into 7a / 7b / 7c, and
-**2026-08-20** when 7b finished and 7c ran for the first time — **the project now has a measured
-judge-human agreement figure**: `citation_support` kappa 0.48, `narrative_quality` kappa 0.66, n=30.
-
-**Updated 2026-08-21** by two further judge runs. **The single-figure wording above is now the wrong
-shape and is kept only as the record of what run 1 said.** The judge is **not deterministic at
-temperature 0**, measured rather than assumed, so every judged number in this document is a sample.
-The figures to quote are **ranges**: `citation_support` kappa **0.44–0.48**, `narrative_quality` kappa
-**0.66–0.73**, n=30, three runs. Both stay inside the same qualitative band in every run — moderate and
-substantial — so the *sentence* the project reports is stable even though the digits are not. See the
-2026-08-21 findings section.
-
-**Updated 2026-08-23** at phase 4 step 8, part 1: the tier 2 machinery is built and free, the judged run
-itself is not yet taken. Two defects were fixed on the way through — the false-dirty provenance defect
-below, and a `make help` filter that could not see a target with a digit in its name.
-
-**Updated 2026-08-24** at phase 4 step 8 (the first tier 2 run), then step 9 part 1 (the held-out runner,
-built blind), then **step 9 part 2 — the held-out set has been run, once, and PHASE 4 IS COMPLETE.**
-DoD 7 closed; DoD 8 closed as partial with the Bedrock redeploy deferred to phase 5. See the 2026-08-24
-sections below, top-most first.
-
-**Updated 2026-08-26** at phase 5 step 1, applied: the project has a public CloudFront URL. ~~It serves a
-placeholder, not a SPA~~ — **corrected 2026-08-31: it serves a real SPA and has since step 2 the same
-day.** Verified by fetching it: `index.html` loads a hashed Vite bundle, and that bundle contains the
-chip row, the streaming answer and the grounded footer. "Placeholder" was the wrong word for a shipped
-SPA.
-
-~~What it does **not** contain is the map — the step 4 caption strings are absent from the deployed
-JavaScript.~~ **Stale since 2026-09-01: steps 4-7 were deployed that morning** (workflow run
-`33529350458`, 1m49s, about 2 cents, all of it the two smoke-test `/lineage` calls). Verified by
-fetching the live bundle rather than by assuming: the map's caption strings, `requestAnimationFrame`
-and the `prefers-reduced-motion` branch are all present, and `graph/v0.5.0/graph.json` serves from
-CloudFront at 655,641 bytes raw / 56,806 gzipped, 973 nodes and 950 edges — matching IMPLEMENTATION
-4.2's measured claim exactly. Streaming re-measured healthy at **TTFB 0.073s against 8.10s total, a
-ratio of 0.009**, against the 2026-07-31 spike baseline of 0.214/10.22. **Do not write that the
-deployed site lacks the map.**
-
-**A redeploy trap, live and worth reading before dispatching anything.** The Deploy workflow is
-`workflow_dispatch` only and monolithic — it rebuilds the Lambda image and runs `terraform apply`
-every time — and **`llm_provider` defaults to `local`**. A dispatch on defaults silently reverts the
-deployed stack to the stub LLM and falsifies the resume line. Always pass `-f llm_provider=bedrock -f
-reserved_concurrency=-1`.
-
-**Updated 2026-09-02 at phase 5 steps 9 and 10 — every DoD item is closed in the repo, and the phase
-is not finished until the deploy below lands.** DoD 7 and DoD 9 both closed,
-the favicon 404 that stood for the whole phase closed, and the writeup brought up to date. `make check`
-is **1189**, the frontend suite **146**. Two items remain open and are named in that section: steps 8
-and 9 are committed but not yet deployed, and the `v0.5.0` tag waits on that deploy so the tag and the
-live site agree. See the 2026-09-02 section below.
-
-**The URL question, answered 2026-09-01.** CloudFront has **no vanity hostname at any price**;
-`d2vtdkpgmecreg.cloudfront.net` is what AWS assigns and there is no readable subdomain to claim. A
-nicer URL means registering a real domain. `phase-5 §11` and `frontend.tf:116` both put a custom
-domain outside this phase.
-
-**Verified state, re-measured 2026-08-31:** `make check` green — **1184 passed, 14 `costs_money` tests
-deselected**, mypy clean over 89 source files, root 15/18, terraform valid, eval gates 3 passed / 0
-failed / 2 not applicable. *(This read **1170 passed, 0 skipped**, 7 deselected until 2026-08-31, and
-1169 before 2026-08-24. The suite grows most sessions; a lower count written anywhere is stale, not a
-regression.)* The former skip was the held-out seal; that set now exists, so
-`test_the_committed_sealed_set_matches_its_manifest` runs and passes.
-
-**What changed on 2026-08-16, in one line:** the agent has now been measured against a real model across
-a whole dataset — 41 cases, 183 requests, ~$0.36 — closing DoD #11 (both halves) and the rate clause of
-DoD #10. ~~**The deployed URL still runs the template stub**, which remains the one gap with consequences
-outside the repo and is untouched by any of this.~~ **Stale since 2026-08-24** — phase 5 step 0 shipped
-the Bedrock redeploy and the deployed URL has run a real model since. Never write this sentence again.
-
-**Bedrock is not a blocker.** Access was restored 2026-08-11 after a twelve-day account-level quota fault.
-Nothing here is waiting on AWS. **The "unrun work, one undrawn dataset" wording that stood here is stale
-as of 2026-08-24:** the held-out set was drawn 2026-08-14 and run 2026-08-24, and every phase 4 step has
-now been executed. ~~What remains is the **Bedrock redeploy, deliberately deferred to phase 5** — which
-is also why the deployed URL still runs the template stub~~ — **also stale: that redeploy shipped at
-phase 5 step 0 on 2026-08-24.** What remains from this paragraph is only the standing facts about the
-corpus in part 2.
-
----
+> **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
+> site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
+> has not been taken.
 
 ## PHASE 6.5 COMPLETE — the behavioural half, and a live suite that gates again, 2026-09-07
 
