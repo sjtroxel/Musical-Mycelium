@@ -121,7 +121,8 @@ baseline, and by how much, and where.
 ## Explicitly not in this phase
 
 The SPA, visualization, the guided tour, new agent capability, new corpus. If a metric reveals an agent bug,
-the fix is in scope; a new agent *feature* is not. Historical trend view and the public writeup are phase 7.
+the fix is in scope; a new agent *feature* is not. Historical trend view and the public writeup are phase 7.5
+*(they were phase 7 until it split on 2026-09-08)*.
 
 ## Key decisions this phase makes
 
@@ -206,7 +207,7 @@ the fix is in scope; a new agent *feature* is not. Historical trend view and the
 
 The judge model pick and its rubric; the report format and where it is published; the CI wiring for tier 1
 and the manual trigger for tier 2; the confirmation prompt's exact shape; the slice keys; the baseline run's
-schedule; how historical results are stored so phase 7's trend view has something to read.
+schedule; how historical results are stored so phase 7.5's trend view has something to read.
 
 **Added 2026-08-12:** how the provider seam reaches `eval/harness.py` so a run can be driven against
 Bedrock; the cumulative-token budget's shape and where it lives; whether phase 3's four inherited items

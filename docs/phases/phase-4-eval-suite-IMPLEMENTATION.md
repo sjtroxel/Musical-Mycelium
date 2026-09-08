@@ -969,7 +969,7 @@ how many attempts it took.
   scope. A new agent *feature* is not, however obviously it would raise a number.
 - **A second source per edge**, and therefore `contested`. Phase 6, decision A1, not re-litigated.
 - **The historical trend view and the public writeup.** Phase 7. This phase only has to store results in a
-  shape phase 7 can read, which is why they are per-run JSON files rather than an overwritten single file.
+  shape phase 7.5 can read, which is why they are per-run JSON files rather than an overwritten single file.
 - **Editing the gold or held-out sets to make anything pass.** Not deferred — forbidden.
 - **The Bedrock redeploy.** See §8.
 

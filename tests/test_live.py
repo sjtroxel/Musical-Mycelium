@@ -210,7 +210,7 @@ def test_a_result_is_written_per_run_and_names_its_provider(
 
 
 def test_two_runs_do_not_overwrite_each_other(store: InMemoryGraphStore, tmp_path: Any) -> None:
-    """Per-run files, never one rolling file: phase 7 plots the trend, and a benchmark with no
+    """Per-run files, never one rolling file: phase 7.5 plots the trend, and a benchmark with no
     history cannot show that a number moved."""
     case = gold.load_cases()[0]
 

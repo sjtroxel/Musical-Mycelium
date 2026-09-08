@@ -12,6 +12,9 @@ This settles the last open question from the pre-build series
 products were consistent with docs `00`–`07`.
 
 **The question-answerer is the spine. The guided tour is the v1.0 showcase. The explorable map is ambient.**
+*(2026-09-08: the tour **lands** in phase 7 at product v0.8, not v1.0. Phase 7 split on that date and v1.0
+moved to phase 7.5, the release a reader is pointed at. "v1.0 showcase" stays true — it is what v1.0 shows
+off — but do not read it as "does not exist until v1.0.")*
 
 | | What it is | When |
 |---|---|---|
@@ -189,7 +192,8 @@ Three things this section predicted correctly and one it did not:
   > *"Where did electropop come from?"* and the answer carries a `contested` block naming both
   > directions and both sources. The slot is **still open and still his call** — this note only records
   > that the reason for waiting has expired, and that the better demo the 2026-09-06 note was holding
-  > the slot for now exists. It is a natural candidate for phase 7.
+  > the slot for now exists. It is a natural candidate for phase 7. *(2026-09-08: phase 7 is now
+  > `cinematic-surface` at v0.8; the chip is a natural fit for its demo route, step 8.)*
 
 One line, because a scope fence does more work than a feature list:
 

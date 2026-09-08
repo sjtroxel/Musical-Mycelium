@@ -358,7 +358,7 @@ The guided tour and the synchronized narration-and-camera moment — **v1.0, and
 v0.5 becomes v1.0 with no eval work in between.** No new agent capability, no new tool, no new corpus, no
 new metrics, no new artifact cut. No auth. No custom domain. No geographic-diffusion view (`planning/06`
 §5.4 — a second view over the same graph, and it belongs with phase 6's density work). No trend view over
-historical eval runs (phase 7 DoD #4).
+historical eval runs (phase 7.5 DoD #2, which was phase 7 DoD #4 until the split on 2026-09-08).
 
 **And one that is easy to smuggle in:** phase 6's second source. Four of the six aspirational chips are
 blocked on it, the temptation to fix that from inside this phase will be real, and it is a corpus job that

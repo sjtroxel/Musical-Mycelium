@@ -285,7 +285,9 @@ read it, **no answer will tell you a lineage is disputed**, and no eval case exe
 otherwise is overstating it exactly as the old paragraph warned, in the opposite direction.
 
 **A readable URL.** CloudFront assigns the hostname and there is no vanity subdomain to claim at any
-price; a nicer address means registering a real domain, which is phase 7.
+price; a nicer address means registering a real domain, which is phase 7.5 — and it is not free: roughly
+$12–15 a year plus $0.50/month for a hosted zone, which amends the "approximately $0/month" claim rather
+than rounding into it.
 
 The step ordering was a fence, not a schedule: engine, then layout, then colour, then motion. Doing them
 out of order is how a frontend eats a month.

@@ -55,7 +55,18 @@ so both columns are labelled. Reading one as the other is the confusion this hea
 | **5** `spa-and-visualization` **DONE 2026-09-02** | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
 | **6** `density-and-coverage` **DONE 2026-09-06, `v0.6.0` deployed** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **6.5** `debt-and-disagreement` **COMPLETE 2026-09-07** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6, delivered: `contested` reaches an answer, three honest refusal states, `ResolveSource` verifies DBpedia, 9 gold + 2 adversarial cases, a sixth gate, and a live suite gated on a measured floor | Agent package, which phase 6 DoD #6 forbade |
-| **7** `polish-and-portfolio` | **v1.0** | pinned | Polish, writeup, portfolio surface | No architecture change |
+| **7** `cinematic-surface` **NEXT** | **v0.8** | **v0.7.1** (pinned, unchanged) | The guided tour, the signature moment on one timeline, and the design half: full-page backdrop, motion system, asset budget | Frontend, plus one tool behind the existing tool contract |
+| **7.5** `portfolio-and-writeup` | **v1.0** | **v0.7.1** (pinned, unchanged) | The published eval report, the trend view, the writeup, the README and the recruiter path; the Terraform round-trip and a verified bill | No architecture change |
+
+**Phase 7 was split in two on 2026-09-08**, along the line its own scope doc named: *"If this phase starts
+to feel like two phases, it is — split it."* It did. `polish-and-portfolio` became **`cinematic-surface`**
+(things that move) and **`portfolio-and-writeup`** (things that are read). Decision history below;
+`phase-7-cinematic-surface.md` §0 is the authority.
+
+**Product v0.7 is deliberately never used.** The artifact pin is v0.7.1, and the header above already names
+reading one version line as the other as the confusion it exists to prevent. A product v0.7 beside an
+artifact v0.7.1 is that confusion delivered rather than prevented, so the product line skips from v0.6.5 to
+**v0.8**.
 
 **Phases 3, 4 and 5 do not cut a new artifact.** The corpus does not change, and re-cutting it would
 silently invalidate every prior benchmark for nothing. Phase 5's pin read `pinned, TBD` until 2026-08-24;
@@ -85,7 +96,8 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | 4 | written; **amended 2026-08-12 (§0, at the phase 3 release step)** | written 2026-08-15; **all 9 steps built, phase complete 2026-08-24, tagged `v0.4.0`** |
 | 5 | written; **amended 2026-08-24 (§0) at phase start** | written 2026-08-24; **all 10 steps built, phase complete 2026-09-02, tagged `v0.5.0`** |
 | 6 | written 2026-07-31, after the validation | written 2026-09-02; **steps 0-7 built 09-02 to 09-04; step 8 next** |
-| 7 | written | at phase start |
+| 7 | written 2026-07-30; **amended 2026-08-24 (§0), and 2026-09-08 (§0) at phase start when the phase split** | **written 2026-09-08 at phase start; awaiting the build** |
+| 7.5 | **written 2026-09-08**, at the moment the phase was conceived | at phase start — deliberately not yet, so it can absorb what phase 7 teaches |
 
 Phase 6's scope doc was deliberately last. It is density and coverage, the phase most directly exposed to what
 the P279 taxonomy can actually carry, and hand-validating the edges first meant it could be written against
@@ -96,7 +108,7 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-09-07
+### Where the build actually is — 2026-09-08
 
 **Phases 0 through 5 are COMPLETE. PHASE 6 IS BUILT — steps 0 through 10 are all done. PHASE 6.5 IS
 COMPLETE — steps 0 through 8, all in one day, 2026-09-07.** Its as-built is
@@ -105,14 +117,24 @@ here.** The three decisions phase 6 left open are all now closed: the live thres
 the noise floor was re-measured with it, and **the held-out set was NOT run and stays sealed at run
 count 1.**
 
-Tier 1 live at v0.7.1 (45 cases) and judged tier 2 both ran 2026-09-06, and the copy audit closed the same day. What
-**`v0.6.0` is tagged at `51f2c21` and deployed** — run `34058614241`, verified by hand: the deployed
-`/health` serves artifact 0.7.1 with 7 components and 2 contested pairs, the SPA bundle carries the
-matching pin, and a real Bedrock query streamed a claim and its narration. What remains open from phase 6
-is step 9's three decisions: the live threshold set, the noise floor, and the held-out set. As-builts:
+Tier 1 live at v0.7.1 (45 cases) and judged tier 2 both ran 2026-09-06, and the copy audit closed the same
+day. **`v0.6.0` is tagged at `51f2c21` and deployed** — run `34058614241`, verified by hand: the deployed
+`/health` serves artifact 0.7.1 with 7 components and 2 contested pairs, the SPA bundle carries the matching
+pin, and a real Bedrock query streamed a claim and its narration. As-builts:
 `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0 and §10.0. **The debt phase 6 could not
-close is scoped as phase 6.5** — `docs/phases/phase-6.5-debt-and-disagreement.md`.
+close was scoped as phase 6.5** — `docs/phases/phase-6.5-debt-and-disagreement.md` — **and phase 6.5 is
+complete.**
 `v0.3.0-local`, `v0.4.0` and `v0.5.0` are tagged; v0.6.0, v0.7.0 and v0.7.1 are cut but not tagged.
+
+*(Two staleness bugs were fixed in this paragraph on 2026-09-08. It carried a dangling "What" from an
+earlier edit, and it still said "what remains open from phase 6 is step 9's three decisions" — directly
+contradicting the paragraph above it, which says all three closed. Both are the ordinary failure mode this
+section keeps re-learning: a paragraph edited at the top and not at the bottom.)*
+
+**PHASE 7 IS NEXT, and it is now two phases.** `phase-7-cinematic-surface.md` (v0.8) is the build; its
+IMPLEMENTATION doc was written 2026-09-08 and is **awaiting approval to build, with no code written
+against it yet**. `phase-7.5-portfolio-and-writeup.md` (v1.0) carries the half that left and its
+IMPLEMENTATION doc is deliberately not written yet.
 
 **The corpus has a second source, and `contested` is reachable.** Artifact **v0.7.1 is pinned** —
 `graph/memory.py:34`, `ingest/wikidata.py:59` and the SPA's `GRAPH_PIN` all read it. 1,479 nodes and
@@ -273,6 +295,39 @@ exists.
 *(The five entries below were rescued from §2's status board on 2026-08-24 when it was replaced. They are
 findings that outlive the step that produced them, which is what this section is for; the status board was
 not.)*
+
+- **2026-09-08 — Phase 7 split into 7 `cinematic-surface` (v0.8) and 7.5 `portfolio-and-writeup` (v1.0).**
+  The scope doc written 2026-07-30 carried its own trigger — *"If this phase starts to feel like two
+  phases, it is — split it"* — and its own first named risk, *"polish is unbounded."* Two things pulled the
+  trigger on the same day. sjtroxel scoped **full-page video backdrops and a motion-graphics pass** as a
+  named deliverable, which is a build with a renderer, an asset pipeline and a byte budget in it rather
+  than a styling pass. And re-reading phases 5 and 6 as the scope doc instructed showed the tour is
+  **cheaper** than it looked — phase 5 left a tested motion module, phase 6 left a corpus dense enough to
+  walk — but not **small**. Four deliverables under an unbounded-scope risk is how the risk collects. The
+  line the split follows was already there: **things that move** stayed in 7, **things that are read** went
+  to 7.5. Numbered 7.5 rather than 8 because it records that these were one phase and were carved apart,
+  the same thing 6.5 records. **Product v0.7 is deliberately skipped** — the artifact pin is v0.7.1 and §2
+  already names reading one version line as the other as the confusion it exists to prevent. Authority:
+  `phase-7-cinematic-surface.md` §0.
+- **2026-09-08 — The tour's eval cases get their own dataset, because adding one live case costs $2.61.**
+  Read out of `thresholds.py:592-612`, not recalled. `_ungateable` returns **before** any per-metric check,
+  so the entire live suite prints `NOT GATED` the moment the live case count changes by one — it has
+  already bitten twice, at 45 against 41 on 2026-09-06 and again at 56 after phase 6.5 step 5. Restoring
+  the gates means re-measuring the floor over five identical runs: **$2.61 and about 2.4 hours**. The
+  guided tour is a new query shape, so folding its cases into `gold_v0_1` would carry a bill that has
+  nothing to do with the tour and would not surface until the next `make eval-live`. `tour_v1.json` is
+  separate; gold stays at 38. `ThresholdSet.matches` keys on dataset **and** provider, so a new dataset
+  name matches no set and prints the loud `render_unmatched` banner rather than silently borrowing a
+  baseline measured over different questions. **The containment already existed; the decision is to not
+  defeat it.**
+- **2026-09-08 — The project gates six correctness properties and zero bytes.** Looked for an asset-weight
+  guard before adding video and there is none: `make root-check` caps root *entries*, `thresholds.py` gates
+  correctness, and the "split size guard" in the phase 6.5 step 6 commit message is about **threshold set
+  sizes** — `git show 2957832 --stat` touches ten files, none in `web/`. `stage-graph.mjs:46` prints a KB
+  figure and asserts nothing about it. Measured the same day: the SPA ships **236 KB of script, 10 KB of
+  style and a 2.6 MB graph**, ~2.9 MB of real payload. A budget authored after the asset exists is a
+  description of the asset rather than a constraint on it, so the budget lands as phase 7 step 0, before
+  the first frame is rendered.
 
 - **2026-09-02 — C1: the connectivity question is answered. Lineage from a second source, structure
   from membership.** The decision `docs/graph-semantics.md` §5 recorded as open and belonging to sjtroxel
@@ -467,9 +522,16 @@ correct. `CLAUDE.md` carries the authoritative list.
 Things that belong to the project but not to the current phase. Anything that would widen a phase goes here
 instead.
 
-- Contested-claim UI treatment: how a disputed edge looks to a user.
+- ~~Contested-claim UI treatment: how a disputed edge looks to a user.~~ **DELIVERED 2026-09-07, phase 6.5
+  step 4** — a distinct SSE event before the first prose token, naming both directions and both sources and
+  picking no winner. Left in place struck through rather than deleted, because a backlog that silently loses
+  completed rows stops being a record of what was wanted.
 - Coverage and density rendered honestly, so bias-by-construction is visible rather than disclaimed.
-- The signature moment: the graph animating the traversal as the agent streams its reasoning, one shared
-  timeline driving both text and view (`planning/06` §5.1).
+- ~~The signature moment: the graph animating the traversal as the agent streams its reasoning, one shared
+  timeline driving both text and view (`planning/06` §5.1).~~ **Left the backlog 2026-09-08 — it is phase 7,
+  steps 6 and 5.**
 - Time as a real spatial axis in the layout rather than force-directed placement.
-- A plain-English write-up per phase, accumulating into the project writeup.
+- ~~A plain-English write-up per phase, accumulating into the project writeup.~~ **Left the backlog
+  2026-09-08 — it is phase 7.5, and its per-phase halves are already written as each phase was built.**
+- Contested pair rendering inside the guided tour's camera walk, if the demo route crosses one. Preference,
+  not a requirement — `phase-7-cinematic-surface-IMPLEMENTATION.md` §13.

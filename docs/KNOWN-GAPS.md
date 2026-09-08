@@ -5,7 +5,10 @@
 > **PHASE 6.5 IS COMPLETE — steps 0 through 8, all on 2026-09-07 — and `v0.6.5` is tagged and pushed.**
 > All ten DoD items are closed. The as-built is
 > `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`; the section below summarises it and
-> **that doc is the authority**. **`docs/phases/phase-7-polish-and-portfolio.md` is the next phase.**
+> **that doc is the authority**. **Phase 7 is next, and it was split in two on 2026-09-08:**
+> `docs/phases/phase-7-cinematic-surface.md` (v0.8, the build) and
+> `docs/phases/phase-7.5-portfolio-and-writeup.md` (v1.0, the writeup and the report).
+> `ROADMAP.md` §4 carries the decision.
 >
 > **Measured 2026-09-07, not recalled:** `make check` green — **1461 passed, 0 xfailed**, 14 deselected,
 > mypy clean over **99** source files, frontend **168 passed** across 16 files, root **17 of 18**.

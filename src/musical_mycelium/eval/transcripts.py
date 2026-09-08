@@ -14,7 +14,7 @@ would cost to get wrong:
    ids are not content — prose is. A transcript of a held-out run would put the one dataset nobody may
    read into a plaintext file in the repo. The refusal is structural rather than procedural because the
    procedural version is "remember not to pass that dataset".
-2. **Result files are the benchmark history** that phase 7 plots and `noise.py` pools. Growing them by
+2. **Result files are the benchmark history** that phase 7.5 plots and `noise.py` pools. Growing them by
    the full text of 41 answers makes every one of those readers carry a payload none of them wants.
 3. **Prose is the only artifact here a model wrote freely.** Keeping it in its own file makes "this is
    model output, not a measurement" a fact about the filesystem rather than a caveat in a docstring.
