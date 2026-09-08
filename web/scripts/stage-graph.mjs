@@ -17,8 +17,10 @@
 //   3. **The pin comes from `chips.json`, not from a constant here.** That file is already validated
 //      against the artifact by `tests/test_chips.py`, so there is exactly one place the corpus
 //      version is written down and a mismatch fails the build rather than a demo.
+//   4. **Stale pins are pruned -- see `PRUNES_STALE_PINS` below.** Added 2026-09-08, phase 7 step 0,
+//      because the asset budget found one on its first run.
 
-import { copyFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -41,6 +43,27 @@ if (!statSync(source, { throwIfNoEntry: false })?.isFile()) {
 
 mkdirSync(dirname(target), { recursive: true });
 copyFileSync(source, target);
+
+// PRUNES_STALE_PINS -- added 2026-09-08, phase 7 step 0.
+//
+// **Found by the asset budget on the first run it ever did**, which is the argument for step 0 in one
+// artifact. This script only ever *wrote* the current pin and never removed the last one, so
+// `public/graph/` had accumulated `v0.5.0/graph.json` (655 KB) alongside `v0.7.1/`. Nothing fetches
+// it -- `staticGraph.ts` builds its URL from `GRAPH_PIN` alone -- so it was invisible to every test
+// and to every reader, and `.gitignore` excludes `web/public/graph/`, so it never showed up in a diff
+// either. It was still copied into `dist/` by Vite and would still have been synced to CloudFront by
+// the deploy job.
+//
+// Deleting rather than warning: the directory is generated output, `.gitignore`d, and rebuilt from
+// the artifact in git by this script's own `prebuild`. There is nothing to lose and a warning nobody
+// reads is how it accumulated in the first place.
+const graphRoot = resolve(WEB, "public/graph");
+for (const entry of readdirSync(graphRoot, { withFileTypes: true })) {
+  if (entry.isDirectory() && entry.name !== `v${pin}`) {
+    rmSync(resolve(graphRoot, entry.name), { recursive: true, force: true });
+    console.log(`pruned stale staged artifact ${entry.name}`);
+  }
+}
 
 const kb = (statSync(target).size / 1024).toFixed(0);
 console.log(`staged artifact v${pin} (${kb} KB) at public/graph/v${pin}/graph.json`);

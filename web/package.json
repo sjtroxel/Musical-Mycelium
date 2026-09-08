@@ -14,8 +14,9 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "check": "npm run format:check && npm run typecheck && npm run test && npm run build",
-    "mark": "node scripts/build-mark.mjs"
+    "check": "npm run format:check && npm run typecheck && npm run test && npm run build && npm run budget",
+    "mark": "node scripts/build-mark.mjs",
+    "budget": "node scripts/asset-budget.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

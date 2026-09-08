@@ -182,7 +182,7 @@ predates this repo.
 
 ## 8. Step plan
 
-### Step 0 — The asset budget, before a single frame exists
+### Step 0 — The asset budget, before a single frame exists — **DONE 2026-09-08**
 
 Add `web/scripts/asset-budget.mjs` and wire it into `npm run check` and therefore `make check`. It walks
 `dist/` after a build, classifies every file, and fails on any class over budget.
@@ -202,6 +202,97 @@ weigh, and that number goes in the table with its reasoning beside it the way `t
 
 **Done when:** `make check` fails on a deliberately oversized fixture and passes on `dist/` as it stands,
 and the baseline row above is committed as the starting measurement.
+
+#### 0.0 As built — what the plan did not know
+
+**Verified on completion, 2026-09-08:** `make check` green end to end, exit 0. Python **1461 passed, 14
+deselected, 0 xfailed**, mypy clean over **99** source files. Frontend **177 passed across 17 files**, up
+from 168 across 16 — the nine new tests are `web/scripts/asset-budget.test.mjs`. Scripted eval gates
+unchanged at **4 passed / 0 failed / 2 N/A of six**. Root **17 of 18**.
+
+The budget as it actually runs:
+
+```
+  ok   script   230.7 KB of  320.0 KB (72% of cap)  1 file(s)
+  ok   style     10.1 KB of   40.0 KB (25% of cap)  1 file(s)
+  ok   graph     2.57 MB of   3.00 MB (86% of cap)  1 file(s)
+  ok   media      0.0 KB of    0.0 KB              0 file(s)
+  ok   shell     10.0 KB of   32.0 KB (31% of cap)  4 file(s)
+asset budget: 5 classes, all inside cap
+```
+
+Six things the plan got wrong or could not see.
+
+1. **Five classes, not four. `shell` was missing and it is the important one.** The plan listed script,
+   style, graph data and media, which leaves `index.html` and three favicons — 10 KB — unclassified. The
+   fix is not the 10 KB; it is that **an unrecognised file must land somewhere loud rather than be
+   skipped**. `classify` sends anything it does not recognise to `shell`, which carries the smallest cap,
+   so a new asset type arriving unannounced fails a build instead of being silently exempt. A budget that
+   ignores what it does not recognise stops covering the thing it was written for, which is the failure
+   mode the whole step exists to prevent, reproduced inside the guard itself.
+
+2. **THE BUDGET FOUND A REAL DEFECT ON THE FIRST RUN IT EVER DID, before it had a number in it.**
+   `web/public/graph/v0.5.0/graph.json` — **655 KB** — was still staged alongside `v0.7.1` and was being
+   copied into `dist/` by Vite and would have been synced to CloudFront by the deploy job.
+   `stage-graph.mjs` only ever *wrote* the current pin and never removed the last one.
+
+   **Why nothing caught it, and this is the part worth keeping.** Three independent reasons, each of which
+   is individually reasonable: nothing fetches it, because `staticGraph.ts` builds its URL from
+   `GRAPH_PIN` alone, so no test could fail; `.gitignore` excludes `web/public/graph/`, so it never
+   appeared in a diff; and the one thing that did print its size — `stage-graph.mjs:46` — printed only the
+   file it had just written. **It was invisible to tests, invisible to review, and invisible to the one
+   number being reported.** Fixed at source rather than in the budget: `PRUNES_STALE_PINS` in
+   `stage-graph.mjs` now deletes any staged pin that is not the current one, and says so when it does.
+
+3. **The graph cap this plan proposed would have FAILED on its first run, and for an instructive reason.**
+   §8's table proposed 3.0 MB against a stated "today: 2.6 MB". That 2.6 MB was measured from the pinned
+   artifact in `public/`. The number that matters is what lands in `dist/`, and that was **3.21 MB** —
+   the pinned artifact plus the ghost from finding 2. **I wrote a cap from the wrong denominator**, and
+   the only reason it did not become a wrong committed threshold is that the ghost had to be explained
+   before the number could be set. Measure the thing the gate measures, not its neighbour.
+
+4. **The script cap turned out to enforce step 4's recommendation rather than merely coexist with it.**
+   320 KB against 230.7 KB used leaves roughly 89 KB. framer-motion is roughly 120 KB before tree-shaking.
+   So **importing an animation library now fails this gate**, which converts step 4's "recommended
+   against, and here is the cost of overruling it" into "costs a budget amendment with reasoning
+   attached." That is a better outcome than the plan intended and it was not designed — it fell out of
+   picking the number from what the app actually weighs. **If he overrules step 4, the cap moves and the
+   `why` string moves with it**; that is the whole mechanism, and it is deliberately not silent.
+
+5. **A stale measured claim, found while measuring.** `useStaticGraph.ts:8` said the artifact is *"640 KB
+   (55 KB over the wire)"*. Both figures were measured honestly at artifact v0.5.0 and went stale the
+   moment phase 6 re-pinned to v0.7.1 — the corpus grew roughly 4x and **a comment stating a measurement
+   does not re-measure itself**. Corrected to **2.6 MB, 201 KB gzipped**, both measured today. Worth
+   noting that the argument that paragraph makes — do not fetch the corpus before first paint — is
+   *stronger* at the true number, so this was a stale fact propping up a correct conclusion, which is the
+   kind that survives longest.
+
+6. **The test is `.mjs`, not `.ts`, and that was forced rather than chosen.** `web/tsconfig.json` includes
+   only `src` and `vite.config.ts`, so `scripts/` is not typechecked, while vitest's default include
+   *does* reach it. A `.test.ts` there would run in the suite while being invisible to `tsc` — a test file
+   that looks typechecked and is not. `.mjs` makes the absence of typechecking honest instead of hidden.
+
+**The media cap is 0 and that is load-bearing, not a placeholder.** Proven by pointing the CLI at a
+fixture holding one 879 KB `media/backdrop.webm`: it fails, names the class, prints the recorded reason,
+and exits 1. Phase 7 step 1 sets the real number from what the rendered candidates weigh. **Until then no
+media can ship**, which is exactly the ordering §5 argued for.
+
+#### 0.1 In plain English
+
+Websites get slow one file at a time, and nobody notices because no single addition looks like the
+problem. This project already had automatic checks for whether its *answers* are honest, but none at all
+for how *heavy* the page is — and the next thing planned was full-screen video, which is the heaviest
+thing a web page can carry.
+
+So before adding any video, I added a scale. It weighs the finished site in five separate categories —
+program code, styling, the music-graph data, video and images, and everything else — and refuses to
+finish the build if any category is heavier than an agreed limit. Each limit has its reasoning written
+next to it, so raising one later means arguing with the reason rather than quietly changing a number.
+
+The scale found something the first time it was used: an old copy of the music graph, 655 KB, left behind
+from an earlier version and still being uploaded to the website every time it was published. Nothing used
+it. No test could have caught it, because nothing was looking. That is the entire argument for weighing
+things before you add weight.
 
 ### Step 1 — Treatments, behind throwaway previews
 
