@@ -64,9 +64,22 @@ function installCanvas(): { arcs: Arc[]; clear: () => void } {
     strokeStyle: "",
   };
 
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-    context as unknown as CanvasRenderingContext2D,
-  );
+  // **Recording is scoped to the MAP canvas, and that is not a refinement -- it is a correctness fix.**
+  // `getContext` is stubbed on the prototype, so before phase 7 every canvas on the page shared one
+  // recording context. There was exactly one canvas, so that was fine. The backdrop landed a second
+  // one that draws 1,465 arcs a frame, and every assertion here that counts or positions arcs started
+  // measuring the wrong picture -- 10 tests failed at once, none of them about the backdrop.
+  //
+  // A silent context for everything else rather than no context at all: `Backdrop` treats a null
+  // context as "this browser cannot draw me" and returns early, which would make these tests pass
+  // while exercising a path no real browser takes.
+  const silent = { ...context, arc: () => {} };
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(function (
+    this: HTMLCanvasElement,
+  ) {
+    const target = this.classList.contains("map__canvas") ? context : silent;
+    return target as unknown as CanvasRenderingContext2D;
+  } as unknown as typeof HTMLCanvasElement.prototype.getContext);
 
   // jsdom implements none of the pointer-capture API, and `GraphView` calls all three. Without these
   // the first pointerdown throws and every assertion below fails for the wrong reason.
@@ -165,7 +178,9 @@ async function drawnMap(recorder: { arcs: Arc[] }): Promise<HTMLCanvasElement> {
   await waitFor(() => {
     expect(recorder.arcs.length).toBeGreaterThan(0);
   });
-  return document.querySelector("canvas") as HTMLCanvasElement;
+  // `.map__canvas`, not `canvas`. Selecting by tag was implicitly asserting that the page holds
+  // exactly one canvas, which was true until the phase 7 backdrop landed one behind everything.
+  return document.querySelector(".map__canvas") as HTMLCanvasElement;
 }
 
 const drag = (canvas: HTMLCanvasElement, from: [number, number], to: [number, number]) => {

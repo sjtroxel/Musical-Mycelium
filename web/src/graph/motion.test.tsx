@@ -385,7 +385,8 @@ describe("the drawing that consumes it", () => {
     const { container, rerender } = render(<GraphView graph={GRAPH} motion="animated" />);
     raf.step(0);
     raf.step(AFTER_END); // finish the first picture, so there is a camera to move away from
-    const canvas = container.querySelector("canvas") as HTMLCanvasElement;
+    // `.map__canvas`, not `canvas` -- see the note in `explore.test.tsx`.
+    const canvas = container.querySelector(".map__canvas") as HTMLCanvasElement;
     const startHeight = Number.parseFloat(canvas.style.height);
 
     rerender(<GraphView graph={GROWN} motion="animated" />);

@@ -2,7 +2,7 @@
 # `make help` lists targets. `make check` is what CI runs.
 
 .DEFAULT_GOAL := help
-.PHONY: help install fmt lint typecheck test cov check root-check orient clean dev ingest \
+.PHONY: help install fmt lint typecheck test cov check root-check orient clean dev ingest backdrop \
         ingest-dbpedia ingest-origins facts \
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
         heldout-key heldout-draw heldout-seal heldout-verify heldout-check \
@@ -255,6 +255,9 @@ tf-destroy: ## Destroy the main root. Bootstrap is destroyed separately and AFTE
 # Hits Wikidata, so it is deliberately NOT part of `check` and never runs in CI. The artifact it writes
 # is committed; rebuilding it is an explicit act. Costs $0 — Wikidata is free — but it is network I/O
 # against a service that is degraded in 2026, so run it when the corpus changes, not on every loop.
+backdrop: ## Regenerate the SPA's inlined backdrop layout from the pinned artifact (free, offline)
+	uv run python -m musical_mycelium.graph.backdrop
+
 facts: ## Regenerate web/src/corpus-facts.json from the pinned artifact (free, offline)
 	uv run python -m musical_mycelium.graph.facts
 

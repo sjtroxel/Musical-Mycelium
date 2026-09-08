@@ -550,7 +550,7 @@ file under `web/` and assets under `web/public/`, both already-existing director
 **Done when:** two consecutive runs at the same pin and seed produce identical manifests, the encoded set
 is inside the step 1 budget, and `make check` still passes with the assets present.
 
-### Step 3 — The backdrop component, and the rules that are tests — **NEXT, and smaller than planned**
+### Step 3 — The backdrop component, and the rules that are tests — **DONE 2026-09-08**
 
 **Rewritten 2026-09-08 after step 1 chose candidate A.** `web/src/components/Backdrop.tsx` is a
 **canvas** component, not a `<video>`: a `requestAnimationFrame` loop drawing precomputed positions,
@@ -582,6 +582,191 @@ Six rules, each one a test, because every one of them is a thing that quietly st
 
 **Done when:** all six tests pass, the frontend suite is green, and Lighthouse on the deployed preview
 shows no LCP regression against the current deploy.
+
+#### 3.0 The color preview, built 2026-09-08 — **DECIDED: S4 + T3, high node alpha**
+
+Built before the component, at his request: *"the preview leading into step 3 is exactly what I need,
+so I can pick out the colors from that."* Same pattern as the palette in phase 5 and the backdrop in
+step 1 — render the candidates in the real app, decide by looking, record the decision and its
+reasoning. `web/previews/palette7.html`, verified by `check-colors.mjs` (7 checks), with
+`drift.js` factored out so the color page and the backdrop page draw the **same** renderer. Two copies
+would be how a color gets chosen against a picture the product does not draw.
+
+**Nothing on the page invents a color.** The palette was decided 2026-08-30 from three candidates in
+the real app; re-opening it now would be re-deciding a settled thing at the worst possible moment.
+Every value is a token already in `styles.css`. The question is only which token goes where once text
+has to sit on a moving picture.
+
+**Four backdrop schemes x four tagline treatments, every combination measured across the drift.**
+Contrast over a moving picture is not one number — the camera drifts, so different pixels pass under
+the tagline, and a setting that passes on average can fail for two seconds at a time. The table below
+is the **worst reading at eight points around the loop**, against the brightest pixel under each block,
+which is DoD 9's rule.
+
+| scheme | T1 `--ink-soft` | T2 `--ink` | T3 `+ scrim` | T4 `+ halo` | title |
+|---|---|---|---|---|---|
+| S1 as measured | 2.68 | **4.88** | **5.96** | 2.68 | 5.26 |
+| S2 two accents | 2.85 | **5.17** | **6.11** | 2.85 | 5.31 |
+| S3 ink only | 2.14 | 3.89 | **5.33** | 2.14 | 3.94 |
+| S4 lit edges | 1.63 | 2.96 | 4.67 | 1.63 | **2.84** |
+
+Bold clears AA at every point in the drift; the tagline bar is 4.5 and the title's is 3.0 because it is
+large text. **5 of 16 combinations pass.** T1 — what the app ships today — fails under every scheme,
+which is the finding step 1 predicted and this table confirms.
+
+Three things worth keeping.
+
+1. **THE LOUD COLOR IS THE SAFE ONE, WHICH IS THE OPPOSITE OF WHAT I EXPECTED.** Measured relative
+   luminance: `--accent` rose **0.320**, `--ink-soft` lavender **0.460**, `--contested` cyan **0.586**.
+   The hot pink is the *darkest* of the three visible tokens — a saturated mid-tone, where the quiet
+   lavender is genuinely light. That is why S1 and S2, which put the accent on the nodes, score best
+   behind text, and why S3 "ink only" — the most restrained scheme on the page — is the one that makes
+   the title struggle at 3.94. Restraint in hue is not restraint in luminance.
+
+2. **S4's problem is not its edges, and halving them proved it.** It first measured at 2.84 for the
+   title with edges at 0.22 alpha, below even the large-text bar. I dropped edge alpha to 0.10 —
+   **less than half** — and it moved to 2.84. The bright pixels are the ink-colored *nodes*, not the
+   accent edges. Recorded because the instinct was to keep tuning, and the second measurement is what
+   said to stop and report instead. S4 is the scheme that best expresses the thesis — draw the network,
+   not the nodes — and it is the hardest one to put text on.
+
+3. **T4's number is a floor, not a score, and the page says so.** The arithmetic cannot model a
+   text-shadow halo, so T4 reports its plain `--ink-soft` figure. Printing that number without the
+   caveat would be the vacuous-truth failure the eval suite already guards against, in a different
+   costume: a metric that returns a confident value for a case it cannot actually measure.
+
+**My read, which is not the decision.** S1/T3 and S2/T3 both clear comfortably and keep the deliberate
+hierarchy between title and tagline, buying the contrast locally behind one block rather than washing
+the page — which is what *"let people see it"* asked for. S2 is the more interesting picture, because
+genre-rose and artist-cyan draws the two axes the corpus actually has in the two colors the app already
+uses for two different things. **Open at `web/previews/palette7.html`.**
+
+#### 3.1 The decision — sjtroxel, 2026-09-08
+
+**S4 "lit edges" + T3 plate, at a high node alpha.** His words: *"I think I like s4 and t3 with a sort
+of high node-alpha."* The glowing accent network over quiet nodes — the scheme that draws the thesis
+rather than the nodes — with a plate under the opening block instead of a wash over the page.
+
+**He picked the one combination on the table that failed, and the failing element got worse with
+exactly the thing he asked for.** Swept at plate 0.55: the title never cleared its 3.0 large-text bar
+at any node alpha, and fell from 2.81 to **2.35** as brightness rose to 1.0. The right response was
+not to report that back as a veto. It was to find the version of what he picked that works, because
+§3.0 finding 2 had already established *why* S4 was bright — the ink-colored **nodes**, not the accent
+edges — and that is a fixable cause rather than a property of the scheme.
+
+**Two changes, both aimed at the measured cause:**
+
+1. **S4's nodes darkened**, `--ink-soft`/`--ink-faint` to `--ink-faint`/`--edge-context`. The edges keep
+   the accent and can now run bright, which is the part he actually liked. **Title 2.35 → 8.04 at full
+   node alpha.**
+2. **T3's scrim became a plate behind the whole opening block, title included.** It covered the tagline
+   alone, which under S4 protected the wrong element — the title is the block that fails there. It also
+   simply reads better: one shape, rather than a patch under one paragraph.
+
+**Then the tagline was left sitting on the bar, which is its own failure mode.** At plate 0.55 it
+measured **4.42** against a 4.5 requirement across the drift — a fail by 0.08, and the readings bounced
+between 4.42 and 4.65 depending on which pixels the camera brought under the text. **A number that
+close to a threshold is not a pass that needs rounding, it is a design with no headroom**, and this
+project has already learned once that a number which barely moves is a reason to look harder rather
+than to relax. Swept the plate:
+
+| plate | title (needs 3.0) | tagline (needs 4.5) | headroom |
+|---|---|---|---|
+| 0.55 | 8.04 | **4.42 FAIL** | -0.08 |
+| **0.68** | **10.62** | **5.84** | **+1.34** |
+| 0.80 | 13.38 | 7.36 | +2.86 |
+
+**Settled: plate 0.68, node alpha 1.0, veil 0.** Measured live at 10.90 and 5.82 in the running page.
+The plate covers the opening block and nothing else, so *"let people see it"* holds everywhere the
+text is not — which at node alpha 1.0 is a considerably brighter network than any earlier setting.
+
+**The preview now defaults to his pick and gained a plate slider**, because the plate stopped being a
+fixed property of a treatment and became a real parameter with a measured value. `check-colors.mjs`
+re-run: 7 checks pass, and the table's shape changed in a way worth noting — at node alpha 1.0
+**every `--ink`-only combination now fails and all four plate combinations pass**. The plate, not the
+scheme, is what makes text survive a bright backdrop.
+
+#### 3.2 As built — 2026-09-08. **STEP 3 DONE.**
+
+**Verified on completion:** `make check` green, exit 0. Python **1465 passed** (from 1461), mypy clean
+over **101** source files, frontend **192 passed across 18 files** (from 177/17). Scripted eval gates
+unchanged at **4 passed / 0 failed / 2 N/A of six**. Root 17 of 18. Asset budget:
+
+```
+  ok   script   267.9 KB of  320.0 KB (84% of cap)
+  ok   media      0.0 KB of    0.0 KB
+```
+
+Shipped: `src/musical_mycelium/graph/backdrop.py` and `make backdrop`, the generated
+`web/src/graph/backdropData.ts`, `web/src/graph/backdrop.ts` (pure), `web/src/components/Backdrop.tsx`,
+`Backdrop.test.tsx` (15), `tests/test_backdrop.py` (4), and the plate in `styles.css`.
+
+Six things the plan did not know.
+
+1. **The data is INLINED, and that was forced by DoD 5 rather than chosen.** `App.test.tsx` asserts the
+   page makes no network request on load — phase 5's DoD 5, whose reason is that first paint must not
+   wait on anything. A backdrop that fetched its positions would fail that test. The options were to
+   weaken DoD 5 or to make the data small enough to ship in the bundle. **Small enough won**, because a
+   decorative layer is a bad reason to relax a guarantee about first paint. Packed to uint16 positions,
+   a one-bit kind field and uint16 edge indices, base64'd: **35 KB**, and the script budget went 230.7
+   to 267.9 KB against a 320 cap. Degree is derived in the browser rather than shipped — 1,465 bytes
+   for something computable is exactly what the budget exists to catch.
+
+2. **THE BACKDROP BROKE TEN TESTS THAT WERE NOT ABOUT THE BACKDROP, AND THE CAUSE GENERALISES.**
+   `explore.test.tsx` stubs `getContext` on the **prototype** and returns one shared recording context,
+   then counts and positions the `arc` calls the map makes. That was correct while the page held
+   exactly one canvas. The backdrop added a second that draws 1,465 arcs a frame into the same
+   recorder. **A test that selects `querySelector("canvas")` is silently asserting "there is one
+   canvas on this page"** — an assumption nobody wrote down and nobody could have grepped for. Fixed by
+   scoping the recorder to `.map__canvas` and handing every other canvas a silent context. Deliberately
+   *not* fixed by returning `null` for the backdrop: `Backdrop` treats a null context as "this browser
+   cannot draw me", so that would have made the tests pass while exercising a path no browser takes.
+
+3. **A generator and a formatter cannot both own a file.** Prettier reflowed the emitted base64 onto
+   its own line, which left the tree unformatted after every `make backdrop` and broke the regex in
+   `tests/test_backdrop.py` with a `KeyError` on a field that was plainly there. `backdropData.ts` is
+   now in `.prettierignore` — the same reasoning already applied to `public/graph` — and the parser
+   tolerates the wrap anyway.
+
+4. **THE PLATE COVERED THE WRONG THINGS, AND ONLY A SCREENSHOT FOUND IT.** Step 3's preview measured
+   the title and the tagline, so those two were plated and cleared comfortably. The built page put
+   **"ASK ABOUT A GENRE OR AN ARTIST"** (`--ink-faint`, the lightest text on the page) and the
+   **"Trace it"** button (an unfilled `--accent` outline) directly onto a bright network. Both were
+   effectively unreadable. **A contrast measurement covers the elements you point it at**; two were
+   measured and four were exposed. The plate now spans the masthead and the ask row as one shape.
+
+5. **The plate is 0.92, and the rule is worth more than the number: it returns the page to the contrast
+   it had before the backdrop existed.** `--ink-faint` on plain `--ground` measures **4.98:1**. It
+   passed for six phases; the backdrop took it to **3.42**. That is a regression the decoration caused
+   on an element nobody touched, and the honest repair is to give it back rather than to redesign the
+   label around the wallpaper. Measured on the built page:
+
+   | plate | ask label | Trace it | tagline | title |
+   |---|---|---|---|---|
+   | 0.68 | **3.42 FAIL** | **4.46 FAIL** | 6.60 | 12.70 |
+   | 0.82 | **4.37 FAIL** | 5.64 | 8.01 | — |
+   | **0.92** | **5.02** | **6.45** | **8.82** | **16.22** |
+
+   5.02 against an original 4.98. Nothing inside the plate had to change to survive a decoration behind
+   it, and roughly 85% of the viewport still shows the network at full strength — which is what *"let
+   people see it"* asked for, about a page-wide veil rather than about a local card.
+
+6. **`paused` is `steps.length > 0`, not "a run is in flight".** Once the visitor has asked anything,
+   the ambient layer stays still for the rest of the visit. Restarting the drift after every answer
+   would put motion behind the claims exactly when the claims are the thing to read, and it would
+   flicker. The backdrop's job is the first three seconds.
+
+**The four rules are tests, not intentions** — `Backdrop.test.tsx`: reduced motion draws one frame and
+starts no loop; a hidden tab cancels it; a run in flight stops it; and a still backdrop is **drawn,
+never blank**, because a layer that renders nothing is indistinguishable from a loop that threw on
+frame one. A fifth test asserts the page still renders when there is no 2D context at all.
+
+`tests/test_backdrop.py` re-solves the layout from the pinned artifact and fails if the committed file
+and the corpus have drifted apart — the same guard `test_chips.py` puts on the chip set, and it matters
+more here because a backdrop drawn from a stale corpus still looks exactly like a backdrop.
+
+**Not done, and owed by later steps:** the tagline's own colour question is closed by the plate rather
+than by a token change; step 4's motion system, step 5's tour and step 6's timeline are untouched.
 
 ### Step 4 — The motion system, beyond the backdrop
 

@@ -95,6 +95,83 @@ code {
   max-width: 46rem;
   margin: 0 auto;
   padding: 3rem 1.25rem 5rem;
+  /* Above the backdrop. Everything the visitor reads sits on this layer. */
+  position: relative;
+  z-index: 1;
+}
+
+/* --- the backdrop, phase 7 step 3 --- */
+
+/*
+ * The corpus itself, drifting behind the page: 1,465 nodes and 5,058 edges of the largest component,
+ * laid out offline and inlined. Scheme S4 "lit edges", chosen by sjtroxel 2026-09-08 from four
+ * candidates rendered in the real app -- the connections carry the accent and the nodes go quiet,
+ * because the project's claim is that music history is a network.
+ *
+ * `pointer-events: none` and `aria-hidden` on the element: it is decoration and must never be in the
+ * tab order, never intercept a click, and never be announced.
+ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/*
+ * The plate. **A local panel, not a wash over the page** -- sjtroxel, 2026-09-08: "no need to do much
+ * if any veil either. let people see it." So the backdrop runs at full strength everywhere except
+ * behind the one block that has to stay readable over it.
+ *
+ * **0.92, and the rule behind it is worth more than the number: the plate returns the page to the
+ * contrast it had before the backdrop existed.** Measured on the built app against the brightest pixel
+ * underneath, which is the conservative reading:
+ *
+ *   plate   ask label (--ink-faint)   Trace it (--accent)   tagline
+ *   0.68          3.42 FAIL                4.46 FAIL         6.60
+ *   0.82          4.37 FAIL                5.64              8.01
+ *   0.92          ~5.00                    ~6.4              ~8.9
+ *
+ * `--ink-faint` on plain `--ground` measures **4.98:1**. It passed before this phase and the backdrop
+ * took it to 3.42 -- a regression the backdrop caused on an element nobody changed. 0.92 puts it back
+ * at essentially the original number, so **nothing inside the plate had to be redesigned to survive a
+ * decoration behind it.** Any other value means either a failing element or a page tuned around its
+ * own wallpaper.
+ *
+ * The plate is local. Roughly 85% of the viewport still shows the network at full strength, which is
+ * what "let people see it" asked for -- sjtroxel, 2026-09-08, about a page-wide veil, not about this.
+ * Lower this and re-measure; do not lower it by eye.
+ */
+/*
+ * **The plate covers the masthead AND the ask row, and that is a defect found by looking.** It
+ * covered the masthead alone on the first build, and the screenshot showed "ASK ABOUT A GENRE OR AN
+ * ARTIST" and the "Trace it" button sitting directly on a bright network, both effectively
+ * unreadable. The label is `--ink-faint`, the lightest-weight text on the page, and the button is an
+ * outline with no fill -- the two things least able to survive a busy background, and the two the
+ * measurement in step 3's preview never looked at because it only sampled the title and the tagline.
+ *
+ * The lesson generalises past this rule: **a contrast measurement covers the elements you pointed it
+ * at.** Two blocks were measured and four were exposed.
+ */
+.masthead,
+.ask {
+  background: rgba(13, 10, 20, 0.92);
+  border-radius: 14px;
+  margin: 0 0 0 -1.15rem;
+}
+
+.masthead {
+  padding: 1rem 1.15rem 0.1rem;
+  /* No bottom radius and no gap: the two plates meet and read as one shape. */
+  border-radius: 14px 14px 0 0;
+}
+
+.ask {
+  padding: 0.2rem 1.15rem 1.1rem;
+  border-radius: 0 0 14px 14px;
 }
 
 /* --- masthead --- */
@@ -127,6 +204,7 @@ code {
 }
 
 .masthead__tagline {
+  padding-bottom: 0.9rem;
   /* Spans the column rather than the reading measure. Reported by sjtroxel 2026-09-08: at 1440px the
      tagline and the footer both stopped at 544px while the lockup, the ask form, the chips and the
      coverage panel all ran to 696px, so the page opened and closed 152px narrower than its middle and
