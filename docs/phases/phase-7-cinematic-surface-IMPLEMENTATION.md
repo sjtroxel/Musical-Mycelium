@@ -1,5 +1,8 @@
 # Phase 7 — Cinematic Surface (v0.8) — IMPLEMENTATION
 
+> **PHASE COMPLETE — 2026-09-09.** Steps 0, 1, 3, 4, 5, 5.5, 6, 7 and 8 done; step 2 deleted; step 5.5
+> inserted mid-phase. The definition-of-done audit is §8.9 and the close is §8.10.
+>
 > **As-built plan.** Written 2026-09-08, immediately before building, against measurements taken the same
 > afternoon rather than recalled. The scope doc `phase-7-cinematic-surface.md` was written 2026-07-30 as
 > `phase-7-polish-and-portfolio.md` and amended 2026-08-24; nothing in it is withdrawn, but §3 below records
@@ -1645,7 +1648,7 @@ in, identical prose out. It also settles the repetition defect above: it is **de
 the chain template at four claims, not sampling noise**, reproduced across two independent runs asked two
 different ways. That is a stronger finding than the first capture supported, and it costs the same cent.
 
-### Step 8 — The demo route, picked from measured density
+### Step 8 — The demo route, picked from measured density — **DONE 2026-09-09**
 
 Scope doc risk: *"If phase 6's density work did not reach the region a demo walks through, the demo shows
 the corpus skew rather than the system. Pick the tour route from measured density, not from taste."*
@@ -1655,6 +1658,140 @@ the path crosses a membership edge or a contested pair. He picks from the top ha
 its measurements go in this doc, so the demo's quality is a recorded property rather than a lucky pick.
 
 **Done when:** the route is chosen from a ranked list, and its numbers are written down here.
+
+#### 8.0 As built — and it caught step 5's own taste pick
+
+`src/musical_mycelium/graph/routes.py`, `make routes`. Free, offline, reads the pinned artifact. It sweeps
+**20,095** genre-to-genre walks of 2 to 6 hops — one BFS per source, because pairwise shortest-path calls
+over hundreds of genres would be hundreds of thousands of searches to answer what one sweep answers.
+
+**It ranks and refuses to decide, and that is the design.** The sort key is a lexicographic tuple —
+weakest edge tier, then mean tier, then corroboration, then hops — and every other column is printed
+beside it. **A single blended score over incommensurable columns is taste with a decimal point on it**: it
+hides the trade instead of showing it. A test constructs a strong 2-hop route and a weak 6-hop one with 99
+corroborations and asserts the strong one still wins, so nobody can quietly replace the key with a
+weighted sum.
+
+**The headline is the WEAKEST edge, not the mean.** A chain is exactly as checkable as its worst hop, and
+a mean lets one `HAND` edge flatter four `INFOBOX_AUTO` ones — which would make the ranking recommend
+routes that cannot be defended.
+
+**A PROXY WAS MEASURED AND REJECTED, AND KEEPING THE REJECTION VISIBLE IS PART OF THE RESULT.** The
+obvious stand-in for *"would a visitor recognise this genre"* is how many artists the corpus records
+playing it. Measured, it does not mean that at all: **Detroit techno records 0 artists and Chicago house
+0**, against pop music 158 and rock music 113. Neither of the first two is obscure — the corpus's artists
+skew anglophone rock and pop, which is the documented corpus skew, not a prominence signal. **Ranking on
+it would have rejected the route the tour was built on and systematically promoted exactly the region
+`.claude/rules/evals.md` warns about.** It is printed as a column with its caveat, and a test asserts the
+caveat stays attached, because a number printed without its warning becomes a ranking input again in six
+months.
+
+**THE RESULT, AND IT IS THE POINT OF THE STEP: the route step 5 chose ranked 11,218 of 20,095.**
+`Detroit techno -> Chicago house -> hip-hop -> rhythm and blues -> blues` scores a mean tier of **1.00** —
+the floor, every hop `INFOBOX_AUTO` — with **nothing corroborated**. It was picked in step 5 on
+recognisable endpoints, which is taste, and step 5 labelled it provisional for exactly this reason. The
+step caught it.
+
+**The ranked list sjtroxel chose from, top of each shape:**
+
+| hops | weakest | mean | corrob | artists | route |
+|---|---|---|---|---|---|
+| 2 | `HAND` | 5.00 | 1 | 14 | heavy metal music -> blues rock -> blues |
+| 2 | `HAND` | 5.00 | 1 | 3 | groove metal -> thrash metal -> punk rock |
+| **5** | `INFOBOX_AUTO` | **3.40** | **2** | 3 | **groove metal -> thrash metal -> speed metal -> heavy metal music -> blues rock -> blues** |
+| 4 | `INFOBOX_AUTO` | 1.00 | 0 | 0 | Detroit techno -> ... -> blues *(the incumbent, 11,218th)* |
+
+**Chosen by sjtroxel: the five-hop walk.** The rank-1 route is two hops and is already the first-screen
+chip and `gold_v0_1_016`, so the showcase would have been walking ground the app already covers. The
+five-hop route is a real journey whose **spine is that rank-1 pair**: three of its five hops are
+`HAND`-checked and two are corroborated, and only the two middle hops sit at `INFOBOX_AUTO`. A test
+asserts it beats the route it replaced, so if that ever inverts the decision gets re-read rather than
+inherited.
+
+**Re-captured live, third capture of the day, about a cent:** 7,162 input + 486 output, **5 claims**,
+`complete`. `SPEC.md` §1, the scope doc, `tour_v1_001`, `TOUR_QUERY` and both demo test files now name
+this route; the fixture is `tour-groove-metal-to-blues.sse`.
+
+**AND THE PROSE DEFECT DISAPPEARED, WHICH SHARPENS IT INTO SOMETHING ACTIONABLE.** The two four-claim
+captures both wrote the chain twice, forwards then backwards. **This five-claim capture wrote one clean
+sentence.** The cause is visible in `loop.py:_sentences`: at `claim_count <= 4` the chain branch returns
+the fixed string `"two sentences"`, and above it returns the range `"two or three sentences"`. That
+function's own docstring already states the principle — *"The bound stays a permission rather than a
+target ... because an over-tight count is the same defect in the other direction"* — and the `<= 4` chain
+branch is the one place in it that still hands the model a fixed number. **Three live runs now: two at
+four claims, both duplicated; one at five, clean.** Still not fixed here for the reason given in §7.0 —
+`_sentences` governs every chain answer, the live bounds were measured against current behaviour, and
+`narrative_quality` is judged — but it has gone from an observation to a diagnosis with a line number.
+
+**A near-miss worth recording, because it was silent.** `tests/test_canonical_surfaces.py` asserted the
+retired delta-blues route by reusing `DEMO_START` as its second endpoint. They were the same node until
+this step moved the demo somewhere else entirely — at which point that assertion would have quietly
+re-pointed at a pair nobody ever retired, stayed green, and stopped testing the thing it was written for.
+`RETIRED_END` is now its own constant with the reason beside it.
+
+## 8.9 Definition of done — audited 2026-09-09, not declared
+
+**Phase 7 owns items 1, 2, 8, 9, 10 and 11.** Items 3 through 7 went to phase 7.5 on 2026-09-08 and are
+not audited here. The audit found one real defect, which is the argument for doing it as a pass rather
+than ticking boxes from memory.
+
+| # | Item | Verdict |
+|---|---|---|
+| 1 | Two-node query -> planned path, narrated as the camera walks it, citations resolving | **Met, in two pieces** — see below |
+| 2 | Narration and camera on one timeline, demonstrably | **Met.** `graph/timeline.ts`, property test over 40 seeded sequences, verified by deliberate breakage (80/202 failed) |
+| 8 | Nothing in the repo overstates what "grounded" means | **Met for this phase's surfaces.** 7.5 owns the full copy audit |
+| 9 | Backdrop yields: reduced motion, hidden tab, and a run streaming | **Met — after this audit found it broken.** See below |
+| 10 | `make check` fails on an over-budget `dist/`, split by asset class | **Met.** Step 0; five classes, all inside cap |
+| 11 | Demo route chosen from ranked measurement, numbers written down | **Met.** Step 8; 20,095 walks ranked, numbers in §8.0 |
+
+**Item 1 is met in two pieces and saying so is more honest than a tick.** The *live* two-node query has
+produced a gated, cited, narrated path since **phase 2 step 5** — that is what the ask box does and what
+step 5 proved by test. The *tour* replays a recording of exactly that, because a live tour on the landing
+page would bill a Bedrock run per page view (step 6). So "a two-node query produces a planned path" is
+true of the system, and "narrated as the camera walks it" is true of the tour. Neither half is a claim
+about the other, and a reader who assumed one surface did both would be wrong.
+
+**Item 9 was BROKEN by step 6 and this audit is what caught it.** `App.tsx` read
+`<Backdrop paused={steps.length > 0} />`, and the tour is a **replayed** run that never touches `steps`.
+So the ambient backdrop went on drifting behind the most semantic motion on the page — the precise thing
+DoD 9 exists to prevent, introduced by the step that added the semantic motion. Fixed to
+`steps.length > 0 || touring`, with a test that asserts the **wiring** rather than the effect: `Backdrop`
+already has tests proving `paused` stops its loop, and a subscriber count would be ambiguous because the
+tour and the backdrop share one ticker by design.
+
+**The general lesson, which is why the audit is a pass and not a checklist.** Every one of these items had
+a test, and the test for item 9 was passing the whole time — it tested `Backdrop` in isolation, where
+`paused` does exactly what it says. The defect lived in the **caller**, in a boolean that was correct
+until a new kind of run existed. **A component test cannot see a new caller that forgot to call it.**
+
+## 8.10 The phase is complete
+
+**Steps 0, 1, 3, 4, 5, 5.5, 6, 7 and 8 are done. Step 2 was deleted** on 2026-09-08 when candidate A
+removed the need for an offline renderer. **Step 5.5 was inserted** on 2026-09-09 out of step 5's
+re-read.
+
+**Measured at close, 2026-09-09, not recalled:** `make check` green — **1522 Python passed**, 14
+deselected, mypy clean over **106** source files, frontend **428 across 24 files**, repo root **17 of
+18**, scripted eval gates **4 passed / 0 failed / 2 N/A of six** on gold plus a deliberately ungated tour
+run. Asset budget: script **276.1 KB of 320**, style 11.2 of 40, graph 2.57 MB of 3.00, **media 0 of 0**,
+shell 10.0 of 32. Datasets: gold **38**, adversarial **20**, live **56** (unchanged, baseline valid),
+tour **6**.
+
+**Spend for the whole phase: three live captures at roughly a cent each.** No eval re-measure was
+triggered, the live baseline was not disturbed, and the held-out set was not touched.
+
+**What phase 7 leaves for someone else, stated rather than buried:**
+
+- **`loop.py:_sentences` pads a four-claim chain into two sentences and the model fills the second by
+  restating the chain backwards.** Diagnosed across three live captures, with a line number, in §8.0. Not
+  fixed here: it governs every chain answer, the live bounds were measured against current behaviour, and
+  `narrative_quality` is judged. It is a freeze decision.
+- **`TOKEN_MS = 45` has a comparison handle and has still never been compared.** `replayTour(ms)` on
+  `make dev`. The handle is not the decision.
+- **The frontend suite emits React `act` warnings** — 20 from `App.test.tsx` before this phase, 3 more
+  from the tour's corpus fetch. Pre-existing, real, and never this phase's job.
+- **Live evidence for the tour dataset is one sample.** `tour_v1.json`'s controlled pairs need a live run
+  to be a comparison rather than an anecdote.
 
 ## 9. Decisions this plan does not make
 

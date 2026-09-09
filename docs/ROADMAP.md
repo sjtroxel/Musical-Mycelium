@@ -55,7 +55,7 @@ so both columns are labeled. Reading one as the other is the confusion this head
 | **5** `spa-and-visualization` **DONE 2026-09-02** | **v0.5** | **v0.5.0** (unchanged) | React + TS SPA on S3/CloudFront, graph visualization | A pure consumer of an already-stable API |
 | **6** `density-and-coverage` **DONE 2026-09-06, `v0.6.0` deployed** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **6.5** `debt-and-disagreement` **COMPLETE 2026-09-07** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6, delivered: `contested` reaches an answer, three honest refusal states, `ResolveSource` verifies DBpedia, 9 gold + 2 adversarial cases, a sixth gate, and a live suite gated on a measured floor | Agent package, which phase 6 DoD #6 forbade |
-| **7** `cinematic-surface` **NEXT** | **v0.8** | **v0.7.1** (pinned, unchanged) | The guided tour, the signature moment on one timeline, and the design half: full-page backdrop, motion system, asset budget | Frontend, plus one tool behind the existing tool contract |
+| **7** `cinematic-surface` **COMPLETE 2026-09-09** | **v0.8** | **v0.7.1** (pinned, unchanged) | The guided tour, the signature moment on one timeline, and the design half: full-page backdrop, motion system, asset budget | Frontend, plus one tool behind the existing tool contract |
 | **7.5** `portfolio-and-writeup` | **v1.0** | **v0.7.1** (pinned, unchanged) | The published eval report, the trend view, the writeup, the README and the recruiter path; the Terraform round-trip and a verified bill | No architecture change |
 | **8** `membership-tour` **SCOPED 2026-09-09, not started** | **v1.1** | **v0.7.1** (pinned, unchanged) | The tour crosses axes: genre to artist to genre, so the corpus's one connected component becomes something the product can walk rather than a number in a structure report | `agent/claims.py:ALLOWED_PREDICATES`, a one-way door opened on purpose |
 
@@ -137,10 +137,12 @@ earlier edit, and it still said "what remains open from phase 6 is step 9's thre
 contradicting the paragraph above it, which says all three closed. Both are the ordinary failure mode this
 section keeps re-learning: a paragraph edited at the top and not at the bottom.)*
 
-**PHASE 7 IS UNDER WAY, and it is now two phases.** ~~awaiting approval to build, with no code written
-against it yet~~ was true for about an hour on 2026-09-08 and is **stale**.
-`phase-7-cinematic-surface.md` (v0.8) is the build: **steps 0, 1, 3, 4 and 5 are done**, step 2 was
-**deleted**, **step 5.5 was inserted on 2026-09-09**, and steps 6 through 8 remain. `phase-7.5-portfolio-and-writeup.md` (v1.0) carries the half
+**PHASE 7 IS COMPLETE — 2026-09-09.** `phase-7-cinematic-surface.md` (v0.8): **steps 0, 1, 3, 4, 5, 5.5,
+6, 7 and 8 are done**, step 2 was **deleted**, and step 5.5 was **inserted mid-phase**. The
+definition-of-done audit is `phase-7-cinematic-surface-IMPLEMENTATION.md` §8.9 and the close is §8.10 —
+**read those rather than restating them here.** The audit found one real defect (the backdrop did not
+yield to the tour, because a replayed run never touches `steps`), which is the argument for auditing
+rather than ticking. `phase-7.5-portfolio-and-writeup.md` (v1.0) carries the half
 that left and its IMPLEMENTATION doc is deliberately not written yet — it is written immediately before
 7.5 is built, so it can absorb what 7 teaches.
 

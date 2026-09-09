@@ -31,17 +31,23 @@ from musical_mycelium.graph.store import Direction
 
 DOCS = Path(__file__).resolve().parents[1] / "docs"
 
-#: The retargeted surface-C demo. **Provisional**: step 8 of phase 7 picks the tour route from ranked
-#: density, and this is an input to that rather than a decision taken ahead of it. Four hops, every hop
-#: ``influenced_by``, every hop gated and citable.
-DEMO_START = ("Q526463", "Detroit techno")
+#: The surface-C demo. **No longer provisional: chosen in step 8 from a ranked list of 20,095 candidate
+#: walks**, on measured evidence rather than taste. Five hops, three of them ``HAND``-checked and two
+#: corroborated. ``graph/routes.py`` is the ranking; ``make routes`` re-runs it.
+DEMO_START = ("Q241662", "groove metal")
 DEMO_END = ("Q9759", "blues")
-DEMO_HOPS = 4
+DEMO_HOPS = 5
 
 #: The route that was offered for months and never ran. Kept as an assertion rather than a comment so that
 #: a future corpus which *does* connect these two fails this file and forces someone to re-read the
 #: decision, instead of silently making a retired claim true again.
+#:
+#: **Both endpoints are named here rather than reusing ``DEMO_START`` for the second one.** They were the
+#: same node until step 8 moved the demo to a different route entirely, at which point a shared constant
+#: would have quietly re-pointed this assertion at a pair nobody retired -- still green, still passing,
+#: and no longer testing the thing it was written for.
 RETIRED_START = ("Q1127539", "Delta blues")
+RETIRED_END = ("Q526463", "Detroit techno")
 
 #: Where a demo query is named in prose, and the line or block that names it. Extending this dict is the
 #: cheap way to protect a new one: any document that offers a route to a reader belongs here.
@@ -133,7 +139,7 @@ def test_the_retired_route_really_has_no_path(store: InMemoryGraphStore) -> None
     """Both directions and both argument orders, because a one-directional check is how a path gets
     called missing when it is only being walked the wrong way. If this ever fails, the corpus has
     connected them and the retirement is worth re-reading rather than working around."""
-    start, end = RETIRED_START[0], DEMO_START[0]
+    start, end = RETIRED_START[0], RETIRED_END[0]
     for a, b in ((start, end), (end, start)):
         for direction in (Direction.INFLUENCED_BY, Direction.INFLUENCED):
             assert not store.path(a, b, direction), f"{a} -> {b} ({direction}) now has a path"

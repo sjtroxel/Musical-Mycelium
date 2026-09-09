@@ -6,7 +6,7 @@
         ingest-dbpedia ingest-origins facts \
         image image-run tf-fmt tf-validate tf-bootstrap tf-init tf-plan tf-apply tf-destroy image-push \
         heldout-key heldout-draw heldout-seal heldout-verify heldout-check \
-        eval eval-live eval-noise eval-label eval-judge eval-tier2 eval-heldout \
+        eval eval-live eval-noise eval-label eval-judge eval-tier2 eval-heldout routes \
         web-install web-dev web-check \
         hooks hooks-uninstall
 
@@ -260,6 +260,13 @@ backdrop: ## Regenerate the SPA's inlined backdrop layout from the pinned artifa
 
 facts: ## Regenerate web/src/corpus-facts.json from the pinned artifact (free, offline)
 	uv run python -m musical_mycelium.graph.facts
+
+# Phase 7 step 8. Prints a RANKED LIST, not a winner: choosing the demo route is a judgement made with
+# the columns in front of you, and a blended score would be taste with a decimal point on it.
+#   make routes ARGS='--top 40'          more of the list
+#   make routes ARGS='--min-artists 5'   drop routes whose thinnest node has little artist coverage
+routes: ## Rank candidate guided-tour routes by measured evidence (free, offline)
+	uv run python -m musical_mycelium.graph.routes $(ARGS)
 
 ingest: ## Rebuild the pinned graph artifact from Wikidata (local only; requires --force to overwrite)
 	uv run python -m musical_mycelium.ingest.wikidata $(ARGS)

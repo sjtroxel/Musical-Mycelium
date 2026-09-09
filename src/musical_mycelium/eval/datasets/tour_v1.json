@@ -34,17 +34,30 @@
   "cases": [
     {
       "case_id": "tour_v1_001",
-      "query": "Take me from Detroit techno back to the blues.",
+      "query": "Take me from groove metal back to the blues.",
       "shape": "path",
       "difficulty": "standard",
       "authored_at": "2026-09-09",
       "axis": "genre",
-      "expected_resolution": { "name": "Detroit techno", "node_id": "Q526463" },
-      "expected_terminus": { "name": "blues", "node_id": "Q9759" },
+      "expected_resolution": {
+        "name": "groove metal",
+        "node_id": "Q241662"
+      },
+      "expected_terminus": {
+        "name": "blues",
+        "node_id": "Q9759"
+      },
       "expected_refusal": false,
-      "expected_path": ["Q526463", "Q1071961", "Q11401", "Q45981", "Q9759"],
+      "expected_path": [
+        "Q241662",
+        "Q483352",
+        "Q211723",
+        "Q38848",
+        "Q193355",
+        "Q9759"
+      ],
       "expected_claims": [],
-      "notes": "The canonical surface C query, worded exactly as SPEC.md section 1 words it. Four hops: Detroit techno -> Chicago house -> hip-hop -> rhythm and blues -> blues. Every hop is INFOBOX_AUTO and uncorroborated, which is the weakest verification tier in the corpus and is why verification_mix has to travel with this route on screen. This is also the route the shipped tour recording walks."
+      "notes": "The canonical surface C query, worded exactly as SPEC.md section 1 words it, and the route the shipped tour recording walks. CHOSEN IN STEP 8 FROM A RANKED LIST OF 20,095 CANDIDATE WALKS, not from taste: graph/routes.py scores every genre-to-genre walk of 2-6 hops on weakest edge tier, mean tier, corroboration and length. Five hops, three of them HAND-checked (groove metal <- thrash metal, heavy metal <- blues rock, blues rock <- blues) and two corroborated; only the two middle hops are INFOBOX_AUTO. It replaced Detroit techno -> Chicago house -> hip-hop -> rhythm and blues -> blues, which ranked 11,218th with every hop at the INFOBOX_AUTO floor and nothing corroborated. That earlier route was a step 5 taste pick and this step exists to catch exactly that."
     },
     {
       "case_id": "tour_v1_002",
@@ -53,10 +66,22 @@
       "difficulty": "standard",
       "authored_at": "2026-09-09",
       "axis": "genre",
-      "expected_resolution": { "name": "dubstep", "node_id": "Q20474" },
-      "expected_terminus": { "name": "music of Africa", "node_id": "Q369820" },
+      "expected_resolution": {
+        "name": "dubstep",
+        "node_id": "Q20474"
+      },
+      "expected_terminus": {
+        "name": "music of Africa",
+        "node_id": "Q369820"
+      },
       "expected_refusal": false,
-      "expected_path": ["Q20474", "Q9794", "Q45981", "Q212024", "Q369820"],
+      "expected_path": [
+        "Q20474",
+        "Q9794",
+        "Q45981",
+        "Q212024",
+        "Q369820"
+      ],
       "expected_claims": [],
       "notes": "A different imperative verb, on purpose: 'walk me' rather than 'take me', so the set does not measure one phrasing and call it a category. Four hops: dubstep -> reggae -> rhythm and blues -> spirituals -> music of Africa. This is the project's thesis in one walk and is the strongest candidate step 8 inherits."
     },
@@ -67,10 +92,19 @@
       "difficulty": "trivial",
       "authored_at": "2026-09-09",
       "axis": "genre",
-      "expected_resolution": { "name": "Shibuya-kei", "node_id": "Q1207347" },
-      "expected_terminus": { "name": "jazz", "node_id": "Q8341" },
+      "expected_resolution": {
+        "name": "Shibuya-kei",
+        "node_id": "Q1207347"
+      },
+      "expected_terminus": {
+        "name": "jazz",
+        "node_id": "Q8341"
+      },
       "expected_refusal": false,
-      "expected_path": ["Q1207347", "Q8341"],
+      "expected_path": [
+        "Q1207347",
+        "Q8341"
+      ],
       "expected_claims": [],
       "notes": "CONTROLLED PAIR with gold_v0_1_017, which asks 'How is Shibuya-kei connected to jazz?' Same endpoints, same single hop, same corpus. The only variable is that this one is an instruction. A third imperative verb, and the shortest route in the set: one hop is the boring middle that .claude/rules/evals.md requires, and a one-hop tour is the case most likely to expose a pacing or camera assumption that only holds for longer walks."
     },
@@ -81,10 +115,20 @@
       "difficulty": "trivial",
       "authored_at": "2026-09-09",
       "axis": "genre",
-      "expected_resolution": { "name": "heavy metal music", "node_id": "Q38848" },
-      "expected_terminus": { "name": "blues", "node_id": "Q9759" },
+      "expected_resolution": {
+        "name": "heavy metal music",
+        "node_id": "Q38848"
+      },
+      "expected_terminus": {
+        "name": "blues",
+        "node_id": "Q9759"
+      },
       "expected_refusal": false,
-      "expected_path": ["Q38848", "Q193355", "Q9759"],
+      "expected_path": [
+        "Q38848",
+        "Q193355",
+        "Q9759"
+      ],
       "expected_claims": [],
       "notes": "CONTROLLED PAIR with gold_v0_1_016, which asks 'How does heavy metal connect back to the blues?' Also the one case here whose route carries HAND-checked and independently cited edges in gold, so a divergence between this case and its pair cannot be blamed on thin evidence. Note the query says 'heavy metal' while the node is labelled 'heavy metal music': the trailing-music fold in label_key is load-bearing here and this case is now the thing that notices if it regresses."
     },
@@ -95,10 +139,20 @@
       "difficulty": "standard",
       "authored_at": "2026-09-09",
       "axis": "genre",
-      "expected_resolution": { "name": "trip hop", "node_id": "Q205560" },
-      "expected_terminus": { "name": "jazz", "node_id": "Q8341" },
+      "expected_resolution": {
+        "name": "trip hop",
+        "node_id": "Q205560"
+      },
+      "expected_terminus": {
+        "name": "jazz",
+        "node_id": "Q8341"
+      },
       "expected_refusal": false,
-      "expected_path": ["Q205560", "Q11401", "Q8341"],
+      "expected_path": [
+        "Q205560",
+        "Q11401",
+        "Q8341"
+      ],
       "expected_claims": [],
       "notes": "Two hops through hip-hop. Included as an ordinary middle: the set would otherwise be two four-hop showpieces, a one-hop minimum and a refusal, with nothing in between."
     },
@@ -109,10 +163,18 @@
       "difficulty": "adversarial",
       "authored_at": "2026-09-09",
       "axis": "genre",
-      "expected_resolution": { "name": "Delta blues", "node_id": "Q1127539" },
-      "expected_terminus": { "name": "Detroit techno", "node_id": "Q526463" },
+      "expected_resolution": {
+        "name": "Delta blues",
+        "node_id": "Q1127539"
+      },
+      "expected_terminus": {
+        "name": "Detroit techno",
+        "node_id": "Q526463"
+      },
       "expected_refusal": true,
-      "expected_path": ["Q1127539"],
+      "expected_path": [
+        "Q1127539"
+      ],
       "expected_claims": [],
       "notes": "THE REFUSAL CASE, AND IT IS THE ROUTE THIS PROJECT ADVERTISED FOR SIX WEEKS. SPEC.md section 1, the phase 7 scope doc and the step 5 plan all offered 'take me from delta blues to Detroit techno' until 2026-09-09, when it was measured and found to have no path in either direction and no undirected connection either. Delta blues sits in a two-node influence component with Chicago blues and has no sourced parents at all; Detroit techno sits in the 534-node one. Both nodes RESOLVE, which is exactly why the dead route looked plausible for so long -- this is the resolved-but-unconnected refusal, the stronger of the two refusal shapes. Without this case the set would refuse nothing and refusal accuracy would have no true refusal to measure. It is also the permanent record: if a future corpus connects these two, this case fails and someone re-reads the phase 8 decision rather than quietly reviving a retired claim."
     }

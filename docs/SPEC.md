@@ -19,7 +19,7 @@ off — but do not read it as "does not exist until v1.0.")*
 | | What it is | When |
 |---|---|---|
 | **A. Question-answerer** | A box. Ask about a genre or an artist, receive a streamed, cited lineage. | The v0.x spine, from v0.1 |
-| **C. Guided tour** | "Take me from Detroit techno back to the blues." The agent plans a path and narrates it as the camera walks it. | v1.0 showcase |
+| **C. Guided tour** | "Take me from groove metal back to the blues." The agent plans a path and narrates it as the camera walks it. | v1.0 showcase |
 | **B. Explorable map** | The graph as interface: wander, zoom, follow edges; the agent annotates on demand. | Ambient, falls out of the SPA at v0.5 |
 
 **The surface C example was retargeted 2026-09-09, phase 7 step 5, and the reason is worth more than the
@@ -31,9 +31,15 @@ components, largest 534** — the familiar "7 components, 1,465 in the largest" 
 which is exactly `CLAUDE.md`'s point that the organism is connected through the people who play across it,
 and is not a set of routes an influence walk can take.
 
-**Detroit techno was never the problem; delta blues was.** The retargeted route is
-`Detroit techno -> Chicago house -> hip-hop -> rhythm and blues -> blues`, four hops, every hop sourced.
-It is **provisional** pending phase 7 step 8, which picks the tour route from ranked density.
+**Detroit techno was never the problem; delta blues was.** The first retarget was
+`Detroit techno -> ... -> blues`, four sourced hops, and it was explicitly provisional pending step 8.
+
+**Step 8 measured it and replaced it — 2026-09-09.** `graph/routes.py` ranked **20,095** genre-to-genre
+walks on weakest edge tier, mean tier, corroboration and length. The Detroit techno route came
+**11,218th**: every hop `INFOBOX_AUTO`, the floor, and none corroborated. The route now advertised is
+`groove metal -> thrash metal -> speed metal -> heavy metal music -> blues rock -> blues` — five hops,
+**three of them `HAND`-checked and two corroborated**, chosen by sjtroxel from the ranked list. Re-run
+the ranking with `make routes`.
 
 **§2 below knew this in August and this table did not.** The note under the 2.2 table has read *"Delta blues
 is absent from the corpus"* since 2026-08-02. The surface table kept offering the route for five more weeks

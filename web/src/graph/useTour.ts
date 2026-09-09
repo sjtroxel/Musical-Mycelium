@@ -19,7 +19,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import recording from "../fixtures/tour-techno-to-blues.sse?raw";
+import recording from "../fixtures/tour-groove-metal-to-blues.sse?raw";
 import { SseParser } from "../stream";
 import type { StepState } from "../useLineageRun";
 import { emptyStep } from "../useLineageRun";
@@ -29,12 +29,12 @@ import { cuesFrom, durationOf, stateAt, TOKEN_MS, type Cue } from "./timeline";
 /**
  * The query the recording answers, worded exactly as `SPEC.md` §1 words surface C.
  *
- * **Imperative on purpose, and re-captured to make it so — 2026-09-09.** The first capture used the
- * interrogative form because that is what was typed, which left the tour's own heading disagreeing with
- * the query its documentation advertises. `tour_v1.json` exists to defend the imperative phrasing, so
- * the showcase using the other one would have been the dataset guarding something the product did not do.
+ * **Imperative on purpose, and the route was picked from a ranked list rather than from taste — step 8,
+ * 2026-09-09.** Five hops, three of them HAND-checked and two corroborated. The route this replaced,
+ * `Detroit techno -> ... -> blues`, ranked **11,218 of 20,095** on measured evidence: every hop was
+ * `INFOBOX_AUTO` and none corroborated. `graph/routes.py` is the ranking and `make routes` re-runs it.
  */
-export const TOUR_QUERY = "Take me from Detroit techno back to the blues.";
+export const TOUR_QUERY = "Take me from groove metal back to the blues.";
 
 /**
  * Parsed once, at module scope.

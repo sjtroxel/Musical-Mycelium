@@ -34,15 +34,26 @@ from musical_mycelium.graph.memory import GraphStore, default_store
 from musical_mycelium.graph.store import Direction
 
 RECORDING = (
-    Path(__file__).resolve().parents[1] / "web" / "src" / "fixtures" / "tour-techno-to-blues.sse"
+    Path(__file__).resolve().parents[1]
+    / "web"
+    / "src"
+    / "fixtures"
+    / "tour-groove-metal-to-blues.sse"
 )
 
 #: The route the recording walks, and the same pair `tests/test_canonical_surfaces.py` pins in the
 #: documents. Duplicated as ids rather than imported so that a change to either file is a visible
 #: disagreement between two assertions rather than one silently dragging the other along.
-TOUR_START = "Q526463"
+TOUR_START = "Q241662"
 TOUR_END = "Q9759"
-TOUR_CHAIN = ("Detroit techno", "Chicago house", "hip-hop", "rhythm and blues", "blues")
+TOUR_CHAIN = (
+    "groove metal",
+    "thrash metal",
+    "speed metal",
+    "heavy metal music",
+    "blues rock",
+    "blues",
+)
 
 
 @pytest.fixture(scope="module")

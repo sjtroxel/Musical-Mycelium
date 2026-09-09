@@ -42,12 +42,17 @@ export function App() {
 
   return (
     <>
-      {/* Phase 7 step 3. `paused` is `steps.length > 0` and NOT "a run is in flight": once the visitor
+      {/* Phase 7 step 3, amended step 8. `touring` was missing here until the phase's DoD audit, and the
+          omission is the interesting part: the tour is a *replayed* run, so it never touches `steps`, and
+          the backdrop went on drifting behind the most semantic motion on the page. DoD 9 is explicit --
+          ambient motion yields to semantic motion -- and a replay is a run for that purpose.
+
+          `paused` is `steps.length > 0` and NOT "a run is in flight": once the visitor
           has asked something, the page is a working surface and the ambient layer stays still for the
           rest of the visit. Restarting the drift after every answer would put motion behind the claims
           exactly when the claims are the thing to look at, and it would flicker. The backdrop's job is
           the first three seconds. */}
-      <Backdrop paused={steps.length > 0} />
+      <Backdrop paused={steps.length > 0 || touring} />
       <div className="app">
         <header className="masthead">
           {/* Phase 7 step 4. Three beats, and the indices are the whole of the choreography: the

@@ -15,6 +15,16 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { App } from "../App";
 import { TOUR_MS, TOUR_QUERY } from "./useTour";
 
+/** Every `paused` value `App` has handed the backdrop, newest last. */
+const backdropPaused: boolean[] = [];
+
+vi.mock("../components/Backdrop", () => ({
+  Backdrop: ({ paused }: { paused: boolean }) => {
+    backdropPaused.push(paused);
+    return null;
+  },
+}));
+
 function frameQueue() {
   let pending: FrameRequestCallback[] = [];
   let requests = 0;
@@ -38,6 +48,7 @@ function frameQueue() {
 }
 
 afterEach(() => {
+  backdropPaused.length = 0;
   cleanup();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -108,6 +119,24 @@ describe("the guided tour in the app", () => {
     const before = document.body.textContent ?? "";
     frames.step(TOUR_MS + 60_000);
     expect(document.body.textContent ?? "").toBe(before);
+  });
+
+  it("pauses the ambient backdrop, because a replay is still a run", () => {
+    // DoD 9: ambient motion yields to semantic motion. The tour never touches `steps`, so the backdrop's
+    // `paused` prop had to learn about `touring` separately -- and it did not until the phase's DoD
+    // audit, so the backdrop drifted behind the most semantic motion on the page.
+    //
+    // The WIRING is what broke, so the wiring is what is asserted. `Backdrop`'s own tests already cover
+    // that `paused` stops the loop; a subscriber count here would be ambiguous, because the tour and the
+    // backdrop share one ticker by design.
+    frameQueue();
+    render(<App />);
+    expect(backdropPaused.at(-1)).toBe(false);
+
+    act(() => {
+      screen.getByRole("button", { name: /take the guided tour/i }).click();
+    });
+    expect(backdropPaused.at(-1)).toBe(true);
   });
 
   it("yields to a real question rather than running beside it", () => {

@@ -8,8 +8,9 @@
 > **PHASE 7 WAS SPLIT IN TWO AND IS UNDER WAY — 2026-09-08.**
 > `docs/phases/phase-7-cinematic-surface.md` (v0.8, the build) and
 > `docs/phases/phase-7.5-portfolio-and-writeup.md` (v1.0, the writeup and the report);
-> `ROADMAP.md` §4 carries the decision. **Steps 0, 1, 3, 4 and 5 are DONE. Step 2 was DELETED. Step 5.5
-> was INSERTED 2026-09-09. Steps 6-8 remain.**
+> `ROADMAP.md` §4 carries the decision. **PHASE 7 IS COMPLETE — 2026-09-09.** Steps 0, 1, 3, 4, 5, 5.5,
+> 6, 7 and 8 are DONE; step 2 was DELETED; step 5.5 was INSERTED mid-phase. The DoD audit is
+> `phase-7-cinematic-surface-IMPLEMENTATION.md` §8.9 and the close is §8.10.
 >
 > **PHASE 8 `membership-tour` IS SCOPED AND IS AFTER v1.0 — 2026-09-09.**
 > `docs/phases/phase-8-membership-tour.md`. It opens `agent/claims.py:ALLOWED_PREDICATES` to a second
@@ -23,10 +24,11 @@
 > upgrading it. **`STAGGER_MS` (70) and `STAGGER_MAX_STEPS` (8) were NOT part of that sitting** and are
 > still derived; the live comparison moved `--enter-ms` only. Small, and not nothing.
 >
-> **Measured 2026-09-09 after step 5, not recalled:** `make check` green — **1474 passed, 0 xfailed**,
-> 14 deselected, mypy clean over **102** source files, frontend **210 passed** across 21 files, root **17 of 18**,
+> **Measured 2026-09-09 at the phase 7 close, not recalled:** `make check` green — **1522 passed, 0
+> xfailed**, 14 deselected, mypy clean over **106** source files, frontend **210 passed** across 21 files, root **17 of 18**,
 > scripted eval gates **4 passed / 0 failed / 2 N/A of six**. Datasets unchanged: gold **38**,
-> adversarial **20**, live **56**. Asset budget: script **268.4 KB of 320**, style **10.7 KB of 40**,
+> adversarial **20**, live **56** (unchanged, baseline valid), tour **6**. Asset budget: script
+> **276.1 KB of 320**, style **11.2 KB of 40**,
 > graph **2.57 MB of 3.00**, media **0 of 0**.
 >
 > **THE FOUR THINGS A COLD SESSION IS MOST LIKELY TO GET WRONG:**
@@ -51,6 +53,48 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## PHASE 7 COMPLETE — the tour, one timeline, and a route picked from measurement, 2026-09-09
+
+**As-built is `phase-7-cinematic-surface-IMPLEMENTATION.md` §6.0, §7.0, §8.0, §8.9 and §8.10, and those
+are the authority.** Only what a cold session would otherwise get wrong is here.
+
+**THE TOUR REPLAYS A RECORDING. IT DOES NOT CALL THE MODEL.** Decided on cost: a live tour on the landing
+page bills a Bedrock run **per page view**, and an abandoned stream still bills the full duration. The
+replay is $0 and deterministic. **Live-on-demand is deferred, not rejected** — the cue list is one
+interface with two producers, so a button is a second *input*, not a second implementation.
+
+**DESYNCHRONIZATION IS PREVENTED BY THERE BEING ONE VALUE, NOT ONE CURSOR.** `graph/timeline.ts:stateAt`
+returns one `StepState` and the narration and map are two readings of it. It reuses `applyFrame` — the
+live reducer — folded over a prefix, so the tour and a live run cannot drift apart in how a frame updates
+state. **Verified by deliberate breakage: 80 of 202 assertions failed** when `stateAt` was patched to hold
+narration one cue behind.
+
+**THE DEMO ROUTE WAS RANKED, AND THE ROUTE STEP 5 CHOSE CAME 11,218th OF 20,095.** `make routes`.
+`Detroit techno -> ... -> blues` scored mean tier **1.00** — the floor, every hop `INFOBOX_AUTO`, nothing
+corroborated. **The shipped route is now `groove metal -> thrash metal -> speed metal -> heavy metal
+music -> blues rock -> blues`**: five hops, **three `HAND`-checked, two corroborated**.
+
+**A PROXY WAS MEASURED AND REJECTED AND MUST STAY REJECTED.** Artist counts look like a recognisability
+signal and are not: **Detroit techno records 0 artists, Chicago house 0**, against pop music 158. That is
+the corpus's anglophone rock/pop skew, not obscurity. Ranking on it would promote exactly the region the
+eval rules warn about. It is printed as a column with its caveat and a test keeps the caveat attached.
+
+**`tour_v1.json` IS NOT MORE PATH COVERAGE — IT IS THE IMPERATIVE PHRASING.** All 38 gold queries are
+questions; the tour's own query is an instruction, and that had never been evaluated once. Two cases are
+**controlled pairs** with gold — same route, only the grammar differs. **The set gates nothing by design**
+and two tests hold it there: adding a case to a *gated* set trips `_ungateable` at $2.61 and ~2.4 hours.
+
+**A COMPONENT TEST CANNOT SEE A NEW CALLER THAT FORGOT TO CALL IT.** DoD 9 says the backdrop yields to a
+run streaming. `Backdrop`'s own tests passed throughout; `App.tsx` read `paused={steps.length > 0}` and a
+**replayed** run never touches `steps`, so the backdrop drifted behind the tour. Caught by the DoD audit,
+not by the suite.
+
+**OPEN, AND LEFT OPEN ON PURPOSE:** `loop.py:_sentences` pads a **four**-claim chain into two sentences
+and the model fills the second by restating the chain backwards — three live captures, two at four claims
+duplicated, one at five clean, because above four the string becomes a range. Not fixed: it governs every
+chain answer and `narrative_quality` is judged, so it is a freeze decision. Also open: `TOKEN_MS` has a
+comparison handle (`replayTour(ms)` on `make dev`) and has never been compared.
 
 ## PHASE 7 — step 5, the guided tour, and a demo that never ran, 2026-09-09
 
