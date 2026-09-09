@@ -1,0 +1,72 @@
+event: plan
+data: {"plan": {"query_kind": "lineage", "steps": [{"tool": "resolve_node", "reason": "Resolve Detroit techno to a node id", "arguments": {"name": "Detroit techno"}}, {"tool": "resolve_node", "reason": "Resolve blues to a node id", "arguments": {"name": "blues"}}, {"tool": "trace_lineage", "reason": "Trace the documented chain of influence between the two genres", "arguments": {}}], "asserted_premise": null}, "unregistered": []}
+
+event: tool
+data: {"name": "resolve_node", "arguments": {"name": "Detroit techno"}, "is_error": false}
+
+event: tool
+data: {"name": "resolve_node", "arguments": {"name": "blues"}, "is_error": false}
+
+event: tool
+data: {"name": "trace_lineage", "arguments": {"from_id": "Q526463", "to_id": "Q9759"}, "is_error": false}
+
+event: claim
+data: {"claim": {"subject_id": "Q526463", "predicate": "influenced_by", "object_id": "Q1071961", "source_ids": ["http://dbpedia.org/resource/Detroit_techno"], "verification": "INFOBOX_AUTO", "span": null}}
+
+event: claim
+data: {"claim": {"subject_id": "Q1071961", "predicate": "influenced_by", "object_id": "Q11401", "source_ids": ["http://dbpedia.org/resource/Chicago_house"], "verification": "INFOBOX_AUTO", "span": null}}
+
+event: claim
+data: {"claim": {"subject_id": "Q11401", "predicate": "influenced_by", "object_id": "Q45981", "source_ids": ["http://dbpedia.org/resource/Hip_hop_music"], "verification": "INFOBOX_AUTO", "span": null}}
+
+event: claim
+data: {"claim": {"subject_id": "Q45981", "predicate": "influenced_by", "object_id": "Q9759", "source_ids": ["http://dbpedia.org/resource/Rhythm_and_blues"], "verification": "INFOBOX_AUTO", "span": null}}
+
+event: path
+data: {"node_ids": ["Q526463", "Q9759", "Q1071961", "Q11401", "Q45981"], "labels": ["Detroit techno", "blues", "Chicago house", "hip-hop", "rhythm and blues"], "chain": ["Q526463", "Q1071961", "Q11401", "Q45981", "Q9759"], "chain_labels": ["Detroit techno", "Chicago house", "hip-hop", "rhythm and blues", "blues"]}
+
+event: token
+data: {"text": "Blues"}
+
+event: token
+data: {"text": " influenced"}
+
+event: token
+data: {"text": " rhythm"}
+
+event: token
+data: {"text": " and blues, which influenced"}
+
+event: token
+data: {"text": " hip"}
+
+event: token
+data: {"text": "-hop, which influenced Chicago"}
+
+event: token
+data: {"text": " house, which influenced Detroit"}
+
+event: token
+data: {"text": " techno."}
+
+event: token
+data: {"text": " Detroit techno came"}
+
+event: token
+data: {"text": " out of Chicago"}
+
+event: token
+data: {"text": " house, which came out of hip"}
+
+event: token
+data: {"text": "-hop, which came out of rhythm"}
+
+event: token
+data: {"text": " and blues,"}
+
+event: token
+data: {"text": " which came out of blues."}
+
+event: done
+data: {"usage": {"input_tokens": 7148, "output_tokens": 536}, "claim_count": 4, "rejection_count": 0, "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0", "planned_steps": 3, "executed_steps": 3, "synthesis_usage": {"input_tokens": 109, "output_tokens": 57}, "synthesis_model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0", "stop_reason": "complete", "elapsed_seconds": 7.423, "artifact_version": "0.7.1", "corpus": {"artifact_version": "0.7.1", "nodes": 1479, "edges": 5066, "verification": {"ASSERTS_AUTO": 759, "EXPOSURE_AUTO": 57, "HAND": 22, "INFOBOX_AUTO": 1335, "MEMBERSHIP_BARE": 1363, "MEMBERSHIP_CITED": 1419, "PROSE_AUTO": 111}, "structure": {"component_count": 7, "largest_component": 1465, "diameter": 10, "isolated_nodes": 0, "max_path_hops": 12}, "coverage": {"genres": 675, "without_inception": 198, "without_country": 222, "eras": {"pre-1900": 23, "1900-1949": 56, "1950-1969": 97, "1970-1989": 186, "1990-2009": 96, "2010-": 19, "unknown": 198}, "coarser_than_year": 64, "countries": {"United States": 245, "United Kingdom": 121, "Europe": 27, "Japan": 24, "Germany": 20, "Brazil": 14, "Canada": 12, "Mexico": 11, "Jamaica": 9, "Belgium": 7, "France": 7, "Netherlands": 7, "Spain": 7, "Italy": 5, "Trinidad and Tobago": 4, "Cuba": 4, "Latin America": 4, "Haiti": 4, "Sweden": 3, "Philippines": 3, "Finland": 2, "Poland": 2, "Democratic Republic of the Congo": 2, "Republic of the Congo": 2, "Turkey": 2, "Australia": 2, "Portugal": 2, "Switzerland": 2, "Dominica": 2, "Dominican Republic": 2, "Scandinavia": 2, "Angola": 1, "Sinophone": 1, "England": 1, "Norway": 1, "Bohemia": 1, "Ibero-America": 1, "Indonesia": 1, "Puerto Rico": 1, "French West Indies": 1, "Austria": 1, "Slovenia": 1, "Celtic nations": 1, "New Zealand": 1, "Israel": 1, "Thailand": 1, "Czech Republic": 1, "South America": 1, "Wales": 1, "Panama": 1, "India": 1, "Pakistan": 1, "British Raj": 1, "Liberia": 1, "Sierra Leone": 1, "Paraguay": 1, "Brixton": 1, "Hawaii": 1, "Peru": 1, "North America": 1, "Nigeria": 1, "Ireland": 1, "Detroit": 1, "Karnataka": 1, "Ghana": 1}, "distinct_countries": 65, "genres_without_us_or_uk": 136, "top_country": "United States", "top_country_share": 0.541}, "corroboration": {"influence_edges": 2284, "corroborated": 82, "single_source": 2202, "reciprocal_pairs": 6, "contested_pairs": 2, "contested": [{"a": {"id": "Q1425111", "label": "western music"}, "b": {"id": "Q18217098", "label": "New Mexico music"}, "a_from_b": {"subject_id": "Q1425111", "object_id": "Q18217098", "source": "dbpedia", "source_id": "http://dbpedia.org/resource/Western_music_(North_America)", "verification": "INFOBOX_AUTO"}, "b_from_a": {"subject_id": "Q18217098", "object_id": "Q1425111", "source": "wikidata", "source_id": "http://www.wikidata.org/entity/statement/Q18217098-30EFBDDD-53B2-4936-B81A-8697928719AD", "verification": "PROSE_AUTO"}}, {"a": {"id": "Q188450", "label": "electropop"}, "b": {"id": "Q861823", "label": "electroclash"}, "a_from_b": {"subject_id": "Q188450", "object_id": "Q861823", "source": "wikidata", "source_id": "http://www.wikidata.org/entity/statement/Q188450-C28D697F-A8F8-48F1-930A-7A2382621F84", "verification": "PROSE_AUTO"}, "b_from_a": {"subject_id": "Q861823", "object_id": "Q188450", "source": "dbpedia", "source_id": "http://dbpedia.org/resource/Electroclash", "verification": "INFOBOX_AUTO"}}]}, "predicate": "influenced_by"}}
+

@@ -55,7 +55,14 @@ export interface RunStep {
   query: string;
 }
 
-function emptyStep(query: string): StepState {
+/**
+ * A run before any frame has landed.
+ *
+ * Exported for `graph/timeline.ts`, which folds `applyFrame` over a *prefix* of a recorded run to get
+ * the state at a given moment. Sharing the seed and the reducer is what makes the tour's state and a
+ * live run's state the same derivation rather than two that agree.
+ */
+export function emptyStep(query: string): StepState {
   return {
     query,
     phase: "queued",

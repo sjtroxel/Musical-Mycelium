@@ -304,12 +304,14 @@ code {
 .ask__input:focus-visible,
 .chip:focus-visible,
 .ask__submit:focus-visible,
+.tour:focus-visible,
 .cancel:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .ask__submit,
+.tour,
 .cancel {
   padding: 0.7rem 1.15rem;
   font: inherit;
@@ -1221,4 +1223,21 @@ code {
 
 .footer__licences a {
   color: inherit;
+}
+
+/* Phase 7 step 6, surface C. Deliberately quieter than `.ask__submit`: the ask box is what the project
+   is, and the tour is an offer beside it. Same shape and same rule colour as `.cancel` so it reads as
+   part of the chrome rather than as a second call to action competing with the first. */
+.tour {
+  margin-top: 0.9rem;
+}
+
+.tour:hover:not([disabled]) {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
+
+.tour[disabled] {
+  opacity: 0.5;
+  cursor: default;
 }

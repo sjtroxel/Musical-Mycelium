@@ -1350,20 +1350,204 @@ repo does with superseded material.
 phase 8's IMPLEMENTATION doc. That is written immediately before phase 8 is built, after 7.5, so it can
 absorb what phases 7 and 7.5 teach.
 
-### Step 6 — One timeline, demonstrably
+### Step 6 — One timeline, demonstrably — **DONE 2026-09-09** (rewritten before a line was written)
 
 Scope doc DoD item 2: *"Narration and camera are driven by one timeline, demonstrably — desynchronization
 should be impossible by construction, not merely unobserved."*
 
-The primitive: a single ordered cue list derived from the SSE event order — `{ atMs, kind, payload }` —
+> **Re-read against the repo before building. This plan was written 2026-09-08 and step 4 landed under it
+> on 2026-09-09**, which moved three of its premises. The original is kept below, struck where superseded.
+>
+> **1. There is already one rAF loop.** `web/src/graph/ticker.ts`, built in step 4.4 for the reason this
+> step gives: *"two loops is also two places that have to agree about when nothing should be painting."*
+> The plan's *"not two loops that agree"* was solved a step early. **This step must not grow a second
+> one**, and `ticker.ts`'s own docstring already forbids what would be the tempting move: *"If this file
+> ever grows priorities, ordering guarantees, or a scheduler, step 4 has failed."* The cue list is not a
+> scheduler and does not live in the ticker.
+>
+> **2. There is already one state object, and it is already pure.** `useLineageRun.ts:applyFrame` is a
+> pure reducer over SSE frames, and narration (`prose`) and the map (`claims`, `path`) are **fields on the
+> same `StepState`**. Two consumers reading one object cannot show different data. The DoD's invariant
+> substantially holds today; what does not hold is that **nothing asserts it**, which is this step's own
+> stated distinction between an item being closed and being asserted.
+>
+> **3. `motion.ts` is already pure arithmetic over elapsed ms.** `frameAt(mode, elapsed)` returns
+> `{positionT, edgeT, done}`, so timing is checkable in jsdom where pixels are not. The timeline belongs
+> beside it, for the same reason and in the same shape.
+>
+> **THE FORK THE PLAN DID NOT KNOW IT WAS TAKING, and it is decided here: the tour REPLAYS a recorded
+> run.** *(sjtroxel, 2026-09-09.)* Nothing in the scope doc or `SPEC.md` had ever said whether surface C
+> is a live agent run or a playback, and the answer determines whether a cue list is the right primitive
+> or a layer duplicating `applyFrame`.
+>
+> - **Live**, the SSE arrival order already *is* the single ordering and `applyFrame` already *is* the
+>   single state. A cue list would restate both.
+> - **Replayed**, there is no arrival time to key off, so an explicit `atMs` is not a nicety — it is the
+>   only thing that can order the walk. The cue list earns its place.
+> - **And a tour that plays on load is the deciding argument, on cost.** `.claude/rules/aws-and-cost.md`
+>   is explicit that *"streamed responses are not interrupted when the invoking client connection is
+>   broken. Customers are billed for the full function duration."* A live tour on the landing page bills a
+>   Bedrock run **per page view**, from visitors who never asked a question. A replay is **$0** and it is
+>   deterministic, which a demo wants and a live model cannot promise.
+>
+> **Live-on-demand is DEFERRED, not rejected, and the seam is the point.** The cue list is one interface
+> with two possible producers — a recording supplies `atMs` up front, a live run derives it from arrival.
+> So a "run it live" button is a second *input*, not a second implementation, and the live path
+> substantially exists already: anyone who wants to watch it happen for real can type the query into the
+> ask box that has been there since v0.1. **Build the replay. Add the button only if it earns its place**,
+> in step 8 or never.
+>
+> **THE REQUIREMENT THIS CREATES, AND IT IS NOT OPTIONAL.** A recording is a file that can drift from the
+> corpus. If the artifact moves and the recording does not, the showcase narrates something that is no
+> longer true — **which is step 5's defect wearing a new costume, three days later.** So the recording gets
+> exactly what the chips and the canonical queries now have: a test asserting every claim in it still
+> resolves in the pinned artifact, failing the build rather than the demo. `tests/test_chips.py`,
+> `tests/test_canonical_surfaces.py` and this are one family and should read like it.
+>
+> **What the recording IS, and it reuses machinery rather than inventing it.** `web/src/fixtures/*.sse`
+> are **real bytes captured from the API** — `contract.test.ts` documents the `curl -sN` that produces
+> one, and four already exist and are already consumed by five test files. The tour recording is one more
+> of those, captured the same way. **Nothing new to build to make one.**
+>
+> **Timings are DERIVED, not captured, and that is a decision rather than a shortcut.** The obvious move is
+> to record arrival times alongside the bytes. It is wrong: real arrival times carry model latency, so a
+> faithful replay of a live run reproduces its dead air. Pacing a tour is a design choice the same way
+> `EDGE_MS = 850` was — *"chosen by eye in the running app, not derived"* — and it wants a knob, not a
+> recording. So `atMs` comes from a **pure function of the frame sequence**, which keeps the `.sse` as the
+> single source of truth for *content* and leaves *timing* tunable without re-capturing anything.
+
+**The primitive.** `web/src/graph/timeline.ts`, beside `motion.ts` and for the same reason: pure, so it is
+testable where the canvas is not.
+
+- `cuesFrom(frames: Frame[]): Cue[]` — a pure pacing function assigning `atMs` to an ordered frame list.
+- `Cue = { atMs, kind, payload }`, one array, ordered, built once.
+- **One cursor.** `cursorAt(cues, elapsed): number`. Both consumers call it. Not two cursors that agree —
+  one function, and the narration and the camera are two *readings* of its result.
+- The ticker drives `elapsed`. It does not learn about cues.
+
+**The property test, which is what makes DoD 2 a closed item rather than an asserted one.** Over generated
+cue sequences and generated timestamps: the narration cursor and the camera cursor are the same integer at
+every timestamp, for every sequence. Generated rather than enumerated, because the invariant is the claim
+and three hand-picked examples are not a claim. jsdom has no canvas and no WAAPI, so this is asserted as
+arithmetic — the number, never the pixel, exactly as step 4 established.
+
+**Done when:** `timeline.ts` exists and is pure, the property test passes, a staleness test pins the
+recording against the artifact, the tour runs end to end in the real app, `make check` is green, and the
+byte budget still fits — the recording is data and lands against the **graph** class, not the script cap.
+
+**Explicitly not in this step:** the live-on-demand button, the tour's eval dataset (step 7), the route
+choice (step 8), and any new rAF loop.
+
+~~The primitive: a single ordered cue list derived from the SSE event order — `{ atMs, kind, payload }` —
 and **two consumers reading one cursor**. Not two loops that agree. Not a camera that listens to the same
-events. One array, one index, both renderers read it.
+events. One array, one index, both renderers read it.~~ **Kept in full: it was right, and steps 4 and 5
+only changed where it plugs in.**
 
-"Impossible by construction" is only a claim if something checks it, so: a property test over generated cue
-sequences asserting the text cursor and the camera cursor are never on different cues at the same
-timestamp. That is the difference between the DoD item being closed and being asserted.
+~~"Impossible by construction" is only a claim if something checks it, so: a property test over generated
+cue sequences asserting the text cursor and the camera cursor are never on different cues at the same
+timestamp. That is the difference between the DoD item being closed and being asserted.~~ **Also kept, and
+promoted above.**
 
-**Done when:** the property test exists and passes, and the demo runs end to end in the real app.
+~~**Done when:** the property test exists and passes, and the demo runs end to end in the real app.~~
+**Superseded: the staleness test and the byte class were not in it.**
+
+#### 6.0 As built
+
+**Measured:** `make check` green, **1481 Python** (from 1474) and **417 frontend across 23 files** (from
+210), mypy clean over 103 source files, root 17 of 18, eval gates unchanged at 4 / 0 / 2. Byte budget run
+rather than recalled: **script 275.2 KB of 320 (86%)**, style 11.2 of 40, graph 2.57 MB of 3.00, media 0
+of 0, shell 10.0 of 32.
+
+**The invariant came out stronger than the plan asked for, and the difference is the whole point.** The
+plan said *"two consumers reading one cursor"*. What shipped hands out **no cursor at all**:
+`timeline.ts:stateAt` returns one `StepState`, and the narration and the map are two *readings of the same
+value*. There is no second thing to be out of step with. A cursor handed to two callers is still two
+callers who could each do something different with it; one value is not.
+
+**It reuses `applyFrame` rather than reimplementing it.** A tour's state at time t is the live reducer
+folded over the cues that have fired by t — the same implementation over a prefix, not a parallel one that
+behaves the same. `emptyStep` was exported for this. A change to how a frame updates state cannot now land
+in the live path and miss the tour.
+
+**The property test was verified by deliberate breakage, per `.claude/rules/evals.md`'s rule that a metric
+nobody has tried to break is not a metric.** `stateAt` was patched to hold the narration one cue behind the
+claims — the exact desync DoD 2 forbids — and **80 of 202 assertions failed**. Restored, green. Seeded
+generator in the test file rather than a dependency: 40 seeds, deterministic on every machine, and a
+failing seed is quotable.
+
+**A deviation from this plan, recorded rather than absorbed: the recording is INLINED, not fetched.** The
+plan said it would land against the `graph` byte class and be fetched like the corpus. It is **5,539
+bytes**. Fetching it would have cost a staging script, a loading state and an error state to save five
+kilobytes against ~45 KB of script headroom, *and* would have introduced the one thing DoD 5 forbids — a
+request on load — unless gated behind another `enabled` flag. Inlining has no request at all, which is why
+`tour.test.tsx` can assert `fetch` is never called on first paint. **The plan's storage assumption was
+wrong about the size, not about the principle.**
+
+**The recording is a REAL Bedrock run — captured 2026-09-09, approved by sjtroxel, and it cost about a
+cent.** `make dev-live`, one query, `us.anthropic.claude-haiku-4-5-20251001-v1:0`: **7,148 input + 536
+output** tokens, 4 claims, `stop_reason: complete`, 7.4s, artifact 0.7.1. 6,075 bytes. A stub capture from
+`LocalLLM` was committed first and replaced within the hour; nothing in `tests/test_tour_recording.py`
+changed, because it validates claims, sources, chain contiguity and the pin rather than words. **That was
+the point of validating claims rather than words**, and it is the reason a re-capture is cheap to do
+again.
+
+**AND THE LIVE CAPTURE FOUND A REAL SYNTHESIS DEFECT, WHICH THE STUB COULD NEVER HAVE SHOWN.** The
+narration reads:
+
+> *"Blues influenced rhythm and blues, which influenced hip-hop, which influenced Chicago house, which
+> influenced Detroit techno. Detroit techno came out of Chicago house, which came out of hip-hop, which
+> came out of rhythm and blues, which came out of blues."*
+
+**Two sentences saying the identical chain, once in each direction.** The cause is not mysterious and is
+already written down: `loop.py:_sentences` returns `"two sentences"` for a chain of 4 claims, and its own
+docstring records that a padding instruction is a fabrication instruction — *"three of the judge pool's
+single-claim items each fabricated something different to fill the second sentence — a verbatim repeat, an
+invented exclusivity, an invented edge."* **This is that first failure mode, at a claim count nobody had
+checked on the chain shape.** It repeated rather than fabricated, which is the harmless end of that list,
+and the answer is still fully grounded — every clause traces to one of the four approved claims.
+
+**Not fixed here, and deliberately.** `_sentences` governs *every* chain answer in the system, the live
+eval suite has bounds measured against current behavior, and `narrative_quality` is a judged metric. That
+is a decision at a freeze, not a side effect of a demo capture. **Logged as an open item; the tour ships
+the real answer the system gives, which is the honest thing for a demo to do even when the answer is
+clumsy.**
+
+**The recorded chain also exercises the `chain` / `node_ids` distinction rather than only asserting it.**
+Visit order is `Detroit techno, blues, Chicago house, hip-hop, rhythm and blues` — both endpoints resolved
+before the trace — while the chain is `Detroit techno -> Chicago house -> hip-hop -> rhythm and blues ->
+blues`. Drawing an arrow down the first would narrate false history, which `PathFrame` has warned about
+since v0.1 and which no fixture had covered until now.
+
+**`CLAIM_MS` is reused from `motion.ts:EDGE_MS` and that is asserted, not just commented.** Pacing claims
+faster than the edge animation draws them would start the next edge before the last had arrived, so the
+camera would never once come to rest. A test pins `CLAIM_MS >= EDGE_MS` so the relationship survives
+someone tuning one of them.
+
+**`TOKEN_MS = 45` was DERIVED, and now has the handle `ENTER_MS` had — approved by sjtroxel 2026-09-09.**
+`cuesFrom` takes an optional token pace, and `useTour` exposes `replayTour(ms)` on `window` behind
+`import.meta.env.DEV`. **Exactly the `ENTER_MS` precedent: no preview page, no shipped switch**, one
+console line on `make dev`:
+
+```js
+replayTour(25); replayTour(45); replayTour(80)
+```
+
+It rebuilds the cue list, restarts the tour, and returns the new total duration. **Verified it ships
+nothing:** `npm run build` then grepping `dist/` for `replayTour` and the restart event returns **0** —
+Vite's `DEV` is a compile-time constant, so the block is dead-code-eliminated rather than merely unused.
+A test asserts the override actually changes the pacing, because a comparison handle that silently ignored
+its argument would show the same tour three times and read as *"the number does not matter"*.
+
+**The number itself is still 45 and still underived-by-comparison until he sits with it.** The handle is
+not the decision.
+
+**Pre-existing and not introduced here:** the frontend suite emits React `act` warnings — `App.test.tsx`
+alone accounts for 20. `tour.test.tsx` adds 3 from the corpus fetch resolving outside `act`. Cleaning the
+suite's `act` hygiene is real and is not step 6.
+
+**Not built, deliberately:** the live-on-demand button, the tour's eval dataset (step 7), the route choice
+(step 8), and any second rAF loop. `useTour` subscribes to `ticker.ts` and unsubscribes from inside its own
+tick when the last cue plays, which `ticker.ts` documents as how a finite animation ends.
 
 ### Step 7 — The tour's own dataset
 

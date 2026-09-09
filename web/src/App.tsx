@@ -7,19 +7,24 @@ import { ChipRow } from "./components/ChipRow";
 import { CoveragePanel } from "./components/CoveragePanel";
 import { StepPanel } from "./components/StepPanel";
 import { useStaticGraph } from "./graph/useStaticGraph";
+import { TOUR_QUERY, useTour } from "./graph/useTour";
 import { useLineageRun } from "./useLineageRun";
 
 export function App() {
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [touring, setTouring] = useState(false);
   const { steps, corpus, busy, label, run, annotate, cancel } = useLineageRun();
+  // The tour replays a recording, so it spends nothing and needs no network. See `useTour.ts`.
+  const tour = useTour(touring);
   // The corpus downloads alongside the first run, never before one. DoD 5 forbids putting a 640 KB
   // fetch in front of first paint, and `App.test.tsx` asserts that loading the page requests nothing.
-  const { graph } = useStaticGraph(steps.length > 0);
+  const { graph } = useStaticGraph(steps.length > 0 || touring);
 
   const pickChip = (chip: Chip) => {
     setActiveId(chip.id);
     setQuery("");
+    setTouring(false);
     void run(
       chip.label,
       chip.steps.map((step) => step.query),
@@ -31,6 +36,7 @@ export function App() {
     const trimmed = query.trim();
     if (trimmed === "" || busy) return;
     setActiveId(null);
+    setTouring(false);
     void run(trimmed, [trimmed]);
   };
 
@@ -78,6 +84,34 @@ export function App() {
         </form>
 
         <ChipRow disabled={busy} activeId={activeId} onPick={pickChip} />
+
+        {/* Phase 7 step 6, surface C. The tour replays a recorded run rather than calling the model:
+            a live tour would bill a Bedrock run per page view from visitors who never asked anything,
+            and `.claude/rules/aws-and-cost.md` is explicit that an abandoned stream still bills the
+            full duration. Narration and map are two readings of ONE `StepState` from `timeline.ts`,
+            which is what makes DoD 2's "desynchronization impossible by construction" structural
+            rather than promised. */}
+        <button
+          className="tour"
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setActiveId(null);
+            setTouring(true);
+          }}
+        >
+          Take the guided tour
+        </button>
+
+        {touring && (
+          <main className="results" aria-live="polite" aria-busy={!tour.done}>
+            <p className="results__label">
+              A recorded walk through the corpus. Every claim is checked against the pinned
+              artifact.
+            </p>
+            <StepPanel key={TOUR_QUERY} step={tour.state} graph={graph} busy={!tour.done} />
+          </main>
+        )}
 
         {busy && (
           <button className="cancel" type="button" onClick={cancel}>
