@@ -39,6 +39,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from musical_mycelium.agent.claims import Claim
@@ -553,26 +554,40 @@ def slice_by_dimensions(
     )
 
 
-# --- the gold suite, wired ---------------------------------------------------------------------------
+# --- the gold and tour suites, wired -----------------------------------------------------------------
+
+#: The guided tour's own dataset. **Separate from gold on purpose and the reason is a price tag.**
+#: ``thresholds.py:_ungateable`` returns before any per-metric check the moment a gated set's case count
+#: changes, so adding these six cases to ``gold_v0_1`` would have un-gated the whole live suite and cost
+#: $2.61 and about 2.4 hours to restore. ``ThresholdSet.matches`` keys on dataset **and** provider, so
+#: ``"tour"`` matches no set and prints the loud NOT GATED banner instead of borrowing a baseline
+#: measured over different questions. See ``phase-7-cinematic-surface-IMPLEMENTATION.md`` §4.
+TOUR_DATASET = Path(__file__).parent / "datasets" / "tour_v1.json"
 
 
-def run_gold_suite(
+def _run_dataset(
     store: GraphStore,
     *,
-    llm_for: Callable[[EvalCase], LLM] | None = None,
-    provider: str = PROVIDER_SCRIPTED,
-    budget: EvalBudget | None = None,
+    path: Path | None,
+    dataset: str,
+    llm_for: Callable[[EvalCase], LLM] | None,
+    provider: str,
+    budget: EvalBudget | None,
 ) -> SuiteResult:
-    """The gold set through the suite. Scripted by default and therefore free.
+    """One frozen dataset through the suite, scripted by default and therefore free.
 
-    Imported locally rather than at module scope because ``gold`` imports ``EvalCase`` from here; the
-    cycle is real and the local import is the smaller of the two fixes. The alternative — moving
+    ``gold`` is imported locally rather than at module scope because it imports ``EvalCase`` from here;
+    the cycle is real and the local import is the smaller of the two fixes. The alternative — moving
     ``EvalCase`` into its own module — buys nothing but a third file.
+
+    **The tour set reuses `gold.py`'s loader wholesale rather than getting its own.** Every function
+    there already takes a path, the two files share a schema, and a second loader would be a second
+    place for the shape rules to drift from each other.
     """
     from musical_mycelium.eval import gold
 
-    cases = gold.load_cases()
-    version, pin = gold.dataset_version()
+    cases = gold.load_cases(path) if path is not None else gold.load_cases()
+    version, pin = gold.dataset_version(path) if path is not None else gold.dataset_version()
     scripts = {case.case_id: gold.build_script(case) for case in cases}
 
     def scripted(case: EvalCase) -> LLM:
@@ -584,9 +599,40 @@ def run_gold_suite(
         gold.eval_cases(cases),
         store=store,
         llm_for=llm_for if llm_for is not None else scripted,
-        dataset="gold",
+        dataset=dataset,
         dataset_version=version,
         artifact_pin=pin,
+        provider=provider,
+        budget=budget,
+    )
+
+
+def run_gold_suite(
+    store: GraphStore,
+    *,
+    llm_for: Callable[[EvalCase], LLM] | None = None,
+    provider: str = PROVIDER_SCRIPTED,
+    budget: EvalBudget | None = None,
+) -> SuiteResult:
+    """The gold set through the suite. Scripted by default and therefore free."""
+    return _run_dataset(
+        store, path=None, dataset="gold", llm_for=llm_for, provider=provider, budget=budget
+    )
+
+
+def run_tour_suite(
+    store: GraphStore,
+    *,
+    llm_for: Callable[[EvalCase], LLM] | None = None,
+    provider: str = PROVIDER_SCRIPTED,
+    budget: EvalBudget | None = None,
+) -> SuiteResult:
+    """The guided tour's set through the suite. Scripted, free, and deliberately ungated."""
+    return _run_dataset(
+        store,
+        path=TOUR_DATASET,
+        dataset="tour",
+        llm_for=llm_for,
         provider=provider,
         budget=budget,
     )
@@ -614,10 +660,17 @@ def main() -> int:
     from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 
     store = InMemoryGraphStore.from_directory(artifact_directory())
-    result = run_gold_suite(store)
-    outcome = gate(result)
-    print(render(result, outcome))
-    return outcome.exit_code
+
+    # Gold first, because it is the one that blocks. The tour set follows and is deliberately ungated:
+    # it prints its own NOT GATED banner naming the reason, which is containment rather than a defect.
+    # See TOUR_DATASET above. Exit codes are OR-ed rather than the last one winning, so a gold failure
+    # cannot be erased by a clean tour run printed after it.
+    exit_code = 0
+    for result in (run_gold_suite(store), run_tour_suite(store)):
+        outcome = gate(result)
+        print(render(result, outcome))
+        exit_code |= outcome.exit_code
+    return exit_code
 
 
 if __name__ == "__main__":

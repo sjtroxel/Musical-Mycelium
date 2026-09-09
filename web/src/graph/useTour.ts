@@ -26,8 +26,15 @@ import { emptyStep } from "../useLineageRun";
 import { onFrame } from "./ticker";
 import { cuesFrom, durationOf, stateAt, TOKEN_MS, type Cue } from "./timeline";
 
-/** The question the recording answers. Shown as the panel's heading, exactly as a live run's would be. */
-export const TOUR_QUERY = "How is Detroit techno connected to the blues?";
+/**
+ * The query the recording answers, worded exactly as `SPEC.md` §1 words surface C.
+ *
+ * **Imperative on purpose, and re-captured to make it so — 2026-09-09.** The first capture used the
+ * interrogative form because that is what was typed, which left the tour's own heading disagreeing with
+ * the query its documentation advertises. `tour_v1.json` exists to defend the imperative phrasing, so
+ * the showcase using the other one would have been the dataset guarding something the product did not do.
+ */
+export const TOUR_QUERY = "Take me from Detroit techno back to the blues.";
 
 /**
  * Parsed once, at module scope.

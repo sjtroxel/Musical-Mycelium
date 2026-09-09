@@ -1549,7 +1549,7 @@ suite's `act` hygiene is real and is not step 6.
 (step 8), and any second rAF loop. `useTour` subscribes to `ticker.ts` and unsubscribes from inside its own
 tick when the last cue plays, which `ticker.ts` documents as how a finite animation ends.
 
-### Step 7 — The tour's own dataset
+### Step 7 — The tour's own dataset — **DONE 2026-09-09**
 
 `eval/datasets/tour_v1.json`, per §4. Scored by the **existing** metrics only — the scope doc's not-list
 forbids new metrics and this plan does not argue with it. Runs scripted and free on every commit.
@@ -1560,6 +1560,90 @@ side effect.
 
 **Done when:** the tour set runs in the free suite, and `make eval-live` still reports six gates rather
 than a `NOT GATED` banner.
+
+#### 7.0 As built
+
+**Measured:** `make check` green, **1514 Python** (from 1481), mypy clean over 104 source files, frontend
+427 across 23, root 17 of 18. `make eval` now runs **two** datasets: gold gates 4 / 0 / 2 of six as
+before, and tour prints its own banner.
+
+**THE PLAN'S PREMISE NEEDED ONE CORRECTION, AND IT CHANGED WHAT THE SET IS.** This step was written as
+*"the guided tour is a new query shape"*. It is not — `gold_v0_1` already holds **six `path`-shaped cases
+and they score 100%**. Walking two nodes has been covered since phase 2.
+
+**What gold does not hold is a single imperative query.** All 38 of its cases are questions: *"Where
+did"*, *"Who influenced"*, *"What came out of"*, *"How does"*. The tour's own stated query, in `SPEC.md`
+§1 and in this phase's scope doc, is **"Take me from Detroit techno back to the blues."** So the phrasing
+the showcase surface uses had **never been evaluated once**, and that — not path coverage — is what
+`tour_v1.json` is for. A test asserts gold really is all questions, so if that ever stops being true this
+set's rationale is what fails.
+
+**Two of the six cases are controlled pairs with gold, and that is the design rather than a nicety.**
+`tour_v1_003` walks the same route as `gold_v0_1_017`, `tour_v1_004` the same as `gold_v0_1_016` — same
+endpoints, same expected path, same corpus, and the only difference is that the question is an
+instruction. **If a live run ever scores a pair differently, phrasing is the cause and nothing else can
+be.** A test asserts the pairing rather than trusting the comment, because a pair that quietly stops
+being a pair passes every other test in the file while measuring nothing.
+
+**Every case carries `expected_claims: []`, deliberately, and there is a test that keeps it deliberate.**
+Gold's path cases cite real books with page numbers and ISBNs. **Those cannot be authored by an agent
+without fabricating them**, and a project whose entire pitch is checkable provenance cannot carry invented
+citations in its own eval data. So these cases assert that the phrasing **resolves** and the corpus **can
+answer**, not what the answer is — the same position `gold_v0_1_005` and `gold_v0_1_010` took at v0.7.1,
+with the reasoning already recorded there. Claim correctness on these exact routes is covered by the gold
+pairs, which do carry citations.
+
+**The refusal case is the route this project advertised for six weeks.** `tour_v1_006` is *"Take me from
+delta blues to Detroit techno"*, expecting a refusal, checked in both directions and both argument orders.
+It makes step 5's finding permanent: if a future corpus connects those two, this case fails and somebody
+re-reads the phase 8 decision instead of quietly reviving a retired claim. It is also the
+resolved-but-unconnected refusal shape, which is the stronger of the two — both nodes resolve, which is
+exactly why the dead route stayed plausible.
+
+**Containment held and is now asserted twice.** `ThresholdSet.matches` keys on dataset **and** provider,
+so `tour/scripted` matches nothing and `gate` prints *"no threshold set covers tour/scripted. Known sets:
+live/bedrock, gold/scripted. This is not a pass."* — exit 0, loudly ungated. §4 said this plan only had to
+not defeat that, and it did not. Two tests hold it: one that the tour set matches no threshold set, one
+that **`live_cases()` is still 56 with no `tour_` ids**, because that is the expensive failure — one extra
+case in a gated set returns from `_ungateable` before any per-metric check, at $2.61 and ~2.4 hours to
+restore.
+
+**On the DoD's second clause, stated precisely rather than rounded up.** *"`make eval-live` still reports
+six gates"* was **not run** — it spends $2.61. What was verified is the precondition that clause is about:
+`live.py` builds from `gold.eval_cases()` plus `harness.eval_cases()`, the tour set is in neither, and the
+live case count is unchanged at **56**. That is a structural check, not a live one, and the distinction is
+the honest version.
+
+**`gold.py` is reused wholesale rather than copied.** Every loader there already took a `path`; the two
+files share a schema; `_run_dataset` is the one new seam and `run_gold_suite` now goes through it too. A
+second loader would have been a second place for the shape rules to drift.
+
+**The honest limit on what this set currently proves.** A scripted run cannot show that a *model* handles
+imperative phrasing — the report says so itself in every run: *"DOES NOT — that a real model chooses the
+right tool, reaches the right nodes, or stops at the right time."* Today this set proves the cases are
+well-formed, the routes walk, and the corpus supports them. **The comparison it was built for needs a live
+run**, and that is a spend decision at a freeze, not a side effect of this step.
+
+**CLOSED THE SAME DAY BY RE-CAPTURE, AND THE RE-CAPTURE ANSWERED THE SET'S OWN QUESTION.** The first
+recording used the **interrogative** phrasing because that is what was typed, leaving the tour's heading
+disagreeing with the query `SPEC.md` §1 advertises — a dataset defending a phrasing the product did not
+use. sjtroxel approved a second capture and it ran on `us.anthropic.claude-haiku-4-5-20251001-v1:0`:
+**7,147 input + 495 output**, 4 claims, `complete`, 8.9s. `TOUR_QUERY` now reads *"Take me from Detroit
+techno back to the blues."*
+
+**The imperative query worked, and this is the first real evidence for the premise `tour_v1.json` was
+built on.** The model resolved both endpoints out of an instruction and planned identically to the
+question form: `query_kind: lineage`, `resolve_node` twice, then `trace_lineage`. Same four claims, same
+chain. **One live sample is one live sample** — the controlled pairs still need a live run to be a
+comparison rather than an anecdote — but the phrasing does not break the planner, which was the live
+risk.
+
+**AN ACCIDENT WORTH KEEPING: `synthesis_usage` was byte-identical across the two captures — 109 in, 57
+out — and that is the claims-first architecture visible in a number.** `synthesize` takes exactly one
+claim-bearing parameter, so **the query phrasing never reaches synthesis at all**; identical claim sets
+in, identical prose out. It also settles the repetition defect above: it is **deterministic behaviour of
+the chain template at four claims, not sampling noise**, reproduced across two independent runs asked two
+different ways. That is a stronger finding than the first capture supported, and it costs the same cent.
 
 ### Step 8 — The demo route, picked from measured density
 
