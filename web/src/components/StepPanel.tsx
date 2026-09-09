@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import facts from "../corpus-facts.json";
 import { GraphView } from "../graph/GraphView";
 import type { StaticGraph } from "../graph/staticGraph";
@@ -111,6 +111,38 @@ function NeighbourhoodMap({
     setSelectedId(toId);
   };
 
+  /**
+   * The picture, rebuilt only when something about the picture actually changed.
+   *
+   * **Phase 7 step 4.4 item 2, and the dependency list is the whole point.** A prose token updates
+   * `steps` with `{ ...step, prose: step.prose + text }`, which preserves the identity of `claims`,
+   * `path` and `toolNodeIds` -- so every dependency here is unchanged and the picture is not rebuilt.
+   * Before this, `buildRenderGraph` ran over the whole neighbourhood on every token of every answer,
+   * and handed `GraphView` a fresh object each time, which re-ran its effect: layout, camera fit and
+   * a full canvas draw, tens of times a second, to render text that is not on the canvas.
+   *
+   * It is also what makes `memo(GraphView)` work at all. A memo whose props are freshly allocated
+   * upstream is a comparison that always fails and a component that always renders.
+   */
+  const rendered = useMemo(
+    () =>
+      graph === null
+        ? null
+        : buildRenderGraph(graph, {
+            claims: step.claims,
+            pathNodeIds: step.path?.node_ids ?? [],
+            toolNodeIds: step.toolNodeIds,
+            openedIds,
+          }),
+    [graph, step.claims, step.path, step.toolNodeIds, openedIds],
+  );
+
+  /** Derived from `rendered`, so it inherits its stability rather than allocating a new array. */
+  const walked = useMemo(
+    () => rendered?.nodes.filter((node) => node.role === "walked") ?? [],
+    [rendered],
+  );
+
   if (graph === null) return null;
 
   const answered = step.done?.artifact_version;
@@ -123,13 +155,7 @@ function NeighbourhoodMap({
     );
   }
 
-  const rendered = buildRenderGraph(graph, {
-    claims: step.claims,
-    pathNodeIds: step.path?.node_ids ?? [],
-    toolNodeIds: step.toolNodeIds,
-    openedIds,
-  });
-  if (rendered.nodes.length === 0) return null;
+  if (rendered === null || rendered.nodes.length === 0) return null;
 
   const selected = rendered.nodes.find((node) => node.id === selectedId) ?? null;
 
@@ -139,7 +165,7 @@ function NeighbourhoodMap({
       <NodeInspector
         node={selected}
         graph={graph}
-        walkedNodes={rendered.nodes.filter((node) => node.role === "walked")}
+        walkedNodes={walked}
         busy={busy}
         onSelect={setSelectedId}
         onOpen={open}
@@ -201,7 +227,9 @@ export function StepPanel({
   const refused = step.outcome === "refusal";
 
   return (
-    <article className="panel">
+    /* Phase 7 step 4. One panel is one arrival, so no stagger index: a multi-step run mounts its
+       panels seconds apart and an invented delay would only add lag to something already sequenced. */
+    <article className="panel enter">
       <h2 className="panel__query">{step.query}</h2>
 
       <Status step={step} />

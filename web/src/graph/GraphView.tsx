@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { layout, tallestColumn, type Point } from "./layout";
 import {
   edgeKey,
@@ -13,6 +13,7 @@ import {
   type View,
 } from "./motion";
 import { PREDICATE_INFLUENCED_BY } from "./staticGraph";
+import { onFrame } from "./ticker";
 import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
 import {
   CLICK_SLOP,
@@ -148,7 +149,22 @@ function arrowhead(
   ctx.fill();
 }
 
-export function GraphView({
+/**
+ * The canvas.
+ *
+ * **Wrapped in `memo` below, and that is phase 7 step 4.4 item 2 rather than a habit.** Every prose
+ * token arriving on the stream re-renders `App`, and through it every `StepPanel`. Without this the
+ * whole picture -- layout, camera fit, one full `draw` over every node and edge -- was recomputed
+ * tens of times a second while the *text* was the only thing changing. `graphSignature` already
+ * stopped the animation from RESTARTING on those renders (see its note in `motion.ts`); it never
+ * stopped the render itself, and the two are different costs.
+ *
+ * A shallow comparison is enough because the props are already stable at the source: `StepPanel`
+ * memoizes the `RenderGraph` it builds, and `selectedId`/`onSelectNode` come from a `useState` pair.
+ * A custom comparator recomputing the signature here would pay for the content check on every token
+ * to save a render that shallow equality already skips.
+ */
+function GraphViewImpl({
   graph,
   motion,
   selectedId = null,
@@ -634,19 +650,22 @@ export function GraphView({
       return;
     }
 
-    let raf = 0;
-    const tick = (now: number) => {
+    // One shared loop for the page, not a second one behind this canvas — phase 7 step 4.4. The
+    // animation is finite, so it releases its own subscription the frame it finishes rather than
+    // ticking a no-op forever behind the backdrop's drift.
+    const off = onFrame((now: number) => {
       startedAt.current ??= now;
       const frame = frameAt(mode, now - startedAt.current);
       draw(frame);
-      if (!frame.done) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
+      if (frame.done) off();
+    });
 
-    // Cancelled on unmount and before every re-run. A claim landing mid-animation replaces the loop
-    // rather than racing a second one against it — two loops drawing the same canvas is a flicker
-    // that only appears under a fast stream, which is exactly when a visitor is watching.
-    return () => cancelAnimationFrame(raf);
+    // Released on unmount and before every re-run. A claim landing mid-animation replaces the
+    // subscription rather than racing a second one against it — two callbacks drawing the same canvas
+    // is a flicker that only appears under a fast stream, which is exactly when a visitor is watching.
+    // Calling `off` twice, which happens whenever an animation finishes before the effect re-runs, is
+    // deliberately harmless.
+    return off;
   }, [graph, motion, selectedId]);
 
   /** Canvas-local coordinates. Both pointer and wheel events arrive in page coordinates. */
@@ -882,3 +901,6 @@ export function GraphView({
     </figure>
   );
 }
+
+export const GraphView = memo(GraphViewImpl);
+GraphView.displayName = "GraphView";

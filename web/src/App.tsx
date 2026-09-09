@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { enterDelay } from "./graph/motion";
 import { Backdrop } from "./components/Backdrop";
 import { Mark } from "./components/Mark";
 import type { Chip } from "./components/ChipRow";
@@ -43,17 +44,20 @@ export function App() {
       <Backdrop paused={steps.length > 0} />
       <div className="app">
         <header className="masthead">
-          <div className="masthead__lockup">
+          {/* Phase 7 step 4. Three beats, and the indices are the whole of the choreography: the
+              delay comes from `staggerDelay` so it is a number a test can read, and the duration and
+              curve live in `styles.css`. The backdrop is drifting behind all three. */}
+          <div className="masthead__lockup enter" style={enterDelay(0) as React.CSSProperties}>
             <Mark />
             <h1 className="masthead__title">Musical Mycelium</h1>
           </div>
-          <p className="masthead__tagline">
+          <p className="masthead__tagline enter" style={enterDelay(1) as React.CSSProperties}>
             Music history is a network, not a timeline. Ask how two genres connect and every step of
             the answer traces to a checkable source.
           </p>
         </header>
 
-        <form className="ask" onSubmit={submit}>
+        <form className="ask enter" style={enterDelay(2) as React.CSSProperties} onSubmit={submit}>
           <label className="ask__label" htmlFor="query">
             Ask about a genre or an artist
           </label>
@@ -114,7 +118,9 @@ export function App() {
           `corpus-facts.json`, so it renders at first paint and never waits on the `done` frame's
           `corpus.coverage` -- DoD 5 keeps the 640 KB artifact fetch off first paint and this must
           not smuggle one in. */}
-        <CoveragePanel answeredVersion={corpus?.artifact_version ?? null} />
+        <div className="enter" style={enterDelay(3) as React.CSSProperties}>
+          <CoveragePanel answeredVersion={corpus?.artifact_version ?? null} />
+        </div>
 
         <footer className="footer">
           {corpus === null ? (

@@ -108,7 +108,7 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-09-08
+### Where the build actually is — 2026-09-09
 
 **Phases 0 through 5 are COMPLETE. PHASE 6 IS BUILT — steps 0 through 10 are all done. PHASE 6.5 IS
 COMPLETE — steps 0 through 8, all in one day, 2026-09-07.** Its as-built is
@@ -133,15 +133,25 @@ section keeps re-learning: a paragraph edited at the top and not at the bottom.)
 
 **PHASE 7 IS UNDER WAY, and it is now two phases.** ~~awaiting approval to build, with no code written
 against it yet~~ was true for about an hour on 2026-09-08 and is **stale**.
-`phase-7-cinematic-surface.md` (v0.8) is the build: **steps 0, 1 and 3 are done**, step 2 was
-**deleted**, and steps 4 through 8 remain. `phase-7.5-portfolio-and-writeup.md` (v1.0) carries the half
+`phase-7-cinematic-surface.md` (v0.8) is the build: **steps 0, 1, 3 and 4 are done**, step 2 was
+**deleted**, and steps 5 through 8 remain. `phase-7.5-portfolio-and-writeup.md` (v1.0) carries the half
 that left and its IMPLEMENTATION doc is deliberately not written yet — it is written immediately before
 7.5 is built, so it can absorb what 7 teaches.
 
-**Measured 2026-09-08 at end of day, not recalled:** `make check` green — **1465 passed**, 14
-deselected, mypy clean over **101** source files, frontend **192 passed** across 18 files, root 17 of
-18, scripted eval gates **4 passed / 0 failed / 2 N/A of six**. The asset budget, new today, reports
-script **267.9 KB of 320**, graph **2.57 MB of 3.00**, media **0 of 0**.
+**Step 4 built the motion system with no animation library and no Web Animations API** — CSS keyframes
+on `transform` and `opacity`, with the delays computed by pure functions in `graph/motion.ts` so they are
+testable where a running animation is not. It also produced two measurements worth carrying forward: a
+prose token was costing a **full canvas redraw** before `memo` and a `useMemo` closed it, and the
+backdrop's real per-frame cost is **0.90 ms at p95, 5.4% of a 60fps budget**, which cancelled the one
+optimization the plan had queued. **`ENTER_MS` was compared in the running app and kept** — a keep
+rather than a decisive pick, recorded that way; the two stagger constants were not part of that sitting.
+
+**Measured 2026-09-09, not recalled:** `make check` green — **1465 passed**, 14 deselected, mypy clean
+over **101** source files, frontend **210 passed** across 21 files, root 17 of 18, scripted eval gates
+**4 passed / 0 failed / 2 N/A of six**. The asset budget reports script **268.4 KB of 320**, style
+**10.7 KB of 40**, graph **2.57 MB of 3.00**, media **0 of 0**. *(The budget's `observed` fields had
+drifted since step 0 and were re-measured on 2026-09-09; they are not gated, which is why nothing caught
+it.)*
 
 **The corpus has a second source, and `contested` is reachable.** Artifact **v0.7.1 is pinned** —
 `graph/memory.py:34`, `ingest/wikidata.py:59` and the SPA's `GRAPH_PIN` all read it. 1,479 nodes and

@@ -158,3 +158,94 @@ export function graphSignature(graph: {
  * line. The endpoint pair is what `subgraph.ts` already de-duplicates on.
  */
 export const edgeKey = (from: string, to: string): string => `${from}>${to}`;
+
+/*
+ * ---------------------------------------------------------------------------------------------
+ * The page's motion, as opposed to the map's. Phase 7 step 4.
+ *
+ * Everything above this line animates the canvas. Everything below it produces NUMBERS that CSS
+ * animates the DOM with, which is the split step 4 argued for: transitions and keyframes on
+ * `transform` and `opacity` composite off the main thread, and a JavaScript library would move that
+ * same work onto the thread that is busy parsing a stream. The arithmetic stays here so it is
+ * testable in jsdom -- which has no Web Animations API at all, `element.animate` included, so a
+ * timing decision expressed in code rather than in a number would be untestable either way.
+ *
+ * These functions know nothing about elements. They return numbers and plain objects; the component
+ * hands the number to CSS as a custom property and CSS decides what to do with it.
+ * ---------------------------------------------------------------------------------------------
+ */
+
+/**
+ * How long one element's entrance runs, in milliseconds.
+ *
+ * **520 was derived, then looked at, then kept -- sjtroxel, 2026-09-09, in the running dev server.**
+ * The derivation first: a shade over half of `EDGE_MS`, because a claim edge drawing itself in is the
+ * thing the eye should follow and a panel arriving is chrome, and chrome that takes as long as the
+ * content competes with it.
+ *
+ * Compared against 420, 700 and 850 by replaying every entrance live at each value. **His verdict was
+ * "it's okay" and it is recorded at that strength deliberately** -- this is a keep, not the decisive
+ * pick `EDGE_MS` carries ("kind of fast" at 420, better at 700, 850 chosen). A number kept without
+ * enthusiasm is still a number someone looked at, and writing it down as more than that would make the
+ * next reader trust it more than the evidence supports. Worth revisiting if the hero is ever reworked.
+ */
+export const ENTER_MS = 520;
+
+/**
+ * The gap between successive items in a set that arrives all at once.
+ *
+ * **Still derived, and NOT covered by the 2026-09-09 sitting.** 70ms is the smallest gap at which a row
+ * of chips reads as arriving in sequence rather than together; below about 50 the eye merges them and
+ * the stagger is wasted work. The live comparison that settled `ENTER_MS` moved `--enter-ms` only --
+ * these delays are computed here and baked into inline styles, so replaying did not vary them. Saying
+ * so rather than letting one decision cover three numbers.
+ */
+export const STAGGER_MS = 70;
+
+/**
+ * The most stagger steps anything waits, regardless of how long the list is.
+ *
+ * **This cap is the part that is not a taste decision.** Without it a 30-claim answer would put its
+ * last row two full seconds behind its first, and a visitor reading top to bottom would arrive at a
+ * blank space and wait. A stagger is a way of showing the order things arrived in; past about eight
+ * steps it stops reading as order and starts reading as lag.
+ */
+export const STAGGER_MAX_STEPS = 8;
+
+/**
+ * How long the item at `index` waits before it enters, in milliseconds.
+ *
+ * Clamped at both ends: a negative index cannot pull an element in early, and nothing waits longer
+ * than `STAGGER_MAX_STEPS` steps.
+ */
+export function staggerDelay(index: number): number {
+  const step = Math.min(Math.max(Math.floor(index), 0), STAGGER_MAX_STEPS);
+  return step * STAGGER_MS;
+}
+
+/**
+ * The custom property a staggered element carries, ready to spread into a `style` prop.
+ *
+ * **A plain `Record<string, string>` and not `React.CSSProperties`, deliberately.** This module must
+ * not import React -- see the note at the top of the step 4 block -- and the cast belongs at the call
+ * site, where React already is.
+ *
+ * **This is also the jsdom-testable seam for the whole DOM motion system.** No test in this repo can
+ * observe a CSS animation running; every test can observe that an element carries the delay the
+ * arithmetic computed for it. Assert the number, never the pixel.
+ */
+export function enterDelay(index: number): Record<string, string> {
+  return { "--enter-delay": `${staggerDelay(index)}ms` };
+}
+
+/**
+ * The delay for an item that arrived on its own, over time, rather than as part of a set.
+ *
+ * **Zero, and the reason is the interesting half.** Claims arrive one at a time as the gate approves
+ * them, seconds apart -- they are already staggered, by the stream, with the real timing of the real
+ * work. Adding an index-based delay on top would make the eighth claim wait half a second after
+ * landing, for no reason a visitor could perceive, and it would slowly desynchronise the list from
+ * the map that is drawing the same edge. A set that arrives together needs a stagger invented for it;
+ * a set that arrives over time already has one.
+ */
+export const STREAMED_DELAY: Record<string, string> = { "--enter-delay": "0ms" };

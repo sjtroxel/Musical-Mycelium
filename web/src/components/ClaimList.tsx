@@ -1,4 +1,5 @@
 import type { Claim } from "../types";
+import { STREAMED_DELAY } from "../graph/motion";
 import { shortSourceId, wikidataUrl } from "../wikidata";
 
 /**
@@ -49,8 +50,16 @@ export function ClaimList({ claims, labels }: Props) {
         {claims.length} cited {claims.length === 1 ? "claim" : "claims"}
       </h3>
       <ol className="claims__list">
+        {/* Phase 7 step 4. `STREAMED_DELAY` is zero on purpose: these arrive one at a time as the gate
+            approves them, so the stream has already staggered them with the real timing of the real
+            work. The key is stable per position, so an appended claim mounts and animates while the
+            ones above it stay exactly where they are. */}
         {claims.map((claim, index) => (
-          <li className="claim" key={`${claim.subject_id}-${claim.object_id}-${index}`}>
+          <li
+            className="claim enter"
+            style={STREAMED_DELAY as React.CSSProperties}
+            key={`${claim.subject_id}-${claim.object_id}-${index}`}
+          >
             <p className="claim__statement">
               <span className="claim__node">{name(claim.subject_id)}</span>
               <span className="claim__predicate"> influenced by </span>

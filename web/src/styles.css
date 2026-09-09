@@ -60,6 +60,29 @@
 
   --measure: 34rem;
   --radius: 10px;
+
+  /* The plate, as a token rather than a number repeated in four rules.
+     
+     **0.92 is measured, not chosen, and it is now measured twice.** Step 3 set it so the masthead and
+     ask row returned to the contrast they had before the backdrop existed. On 2026-09-09 sjtroxel
+     reported the footer was hard to read, and the measurement against the brightest composited pixel
+     under it came back at **1.17:1** for `--ink-faint` -- far worse than the 3.42 that made step 3 plate
+     the ask row, because the footer sits over a denser part of the corpus.
+     
+     The brightest pixel measured anywhere was rgb(241,89,166), which is `--accent` at close to full
+     strength -- a genre node sitting directly behind text. That is the CEILING, not a footer-local
+     fact, so this one number covers every block that has to survive the backdrop:
+     
+       plate   --ink-faint   --ink-soft
+       0.00        1.17         1.51     unreadable
+       0.68        3.36         5.92     fails
+       0.82        4.35         7.67     fails
+       0.92        5.01         8.82     both pass AA
+       ground      5.41         9.53     for reference
+     
+     0.92 puts `--ink-faint` back to essentially its plain-ground reading. Lower it and re-measure;
+     do not lower it by eye. */
+  --plate: rgba(13, 10, 20, 0.92);
 }
 
 * {
@@ -94,7 +117,11 @@ code {
 .app {
   max-width: 46rem;
   margin: 0 auto;
-  padding: 3rem 1.25rem 5rem;
+  /* The top pad CLAMPS for the same reason `.masthead__title` does -- reported by sjtroxel 2026-09-09,
+     "the header card doesn't look so good on mobile, it's a little big". 3rem of dead space above the
+     card is proportionate at 1440px and is 6% of a phone screen spent before anything is drawn.
+     Unchanged on desktop: 5vw only falls below 3rem under about 960px wide. */
+  padding: clamp(1.5rem, 5vw, 3rem) 1.25rem 5rem;
   /* Above the backdrop. Everything the visitor reads sits on this layer. */
   position: relative;
   z-index: 1;
@@ -156,15 +183,28 @@ code {
  * The lesson generalises past this rule: **a contrast measurement covers the elements you pointed it
  * at.** Two blocks were measured and four were exposed.
  */
+/*
+ * **The bleed is symmetric, and it was not until 2026-09-09.** This read `margin: 0 0 0 -1.15rem` from
+ * step 3 -- a negative LEFT margin with no right counterpart -- so every plate hung about 18px past the
+ * column on the left and sat flush with the body on the right, and the text inside was flush left but
+ * inset 18px from the right. Reported by sjtroxel from the running page: *"the footer and header plates
+ * are about 20 px closer to the left margin than the rest of it but they don't go 20 px closer to the
+ * right margin"*. One plate hid it; three made it obvious.
+ *
+ * Bleeding both sides is the fix rather than removing the bleed, because it also returns the text to the
+ * full column: every plated block now measures the same 696px as the unplated coverage panel, where
+ * before they measured 678. `.app` has 1.25rem of side padding, so a 1.15rem bleed stays inside the
+ * viewport at every width.
+ */
 .masthead,
 .ask {
-  background: rgba(13, 10, 20, 0.92);
+  background: var(--plate);
   border-radius: 14px;
-  margin: 0 0 0 -1.15rem;
+  margin: 0 -1.15rem;
 }
 
 .masthead {
-  padding: 1rem 1.15rem 0.1rem;
+  padding: clamp(0.75rem, 3vw, 1rem) 1.15rem 0.1rem;
   /* No bottom radius and no gap: the two plates meet and read as one shape. */
   border-radius: 14px 14px 0 0;
 }
@@ -204,7 +244,13 @@ code {
 }
 
 .masthead__tagline {
-  padding-bottom: 0.9rem;
+  /* **The font size clamps, and it does NOT save a line -- that guess was wrong and is corrected here
+     rather than left standing.** At 360px the tagline is four lines at 1rem and still four at 0.92rem;
+     what it saves is line height, about 8px, plus a little hierarchy against the title on a small
+     screen. Legibility is unaffected: 0.92rem is 14.7px, still normal text for the 4.5:1 bar, and it
+     measures 8.8:1 on the plate. The real saving in this block is the margin below -- see there. */
+  font-size: clamp(0.92rem, 3.6vw, 1rem);
+  padding-bottom: clamp(0.5rem, 2.4vw, 0.9rem);
   /* Spans the column rather than the reading measure. Reported by sjtroxel 2026-09-08: at 1440px the
      tagline and the footer both stopped at 544px while the lockup, the ask form, the chips and the
      coverage panel all ran to 696px, so the page opened and closed 152px narrower than its middle and
@@ -214,7 +260,12 @@ code {
      Widening rather than narrowing the middle, because the page's own precedent is already full-width
      small prose -- the coverage panel's paragraphs run the whole 696px at 0.85rem. `--measure` stays
      what it is for the answer surfaces, where a claim list genuinely wants a short line. */
-  margin: 0 0 2.25rem;
+  /* **The 36px below this was the single largest piece of dead space in the hero on a phone**, and it
+     was a fixed 2.25rem at every width. It is a deliberate gap on desktop -- the masthead and the ask
+     row are one plate and two sections, and they need to read that way -- so it clamps rather than
+     shrinking everywhere: unchanged above about 720px, 18px at 360. Found by measuring the gap that
+     was visible in a 360px screenshot rather than by reading the rule. */
+  margin: 0 0 clamp(1rem, 5vw, 2.25rem);
   color: var(--ink-soft);
 }
 
@@ -297,8 +348,11 @@ code {
   cursor: default;
 }
 
+/* Plated for the same reason as `.results__label`: this is on screen for the whole of a run, it is an
+   outline with no fill, and the backdrop behind it is a still frame rather than an absent one. */
 .cancel {
   margin-bottom: 1.5rem;
+  background: var(--plate);
 }
 
 /* --- chips --- */
@@ -352,12 +406,27 @@ code {
 
 /* --- results --- */
 
+/*
+ * The question, echoed back after a chip is clicked.
+ *
+ * **Plated 2026-09-09 on sjtroxel's report** -- *"when i click the cards, the question ... in the
+ * little letters needs to be in a small dark div too"*. Same defect as the footer directly above:
+ * `--ink-faint`, the lightest text on the page, sitting on a bright network with nothing behind it.
+ *
+ * `inline-block` so the plate hugs the question rather than running a bar across the column. A
+ * full-width plate here would read as a section header, which this is not -- it is the thing that was
+ * asked, quoted back small.
+ */
 .results__label {
+  display: inline-block;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-faint);
   margin: 0 0 0.75rem;
+  padding: 0.4rem 0.7rem;
+  background: var(--plate);
+  border-radius: var(--radius);
 }
 
 /*
@@ -772,12 +841,30 @@ code {
 
 /* --- footer --- */
 
+/*
+ * **Plated 2026-09-09, reported by sjtroxel looking at the running app: "hard for me to see the footer
+ * directly against the background."** He was right and the measurement was worse than the report --
+ * `--ink-faint` here read **1.17:1** against the brightest pixel under it, the single worst reading
+ * anywhere on the page. See the `--plate` note for the table.
+ *
+ * **This is the FOURTH instance of one defect**, after the ask label, the Trace it button and now this
+ * and `.results__label`. The pattern is exact every time: the lightest-weight text on the page, given
+ * no plate, over a decoration nobody re-measured it against. Step 3 wrote down "a contrast measurement
+ * covers the elements you pointed it at"; the fix each time has been to point one at more elements.
+ *
+ * **`border-top` is gone with the plate rather than kept beside it.** A 1px rule running straight
+ * across the top of a 14px-rounded panel reads as a mistake, and the plate is a stronger separator
+ * than the rule ever was. The full-column-width fix that rule recorded is unaffected -- the plate is
+ * full width too.
+ */
 .footer {
-  /* Full column width -- see `.masthead__tagline`. The border-top is the visible half of that bug: a
-     rule capped at the reading measure reads as a rule that stopped, not as a measure. */
   margin-top: 3rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--rule);
+  /* Symmetric, for the reason in the note above `.masthead`. */
+  margin-left: -1.15rem;
+  margin-right: -1.15rem;
+  padding: 1.25rem 1.15rem 1.1rem;
+  background: var(--plate);
+  border-radius: 14px;
   font-size: 0.85rem;
   color: var(--ink-faint);
 }
@@ -1038,15 +1125,83 @@ code {
   color: var(--ink-faint);
 }
 
+/* --- motion, phase 7 step 4 -------------------------------------------------------------------
+ *
+ * **Every animated property here is `transform` or `opacity` and that is the whole discipline.**
+ * Those two composite off the main thread; `width`, `top`, `filter` and `box-shadow` do not, and
+ * animating one of them is how a page gets janky no matter what drew it. The step 4 decision was to
+ * build the motion system out of CSS rather than import a library precisely so this stays true --
+ * a JavaScript library would run these same animations on the thread that is parsing the stream.
+ *
+ * The DELAYS come from `graph/motion.ts` as numbers. CSS owns the duration and the curve; the
+ * arithmetic owns who waits how long, because a number is testable in jsdom and an animation is not.
+ */
+
+:root {
+  /* Provisional, and owed a sitting in the running app the way the veil and the node alpha were --
+     see `ENTER_MS` in `graph/motion.ts`, which carries the reasoning and the same caveat. */
+  --enter-ms: 520ms;
+  /* Decelerating, and the same shape as `easeOutCubic` in `motion.ts` rather than a second opinion
+     about how motion should feel on this page. A thing arriving should settle, not slide. */
+  --enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --enter-rise: 10px;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    /* `translate3d` rather than `translateY`: it is the form that reliably gets its own compositor
+       layer, and the whole argument for CSS over a library is that this work leaves the main thread. */
+    transform: translate3d(0, var(--enter-rise), 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /*
- * DoD 6 lands properly at step 7 with the motion previews. The query is here now because the two
- * transitions above are the only motion in the file, and honouring it costs three lines rather than a
- * retrofit.
+ * One class, applied to anything that enters. `both` fill is load-bearing: it holds the `from` state
+ * during the delay, so a staggered item is invisible until its turn rather than visible, jumping, and
+ * then animating. It is also the reason the reduced-motion block below has to zero DELAY as well as
+ * duration -- see the note there.
+ */
+.enter {
+  animation: enter var(--enter-ms) var(--enter-ease) var(--enter-delay, 0ms) both;
+}
+
+/*
+ * The hero. Three beats: the lockup, the tagline, then the ask.
+ *
+ * This is the surface the backdrop is behind and the three seconds step 1 was spent on. The stagger
+ * is what turns "the page loaded" into "the page arrived".
+ */
+.masthead .enter,
+.ask.enter {
+  --enter-rise: 14px;
+}
+
+/*
+ * DoD 6, and it is no longer three lines because step 4 gave the page real motion to suppress.
+ *
+ * ~~The query is here now because the two transitions above are the only motion in the file.~~ That
+ * was true on 2026-09-08 and stopped being true the next day.
+ *
+ * **`animation-delay` is the line that matters and it was missing.** Zeroing only the DURATION leaves
+ * a staggered element sitting at its `from` keyframe -- `both` fill, so fully transparent -- for the
+ * whole of its delay, and then appearing. A visitor who has asked for reduced motion would have got a
+ * page whose chips blinked into existence one after another over half a second: more distracting than
+ * the animation they turned off, and reachable only by someone who had set the preference, which is to
+ * say invisible to everyone building it. Found by reasoning about `both` rather than by looking.
+ *
+ * `transition-delay` is zeroed for the same reason, before something starts relying on one.
  */
 @media (prefers-reduced-motion: reduce) {
   * {
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
   }
 }

@@ -768,26 +768,361 @@ more here because a backdrop drawn from a stale corpus still looks exactly like 
 **Not done, and owed by later steps:** the tagline's own colour question is closed by the plate rather
 than by a token change; step 4's motion system, step 5's tour and step 6's timeline are untouched.
 
-### Step 4 — The motion system, beyond the backdrop
+### Step 4 — The motion system, beyond the backdrop — **DONE 2026-09-09**
 
 The motion-graphics half: hero type, chip row, panel entrances, claim rows arriving, section transitions.
 
-**Decision, and it is the one contentious call in this plan: no animation library.** Not framer-motion, not
-GSAP. The reason is `motion.ts`'s own design note — the arithmetic was deliberately split out of the canvas
-*so that timing is testable in jsdom where pixels are not*. A library puts timing back inside the component
-and behind a rAF the test environment does not run, and the 168-test frontend suite gets quieter in exactly
-the area this phase is expanding. It also spends the step 0 script budget: framer-motion is roughly 120 KB
-before tree-shaking against a 236 KB app.
+**Decision, unchanged in outcome and rewritten in reasoning on 2026-09-09: no animation library.** Not
+framer-motion, not GSAP.
 
-Instead: extend `motion.ts` with the easings and staggers the new surfaces need, keeping every one a pure
-function of elapsed milliseconds, and drive them from CSS transitions and the existing loop.
+~~The reason is `motion.ts`'s own design note — the arithmetic was deliberately split out of the canvas so
+that timing is testable in jsdom where pixels are not. A library puts timing back inside the component and
+behind a rAF the test environment does not run, and the 168-test frontend suite gets quieter in exactly the
+area this phase is expanding. It also spends the step 0 script budget: framer-motion is roughly 120 KB
+before tree-shaking against a 236 KB app.~~
 
-**This is a trade, not a free win.** Hand-rolled motion is more code and more chances to get the feel
-wrong, and a library would make step 6 easier. If he wants the library, the honest cost is the budget line
-and the test coverage, and I will build it that way instead — but it should be chosen, not defaulted into.
+**Both of those are still true and both are the weaker case.** They are budget-and-coverage arguments, which
+is to say arguments for not doing something. The strike-through is kept because the replacement is the same
+decision reached for a better reason: **the browser already ships the library, and the native paths are the
+ones that stay smooth under a streaming answer.** A dependency here would buy a worse frame budget, not a
+better one. That is a reason to build, not a reason to abstain.
 
-**Done when:** every new motion honors `prefers-reduced-motion`, the script budget still passes, and the
-timing constants carry the same kind of note `EDGE_MS` does — what was tried, what was picked, by whom.
+Approved by sjtroxel, 2026-09-09, from the measurements in 4.0.
+
+#### 4.0 What the repo looks like going in — measured 2026-09-09, not recalled
+
+| fact | measured | how |
+|---|---|---|
+| `styles.css` | **1,069 lines, 3 of them matching `transition`, zero `@keyframes`** | `grep -c` |
+| frontend suite | **192 tests across 18 files**, green | `npm test` |
+| script budget | **274,525 bytes against a 327,680 cap** — about 51 KB of room | `npm run budget` |
+| runtime dependencies | **`react`, `react-dom`, and nothing else** | `web/package.json` |
+| `drawFrame` per frame | 5,058 edges in **one** path; 1,465 nodes as **1,465 separate** `beginPath`/`fill` | `backdrop.ts:144-168` |
+
+**The first row is the finding and it reframes the whole step.** The DOM half of this application has
+essentially no motion in it — three transition lines in a thousand-line stylesheet and not one keyframe.
+What is missing is CSS that was never written, not a dependency that was never installed. A library
+installed against that gap would be answering a question the repo is not asking.
+
+The doc said "168-test frontend suite" above; it is 192 as of this morning. Corrected here rather than left
+to be quoted by the next session.
+
+**And this table's own script row was wrong for an hour, which is the finding worth keeping.** It first
+read *236,210 bytes, about 84 KB of room*, taken from `asset-budget.mjs`'s `observed` field. That field is
+documented as not used by the gate, and it had not been touched since step 0 — **step 3 inlined 35 KB of
+backdrop positions into the bundle and never came back to it**. The real headroom is about **51 KB**, and
+the number was only caught by running `npm run budget` rather than reading the file. Two consequences:
+
+- `observed` is re-measured and carries a note saying why it drifts. It is the second field in that file to
+  go stale this week; the `media` reasoning string was the first, four days earlier, one entry over.
+- **The no-library case got stronger by accident.** framer-motion's un-tree-shaken ~120 KB does not fit in
+  51 KB at all, so the trade §4.5 describes is now measure-or-nothing rather than a judgment call.
+
+#### 4.1 The three native layers, in the order they carry weight
+
+1. **CSS transitions and `@keyframes`, on `transform` and `opacity` only.** These composite off the main
+   thread. Hero type staging, the chip row stagger, panel entrances, section transitions, claim rows
+   arriving — nearly all of the step is `transition-delay` arithmetic and a small number of keyframes.
+   Cost: a few KB against a 40 KB style cap currently sitting at 10 KB, and **zero script bytes**. A library
+   takes these same animations and runs them in JavaScript on the main thread, which is strictly worse while
+   an answer is streaming. **The discipline is the property, not the technique:** animate `width`, `top`,
+   `filter` or `box-shadow` and the jank arrives no matter what drew it.
+
+2. **`element.animate()`, the Web Animations API.** Zero bytes, built in, composited for transform and
+   opacity, and it returns an `Animation` with `currentTime`, `playbackRate`, `finished` and `cancel()`.
+   That is a real timeline object, and it is most of what GSAP gets imported for. **Step 6 is the reason
+   this matters**: a scrubbable `currentTime` is exactly the shape "two consumers, one cursor" wants.
+
+3. **`@starting-style` with `transition-behavior: allow-discrete`, and the View Transitions API.** The first
+   is the native answer to animating elements that mount and unmount, which is the single most common reason
+   people reach for `AnimatePresence`. The second covers shared-element and section transitions. **Neither is
+   assumed.** Both are feature-detected, both degrade to "no transition" rather than to a broken page, and
+   the support position gets checked against the real browsers before either is leaned on rather than taken
+   from anybody's memory of what 2026 baseline means.
+
+**`motion.ts` stays the timing authority; CSS and WAAPI are the output device.** That keeps the original
+design note's reasoning intact — the arithmetic stays pure and testable, the pixels stay the browser's
+problem — and it is the half a library would take away.
+
+#### 4.2 The constraint under all three: jsdom has NO Web Animations API
+
+Probed 2026-09-09 against the installed `jsdom` ^29.1.1, because the recommendation was about to rest on it:
+
+```
+element.animate: undefined    getAnimations: undefined
+Animation ctor:  undefined    CSS.supports:   undefined
+```
+
+**Absent, not partial**, and `CSS.supports` is gone with it. Three consequences, all of them design rules:
+
+- **Every `element.animate()` call is guarded the way `Backdrop.tsx` already guards `getContext`**, and the
+  un-animated branch must be the correct still state rather than a broken one. This is backdrop rule 4
+  wearing different clothes: *drawn, never blank*. A component that renders nothing when WAAPI is missing is
+  indistinguishable from one that threw.
+- **Feature detection is itself guarded**: `typeof window.CSS?.supports === "function" && ...`, never a bare
+  `CSS.supports(...)`, or the test suite takes the exception.
+- **This is the strongest argument for keeping the arithmetic in `motion.ts`, and it is not an argument for a
+  library** — a library is equally invisible to jsdom and takes the timing with it. Same blindness, less
+  testable.
+
+#### 4.3 What `motion.ts` grows, and what it must not
+
+**Grows:** easings past `easeOutCubic`; a `staggerAt(index)`-shaped pure function returning delay in ms; the
+cue arithmetic step 6 reads. Every one a pure function of elapsed milliseconds, every constant carrying an
+`EDGE_MS`-style note — what was tried, what was picked, by whom.
+
+**Must not:** own a `requestAnimationFrame` loop, know about DOM elements, or import React. The moment it
+does any of those, the reason it is testable is gone and the file has quietly become the thing it was split
+out to avoid.
+
+**The testable seam in jsdom, stated so it is not rediscovered in step 6:** assert the numbers `motion.ts`
+computed, and assert the element carries them — a data attribute or a custom property. Never assert a pixel,
+and never assert that an animation ran.
+
+#### 4.4 Three performance items, because the library question is not what will make this feel slow
+
+After step 3 there are **two independent rAF loops** — the backdrop drift and the graph motion — plus SSE
+tokens re-rendering React while both run. That, not the dependency list, is where the frame budget goes.
+
+1. **One shared rAF ticker.** A small module both canvases subscribe to, so there is one loop and one frame
+   budget instead of two competing ones. "Pause everything for the life of a run" — the §6 rule — becomes a
+   single call rather than a convention held in two places. **Cheap, structural, and it makes an existing
+   invariant easier to keep.** Do this first.
+   **Its own risk, named now: a ticker is a seam, and if it grows priorities or a scheduler this step has
+   failed.** Subscribe, unsubscribe, one callback taking a timestamp. Nothing else.
+2. **Isolate the streaming text from the canvas subtree.** If a prose token re-renders anything the graph
+   reads, that cost is paid tens of times a second for the whole answer. `graphSignature` already defends the
+   *animation restart* against this — see its note — but it does not defend the *render*.
+3. **`drawFrame`'s 1,465 `fill()` calls per frame.** Edges are already one path, which is why they are cheap;
+   the nodes are not. Quantizing the twinkle alpha into roughly eight buckets and batching each into one path
+   takes it to about sixteen draw calls for the same picture. **This one is an optimization and it is third
+   for a reason: measure the current frame cost first.** If the backdrop is already inside budget on his
+   machine, this is work that buys nothing, and "1,465 sounds like a lot" is not a measurement.
+
+#### 4.5 What would overrule this, written so it can be checked rather than argued
+
+- **Interruptible spring physics.** If step 4 turns out to need motion that gets redirected mid-flight and
+  must not snap, hand-rolling it is a genuinely bad trade and the answer changes. Nothing in the named
+  surfaces needs it today.
+- **The 120 KB above is the un-tree-shaken figure and should not be quoted as the cost.** The `m` plus
+  `LazyMotion` import path is far smaller. If he wants the library anyway, the honest move is to **measure the
+  real built delta against the headroom**, not to argue from either number. **That headroom is ~51 KB, not
+  the ~84 KB this bullet said until 2026-09-09** — see the correction in 4.0 — so the un-tree-shaken import
+  does not fit at all and only the measured `m` path is even a candidate.
+
+**Done when:** every new motion honors `prefers-reduced-motion`; the script budget still passes **and its new
+observed number is recorded in this section**; every timing constant carries the same kind of note `EDGE_MS`
+does; **no unguarded `element.animate` or `CSS.supports` reaches the suite, with a test asserting the still
+path renders rather than blanks**; and the frontend suite is green with its count written down here.
+
+#### 4.6 As built — the two structural items, 2026-09-09
+
+**Item 1, the shared ticker.** `web/src/graph/ticker.ts`, plus `ticker.test.ts` (6 tests). One rAF loop
+for the page; `Backdrop` and `GraphView` are subscribers. Three things the plan did not say:
+
+1. **The two loops are different shapes and the ticker had to serve both.** The backdrop's is infinite;
+   `GraphView`'s is finite and stops when `frameAt` reports `done`. That is why a subscriber unsubscribes
+   from inside its own tick, and why `pump` iterates a **copy** of the subscriber set — deleting from a Set
+   while iterating it would silently skip whichever subscriber came next. It has a test.
+2. **The hidden-tab rule moved from `Backdrop` to the ticker and its test did not change.** Rule 2 spies on
+   `window.cancelAnimationFrame`, so it kept passing against the composed behavior. That is the right
+   outcome and it is worth noticing why: the rule was written as a property of the page, not of the
+   component, so relocating the mechanism left the assertion true.
+3. **rAF is looked up on `window` at call time, not captured at module load.** Capture it and every test
+   that stubs or spies on rAF stops observing the loop — a shared ticker would become invisible to the
+   suite that is meant to cover it.
+
+**Item 2, render isolation, and it was worse than the plan guessed.** `memo(GraphView)` plus a `useMemo`
+around `buildRenderGraph` in `StepPanel`. The memo works only because `useLineageRun` spreads the step on a
+token frame — `{ ...step, prose: step.prose + text }` — so `claims`, `path` and `toolNodeIds` all keep their
+identity and every dependency is unchanged.
+
+**Measured, by breaking it deliberately: 7 prose tokens produced 8 full canvas draws before the fix and 1
+after.** One complete redraw per character-run — layout, camera fit, every node and edge — to render text
+that is not on the canvas. `web/src/components/streaming.test.tsx` asserts it, and the second test in that
+file is the control: a claim landing must still redraw, or the file would pass against a component that
+draws nothing.
+
+**Why this hid for a whole phase.** `graphSignature` already stopped the *animation* restarting on those
+renders and its note says so, which made the cost look handled. Restarting an animation and re-running a
+render are different costs and only one of them was covered. A note that describes a near-miss accurately
+is a very effective way to stop anyone looking at the thing next to it.
+
+**Suite: 200 tests across 20 files, green. Script 268.1 KB of 320.** The ticker and the two memos cost
+about 200 bytes.
+
+#### 4.7 As built — the motion system, 2026-09-09
+
+**No library, and in the end no Web Animations API either.** 4.1 ranked three native layers; the whole
+step landed on **layer 1**. CSS keyframes on `transform` and `opacity` covered every surface named in the
+scope line — hero, chips, panels, claim rows, the coverage section — and `element.animate` bought nothing
+that a keyframe and a delay did not already give. **That is a finding about sequencing, not a retraction:**
+WAAPI's value is a scrubbable `currentTime`, and the thing that wants one is step 6's timeline. Layers 2
+and 3 stay ranked where 4.1 put them and are simply not needed yet.
+
+**The split, exactly as 4.3 required it.** `motion.ts` grew `ENTER_MS`, `STAGGER_MS`,
+`STAGGER_MAX_STEPS`, `staggerDelay`, `enterDelay` and `STREAMED_DELAY` — pure functions and constants,
+no rAF loop, no DOM, no React import. CSS owns the duration and the curve. The component hands one
+number to one custom property, `--enter-delay`, and that property is the jsdom-testable seam:
+`enter.test.tsx` (10 tests) asserts the arithmetic and asserts every chip carries the delay computed for
+it, and asserts no pixel anywhere.
+
+**Two decisions inside the motion that are not taste:**
+
+- **`STAGGER_MAX_STEPS = 8`.** Without a cap a 30-claim answer puts its last row two seconds behind its
+  first, and a visitor reading downward arrives at blank space and waits. Past about eight steps a
+  stagger stops reading as order and starts reading as lag.
+- **A streamed set gets NO stagger — `STREAMED_DELAY` is zero.** Claims arrive one at a time as the gate
+  approves them, seconds apart. They are already staggered, by the stream, with the real timing of the
+  real work. Adding an index delay on top would make the eighth claim wait half a second after landing
+  and would slowly desynchronise the list from the map drawing the same edge. **A set that arrives
+  together needs a stagger invented for it; a set that arrives over time already has one.**
+
+**The reduced-motion block was incomplete and it took real motion to expose it.** It zeroed
+`animation-duration` and not `animation-delay`. `.enter` uses `both` fill, which holds the `from`
+keyframe — fully transparent — for the whole of the delay, so a visitor who had asked for reduced motion
+would have got chips blinking into existence one after another over half a second: **more distracting
+than the animation they turned off, and reachable only by someone who had set the preference**, which is
+to say invisible to everyone building it. Both delays are zeroed now and `enter.test.tsx` reads the
+stylesheet to assert it. That test is a text assertion and says so in its own comment — jsdom applies no
+CSS, so the alternative was not checking it at all.
+
+**`ENTER_MS` was owed a sitting and got one — sjtroxel, 2026-09-09, in the running dev server.** 520
+compared live against 420, 700 and 850 by replaying every entrance at each value. **520 kept, and his
+words were "it's okay", which is how the code records it.** That is deliberately weaker than what
+`EDGE_MS` carries ("kind of fast" at 420, better at 700, 850 picked): a keep, not a decisive pick.
+Writing it down as more would make the next reader trust the number past its evidence.
+
+**Two constants that sitting did NOT cover, said plainly rather than folded into it.** `STAGGER_MS`
+(70) and `STAGGER_MAX_STEPS` (8) are still derived. The live comparison varied `--enter-ms` only — the
+stagger delays are computed in `motion.ts` and baked into inline styles, so replaying never moved them.
+Their reasoning is written down and neither has been seen against an alternative. **One decision must
+not be allowed to cover three numbers**, which is the same failure mode as a corroborated edge reading
+as a hand-checked one.
+
+#### 4.8 The measurement that cancelled item 3, 2026-09-09
+
+4.4 put the `fill()` batching third and behind a measurement. The measurement says **do not build it**.
+
+Headless Chromium at 1440x900 against the real built `dist/`, wrapping `requestAnimationFrame` before
+the app boots so the callback's self-time is the backdrop draw, over 228 warm frames:
+
+| | measured |
+|---|---|
+| draw calls per frame | **1,235** `fill`, 1,235 `arc`, 1 `stroke` |
+| frame self-time, mean | **0.55 ms** |
+| p50 / p95 | 0.50 ms / **0.90 ms** |
+| max | 3.60 ms |
+| share of a 60fps budget at p95 | **5.4%** |
+
+**1,235 rather than 1,465, because `drawFrame` culls off-screen nodes** — the plan's number was the
+corpus size, not the per-frame count, and only a measurement distinguishes those.
+
+**Stated honestly rather than sold:** this is headless Chromium on a development machine, and JS
+self-time excludes GPU rasterization. It is not a phone. But 0.90 ms of JavaScript at p95 leaves an
+order of magnitude of headroom before the frame budget is in question, and the batching would have been
+a rewrite of the one piece of drawing code the backdrop has. **"1,465 sounds like a lot" was the exact
+guess the plan refused to build on, and it was wrong twice — wrong about the count and wrong about the
+cost.**
+
+**Final: 210 frontend tests across 21 files; `make check` fully green — Python 1465, mypy 101 files, root
+17 of 18, eval 4 passed / 0 failed / 2 N/A. Script 268.4 KB of 320, style 10.7 KB of 40.**
+
+#### 4.9 The plate became a page-wide rule, 2026-09-09 — reported from the running app
+
+Not planned, and found the way step 3's contrast defects were found: **by sjtroxel looking at the built
+page.** *"hard for me to see the footer directly against the background"*, then *"when i click the cards,
+the question ... in the little letters needs to be in a small dark div too"*.
+
+**Measured before changing anything, against the brightest composited pixel under the footer:**
+
+| plate | `--ink-faint` (footer body) | `--ink-soft` (licences) | |
+|---|---|---|---|
+| 0.00 | **1.17** | 1.51 | unreadable |
+| 0.68 | 3.36 | 5.92 | fails |
+| 0.82 | 4.35 | 7.74 | fails |
+| **0.92** | **5.01** | 8.85 | both clear AA |
+| plain `--ground` | 5.41 | 9.53 | for reference |
+
+**1.17:1 is the worst reading anywhere on this page** — considerably worse than the 3.42 that made step 3
+plate the ask row, because the footer sits over a denser part of the corpus. `--ink-faint` is the
+lightest-weight text on the page and it had nothing behind it.
+
+**The brightest pixel measured was rgb(241,89,166), which is `--accent` at near-full strength — a genre
+node directly behind text.** That is the ceiling rather than a footer-local fact, which is what makes one
+number sufficient for every block that has to survive the backdrop. The measurement is in
+`previews/measure-footer.mjs` (throwaway, gitignored).
+
+**Four blocks now, so the number became a token.** `--plate` in `:root`, carrying its own measurement
+table, replacing the literal `rgba(13, 10, 20, 0.92)` that had been repeated in one rule and was about to
+be repeated in four. Applied to `.masthead`/`.ask` (unchanged behavior), `.footer`, `.results__label` and
+`.cancel`.
+
+- **`.results__label` is `inline-block`** so the plate hugs the question rather than running a bar across
+  the column. A full-width plate there would read as a section header, and it is not one — it is the
+  thing that was asked, quoted back small.
+- **`.cancel` was `background: transparent`** and is on screen for the whole of a run, over a backdrop
+  that is paused but still drawn.
+- **The footer's `border-top` is gone with the plate rather than kept beside it.** A 1px rule running
+  straight across the top of a 14px-rounded panel reads as a mistake.
+
+**And the plate's bleed was asymmetric all along, which three of them made visible.** Reported in the same
+sitting: *"the footer and header plates are about 20 px closer to the left margin than the rest of it but
+they don't go 20 px closer to the right margin."* Correct — the rule was `margin: 0 0 0 -1.15rem` from
+step 3, a negative LEFT margin with no right counterpart, so each plate hung ~18px past the column on the
+left and sat flush on the right, and its text was flush left but inset 18px from the right.
+
+Fixed by bleeding **both** sides rather than by removing the bleed, which also returns the text to the
+full column: `.masthead__tagline`, `.ask__row`, `.footer p`, `.footer__licences` and the unplated `.cov`
+now all measure **left 372, width 696** — identical, where the plated four measured 678 before. `.app`
+carries 1.25rem of side padding, so a 1.15rem bleed stays inside the viewport at every width.
+
+**Worth noting how this one surfaced.** I measured `left 372, width 678` while checking the footer against
+the 2026-09-08 column fix, saw the four plated blocks agree with each other, and called it consistent. It
+was consistent and it was wrong — the number to compare against was `.cov`'s 696, which was in the same
+output. **A set of elements agreeing with each other is not evidence they agree with the page.**
+
+**This is the fourth instance of one defect and the pattern has not varied once:** the lightest text on
+the page, no plate, over a decoration nobody re-measured it against. Step 3 wrote *"a contrast measurement
+covers the elements you pointed it at."* Every fix since has been pointing one at more elements. **The
+generalization worth keeping is that the element list is the measurement's real parameter** — the number
+was right all four times.
+
+Rendered and looked at before being handed over, per the step 3 rule: `previews/check-plates.mjs` prints
+computed backgrounds and writes a screenshot.
+
+#### 4.10 The hero on a phone, 2026-09-09 — reported from the running app
+
+*"the header card doesn't look so good on mobile. it's a little big."* Measured at 360x780 before
+touching anything: **the masthead-plus-ask plate ran from y=48 to y=413 — 47% of the viewport before a
+single chip.** The chips, which are the call to action, started at **436**.
+
+**Fixed with `clamp()` rather than a breakpoint**, which is this stylesheet's own idiom for exactly this
+problem — `.masthead__title` already sizes that way. Three values, and the last one is the real find:
+
+| | was | at 360px now | at 1440px |
+|---|---|---|---|
+| `.app` padding-top | 3rem fixed | 1.5rem | 3rem, unchanged |
+| `.masthead` padding-top | 1rem fixed | 0.75rem | 1rem, unchanged |
+| tagline font-size | 1rem fixed | 0.92rem | 1rem, unchanged |
+| **tagline margin-bottom** | **2.25rem fixed** | **1.13rem** | 2.25rem, unchanged |
+
+**Result: chips move from y=436 to y=377, 59px recovered, and two full chips clear the fold instead of
+one and a half.** The hero plate is 329px rather than 365.
+
+**Desktop is provably unchanged rather than apparently unchanged.** Every clamp hits its maximum above
+roughly 960px, so the desktop values are the old literals by construction, not by inspection. Verified
+at 1440 and 768: the only thing that moves at 768 is the page's top pad, 48 to 38, with no jump.
+
+**Two corrections to my own work in this same sitting, both worth keeping:**
+
+1. **I wrote that dropping the tagline to 0.92rem would save a line. It does not** — four lines at 360px
+   before and four after. What it saves is line height, about 8px. The comment in `styles.css` now says
+   so; a false measured fact left in a comment is worse than no comment.
+2. **The 36px `margin-bottom` was the largest single piece of dead space and I did not find it by
+   reading the rule.** I found it by measuring the gap that was visible in a 360px screenshot and then
+   asking what produced it. The rule had been sitting there since step 2 with a comment about column
+   width that drew the eye away from the number.
 
 ### Step 5 — The guided tour, agent side
 
@@ -851,7 +1186,9 @@ its measurements go in this doc, so the demo's quality is a recorded property ra
 - ~~**Whether to split 7 and 7.5.**~~ **DECIDED 2026-09-08 — approved.** §7.
 - **Which backdrop treatment.** Step 1 exists to decide it in the running app, not here.
 - **The media byte budget.** Step 1, from measurements.
-- **Animation library or not.** Step 4 recommends against and states the cost of overruling it.
+- ~~**Animation library or not.** Step 4 recommends against and states the cost of overruling it.~~
+  **DECIDED 2026-09-09 — no library, approved by sjtroxel.** The reason is rewritten rather than the
+  outcome: the native layers are faster, not merely cheaper. Step 4.1 and 4.5.
 - **Anything about the held-out set.** It stays sealed at run count 1. Nothing in this phase reads it,
   needs it, or has an opinion about it.
 - **The writeup's words.** His, for the reason in §7.
@@ -880,11 +1217,14 @@ If something here needs a seam edited, that is a finding and it belongs in its o
 
 ## 12. Files expected to change, by path
 
-**New:** `web/scripts/asset-budget.mjs`, `web/scripts/render-backdrop.mjs`,
-`web/src/components/Backdrop.tsx`, `web/src/components/Backdrop.test.tsx`, `web/src/tour/timeline.ts`,
-`web/src/tour/timeline.test.ts`, `web/public/media/*`, `web/previews/backdrop*.html`,
+**New:** `web/scripts/asset-budget.mjs`, `web/src/components/Backdrop.tsx`,
+`web/src/components/Backdrop.test.tsx`, `web/src/graph/ticker.ts`, `web/src/graph/ticker.test.ts`,
+`web/src/tour/timeline.ts`, `web/src/tour/timeline.test.ts`, `web/previews/backdrop*.html`,
 `src/musical_mycelium/agent/tools.py` (one tool), `src/musical_mycelium/eval/datasets/tour_v1.json`,
 `tests/test_tour.py`.
+
+*(Corrected 2026-09-09: ~~`web/scripts/render-backdrop.mjs`~~ and ~~`web/public/media/*`~~ are gone with
+step 2 — candidate A ships no media and the `media` cap is permanently 0. `ticker.ts` is new from step 4.4.)*
 
 **Modified:** `web/src/App.tsx`, `web/src/styles.css`, `web/src/graph/motion.ts`,
 `web/src/graph/GraphView.tsx`, `web/src/useLineageRun.ts`, `web/package.json`, `Makefile`,
@@ -895,7 +1235,8 @@ If something here needs a seam edited, that is a finding and it belongs in its o
 
 ## 13. Testing, and which eval metrics apply
 
-The frontend suite carries most of this — 168 tests today, and steps 3, 4 and 6 add to it. The timeline
+The frontend suite carries most of this — **192 tests today, measured 2026-09-09** (this line said
+168), and steps 4 and 6 add to it. The timeline
 property test in step 6 is the one that closes a DoD item rather than covering a component.
 
 **Eval metrics: the existing six, unchanged, plus the tour set scored by them.** `edge_groundedness` and
@@ -926,14 +1267,21 @@ rather than the estimate, and that verification is a phase 7.5 item.
 
 ## 15. Genuinely uncertain
 
-- **Whether candidate B beats candidate A on the actual page.** Pre-rendered video is the better bet on
-  paper and I would build it first. But a rAF loop that reflows to the viewport may simply look better
-  than a fixed-aspect file cropped by `object-fit: cover`, and I will not know until step 1 renders both.
+- ~~**Whether candidate B beats candidate A on the actual page.**~~ **RESOLVED by step 1, 2026-09-08:
+  candidate A, in the running app.** Kept struck rather than deleted because the prediction was wrong in
+  print — video was "the better bet on paper" and it lost to the thing that reflows.
+- **How expensive the backdrop actually is per frame, which nothing has measured.** Step 4.4 item 3 is
+  written as an optimization behind a measurement for exactly this reason: 1,465 `fill()` calls a frame
+  sounds costly and may still be inside budget. The number does not exist yet and no work should be
+  ordered off the guess.
 - **Whether the timeline primitive survives contact with the camera.** The cue-list shape is the third time
   this project has designed a "one ordered structure" and the first two — the walked path in v0.1, the
   motion frame in phase 5 — both changed shape once something real read from them.
 - **How much of step 4 is worth doing.** Motion on the page chrome is the least measurable work in the
   phase and the easiest to keep fiddling with. The scope doc's first named risk is that polish is
   unbounded, and step 4 is where that risk actually lives. If a step gets cut for time, this is the one.
+  **Qualified 2026-09-09:** items 1 and 2 of step 4.4 are the exception. They are structural, they make the
+  §6 rule and the streaming render cheaper to keep correct, and they survive even if every visual flourish
+  in this step is cut.
 - **Whether the tour tool really lands without touching the loop.** Door 4 has never been tested by a tool
   that plans rather than looks up. I expect it holds. I would not bet the phase on it.

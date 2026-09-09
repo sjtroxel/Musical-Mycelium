@@ -1,6 +1,6 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-08
+> ## START HERE — where things stand, 2026-09-09
 >
 > **PHASE 6.5 IS COMPLETE** — all ten DoD items, `v0.6.5` tagged and pushed. As-built:
 > `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`, **and that doc is the authority**.
@@ -8,14 +8,20 @@
 > **PHASE 7 WAS SPLIT IN TWO AND IS UNDER WAY — 2026-09-08.**
 > `docs/phases/phase-7-cinematic-surface.md` (v0.8, the build) and
 > `docs/phases/phase-7.5-portfolio-and-writeup.md` (v1.0, the writeup and the report);
-> `ROADMAP.md` §4 carries the decision. **Steps 0, 1 and 3 are DONE. Step 2 was DELETED. Steps 4-8
+> `ROADMAP.md` §4 carries the decision. **Steps 0, 1, 3 and 4 are DONE. Step 2 was DELETED. Steps 5-8
 > remain.** As-built, step by step, in `phase-7-cinematic-surface-IMPLEMENTATION.md` — read that rather
 > than the summary below.
 >
-> **Measured 2026-09-08 at end of day, not recalled:** `make check` green — **1465 passed, 0 xfailed**,
-> 14 deselected, mypy clean over **101** source files, frontend **192 passed** across 18 files, root
-> **17 of 18**. Datasets unchanged: gold **38**, adversarial **20**, live **56**. Asset budget, new
-> today: script **267.9 KB of 320**, graph **2.57 MB of 3.00**, media **0 of 0**.
+> **STEP 4 IS DONE.** `ENTER_MS = 520` was compared live against 420, 700 and 850 and **kept** —
+> sjtroxel, 2026-09-09, his words "it's okay", and the code records it at that strength rather than
+> upgrading it. **`STAGGER_MS` (70) and `STAGGER_MAX_STEPS` (8) were NOT part of that sitting** and are
+> still derived; the live comparison moved `--enter-ms` only. Small, and not nothing.
+>
+> **Measured 2026-09-09, not recalled:** `make check` green — **1465 passed, 0 xfailed**, 14 deselected,
+> mypy clean over **101** source files, frontend **210 passed** across 21 files, root **17 of 18**,
+> scripted eval gates **4 passed / 0 failed / 2 N/A of six**. Datasets unchanged: gold **38**,
+> adversarial **20**, live **56**. Asset budget: script **268.4 KB of 320**, style **10.7 KB of 40**,
+> graph **2.57 MB of 3.00**, media **0 of 0**.
 >
 > **THE FOUR THINGS A COLD SESSION IS MOST LIKELY TO GET WRONG:**
 >
@@ -39,6 +45,44 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## PHASE 7 — step 4, the motion system, 2026-09-09
+
+**As-built is `phase-7-cinematic-surface-IMPLEMENTATION.md` §4.6-4.8 and it is the authority.** Only
+what a cold session would otherwise get wrong is here.
+
+**No animation library, and in the end no Web Animations API either.** Every surface — hero, chips,
+panels, claim rows, coverage section — is CSS keyframes on `transform` and `opacity`. WAAPI stays ranked
+where the plan put it; the thing that wants a scrubbable `currentTime` is step 6's timeline, not this.
+
+**`asset-budget.mjs`'s `observed` field had gone stale and a plan was written off it.** It read 236,210
+bytes from step 0; step 3 inlined 35 KB of backdrop positions and never updated it. Real headroom was
+~51 KB, not ~84 KB. **`observed` is not gated, which is exactly why nothing caught it.** Re-measured, and
+the field now carries a note saying it drifts. Anything quoting these numbers runs `npm run budget` first.
+
+**Three findings that outlive the step:**
+
+1. **A note that accurately describes a near-miss is a very effective way to stop anyone looking at the
+   thing next to it.** `graphSignature` documents that it stops the claim animation *restarting* on an
+   unrelated re-render. It never stopped the re-render, and nobody checked, because the note read as
+   coverage. Measured by breaking it deliberately: **7 prose tokens produced 8 full canvas draws** —
+   layout, camera fit, every node and edge, per token, to render text that is not on the canvas.
+2. **`prefers-reduced-motion` needed `animation-delay: 0` and not only `animation-duration`.** With
+   `both` fill a staggered element holds its transparent `from` keyframe for the whole delay, so
+   zeroing duration alone gives the visitor who asked for *less* motion a row of chips blinking in over
+   half a second. Reachable only by someone who has set the preference, i.e. invisible to everyone
+   building it. Found by reasoning about fill mode, not by looking.
+3. **The backdrop's per-frame cost was measured before optimizing it, and the optimization was
+   cancelled.** 0.55 ms mean, **0.90 ms p95, 5.4% of a 60fps budget**, over 228 warm frames in headless
+   Chromium against the real `dist/`. The per-frame draw count is **1,235**, not the 1,465 the plan
+   guessed — `drawFrame` culls off-screen nodes. The guess was wrong about the count and wrong about
+   the cost.
+
+**A set that arrives together needs a stagger invented for it; a set that arrives over time already has
+one.** Chips get `staggerDelay(index)`, capped at 8 steps. Claim rows get zero — the gate already
+staggers them with the real timing of the real work, and an index delay would desynchronise the list
+from the map drawing the same edge.
+
 
 ## PHASE 7 IN PROGRESS — the cinematic surface, steps 0, 1 and 3, 2026-09-08
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { decode, drawFrame, phases } from "../graph/backdrop";
+import { onFrame } from "../graph/ticker";
 
 /**
  * The hero backdrop. Phase 7 step 3.
@@ -8,7 +9,9 @@ import { decode, drawFrame, phases } from "../graph/backdrop";
  * every one of them is a thing that quietly stops being true.
  *
  *   1. `prefers-reduced-motion: reduce` draws ONE frame and never starts a loop. Not "slower".
- *   2. A hidden tab stops the loop. `visibilitychange`, not a timer.
+ *   2. A hidden tab stops the loop. `visibilitychange`, not a timer. **Owned by `graph/ticker.ts`
+ *      since step 4.4** -- one place decides when nothing paints, rather than each canvas deciding
+ *      separately and drifting apart. Still tested here, because it is still this component's rule.
  *   3. A run in flight stops it and it does not come back. See `paused` below.
  *   4. A still backdrop is DRAWN, never blank. A layer that renders nothing is indistinguishable from
  *      a loop that threw on frame one, which is a failure this project has already shipped once --
@@ -37,7 +40,6 @@ export function Backdrop({ paused }: { paused: boolean }): React.JSX.Element {
     const graph = decode();
     const phase = phases(graph.nodeCount);
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
-    let frame = 0;
 
     const resize = () => {
       // Cap the device pixel ratio at 2. A decorative layer is the last thing that should pay for a
@@ -56,21 +58,14 @@ export function Backdrop({ paused }: { paused: boolean }): React.JSX.Element {
         animated: !reduced,
       });
 
-    const loop = (t: number) => {
-      paint(t);
-      frame = requestAnimationFrame(loop);
-    };
-
     const still = reduced || paused;
     resize();
     // Rule 4: the still case still paints. `paint(0)` rather than an early return.
     paint(0);
-    if (!still) frame = requestAnimationFrame(loop);
+    // Rules 1 and 3 are now expressed as *not subscribing* rather than as a loop that is never
+    // started. Same behavior, and the ticker keeps no opinion about motion -- see `ticker.ts`.
+    const off = still ? null : onFrame(paint);
 
-    const onVisibility = () => {
-      cancelAnimationFrame(frame);
-      if (!still && !document.hidden) frame = requestAnimationFrame(loop);
-    };
     const onResize = () => {
       resize();
       // Repaint immediately: a resized canvas is a cleared canvas, and a still backdrop that is never
@@ -80,11 +75,9 @@ export function Backdrop({ paused }: { paused: boolean }): React.JSX.Element {
     };
 
     window.addEventListener("resize", onResize);
-    document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      cancelAnimationFrame(frame);
+      off?.();
       window.removeEventListener("resize", onResize);
-      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [paused]);
 

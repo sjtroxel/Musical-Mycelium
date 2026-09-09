@@ -30,22 +30,32 @@ const MB = 1024 * 1024;
  * because a threshold whose justification lives in a commit message is a threshold nobody can
  * re-derive.
  *
- * Measured 2026-09-08 against a clean `npm run build`. `observed` is that measurement and is not
- * used by the gate; it is there so the next person can see how much room a cap actually left.
+ * Measured 2026-09-08 against a clean `npm run build`, `script` and `style` re-measured 2026-09-09.
+ * `observed` is that measurement and is not used by the gate; it is there so the next person can see
+ * how much room a cap actually left.
+ *
+ * **Because it is not gated, it goes stale silently, and it did.** Step 3 inlined 35 KB of backdrop
+ * positions into the bundle and left `script.observed` reading the step 0 number, so a plan written
+ * off this field claimed 84 KB of headroom when the real figure was closer to 51. Any step quoting
+ * these numbers re-runs `npm run budget` first; the printed line is measured, this field is recalled.
  */
 export const BUDGET = {
   script: {
     cap: 320 * KB,
-    observed: 236210,
+    observed: 274847,
     why:
-      "React 19 plus the whole app. The cap leaves ~84 KB for the guided tour and the timeline, and " +
+      "React 19 plus the whole app. The cap leaves ~51 KB for the guided tour and the timeline, and " +
       "deliberately not enough for an animation library -- framer-motion is roughly 120 KB before " +
       "tree-shaking, so importing one fails this gate and forces the trade to be argued rather than " +
-      "absorbed. See the IMPLEMENTATION doc step 4.",
+      "absorbed. See the IMPLEMENTATION doc step 4. " +
+      "*(Re-measured 2026-09-09. It read 236210 and '~84 KB' from step 0 until then: step 3 inlined " +
+      "35 KB of backdrop positions and did not come back to update it, so the field drifted the same " +
+      "way the `media` reasoning above did, one entry over, four days apart. `observed` is not used " +
+      "by the gate, which is exactly why nothing caught it -- see the note on this field below.)*",
   },
   style: {
     cap: 40 * KB,
-    observed: 10303,
+    observed: 11287,
     why:
       "982 lines of hand-written CSS today. The design half will grow this legitimately -- a backdrop " +
       "layer, motion states, a hero -- so the cap is 4x rather than tight. Style is the one class " +
