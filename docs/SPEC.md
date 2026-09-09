@@ -19,8 +19,27 @@ off — but do not read it as "does not exist until v1.0.")*
 | | What it is | When |
 |---|---|---|
 | **A. Question-answerer** | A box. Ask about a genre or an artist, receive a streamed, cited lineage. | The v0.x spine, from v0.1 |
-| **C. Guided tour** | "Take me from delta blues to Detroit techno." The agent plans a path and narrates it as the camera walks it. | v1.0 showcase |
+| **C. Guided tour** | "Take me from Detroit techno back to the blues." The agent plans a path and narrates it as the camera walks it. | v1.0 showcase |
 | **B. Explorable map** | The graph as interface: wander, zoom, follow edges; the agent annotates on demand. | Ambient, falls out of the SPA at v0.5 |
+
+**The surface C example was retargeted 2026-09-09, phase 7 step 5, and the reason is worth more than the
+sentence.** The row read *"Take me from delta blues to Detroit techno"* from 2026-07-29 until then. Measured
+at artifact v0.7.1: **there is no path between them in either direction**, and no undirected connection
+either. `Delta blues` sits in a two-node influence component with `Chicago blues` and has no sourced parents
+at all; `Detroit techno` sits in the 534-node one. Over `influenced_by` alone the corpus holds **138
+components, largest 534** — the familiar "7 components, 1,465 in the largest" counts `plays_genre` as well,
+which is exactly `CLAUDE.md`'s point that the organism is connected through the people who play across it,
+and is not a set of routes an influence walk can take.
+
+**Detroit techno was never the problem; delta blues was.** The retargeted route is
+`Detroit techno -> Chicago house -> hip-hop -> rhythm and blues -> blues`, four hops, every hop sourced.
+It is **provisional** pending phase 7 step 8, which picks the tour route from ranked density.
+
+**§2 below knew this in August and this table did not.** The note under the 2.2 table has read *"Delta blues
+is absent from the corpus"* since 2026-08-02. The surface table kept offering the route for five more weeks
+because **a demo query written in prose is not data and nothing executed it** — every check this project
+owns pointed at `chips.json` or `gold_v0_1.json`. `tests/test_canonical_surfaces.py` now asserts both
+halves: that the pair walks, and that this row names the pair that walks.
 
 Why this ordering: A is what the walking skeleton already builds toward and the only one of the three that
 evaluates cleanly (one query in, claims out). C is the signature demo identified in `planning/06` §5.1 and

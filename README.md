@@ -12,7 +12,7 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 
 ## Status
 
-**Deployed, and honestly incomplete.** Last updated 2026-09-08. Phases 0 through **6.5** are complete and
+**Deployed, and honestly incomplete.** Last updated 2026-09-09. Phases 0 through **6.5** are complete and
 tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`, `v0.6.0`, `v0.6.5`). **The deployed site is the `v0.6.0`
 build** — phase 6.5 changed the agent, the datasets and the eval gates, and deploying it is a decision
 not yet taken. The live URL serves the SPA at artifact **v0.7.1**
@@ -34,7 +34,7 @@ Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 1465 Python tests and 192 frontend tests, plus 14 that spend real money and are
+generated. 1465 Python tests and 210 frontend tests, plus 14 that spend real money and are
 deselected by default. `make check` also gates the built page's **bytes**, per asset class.
 
 **The prose comes from a real model on Bedrock** — Claude Haiku 4.5 on a cross-region inference profile,

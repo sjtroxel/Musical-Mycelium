@@ -8,8 +8,14 @@
 > **PHASE 7 WAS SPLIT IN TWO AND IS UNDER WAY — 2026-09-08.**
 > `docs/phases/phase-7-cinematic-surface.md` (v0.8, the build) and
 > `docs/phases/phase-7.5-portfolio-and-writeup.md` (v1.0, the writeup and the report);
-> `ROADMAP.md` §4 carries the decision. **Steps 0, 1, 3 and 4 are DONE. Step 2 was DELETED. Steps 5-8
-> remain.** As-built, step by step, in `phase-7-cinematic-surface-IMPLEMENTATION.md` — read that rather
+> `ROADMAP.md` §4 carries the decision. **Steps 0, 1, 3, 4 and 5 are DONE. Step 2 was DELETED. Step 5.5
+> was INSERTED 2026-09-09. Steps 6-8 remain.**
+>
+> **PHASE 8 `membership-tour` IS SCOPED AND IS AFTER v1.0 — 2026-09-09.**
+> `docs/phases/phase-8-membership-tour.md`. It opens `agent/claims.py:ALLOWED_PREDICATES` to a second
+> predicate, deliberately, and that is why it has a scope doc instead of a commit. **Do not pull it
+> forward into phase 7** — phase 7's not-list is what sent it out, and the reasoning is in `ROADMAP.md`
+> §4 under 2026-09-09. As-built, step by step, in `phase-7-cinematic-surface-IMPLEMENTATION.md` — read that rather
 > than the summary below.
 >
 > **STEP 4 IS DONE.** `ENTER_MS = 520` was compared live against 420, 700 and 850 and **kept** —
@@ -17,8 +23,8 @@
 > upgrading it. **`STAGGER_MS` (70) and `STAGGER_MAX_STEPS` (8) were NOT part of that sitting** and are
 > still derived; the live comparison moved `--enter-ms` only. Small, and not nothing.
 >
-> **Measured 2026-09-09, not recalled:** `make check` green — **1465 passed, 0 xfailed**, 14 deselected,
-> mypy clean over **101** source files, frontend **210 passed** across 21 files, root **17 of 18**,
+> **Measured 2026-09-09 after step 5, not recalled:** `make check` green — **1474 passed, 0 xfailed**,
+> 14 deselected, mypy clean over **102** source files, frontend **210 passed** across 21 files, root **17 of 18**,
 > scripted eval gates **4 passed / 0 failed / 2 N/A of six**. Datasets unchanged: gold **38**,
 > adversarial **20**, live **56**. Asset budget: script **268.4 KB of 320**, style **10.7 KB of 40**,
 > graph **2.57 MB of 3.00**, media **0 of 0**.
@@ -45,6 +51,60 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## PHASE 7 — step 5, the guided tour, and a demo that never ran, 2026-09-09
+
+**As-built is `phase-7-cinematic-surface-IMPLEMENTATION.md` §5.0 and the correction block above it, and
+that is the authority.** Only what a cold session would otherwise get wrong is here.
+
+**THE STEP WAS MOSTLY ALREADY BUILT, AND NOT BY THIS STEP.** The C-shaped query — plan a path between two
+nodes, narrate it — shipped **2026-08-05 in phase 2 step 5** through `trace_lineage`, gated and cited, and
+`SPEC.md:126` has said so ever since. Step 5's stated definition of done was satisfied before step 5
+started. Two of its premises were also false: it called the tour *"the first genuinely new tool since the
+seam was written"* when the registry holds **seven** and `trace_lineage` **was** the seam test by its own
+docstring. **Do not plan tour work as though the agent side is missing.**
+
+**THE CANONICAL DEMO QUERY HAD NO ANSWER AND HAD NOT FOR WEEKS.** *"Take me from delta blues to Detroit
+techno"* returns **nothing** at v0.7.1 — both directions, both argument orders, and no undirected
+connection either.
+
+| over | components | largest |
+|---|---|---|
+| `influenced_by` only (2,284 edges) | **138** | 534 |
+| both predicates (`plays_genre` adds 2,782) | 7 | 1,465 |
+
+**`Delta blues` was the problem, never `Detroit techno`.** It sits in a two-node influence component with
+`Chicago blues` and has **no sourced parents at all**, so no ancestry walk can leave it. Detroit techno
+sits in the 534-node one.
+
+**THE 7-COMPONENT NUMBER COUNTS MEMBERSHIP AND IS NOT A SET OF WALKABLE ROUTES.** This is the one most
+likely to be misread, because both numbers are correct and they answer different questions. Quoting
+"1,465 of 1,479 in the largest" while planning an influence traversal will produce a plan that cannot
+run. `docs/graph-semantics.md` §5 already warned *"same component does not imply a path"*; the warning was
+right and nothing connected it to the demo sentence.
+
+**THE REAL LESSON, AND IT IS A CATEGORY.** This project already enforces that a demo is validated against
+the pinned artifact — `tests/test_chips.py` for every chip, `tests/test_gold_set.py` for every gold case.
+**Both work because both read data. Every demo query written in prose was unprotected.** `SPEC.md` §2 has
+recorded *"Delta blues is absent from the corpus"* since **2026-08-02** while the surface table twenty
+lines above it went on offering the route. Nothing was forgotten; the two facts lived in prose where no
+test could put them next to each other. `tests/test_canonical_surfaces.py` closes it and asserts **both**
+halves — the pair walks, and the documents name the pair that walks. Adding a document to `NAMED_IN_PROSE`
+is how the next one gets protected.
+
+**THE DEMO ROUTE IS PROVISIONAL AND ITS EVIDENCE IS THE WEAKEST TIER.** Retargeted to
+`Detroit techno -> Chicago house -> hip-hop -> rhythm and blues -> blues`, four hops. **All four are
+`INFOBOX_AUTO`, all from DBpedia, none corroborated.** Corpus-wide over 2,284 influence edges: 1,335
+`INFOBOX_AUTO`, 759 `ASSERTS_AUTO`, 111 `PROSE_AUTO`, 57 `EXPOSURE_AUTO`, **22 `HAND`**, 82 corroborated.
+The strongest route in the graph is `blackgaze -> shoegaze -> post-rock -> Krautrock` — three hops, all
+`PROSE_AUTO`, **two corroborated** — and nobody outside the genre knows what blackgaze is.
+**Recognizability and evidence strength pull in opposite directions, and step 8 inherits that**, which is
+why `verification_mix` has to travel with whatever route it picks.
+
+**A CORRECTION MADE INSIDE THE STEP, KEPT ON PURPOSE.** The step's own plan asserted that a rejected hop
+dropping the chain had no test coverage. It has coverage — `tests/test_agent_loop.py:1241` — and the claim
+came from reading part of that file and inferring the rest, two hours after writing up a finding about
+asserting things without executing them.
 
 ## PHASE 7 — step 4, the motion system, 2026-09-09
 

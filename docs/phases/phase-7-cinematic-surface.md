@@ -77,9 +77,15 @@ can be reached calmly or not at all without the project having failed.
 
 ## Delivers
 
-- **The guided tour — surface C.** "Take me from delta blues to Detroit techno." The agent plans a path
+- **The guided tour — surface C.** "Take me from Detroit techno back to the blues." The agent plans a path
   between two nodes and narrates it as the camera walks it. This is the C-shaped query type from `SPEC.md`
   §2, honestly labeled all along as arriving later than the others.
+
+  > **Retargeted 2026-09-09, step 5.** This bullet named the route as *delta blues to Detroit techno* from
+  > 2026-07-30, and that route has no path at artifact v0.7.1 in either direction — the two genres are in
+  > different influence components. The example is now `Detroit techno -> Chicago house -> hip-hop ->
+  > rhythm and blues -> blues`, four sourced hops, and it is **provisional** pending step 8's ranked pick.
+  > `SPEC.md` §1 carries the measurements; `tests/test_canonical_surfaces.py` is why it cannot rot again.
 - **The signature moment.** As the agent streams its reasoning, the graph animates the traversal it is
   describing: camera easing along the path, nodes illuminating as they are cited, the citation appearing as
   the claim is made. **One shared timeline driving both the text and the view.** This is only possible

@@ -1091,6 +1091,19 @@ was right all four times.
 Rendered and looked at before being handed over, per the step 3 rule: `previews/check-plates.mjs` prints
 computed backgrounds and writes a screenshot.
 
+**How `ENTER_MS` was compared, recorded so it does not have to be reinvented for the stagger constants.**
+No preview page and no shipped dev switch — one line pasted into the devtools console on the running dev
+server, which sets `--enter-ms` and replays every entrance by removing and re-adding the `enter` class:
+
+```js
+window.replay=(ms)=>{document.documentElement.style.setProperty('--enter-ms',ms+'ms');document.querySelectorAll('.enter').forEach(e=>{e.classList.remove('enter');void e.offsetWidth;e.classList.add('enter')});return ms+'ms'}
+```
+
+Then `replay(420)`, `replay(700)`, `replay(850)`. Verified headlessly before being handed over: 60ms into
+the entrance, opacity reads 0.463 at 420 and 0.250 at 850, so the animation genuinely restarts rather
+than sitting finished. **It does not vary the stagger** — those delays are computed in `motion.ts` and
+baked into inline styles, which is exactly why `STAGGER_MS` and `STAGGER_MAX_STEPS` remain undecided.
+
 #### 4.10 The hero on a phone, 2026-09-09 — reported from the running app
 
 *"the header card doesn't look so good on mobile. it's a little big."* Measured at 360x780 before
@@ -1124,9 +1137,110 @@ at 1440 and 768: the only thing that moves at 768 is the page's top pad, 48 to 3
    asking what produced it. The rule had been sitting there since step 2 with a comment about column
    width that drew the eye away from the number.
 
-### Step 5 — The guided tour, agent side
+### Step 5 — The guided tour, agent side — **DONE 2026-09-09** (rewritten before a line was written)
 
-The C-shaped query from `SPEC.md` §2. *"Take me from delta blues to Detroit techno."* The agent plans a
+> **This step was re-read against the repo before building, per the standing convention, and three of its
+> assumptions did not survive. Two are good news and one is a defect in the phase's own worked example.**
+> The plan below is kept, struck through where it is now false, because the reasons generalize.
+>
+> **1. The seam was already tested, four steps earlier.** This plan said the tour is *"the first genuinely
+> new tool since the seam was written"* and that one-way door 4 *"gets tested here for real"*. The registry
+> holds **seven** tools, and `trace_lineage` was itself the seam test. `tools.py:293` says so in its own
+> docstring: *"This tool is the seam test. It is the third tool, it returns a shape the first two do not,
+> and adding it changed no branch of the loop."* Phase 3 then added four more. The risk this step was
+> built around was retired on 2026-08-05.
+>
+> **2. The stated definition of done already ships.** *"A two-node query returns a planned path whose
+> narrated edges are all gate-approved, with `agent/loop.py` unmodified."* That path is live end to end:
+> `trace_lineage` emits one `ClaimProposal` per hop, the gate approves each, `ApprovedClaimSet.chain` is
+> set, `synthesize` narrates through `CHAIN_SYNTHESIS_TEMPLATE`, `PathWalked` carries `chain` and
+> `chain_labels` deliberately apart from visit order, `api/app.py` streams it as `path`, and
+> `web/src/types.ts` consumes it. `SPEC.md:126` records it delivered **2026-08-05, phase 2 step 5**. The
+> free every-commit suite scores it today: `query_kind: lineage: 100.0% (6/6)`.
+>
+> **3. The phase's worked example has no answer, and it is the one thing here that was actually broken.**
+> *"Take me from delta blues to Detroit techno"* — `SPEC.md` §2 surface C, the scope doc §80, and the first
+> line of this step — returns **nothing** at artifact v0.7.1. Both nodes resolve (`Q1127539`, `Q526463`).
+> `store.path()` returns 0 hops in both directions and both argument orders, and an undirected BFS over
+> influence edges finds no connection either.
+>
+> Measured 2026-09-09, and this is the number that explains it:
+>
+> | over | components | largest |
+> |---|---|---|
+> | `influenced_by` only (2,284 edges) | **138** | 534 |
+> | both predicates (`plays_genre` adds 2,782) | 7 | 1,465 |
+>
+> **`Delta blues` sits in a two-node influence component** — one child, `Chicago blues`, and no parents at
+> all. `Detroit techno` sits in the 534-node one. They are not thinly connected; they are in different
+> components.
+>
+> **Detroit techno was never the problem. Delta blues was.** The demo retargets to
+> **`Detroit techno -> Chicago house -> hip-hop -> rhythm and blues -> blues`**, four hops, every hop
+> `influenced_by`, every hop gated and citable. Provisional: **step 8 formally picks the route from ranked
+> density** and this is an input to that, not a decision taken ahead of it.
+>
+> **Nothing here contradicts the repo; it connects two things the repo already knew.** The headline
+> *"7 components, 1,465 in the largest"* counts membership, which is exactly `CLAUDE.md`'s claim that the
+> organism is connected through the people who play across it, and `docs/graph-semantics.md` §5 already
+> warns *"Same component does not imply a path."* What nobody had done was run that warning against the
+> demo sentence, so the tour's canonical example was quietly unanswerable from the moment the corpus grew.
+>
+> **4. A finding this step hands to step 8 rather than resolving.** Every genre route at demo depth is
+> built from the corpus's **weakest** evidence tier. All four hops above are `INFOBOX_AUTO`, all from
+> DBpedia, **none corroborated**. Corpus-wide over 2,284 influence edges: 1,335 `INFOBOX_AUTO`, 759
+> `ASSERTS_AUTO`, 111 `PROSE_AUTO`, 57 `EXPOSURE_AUTO`, 22 `HAND`, and 82 corroborated. The strongest
+> route in the graph is `blackgaze -> shoegaze -> post-rock -> Krautrock`: three hops, all `PROSE_AUTO`,
+> **two corroborated** — and its endpoints are unrecognizable to anyone outside the genre.
+> **Recognizability and evidence strength pull in opposite directions here.** A demo that walks four
+> `INFOBOX_AUTO` hops without saying so is the exact slide from *traceable* to *correct* that
+> `.claude/rules/grounding-and-claims.md` forbids, so whichever route step 8 picks, `verification_mix`
+> travels with it on screen.
+>
+> **5. The membership tour is deferred to its own phase — DECIDED with sjtroxel, 2026-09-09.** The route
+> that would make *"delta blues to Detroit techno"* answerable walks genre to artist to genre, and
+> `claims.py:62` is `ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY})`. That is a seam, and this
+> phase's scope doc already prescribes the remedy: *"If something here requires editing a seam, that is a
+> finding and it belongs in its own phase."* Scoped as **phase 8, product v1.1, built after v1.0 ships** —
+> not before 7.5, because the showcase works without it, because a second predicate through the gate would
+> move the claim model the week before the writeup describes it, and because new eval cases hit
+> `thresholds.py:_ungateable` and cost $2.61 and roughly 2.4 hours to restore the live bounds.
+>
+> **What is left of this step, and it is small.** Prove by test rather than by assertion that the C-shaped
+> query meets the definition of done, retarget the demo, and correct the three documents carrying the dead
+> example. No new tool. No loop edit. No new metric.
+
+**Revised scope, 2026-09-09.**
+
+1. ~~**A regression test that pins the C-shaped contract.**~~ **Already covered, and the correction is
+   worth keeping because it was made in this document's own re-read.** This item was written asserting
+   that a rejected hop dropping the chain "is the one with no coverage today". It has coverage:
+   `tests/test_agent_loop.py:1241`, `test_a_rejected_hop_drops_the_chain_rather_than_narrating_it`, which
+   fabricates a middle hop and asserts the survivor is listed rather than sequenced. `PathWalked.chain`
+   and the origins-has-no-chain case are covered in the same file, and `test_gold_set.py` reads every
+   `path`-shaped case through a `path` branch in `corpus_edges_for`. The claim of a gap was made by
+   reading part of a file and inferring the rest, which is the failure `CLAUDE.md` names as *"a grep miss
+   is not proof of absence"* running in the other direction.
+2. **A test that fails when a canonical demo query has no answer.** The real lesson, and narrower than it
+   first looked. The chips **are** validated — `tests/test_chips.py` checks every first-screen chip's ids,
+   direction and expectation against the pinned artifact, under the standing rule that *"a corpus change
+   must fail the build rather than a demo"*. The gold cases are validated. What is **not** validated is a
+   demo query named in **prose**: the surface table in `SPEC.md` §1 and the scope doc's §80 name a route in
+   running text, and nothing executes running text. That is the entire reason this bug survived.
+   `tests/test_canonical_surfaces.py` closes it, and it has to assert **both halves** — that the pair walks
+   in the artifact, and that the documents name that pair — because a test pinned only to node ids goes
+   green while the prose beside it says something else.
+3. **Retarget the demo and correct the documents** — `SPEC.md` §1 and §2, `phase-7-cinematic-surface.md`
+   §80, and this step — to `Detroit techno -> blues`, marked provisional pending step 8.
+**Done when:** the six path cases pass the pinned contract, a canonical-query test fails on an unanswerable
+demo sentence, the three documents name a route that walks, `agent/loop.py` is unmodified, and `make check`
+is green.
+
+**The fourth item became its own step — sjtroxel, 2026-09-09.** Writing the phase 8 scope doc is a
+different kind of work from writing a regression test, and bundling them made this step the largest in the
+phase for no reason other than that both fell out of the same re-read. It is **step 5.5** below.
+
+~~The C-shaped query from `SPEC.md` §2. *"Take me from delta blues to Detroit techno."*~~ The agent plans a
 path between two nodes and narrates it.
 
 **The trap, named up front, because it is the claims-first leak wearing a new hat.** A tour *plans a path*,
@@ -1135,13 +1249,106 @@ outline. It is not a claim set. Every edge the narration mentions must be a `Cla
 deterministic gate, exactly as today, and `synthesize` still takes exactly one claim-bearing parameter. A
 path the planner walked but the gate did not approve gets walked by the camera and **not** spoken.
 
-**One-way door #4 gets tested here for real.** *"Adding a tool must never require editing the loop. If it
-does, the seam is broken."* The tour is the first genuinely new tool since the seam was written. If
-`agent/loop.py` needs an edit to accommodate it, that is a finding and it goes in this doc in bold, not a
-quiet patch.
+~~**One-way door #4 gets tested here for real.** *"Adding a tool must never require editing the loop. If it
+does, the seam is broken."* The tour is the first genuinely new tool since the seam was written.~~ **False,
+see finding 1: `trace_lineage` was the seam test on 2026-08-05 and four more tools followed.** The clause
+that survives is the standing one: if `agent/loop.py` needs an edit to accommodate anything in this step,
+that is a finding and it goes in this doc in bold, not a quiet patch.
 
-**Done when:** a two-node query returns a planned path whose narrated edges are all gate-approved, with
-`agent/loop.py` unmodified.
+~~**Done when:** a two-node query returns a planned path whose narrated edges are all gate-approved, with
+`agent/loop.py` unmodified.~~ **Already true on 2026-08-05; superseded by the revised definition above,
+which asks for a test rather than an assertion.**
+
+#### 5.0 As built — the step that mostly deleted itself
+
+**One new file, two document corrections, no production code, and `agent/loop.py` untouched.** `make check`
+green: **1474 passed** (from 1465, so the nine below are the whole delta), mypy clean over 102 source files,
+frontend 210 across 21, root 17 of 18, scripted eval gates unchanged at 4 passed / 0 failed / 2 N/A.
+
+**`tests/test_canonical_surfaces.py`, nine tests.** Three assert the retargeted route walks, is cited on
+every hop, and is contiguous. Four assert the **documents name the route that walks** and no longer offer
+the retired one, parametrised over a `NAMED_IN_PROSE` dict that a future document adds itself to. Two pin
+the *reason* for the retirement: `Delta blues -> Detroit techno` has no path in either direction or either
+argument order, and `Delta blues` resolves but has no sourced parents at all. Written to fail first, and it
+did — on both documents, for the live bug, before either was edited.
+
+**The finding, and it is a category rather than an incident.** This project already enforces the standing
+rule that a demo must be validated against the pinned artifact: `tests/test_chips.py` does it for every
+first-screen chip, `tests/test_gold_set.py` for every gold case. Both work because both read **data**.
+**Every demo query written in prose was unprotected**, and one of them had been false for weeks.
+
+The sharpest detail is that the knowledge was already in the repo and could not reach the place that needed
+it. `SPEC.md` §2's note has read *"Delta blues is absent from the corpus"* since **2026-08-02**; the surface
+table twenty lines above it went on offering delta blues to Detroit techno until today. Nothing was
+forgotten and nothing was wrong — the two facts simply lived in prose, where no test could put them next to
+each other. **That is the argument for the dict rather than for four hand-written assertions:** the cost of
+protecting the next prose demo is one entry.
+
+**A correction made inside this step's own re-read, kept because it is the same failure in miniature.**
+Item 1 of the revised scope was written asserting that a rejected hop dropping the chain had no coverage. It
+has coverage — `tests/test_agent_loop.py:1241` — and the claim came from reading part of that file and
+inferring the rest. Two hours after writing a finding about asserting things without executing them.
+
+**What was NOT done here, deliberately.** No new tool, no loop edit, no new metric, no eval run, no spend.
+The route is **provisional** and step 8 still picks the real one from ranked density; the `INFOBOX_AUTO`
+finding in the block above is the input it inherits. The membership tour is phase 8, and step 5.5 writes it
+down.
+
+### Step 5.5 — Scope phase 8, and record it where a cold session will find it — **DONE 2026-09-09**
+
+**Inserted 2026-09-09**, out of step 5's re-read. The phase can gain a step mid-arc — `CLAUDE.md` says so
+and Patchwork gained 4.5 and 4.6 the same way — and this is documentation work with no code in it at all.
+
+**Why it is a step rather than a note.** Phase 8 was decided in conversation. A decision that lives only in
+a conversation is a decision that does not exist: the next cold session reads the ROADMAP, sees the spine
+end at v1.0, and either re-derives the membership tour from scratch or, worse, smuggles it into phase 7
+because the not-list is the only place the prohibition is written down.
+
+1. **`docs/phases/phase-8-membership-tour.md`** — the scope doc, written now because it is conceived now.
+   What it delivers, what it explicitly does not, how it will be judged done. It is the phase that opens
+   `ALLOWED_PREDICATES` to a second predicate, so the one-way-door analysis is the substance of it, not a
+   section at the end. The slug is provisional.
+2. **`docs/ROADMAP.md`** — a row in the version spine at **product v1.1**, after 7.5, and an entry in the
+   decision history dated 2026-09-09 recording *why* it sits after v1.0 rather than before: the showcase
+   works without it, a second predicate through the gate would move the claim model the week before the
+   writeup describes it, and new eval cases hit `thresholds.py:_ungateable` at $2.61 and roughly 2.4 hours
+   to restore the live bounds.
+3. **`docs/KNOWN-GAPS.md`** — the step 5 section, newest-first, carrying the component measurements and the
+   `INFOBOX_AUTO` finding that step 8 inherits.
+
+**Done when:** the scope doc exists, the ROADMAP spine reaches v1.1 with the reasoning beside it,
+KNOWN-GAPS carries step 5, and `make check` is green. **No code, no eval run, no spend.**
+
+#### 5.5.0 As built
+
+**Three documents, no code.** `make check` green and unchanged from step 5: **1474 passed**, mypy clean
+over 102 source files, frontend 210 across 21, root **17 of 18** — the scope doc lives in `docs/phases/`
+and touches the root cap not at all.
+
+- **`docs/phases/phase-8-membership-tour.md`**, 149 lines. §4 is the substance: **whether a membership hop
+  is a `Claim` at all**, written as two options with what each costs rather than as a decision taken early.
+  As a claim it inherits every existing grounding metric for free and risks one claim type meaning two
+  different things. Beside the claims — the shape `Contested` took in phase 6.5 — it cannot leak into prose
+  and risks a tour that goes silent at exactly the hop that makes the thesis. **The IMPLEMENTATION doc
+  decides that with the code in front of it**, which is the whole reason the two doc layers are written at
+  different times.
+- **`docs/ROADMAP.md`** — a spine row at **v1.1**, the first version past the release, plus a decision entry
+  dated 2026-09-09 recording the placement reasoning **and the alternative that was rejected**: inserting it
+  as 7.3, before the portfolio half. The rejected option is in the record because a future reader will have
+  the same idea and deserves the answer rather than the conclusion.
+- **`docs/KNOWN-GAPS.md`** — the step 5 section, newest-first, and the START HERE block re-measured to
+  1474 / 102.
+
+**One judgment worth stating, because it looks like an omission.** `ROADMAP.md` and `KNOWN-GAPS.md` both
+now contain the string *delta blues to Detroit techno* and neither was added to
+`test_canonical_surfaces.py:NAMED_IN_PROSE`. That is deliberate: those two documents **record a retired
+route**, and the test asserts that a document does not *offer* one. A test that cannot tell a record from
+an offer would force the history to be deleted in order to stay green, which is the opposite of what this
+repo does with superseded material.
+
+**What this step deliberately did not do:** decide anything about phase 8's shape, touch `agent/`, or write
+phase 8's IMPLEMENTATION doc. That is written immediately before phase 8 is built, after 7.5, so it can
+absorb what phases 7 and 7.5 teach.
 
 ### Step 6 — One timeline, demonstrably
 
@@ -1235,9 +1442,11 @@ step 2 — candidate A ships no media and the `media` cap is permanently 0. `tic
 
 ## 13. Testing, and which eval metrics apply
 
-The frontend suite carries most of this — **192 tests today, measured 2026-09-09** (this line said
-168), and steps 4 and 6 add to it. The timeline
-property test in step 6 is the one that closes a DoD item rather than covering a component.
+The frontend suite carries most of this — **210 tests across 21 files, measured 2026-09-09 at the end of
+step 4** (this line has read 168 and then 192; it is the phase's running total and is re-measured, never
+copied). **Step 4 added 18 of those**: `ticker.test.ts` 6, `enter.test.tsx` 10, `streaming.test.tsx` 2.
+**Step 6 is the remaining one that adds here**, and its timeline property test is the one that closes a
+DoD item rather than covering a component.
 
 **Eval metrics: the existing six, unchanged, plus the tour set scored by them.** `edge_groundedness` and
 `citation_resolution` are the ones the tour can actually break, because a narrated path is where an
