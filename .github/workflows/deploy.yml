@@ -265,17 +265,23 @@ jobs:
           echo "site:  $site"
           echo "asset: $asset"
 
-          for attempt in $(seq 1 12); do
-            body="$(curl -fsS --max-time 20 "$site/")"
-            if printf '%s' "$body" | grep -q "$asset"; then
+          # A FRESH distribution is not resolvable for a minute or two after apply returns. Found on
+          # 2026-09-10 at phase 7.5 step 3's destroy/apply round-trip, the first time this step ever ran
+          # against a new hostname: curl exited 6 ("could not resolve host") on attempt 1 and `set -e`
+          # ended the step there, so the retry loop below never got its second attempt. A curl failure
+          # is now a reason to wait, like an old build is, and the window is five minutes rather than
+          # two because DNS for a new name is slower than a cache invalidation.
+          body=""
+          for attempt in $(seq 1 30); do
+            if body="$(curl -fsS --max-time 20 "$site/" 2>&1)" && printf '%s' "$body" | grep -q "$asset"; then
               echo "the site is serving this build (attempt $attempt)"
               exit 0
             fi
-            echo "attempt $attempt: not this build yet, waiting"
+            echo "attempt $attempt: not serving this build yet, waiting"
             sleep 10
           done
 
-          echo "::error::$site did not serve $asset within ~2 minutes of the invalidation"
+          echo "::error::$site did not serve $asset within ~5 minutes"
           echo "what it served instead:"
           printf '%s' "$body" | head -c 400
           exit 1

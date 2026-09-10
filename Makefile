@@ -236,7 +236,10 @@ tf-apply: ## Apply the main root (requires the three deployment variables and an
 # first deletes the bucket holding main's state and leaves main's resources running and unmanaged.
 #
 # The second guard is not ceremony. Destroying aws_cloudfront_distribution.spa means AWS assigns a NEW
-# hostname on re-apply, so d2vtdkpgmecreg.cloudfront.net stops existing and every link to it dies.
+# hostname on re-apply, so the current dXXXX.cloudfront.net stops existing and every link to it dies.
+# (It happened once, deliberately, on 2026-09-10: d2vtdkpgmecreg became d1eu81q25yzmpx. The public
+# address is https://musical-mycelium.vercel.app, a proxy that survives this -- after a re-apply, update
+# infra/vercel/vercel.json's destination and push.)
 # That is unrecoverable, and it is the one thing in this repo a typo should not be able to reach.
 tf-destroy: ## Destroy the main root. Bootstrap is destroyed separately and AFTER this.
 	$(TF_REQUIRE)

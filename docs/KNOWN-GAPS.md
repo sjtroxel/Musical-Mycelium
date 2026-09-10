@@ -26,8 +26,9 @@ all six gates. Step 0 made the README's current-state figures generated (`make r
 > `docs/phases/phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md`, written 2026-09-09. **Read §3 and §4
 > before anything else** — four premises moved under the scope doc and one finding is measured there.
 > The four that matter most, because they are counter-intuitive:
-> **(a) the deployed site is still the `v0.6.0` build**, so nothing from 6.5 or 7 is live and the
-> portfolio phase is the one that fixes that;
+> ~~(a) the deployed site is still the `v0.6.0` build~~ **(a) corrected 2026-09-10: v1.0 is deployed**
+> (run `34513233146`, image `2c27b0de746c`, verified by hand) and is also served at
+> `https://musical-mycelium.vercel.app`, a free Vercel reverse proxy in front of CloudFront;
 > **(b) `eval/report.py` emits terminal text only** — there is no publishable report to extend, it is new
 > work;
 > **(c) only 5 of 26 stored live runs are comparable to each other**, so the trend view is cohorts, not a

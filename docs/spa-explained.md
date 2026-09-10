@@ -11,7 +11,7 @@ Plain English throughout. Where a number appears, it was measured on the date gi
 
 ## What this is
 
-A React app at `https://d2vtdkpgmecreg.cloudfront.net` that lets someone ask how two pieces of music
+A React app at `https://musical-mycelium.vercel.app` that lets someone ask how two pieces of music
 history connect, and watch a grounded answer assemble itself.
 
 It is a client for an API that already existed. The backend was finished, deployed and measured before a
