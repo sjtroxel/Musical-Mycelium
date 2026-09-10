@@ -243,3 +243,23 @@ variable "cors_extra_origins" {
   type        = list(string)
   default     = []
 }
+
+variable "proxy_origins" {
+  description = <<-EOT
+    Stable public addresses that reverse-proxy to the CloudFront distribution. Added 2026-09-10, phase
+    7.5 step 3, decided by sjtroxel.
+
+    **Why a proxy exists at all.** Destroying `aws_cloudfront_distribution.spa` gives the re-applied
+    distribution a NEW `dXXXX.cloudfront.net` hostname, and step 3's DoD requires a real destroy and
+    apply. A free Vercel project (`infra/vercel/vercel.json`, one external rewrite) keeps a
+    recognisable address that survives the round-trip: after a re-apply, one line in that file moves.
+
+    **Why it needs CORS.** The browser loads the SPA from the proxy's origin and calls the Function URL
+    directly, not through the proxy, so the proxy's origin must be allowed here. Streaming is
+    unaffected for the same reason: the API never passes through Vercel.
+
+    Permanent, unlike `cors_extra_origins`, which is why they are separate variables.
+  EOT
+  type        = list(string)
+  default     = ["https://musical-mycelium.vercel.app"]
+}

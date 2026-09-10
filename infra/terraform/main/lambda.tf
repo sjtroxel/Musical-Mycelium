@@ -152,9 +152,14 @@ resource "aws_lambda_function_url" "app" {
   #
   # `cors_extra_origins` is the escape hatch for a Vite dev server calling the DEPLOYED backend. It is
   # empty by default so that shape has to be asked for.
+  #
+  # `proxy_origins` is a different thing and gets its own variable for that reason: the stable public
+  # address in front of CloudFront (phase 7.5 step 3). It is permanent, where the escape hatch is meant
+  # to be emptied again, and folding the two together would make the permanent entry look temporary.
   cors {
     allow_origins = concat(
       ["https://${aws_cloudfront_distribution.spa.domain_name}"],
+      var.proxy_origins,
       var.cors_extra_origins,
     )
     allow_methods = ["GET"]
