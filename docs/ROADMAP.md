@@ -149,7 +149,8 @@ that left, and **its IMPLEMENTATION doc was written 2026-09-09, an hour after ph
 fresh as they will ever be. ~~Phase 7.5 is planned and not started; step 0 is next.~~ **Approved and
 under way 2026-09-10: step 0 is done** — the README's current-state figures are generated and gated —
 **and step 0.5, the `_sentences` fix, was inserted ahead of the report and is done the same day. So is
-step 1, the generated report page at `/report/index.html`. Step 2, the trend view, is next.**
+step 1, the generated report page at `/report/index.html`, and step 2, the trend view on it. Step 3,
+the v1.0 deploy with a real `terraform destroy`/`apply` round-trip, is next.**
 
 **Step 4 built the motion system with no animation library and no Web Animations API** — CSS keyframes
 on `transform` and `opacity`, with the delays computed by pure functions in `graph/motion.ts` so they are

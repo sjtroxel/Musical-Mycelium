@@ -351,7 +351,7 @@ say what it is in one line.
   CloudFront's default root object covers only the site root. **Verified at step 3's deploy, not here.**
 - The Lambda image copies `src/` whole and so carries results and transcripts (§8, step 3).
 
-### Step 2 — The trend view
+### Step 2 — The trend view — [done]
 
 §4 is the plan. Cohorts keyed by the existing gate predicate, incomparable runs shown and not joined, the
 noise floor drawn so a movement inside it is visibly inside it, per-case data available because
@@ -359,6 +359,53 @@ noise floor drawn so a movement inside it is visibly inside it, per-case data av
 
 **Done when:** the view reads `eval/results/` rather than a hand-maintained table, refuses to join what
 the gate would refuse to compare, and a test asserts that refusal.
+
+#### 2.0 As built, 2026-09-10
+
+**On the report page, not its own page** — §8's first decision, closed. One generator, one byte class,
+no script. Small multiples as inline SVG from `eval/trend.py`; the sentences stay in
+`report_page.COPY`. The page is **46.1 KB of 64**, and most of the growth is the table twins, which add
+roughly one row per future run.
+
+**The cohort rule is borrowed from the noise floor, and it is STRICTER than the gate — a finding.** §4
+said to key cohorts on the gate's predicate. Read closely, `thresholds._ungateable` checks that a run
+finished and that its case count matches the baseline. **It never checks the corpus pin.** So by the
+gate's rule alone, the single 41-case run at artifact 0.6.0 would share a line with the twelve 41-case
+runs at 0.5.0, across a corpus change. `noise.POOLING_FIELDS` refuses exactly that. So a cohort is
+every pooling field **except `code_revision`**, which is released on purpose because a trend exists to
+cross code changes, plus an identical case list and a finished run. `tests/test_trend.py` asserts the
+implication the plan asked for over every committed run — nothing joined is a pair the gate would
+refuse — and pins each refusal synthetically: a different corpus, a subset, the same size with
+different cases, an unfinished run.
+
+**Charted at `noise.MINIMUM_RUNS` or more, and nothing else is drawn.** Two cohorts qualify: **0.7.1 at
+56 cases, 6 runs** (the five-run baseline plus today) and **0.5.0 at 41 cases, 12 runs**. Eight more are
+listed under "shown, and not joined" with the reason: smoke tests, subset runs, the unfinished run,
+the lone 0.6.0 run and the lone 45-case run. §4's table was 26 runs counted by hand; the page now counts
+30 by code.
+
+**The noise band is drawn only on the cohort that contains the measured floor's runs.** The 0.5.0 floor
+was replaced at re-measurement and survives only in git history, so that cohort has no band, and the
+page says so rather than borrowing one.
+
+**The x-axis is run order, not time, and the page says so in words.** Five of the six 0.7.1 runs are
+from one evening, so equal spacing hides a three-day gap before the sixth.
+
+**The chart color failed the dataviz validator and was snapped, not argued.** The app's accent
+`#ff5cae` sits at OKLCH lightness 0.712, above the dark-mode band of 0.48–0.67. The line and dots use
+`#ec4a9e`: the same hue and chroma at 0.66, and it passes all five checks against the card surface. The
+app's accent is unchanged.
+
+**Rendered and looked at**, at 1280 and 400 wide with headless Chromium: three columns on desktop, one
+on a phone, no label collisions, every end label inside its frame.
+
+**What the charts show, read without inflation.**
+- **Today's `approved_claims` (224) sits above the five-run range (182–218).** Not a finding. A sixth
+  run from the same distribution lands above the maximum of five about one time in six, and the
+  `_sentences` fix touched prose, which is generated after claims are approved.
+- **`traversal_recall` draws a zero-width band** at 97.1%: the zero-variance trap, on the page. The
+  per-case table under it answers the question the flat line raises: `gold_v0_1_020` is wrong in 6 of
+  6 runs. **51 of 56 cases were correct in all six runs**, and 36 of 41 in the 0.5.0 cohort.
 
 ### Step 3 — Deploy v1.0, then prove the round-trip and the bill
 
@@ -438,6 +485,8 @@ before phase 7 and 3 more from the tour. Real, pre-existing, and named so it is 
 
 - **The report's published location and route**, and whether the trend view is part of it or its own page.
   Step 1 decides from what `render` already computes.
+  **Decided 2026-09-10:** one static page at `/report/index.html` (step 1, his pick of three), and the
+  trend view is a section of it (step 2), not a page of its own.
 - **Whether the held-out number is published.** It is a single run of ten cases and publishing it invites
   a reader to ask for more, which is the one thing that set can never survive. Scope doc §8 left it open
   and it stays open until step 1.

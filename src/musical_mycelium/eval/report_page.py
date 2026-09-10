@@ -36,7 +36,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from musical_mycelium.eval import noise
+from musical_mycelium.eval import noise, trend
 from musical_mycelium.eval.live import gate_record
 from musical_mycelium.eval.published import corpus_figures
 from musical_mycelium.eval.slices import SPARSE_SLICE
@@ -108,6 +108,30 @@ COPY: dict[str, str] = {
         "{swing} points. It is an observation, not a rate, and it cannot be re-run for an error bar "
         "without spending the property the set exists to have."
     ),
+    "trend": (
+        "Runs grouped into cohorts that can honestly share a line: the same corpus, the same model, the "
+        "same cases, and a run that finished. The code is allowed to differ, because showing what a "
+        "change did is the point. Nothing is joined across cohorts. Runs are spaced evenly in the order "
+        "they ran, not to scale in time."
+    ),
+    "trend_band": (
+        "The shaded band is the noise floor, measured over five identical runs in this cohort. A point "
+        "inside it is noise, not a result."
+    ),
+    "trend_no_band": (
+        "No noise floor for this cohort is kept in the repository, so no band is drawn. The spread of "
+        "its own runs is the only guide."
+    ),
+    "trend_cases": (
+        "{steady} of {total} cases were correct in all {runs} runs. The others are listed, because a "
+        "flat aggregate can hide a case that fails the same way every time."
+    ),
+    "trend_unjoined": (
+        "Too few runs to show a spread, a subset of the cases, or a run that did not finish. Each is "
+        "listed and none is drawn on a line."
+    ),
+    "trend_few": "{runs} {noun} of this exact case set; a spread needs {minimum}.",
+    "trend_incomplete": "Did not finish, so its cases were chosen by exhaustion, not at random.",
     "cause:gold_v0_1_020": (
         'The model types "fentanyl" for the artist femtanyl, so the lookup finds nothing. Not a graph '
         "or tool defect: typed correctly, the graph answers it in one call."
@@ -183,9 +207,9 @@ def _e(value: object) -> str:
 
 
 def _fmt(unit: str, value: float | None) -> str:
-    if value is None:
-        return "undefined"
-    return f"{value * 100:.1f}%" if unit == "rate" else f"{round(value):,}"
+    # One formatter for the metrics table, the trend charts and their table twins, so the same value
+    # can never print two ways on one page.
+    return trend.fmt(unit, value)
 
 
 def _when(stamp: str) -> str:
@@ -432,11 +456,92 @@ def did_not_work_section(
     )
 
 
+def trend_section(runs: Sequence[tuple[str, Json]], floor: Json) -> str:
+    """Step 2: cohorts, not a line. Charted cohorts newest first, then everything that is not joined."""
+    groups = trend.cohorts(runs)
+    floor_stamps = {name.split("-", 1)[0] for name in floor["runs"]}
+    spreads = {spread["metric"]: (spread["low"], spread["high"]) for spread in floor["spreads"]}
+    units = {name: unit for name, unit, _ in noise.METRICS}
+
+    out = '<h2 id="trend">Across runs</h2>' + _p(COPY["trend"])
+    for cohort in reversed([group for group in groups if group.charted]):
+        # The band is drawn only on the cohort that CONTAINS the measured floor's runs. A band borrowed
+        # onto a different cohort would be a noise floor for a measurement nobody made.
+        measured = floor_stamps <= set(cohort.stamps)
+        out += (
+            f"<h3>Artifact {_e(cohort.artifact_version)}, {cohort.case_count} cases: "
+            f"{len(cohort.runs)} runs, {trend.when(cohort.stamps[0])} to "
+            f"{trend.when(cohort.stamps[-1])}</h3>"
+        )
+        out += _p(COPY["trend_band"] if measured else COPY["trend_no_band"], "note")
+        figures = "".join(
+            f"<figure><figcaption><code>{_e(name)}</code></figcaption>"
+            f"{trend.chart(name, cohort, spreads.get(name) if measured else None)}</figure>"
+            for name in trend.CHARTED
+        )
+        out += f'<div class="multiples">{figures}</div>'
+
+        unsteady = trend.unsteady_cases(cohort)
+        out += _p(
+            COPY["trend_cases"].format(
+                steady=cohort.case_count - len(unsteady),
+                total=cohort.case_count,
+                runs=len(cohort.runs),
+            )
+        )
+        if unsteady:
+            rows = []
+            for case_id, marks in unsteady:
+                wrong = [str(index + 1) for index, ok in enumerate(marks) if not ok]
+                rows.append(
+                    [
+                        f"<code>{_e(case_id)}</code>",
+                        _e(f"wrong in {len(wrong)} of {len(marks)}: run {', '.join(wrong)}"),
+                    ]
+                )
+            out += _table(["case", "verdict across runs, oldest first"], rows)
+
+        # The table twin: every value the charts draw, plus the three invariants they leave out.
+        twin = [
+            [_e(trend.when(stamp)), f"<code>{_e(run.get('code_revision', 'unknown'))}</code>"]
+            + [_e(_fmt(unit, extract(run))) for _, unit, extract in noise.METRICS]
+            for stamp, run in cohort.runs
+        ]
+        out += (
+            "<details><summary>Every run in this cohort, as a table</summary>"
+            + _table(["date", "revision", *units], twin)
+            + "</details>"
+        )
+
+    unjoined = []
+    for cohort in (group for group in groups if not group.charted):
+        if not cohort.complete:
+            why = COPY["trend_incomplete"]
+        else:
+            count = len(cohort.runs)
+            why = COPY["trend_few"].format(
+                runs=count, noun="run" if count == 1 else "runs", minimum=noise.MINIMUM_RUNS
+            )
+        unjoined.append(
+            [
+                _e(cohort.artifact_version),
+                str(cohort.case_count),
+                str(len(cohort.runs)),
+                _e(f"{trend.when(cohort.stamps[0])} to {trend.when(cohort.stamps[-1])}"),
+                _e(why),
+            ]
+        )
+    if unjoined:
+        out += "<h3>Shown, and not joined</h3>" + _p(COPY["trend_unjoined"])
+        out += _table(["artifact", "cases", "runs", "dates", "why it is not on a line"], unjoined)
+    return out
+
+
 # --- the page ---------------------------------------------------------------------------------------
 
 STYLE = """
 :root{color-scheme:dark;--ink:#f3effa;--ink-soft:#bab0cf;--ink-faint:#8b81a6;--ground:#0d0a14;
---card:#171327;--rule:#2b2440;--accent:#ff5cae;--contested:#5cd8ff}
+--card:#171327;--rule:#2b2440;--accent:#ff5cae;--contested:#5cd8ff;--series:#ec4a9e}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--ink);line-height:1.55;
 font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -459,6 +564,20 @@ tr:last-child td{border-bottom:0}
 ul{padding-left:1.25rem}
 li{color:var(--ink-soft);margin:.6rem 0;max-width:42rem}
 .lede{font-size:1.05rem}
+h3{font-size:1rem;margin:2rem 0 .5rem;color:var(--ink)}
+.multiples{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.75rem;margin:.75rem 0 1rem}
+figure{margin:0;padding:.6rem .6rem .3rem;background:var(--card);border-radius:10px}
+figcaption{font-size:.8rem;color:var(--ink-soft);margin-bottom:.2rem}
+.t-chart{display:block;width:100%;height:auto}
+.t-grid{stroke:var(--rule);stroke-width:1}
+.t-band{fill:var(--series);fill-opacity:.1}
+.t-line{fill:none;stroke:var(--series);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.t-dot{fill:var(--series);stroke:var(--card);stroke-width:2}
+.t-hit{fill:transparent}
+.t-label{fill:var(--ink-faint);font-size:10px}
+.t-end{fill:var(--ink-soft);font-size:10px}
+details{margin:.5rem 0 1rem}
+summary{cursor:pointer;color:var(--ink-soft)}
 """
 
 
@@ -493,6 +612,7 @@ def render() -> str:
         live_gates_section(live, gated),
         scripted_gates_section(scripted),
         metrics_section(label, run, floor),
+        trend_section(results("bedrock"), floor),
         slices_section(run),
         judged_section(tier2[-1], results("judge")) if tier2 else "",
         heldout_section(heldout, current),

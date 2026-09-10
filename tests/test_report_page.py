@@ -36,7 +36,16 @@ def test_the_committed_page_is_what_the_generator_produces(page: str) -> None:
 
 @pytest.mark.parametrize(
     "section",
-    ["live-gates", "scripted-gates", "metrics", "slices", "judged", "heldout", "did-not-work"],
+    [
+        "live-gates",
+        "scripted-gates",
+        "metrics",
+        "trend",
+        "slices",
+        "judged",
+        "heldout",
+        "did-not-work",
+    ],
 )
 def test_the_page_carries_every_section_step_1_requires(page: str, section: str) -> None:
     assert f'id="{section}"' in page

@@ -12,8 +12,10 @@
 > 6, 7 and 8 are DONE; step 2 was DELETED; step 5.5 was INSERTED mid-phase. The DoD audit is
 > `phase-7-cinematic-surface-IMPLEMENTATION.md` §8.9 and the close is §8.10.
 >
-> **PHASE 7.5 IS UNDER WAY. STEPS 0, 0.5 AND 1 ARE DONE (2026-09-10); NEXT IS STEP 2, the trend
-> view.** Step 1 generates the published report at `/report/index.html` (`make report`, drift-tested);
+> **PHASE 7.5 IS UNDER WAY. STEPS 0, 0.5, 1 AND 2 ARE DONE (2026-09-10); NEXT IS STEP 3, deploy v1.0
+> and prove the round-trip and the bill.** Step 2 added the trend view to the report: cohorts, not a
+> line, keyed on the noise floor's pooling rule, which is STRICTER than the gate (the gate never checks
+> the corpus pin). Step 1 generates the published report at `/report/index.html` (`make report`, drift-tested);
 > its explanatory sentences are a Claude draft in `eval/report_page.py:COPY`, **kept by his decision on
 > 2026-09-10 and not a blocker for step 3.** Step 0.5 closed the `loop.py:_sentences` item phase 7 left open: the four-claim chain went
 > from padded in 4 of 5 baseline runs to clean in 3 of 3 live runs, and no gate reads prose, so **the
