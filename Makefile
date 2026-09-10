@@ -244,7 +244,7 @@ tf-apply: ## Apply the main root (requires the three deployment variables and an
 tf-destroy: ## Destroy the main root. Bootstrap is destroyed separately and AFTER this.
 	$(TF_REQUIRE)
 	@test "$(CONFIRM)" = "destroy-the-live-site" || { \
-		echo "Refusing: tf-destroy tears down 26 resources including the CloudFront distribution."; \
+		echo "Refusing: tf-destroy tears down every resource in main/, including the CloudFront distribution."; \
 		echo "Its hostname is NOT recoverable -- a re-apply gets a new one and every link dies."; \
 		echo; \
 		echo "  make tf-destroy CONFIRM=destroy-the-live-site IMAGE_TAG=<sha> LLM_PROVIDER=bedrock RESERVED_CONCURRENCY=-1"; \

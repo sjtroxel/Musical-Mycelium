@@ -1,6 +1,6 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-09
+> ## START HERE — where things stand, 2026-09-10
 >
 > **PHASE 6.5 IS COMPLETE** — all ten DoD items, `v0.6.5` tagged and pushed. As-built:
 > `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`, **and that doc is the authority**.
@@ -12,30 +12,34 @@
 > 6, 7 and 8 are DONE; step 2 was DELETED; step 5.5 was INSERTED mid-phase. The DoD audit is
 > `phase-7-cinematic-surface-IMPLEMENTATION.md` §8.9 and the close is §8.10.
 >
-> **PHASE 7.5 IS UNDER WAY. STEPS 0, 0.5, 1 AND 2 ARE DONE (2026-09-10); NEXT IS STEP 3, deploy v1.0
-> and prove the round-trip and the bill.** Step 2 added the trend view to the report: cohorts, not a
+> **PHASE 7.5 IS UNDER WAY. STEPS 0, 0.5, 1 AND 2 ARE DONE (2026-09-10). STEP 3 IS DONE TOO: DEPLOYED,
+> ROUND-TRIPPED, GREEN, AND BILLED — August usage $6.28, invoiced $0.00 under credits that expire
+> 2027-07-30. NEXT IS STEP 4, the README and the recruiter path.** The public address is
+> **https://musical-mycelium.vercel.app**, a free Vercel proxy; CloudFront is now
+> `d1eu81q25yzmpx.cloudfront.net` after a real destroy/apply. After any future re-apply, move
+> `infra/vercel/vercel.json`'s destination and push. Step 2 added the trend view to the report: cohorts, not a
 > line, keyed on the noise floor's pooling rule, which is STRICTER than the gate (the gate never checks
 > the corpus pin). Step 1 generates the published report at `/report/index.html` (`make report`, drift-tested);
 > its explanatory sentences are a Claude draft in `eval/report_page.py:COPY`, **kept by his decision on
 > 2026-09-10 and not a blocker for step 3.** Step 0.5 closed the `loop.py:_sentences` item phase 7 left open: the four-claim chain went
 > from padded in 4 of 5 baseline runs to clean in 3 of 3 live runs, and no gate reads prose, so **the
 > live bounds are still valid** — confirmed at step 1, when the full live run on the fixed code passed
-all six gates. Step 0 made the README's current-state figures generated (`make readme`) and
+> all six gates. Step 0 made the README's current-state figures generated (`make readme`) and
 > checked by `make check`; its as-built §0.0 lists **five false sentences in the README that markers
 > cannot catch** and that step 4 owes.
-> `docs/phases/phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md`, written 2026-09-09. **Read §3 and §4
-> before anything else** — four premises moved under the scope doc and one finding is measured there.
-> The four that matter most, because they are counter-intuitive:
+> `docs/phases/phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md` is the authority. ~~Read §3 and §4
+> before anything else~~ *(an instruction for a phase that had not started; steps 0-3 have since built
+> what §3 and §4 describe)* — **start at the step 3.0 as-built, then step 4 and §6.** The four
+> premises, as they now stand:
 > ~~(a) the deployed site is still the `v0.6.0` build~~ **(a) corrected 2026-09-10: v1.0 is deployed**
 > (run `34513233146`, image `2c27b0de746c`, verified by hand) and is also served at
 > `https://musical-mycelium.vercel.app`, a free Vercel reverse proxy in front of CloudFront;
-> **(b) `eval/report.py` emits terminal text only** — there is no publishable report to extend, it is new
-> work;
-> **(c) only 5 of 26 stored live runs are comparable to each other**, so the trend view is cohorts, not a
-> line, and the admission rule already exists in `thresholds.py`;
+> ~~(b) `eval/report.py` emits terminal text only~~ **(b) built at step 1:** `eval/report_page.py`,
+> served at `/report/index.html`;
+> ~~(c) only 5 of 26 stored live runs are comparable~~ **(c) built at step 2** as the trend view, over
+> 30 runs, with cohorts stricter than the gate;
 > **(d) judge-human agreement on `citation_support` is Cohen's kappa 0.44-0.48**, and the same pool
-> scored 14/30, 12/30, 11/30 across three runs — the judge disagrees with itself, and DoD 7 means
-> publishing that.
+> scored 14/30, 12/30, 11/30 across three runs — **still true, and now published on the report page.**
 >
 > **PHASE 8 `membership-tour` IS SCOPED AND IS AFTER v1.0 — 2026-09-09.**
 > `docs/phases/phase-8-membership-tour.md`. It opens `agent/claims.py:ALLOWED_PREDICATES` to a second
@@ -79,6 +83,26 @@ all six gates. Step 0 made the README's current-state figures generated (`make r
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
 
+## PHASE 7.5 STEPS 0 THROUGH 3 — report, trend, deploy, round-trip, bill, 2026-09-10
+
+**As-built is `phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md` §0.0 through §3.0, and those are the
+authority.** Only the items still open are listed here, each deferred on purpose.
+
+- **The README's status section is false in five places**, including "the deployed site is the `v0.6.0`
+  build". Annotated in place on 2026-09-10; **step 4 rewrites it, in his words.** Markers protect its
+  numbers and cannot protect its sentences.
+- **The smoke-test DNS fix in `deploy.yml` is unproven against a fresh hostname.** The green run
+  `34517439601` ran against an existing one. Only the next round-trip proves it.
+- **The invoice's per-service split was not read.** August: usage $6.28, invoiced $0.00 under credits
+  expiring 2027-07-30. "Bedrock is the line item" is backed by measured eval spend, not by the invoice.
+  One Cost Explorer charge-type filter closes it, free in the console.
+- **The report page's explanatory sentences are a Claude draft** in `eval/report_page.py:COPY`, **kept by
+  his decision on 2026-09-10.** Not a blocker.
+- **The report's `unknown` slice needs one explaining line**: it means the case's subject never resolved,
+  not missing data (step 1 as-built).
+- **The Vercel proxy is the one piece of hosting outside Terraform.** After any re-apply, move
+  `infra/vercel/vercel.json`'s destination and push.
+
 ## PHASE 7 COMPLETE — the tour, one timeline, and a route picked from measurement, 2026-09-09
 
 **As-built is `phase-7-cinematic-surface-IMPLEMENTATION.md` §6.0, §7.0, §8.0, §8.9 and §8.10, and those
@@ -115,6 +139,8 @@ run streaming. `Backdrop`'s own tests passed throughout; `App.tsx` read `paused=
 **replayed** run never touches `steps`, so the backdrop drifted behind the tour. Caught by the DoD audit,
 not by the suite.
 
+*(The `_sentences` item below was CLOSED 2026-09-10 at phase 7.5 step 0.5: a four-claim chain went from
+padded in 4 of 5 baseline runs to clean in 4 of 4 live runs. The record below is kept as written.)*
 **OPEN, AND LEFT OPEN ON PURPOSE:** `loop.py:_sentences` pads a **four**-claim chain into two sentences
 and the model fills the second by restating the chain backwards — three live captures, two at four claims
 duplicated, one at five clean, because above four the string becomes a range. Not fixed: it governs every

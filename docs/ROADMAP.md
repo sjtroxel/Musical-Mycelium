@@ -114,7 +114,7 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
-### Where the build actually is — 2026-09-09
+### Where the build actually is — 2026-09-10
 
 **Phases 0 through 5 are COMPLETE. PHASE 6 IS BUILT — steps 0 through 10 are all done. PHASE 6.5 IS
 COMPLETE — steps 0 through 8, all in one day, 2026-09-07.** Its as-built is
@@ -126,7 +126,9 @@ count 1.**
 Tier 1 live at v0.7.1 (45 cases) and judged tier 2 both ran 2026-09-06, and the copy audit closed the same
 day. **`v0.6.0` is tagged at `51f2c21` and deployed** — run `34058614241`, verified by hand: the deployed
 `/health` serves artifact 0.7.1 with 7 components and 2 contested pairs, the SPA bundle carries the matching
-pin, and a real Bedrock query streamed a claim and its narration. As-builts:
+pin, and a real Bedrock query streamed a claim and its narration. *(Superseded 2026-09-10: v1.0 is
+deployed — run `34513233146`, then a real destroy/apply round-trip and green run `34517439601` — and is
+served at https://musical-mycelium.vercel.app. See the phase 7.5 step 3 as-built.)* As-builts:
 `docs/phases/phase-6-density-and-coverage-IMPLEMENTATION.md` §9.0 and §10.0. **The debt phase 6 could not
 close was scoped as phase 6.5** — `docs/phases/phase-6.5-debt-and-disagreement.md` — **and phase 6.5 is
 complete.**
@@ -150,7 +152,8 @@ fresh as they will ever be. ~~Phase 7.5 is planned and not started; step 0 is ne
 under way 2026-09-10: step 0 is done** — the README's current-state figures are generated and gated —
 **and step 0.5, the `_sentences` fix, was inserted ahead of the report and is done the same day. So is
 step 1, the generated report page at `/report/index.html`, and step 2, the trend view on it. Step 3,
-the v1.0 deploy with a real `terraform destroy`/`apply` round-trip, is next.**
+the v1.0 deploy with a real `terraform destroy`/`apply` round-trip and the bill read, is done the same
+day. Step 4, the README and the recruiter path, is next.**
 
 **Step 4 built the motion system with no animation library and no Web Animations API** — CSS keyframes
 on `transform` and `opacity`, with the delays computed by pure functions in `graph/motion.ts` so they are

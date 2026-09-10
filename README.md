@@ -15,7 +15,9 @@ Every connection it reports is sourced. The ones it cannot source, it does not c
 **Deployed, and honestly incomplete.** Last updated 2026-09-09. Phases 0 through **6.5** are complete and
 tagged (`v0.3.0-local`, `v0.4.0`, `v0.5.0`, `v0.6.0`, `v0.6.5`). **The deployed site is the `v0.6.0`
 build** — phase 6.5 changed the agent, the datasets and the eval gates, and deploying it is a decision
-not yet taken. The live URL serves the SPA at artifact **v0.7.1**
+not yet taken. *(Status note, 2026-09-10: no longer true. v1.0, including phases 6.5 and 7 and the
+evaluation report, is deployed at https://musical-mycelium.vercel.app. This section is rewritten in
+phase 7.5 step 4.)* The live URL serves the SPA at artifact **v0.7.1**
 — a streaming cited answer, an explorable map of the neighborhood around it, and a coverage panel that
 states what the corpus does not hold. Phase 6 gave the corpus a **second, independent source**, which is
 what makes disagreement between sources detectable at all: **<!-- n:corroborated -->82<!-- /n --> of <!-- n:influence_edges -->2,284<!-- /n --> influence edges carry a second

@@ -49,7 +49,7 @@ Everything below was run this evening on a clean tree at `948dec8`.
 
 ## 3. Four things phase 7 moved, and one it did not touch
 
-### 3.1 The deployed site is still the `v0.6.0` build
+### 3.1 The deployed site is still the `v0.6.0` build — *fixed at step 3, 2026-09-10*
 
 **Nothing from phase 6.5 or phase 7 is live.** Not the contested disclosure, not the backdrop, not the
 motion system, not the guided tour. A visitor today sees a build from 2026-09-06.
@@ -60,7 +60,7 @@ phase exists to prevent. DoD 4 — *"`terraform destroy` still removes everythin
 still rebuilds it"* — **is a deploy by definition**, so the deploy is inside this phase whether or not the
 scope doc named it. Step 3 owns it.
 
-### 3.2 The report has no publishable form at all
+### 3.2 The report has no publishable form at all — *built at step 1, 2026-09-10*
 
 `eval/report.py` is 274 lines and exposes exactly two functions, `render` and `render_judged`. Both emit
 **terminal text**. There is no HTML, no route, no build step, nothing a browser can open.
@@ -113,7 +113,7 @@ The live eval baseline. 56 cases, bounds measured over five identical runs at $2
 **Nothing in this phase adds a live case**, because `thresholds.py:_ungateable` returns before any
 per-metric check the moment the count moves. The held-out set stays sealed at run count 1.
 
-## 4. The finding this plan adds: only 5 of 26 stored live runs are comparable
+## 4. The finding this plan adds: only 5 of 26 stored live runs are comparable — *built as the trend view at step 2*
 
 Read out of `eval/results/` today, not recalled. The trend view's difficulty is not drawing a line; it is
 that **most of the history cannot honestly be on the same line.**
@@ -407,7 +407,7 @@ on a phone, no label collisions, every end label inside its frame.
   per-case table under it answers the question the flat line raises: `gold_v0_1_020` is wrong in 6 of
   6 runs. **51 of 56 cases were correct in all six runs**, and 36 of 41 in the 0.5.0 cohort.
 
-### Step 3 — Deploy v1.0, then prove the round-trip and the bill
+### Step 3 — Deploy v1.0, then prove the round-trip and the bill — [done]
 
 DoD 4 and 5, and §3.1's correction. Build and deploy the current tree so the live URL serves what this
 repo describes. Then run `terraform destroy` and `terraform apply` **for real** and confirm the site comes
@@ -420,6 +420,72 @@ the page says which. If a domain is registered, the number and the sentence both
 
 **Done when:** the live URL serves this tree, the round-trip is run rather than asserted, and the cost
 claim cites a real invoice with its period.
+
+#### 3.0 As built, 2026-09-10
+
+**A stable public address came first, and it had to.** A real `terraform destroy` gives the re-applied
+distribution a new random `dXXXX.cloudfront.net`, so the round-trip this step requires would have killed
+every link. **https://musical-mycelium.vercel.app** is a free Vercel Hobby project holding one external
+rewrite (`infra/vercel/vercel.json`, Root Directory `infra/vercel`, Git-integrated so a push redeploys),
+chosen by him mid-step. It is outside Terraform, the one piece of hosting that is, and it pauses rather
+than bills at its limits. The API allows its origin through a new `proxy_origins` variable, kept apart
+from the dev-server escape hatch because one is permanent and the other is meant to be emptied.
+Verified live: the Vercel origin is allowed, a random origin gets no header.
+
+**v1.0 deployed:** run `34513233146`, image `2c27b0de746c`. Verified by hand, not by the run's own
+checks: the report live at both addresses, `/health` at 0.7.1, the bundle carrying phase 7, and a real
+query streaming from the Vercel origin.
+
+**The round-trip, run rather than asserted. Main stack only; bootstrap kept, by decision.**
+- The site bucket was **emptied deliberately first** (`aws s3 rm --recursive`), as its no-`force_destroy`
+  comment asks. No versioning, so one pass was enough.
+- `make tf-destroy` removed **33 resources**, not the 26 the Makefile's warning claimed; the count in
+  that message had rotted and is now gone. **Among them: 18 corpus objects** in the bootstrap artifacts
+  bucket, which the main stack manages. Nothing was lost: every one is uploaded from a committed copy,
+  keyed by `filemd5`, and came back byte-identical.
+- Confirmed dead afterwards: CloudFront gave no answer, the old Function URL 403, the Vercel address 502.
+- **The budget alarms and anomaly alerts were gone for about ten minutes**, because they live in the
+  stack being destroyed. Nothing was running to spend money in that window, but the gap is real.
+- Re-applied from CI, reusing the image: run `34514965015`. **Apply and the SPA sync succeeded; the
+  run went red on its smoke test** — see the next paragraph.
+- New addresses: `d1eu81q25yzmpx.cloudfront.net` and a new Function URL. The Vercel destination was moved
+  and pushed, and the proxy served the new build on its first check.
+- Verified by hand after the rebuild: the site serves this build and its bundle points at the NEW API
+  with no reference to the dead one; the report byte-identical; the graph; `/health`; a real query (9
+  claims, first byte 0.17 s); CORS for both origins; all 3 budgets, the anomaly monitor and all 18
+  corpus objects back in state.
+
+**The round-trip found a real bug on its first run, which is part of what it is for.** The smoke test
+curls the new hostname before DNS knows it: curl exits 6, `set -euo pipefail` ends the step on attempt 1,
+and the retry loop written for "old build still cached" never runs. It had only ever run against an
+existing distribution. Fixed in `deploy.yml`: a failed curl is now a reason to wait, for up to five
+minutes. **The fix is not yet proven against a fresh hostname** — only another round-trip can do that —
+and the red run is left as the record rather than re-labelled.
+
+**Green afterwards:** run `34517439601`, same image, every step including both smoke tests. That puts the
+streaming check the red run skipped through CI, **against an existing hostname** — it does not prove the
+DNS fix, which only the next round-trip can.
+
+**The bill, read by him in the Billing console on 2026-09-10. Two numbers, and they are both true.**
+
+| | usage (before credits) | invoiced |
+|---|---|---|
+| **August 2026** (issued 2026-09-01) | **$6.28** | **$0.00** |
+| September 1–10, month-to-date (estimated) | $4.01, forecast $6.61 for the month | $0.00 expected |
+
+- **The credits are what reconcile them.** The $100 AWS Free Tier credit shows $6.27 used, finalized,
+  which is August's usage to the rounding, and $10.29 estimated, which is August plus September so far.
+  $153.73 remains: $93.73 of it plus three unused $20 "Explore AWS" credits. **All four expire
+  2027-07-30.** After that date, or when they run out, the invoice becomes the usage figure.
+- **What the usage is, stated at the strength it was checked.** The invoice lists 12 AWS services plus
+  the Claude Haiku Marketplace line, every one at $0.00 after credits. **The per-service split before
+  credits was NOT read** — Cost Explorer nets credits by default, and the split needs a charge-type
+  filter. So "fixed infrastructure costs pennies and Bedrock is the line item" remains the design claim,
+  supported by the measured eval spend ($2.61 on 2026-09-07 alone, against $4.01 month-to-date), and not
+  yet an invoice-verified split. One console filter closes that if a page ever needs the stronger form.
+- **The budget alarms watch usage, not the credit-covered bill, and that is the right way round.** The
+  $5 budget is warning on September's $6.61 forecast while the invoice will read $0.00, so a runaway
+  cost would still be caught while credits hide it from the bill.
 
 ### Step 4 — The README and the recruiter path
 
@@ -494,6 +560,8 @@ before phase 7 and 3 more from the tour. Real, pre-existing, and named so it is 
   code from the stored result's aggregates, never typed and never opened into an agent's context. It
   cannot rot on its own: it changes only when the set is run, and running it is itself a gated act.
 - **The domain.** Registering one changes DoD 5's number and its sentence. Not decided here.
+  **Decided 2026-09-10: no paid domain.** He chose a free Vercel reverse proxy at
+  `musical-mycelium.vercel.app` (step 3), which also keeps the address stable across a re-apply.
 - **Whether `loop.py:_sentences` gets fixed.** Diagnosed in phase 7 §8.0 across three live captures: a
   four-claim chain is padded into two sentences and the model fills the second by restating the chain
   backwards. It governs every chain answer and `narrative_quality` is judged, so it is a freeze decision —
@@ -502,6 +570,7 @@ before phase 7 and 3 more from the tour. Real, pre-existing, and named so it is 
   **Decided 2026-09-10: fixed, before step 1.** It is step 0.5, with the re-measure question inside it.
 - **Whether to deploy before or after the report exists.** Step 3 as written deploys first so the README
   can point at something true; a reader might reasonably want the report live on the same push.
+  **Moot 2026-09-10:** the report existed before the deploy and shipped in it.
 - **Whether live result files start being committed. Added 2026-09-10, found at step 0.5, and it bears
   on steps 1 and 2 directly.** `.gitignore` ignores every `-bedrock.json` on purpose — *"they cost about
   36 cents and re-running one answers the same question again"* — and commits only judge, tier 2 and
