@@ -200,6 +200,13 @@ export function App() {
             influence is genuinely contested. Every claim here links to the source it came from and
             says how hard that one source was checked — which is not the same as sources agreeing.
           </p>
+          {/* Phase 7.5 step 1. `/report/index.html` rather than `/report/`: CloudFront's default root
+            object applies to the site root only, so a bare directory path may not resolve through
+            the S3 origin. Step 3's deploy is where that gets checked against the real distribution. */}
+          <p className="footer__report">
+            <a href="/report/index.html">How this is evaluated</a>: every gate, the measured noise
+            floor, and what did not work.
+          </p>
           {/* **CC BY-SA attribution, phase 6 step 8, and it is an obligation rather than a courtesy.**
             `DATA-LICENSES.md` records that from artifact v0.7.0 the corpus is a MIXTURE of licences:
             Wikidata is CC0 and imposes nothing, DBpedia's `dbo:stylisticOrigin` edges are CC BY-SA

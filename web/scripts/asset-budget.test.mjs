@@ -24,6 +24,11 @@ describe("classify", () => {
     expect(BUDGET.shell.cap).toBeLessThan(BUDGET.script.cap);
   });
 
+  it("gives the published report its own class, by directory", () => {
+    // The report is one HTML file. By extension it would land in `shell` and spend the favicons' cap.
+    expect(classify("report/index.html")).toBe("report");
+  });
+
   it("classifies media by directory, not by extension", () => {
     // A poster frame is media even though `.avif` is not a video extension, and a `.js` shipped
     // inside media/ is still media -- the directory is the decision.
@@ -71,7 +76,7 @@ describe("audit", () => {
   it("reports every class even when nothing is over", () => {
     const { rows } = audit([{ path: "index.html", bytes: 10 }]);
     expect(rows.map((row) => row.name).sort()).toEqual(
-      ["graph", "media", "script", "shell", "style"].sort(),
+      ["graph", "media", "report", "script", "shell", "style"].sort(),
     );
   });
 

@@ -50,7 +50,7 @@ from musical_mycelium.eval.safety import (
     confirm_spend,
 )
 from musical_mycelium.eval.suite import EvalCase, SuiteResult, run_suite
-from musical_mycelium.eval.thresholds import gate
+from musical_mycelium.eval.thresholds import GateOutcome, gate
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.store import GraphStore
 
@@ -163,7 +163,40 @@ def budget_for(estimate: SpendEstimate) -> EvalBudget:
     )
 
 
-def write_result(result: SuiteResult, *, revision: str, directory: Path = RESULTS_DIR) -> Path:
+def gate_record(outcome: GateOutcome) -> dict[str, Any]:
+    """The gate verdict as a result file stores it. Phase 7.5 step 1.
+
+    **Stored at run time so nothing downstream has to re-derive it.** The published report shows live
+    gate verdicts, and the only alternative to storing them was a second implementation of
+    `thresholds.py` reading bounds off stored metrics -- which would be the one copy nobody checked
+    the day the two disagreed. A run the gate refused to judge records ``set: None`` and why, so an
+    ungated run can never be mistaken for a gated one by a reader that only looks for the key.
+    """
+    report = outcome.report
+    if report is None:
+        return {"set": None, "lines": list(outcome.lines)}
+    return {
+        "set": report.set_name,
+        "gates": [
+            {
+                "name": result.name,
+                "verdict": result.verdict,
+                "observed": result.observed,
+                "expected": result.expected,
+                "note": result.note,
+            }
+            for result in report.gates
+        ],
+    }
+
+
+def write_result(
+    result: SuiteResult,
+    *,
+    revision: str,
+    directory: Path = RESULTS_DIR,
+    outcome: GateOutcome | None = None,
+) -> Path:
     """Write one run to `results/<timestamp>-<provider>.json`. Per-run files, never overwritten.
 
     Phase 7 reads these to plot the trend, which is the whole reason they are not one rolling file:
@@ -195,6 +228,8 @@ def write_result(result: SuiteResult, *, revision: str, directory: Path = RESULT
         "written_at": stamp,
         "code_revision": revision,
     }
+    if outcome is not None:
+        payload["gates"] = gate_record(outcome)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return path
 
@@ -339,13 +374,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     graph = InMemoryGraphStore.from_directory(artifact_directory())
     result = run_live(cases=selected, store=graph, progress=lambda line: print(line, flush=True))
 
-    path = write_result(result, revision=revision)
+    # Gated BEFORE the write so the verdict travels in the file (phase 7.5 step 1). `gate` is pure and
+    # reads only the result and the committed thresholds, so moving it earlier cannot cost the scores.
+    outcome = gate(result)
+    path = write_result(result, revision=revision, outcome=outcome)
     # Written **after** the result file, so a failure here cannot cost the run its scores. Prose is the
     # judge's raw material (step 7) and it was being dropped entirely until 2026-08-19; a transcript
     # that fails to write is a pool that has to be re-run, which is money, but a result that fails to
     # write is seventeen minutes and a bill for nothing.
     transcript_path = transcripts.write(transcripts.build(result, graph, revision=revision))
-    outcome = gate(result)
     print()
     print(render(result, outcome))
     print(f"\nwritten to {path}")

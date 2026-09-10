@@ -267,6 +267,12 @@ facts: ## Regenerate web/src/corpus-facts.json from the pinned artifact (free, o
 readme: ## Rewrite README.md's marked figures from their sources (free, offline)
 	uv run python -m musical_mycelium.eval.published
 
+# Phase 7.5 step 1. Writes the published eval report to web/public/report/index.html from committed
+# results, thresholds and the noise floor, plus a fresh scripted run (0.2s). `make check` fails when
+# the committed page disagrees with this generator; run it after any live, tier 2 or held-out run.
+report: ## Regenerate the published eval report page from committed results (free, offline)
+	uv run python -m musical_mycelium.eval.report_page
+
 # Phase 7 step 8. Prints a RANKED LIST, not a winner: choosing the demo route is a judgement made with
 # the columns in front of you, and a blended score would be taste with a decimal point on it.
 #   make routes ARGS='--top 40'          more of the list
