@@ -1,0 +1,258 @@
+{
+  "dataset": "live",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.7.1",
+  "code_revision": "c11d97e-dirty",
+  "written_at": "20260910T150827Z",
+  "cases": [
+    {
+      "case_id": "gold_v0_1_016",
+      "query": "How does heavy metal connect back to the blues?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Blues influenced blues rock, which influenced heavy metal music.",
+      "claims": [
+        {
+          "subject": "heavy metal music",
+          "predicate": "influenced_by",
+          "object": "blues rock",
+          "subject_id": "Q38848",
+          "object_id": "Q193355",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q38848-2ff6204e-4d4f-2e65-0d27-dd0f7fcf34c8"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "blues rock",
+          "predicate": "influenced_by",
+          "object": "blues",
+          "subject_id": "Q193355",
+          "object_id": "Q9759",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q193355-032451F3-5016-4EA4-8E60-41EF70E3A812"
+          ],
+          "verification": "HAND"
+        }
+      ],
+      "trace": {
+        "query_kind": "lineage",
+        "planned_tools": [
+          "resolve_node",
+          "resolve_node",
+          "trace_lineage"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "heavy metal"
+            },
+            "is_error": false
+          },
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "blues"
+            },
+            "is_error": false
+          },
+          {
+            "name": "trace_lineage",
+            "arguments": {
+              "from_id": "Q38848",
+              "to_id": "Q9759"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q38848",
+          "Q9759",
+          "Q193355"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_018",
+      "query": "How does Famous Oberogo connect to Fred Astaire?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Famous Oberogo was influenced by Jason Derulo, who was influenced by Michael Jackson, who was influenced by Fred Astaire.",
+      "claims": [
+        {
+          "subject": "Famous Oberogo",
+          "predicate": "influenced_by",
+          "object": "Jason Derulo",
+          "subject_id": "Q110929442",
+          "object_id": "Q243639",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q110929442-39c920a0-4480-a8c8-f8be-6c567752f9ba"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Jason Derulo",
+          "predicate": "influenced_by",
+          "object": "Michael Jackson",
+          "subject_id": "Q243639",
+          "object_id": "Q2831",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q243639-e23061ac-4e0b-40dd-03d5-55fc01d37487"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Michael Jackson",
+          "predicate": "influenced_by",
+          "object": "Fred Astaire",
+          "subject_id": "Q2831",
+          "object_id": "Q100937",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2831-cea85ce3-4308-e0bc-d389-75ecf3fb6fdc"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "lineage",
+        "planned_tools": [
+          "resolve_node",
+          "resolve_node",
+          "trace_lineage"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Famous Oberogo"
+            },
+            "is_error": false
+          },
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Fred Astaire"
+            },
+            "is_error": false
+          },
+          {
+            "name": "trace_lineage",
+            "arguments": {
+              "from_id": "Q110929442",
+              "to_id": "Q100937"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q110929442",
+          "Q100937",
+          "Q243639",
+          "Q2831"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_019",
+      "query": "How does Chappell Roan connect back to Woody Guthrie?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Chappell Roan was influenced by Lady Gaga, who was influenced by The Beatles, who were influenced by Bob Dylan, who was influenced by Woody Guthrie.",
+      "claims": [
+        {
+          "subject": "Chappell Roan",
+          "predicate": "influenced_by",
+          "object": "Lady Gaga",
+          "subject_id": "Q110281146",
+          "object_id": "Q19848",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q110281146-ddb403e2-4b4c-d7a5-ef7f-c859a0b42b43"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Lady Gaga",
+          "predicate": "influenced_by",
+          "object": "The Beatles",
+          "subject_id": "Q19848",
+          "object_id": "Q1299",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q19848-0b13b7b4-4e3e-c8fb-ce7c-a87c61461694"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "The Beatles",
+          "predicate": "influenced_by",
+          "object": "Bob Dylan",
+          "subject_id": "Q1299",
+          "object_id": "Q392",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q1299-b28856a5-40e6-c9a8-00ba-dfd0f826095a"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Bob Dylan",
+          "predicate": "influenced_by",
+          "object": "Woody Guthrie",
+          "subject_id": "Q392",
+          "object_id": "Q4061",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q392-ecdc9fa3-4ea7-f156-b37e-c4a6ffea3c11"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "lineage",
+        "planned_tools": [
+          "resolve_node",
+          "resolve_node",
+          "describe_node",
+          "describe_node",
+          "trace_lineage"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Chappell Roan"
+            },
+            "is_error": false
+          },
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Woody Guthrie"
+            },
+            "is_error": false
+          },
+          {
+            "name": "trace_lineage",
+            "arguments": {
+              "from_id": "Q110281146",
+              "to_id": "Q4061"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q110281146",
+          "Q4061",
+          "Q19848",
+          "Q1299",
+          "Q392"
+        ],
+        "rejections": []
+      }
+    }
+  ]
+}

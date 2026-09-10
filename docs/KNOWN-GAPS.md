@@ -12,9 +12,10 @@
 > 6, 7 and 8 are DONE; step 2 was DELETED; step 5.5 was INSERTED mid-phase. The DoD audit is
 > `phase-7-cinematic-surface-IMPLEMENTATION.md` §8.9 and the close is §8.10.
 >
-> **PHASE 7.5 IS UNDER WAY. STEP 0 IS DONE (2026-09-10); NEXT IS THE INSERTED STEP 0.5, the
-> `loop.py:_sentences` fix, which goes before the report because the report publishes
-> `narrative_quality`.** Step 0 made the README's current-state figures generated (`make readme`) and
+> **PHASE 7.5 IS UNDER WAY. STEPS 0 AND 0.5 ARE DONE (2026-09-10); NEXT IS STEP 1, the published
+> report.** Step 0.5 closed the `loop.py:_sentences` item phase 7 left open: the four-claim chain went
+> from padded in 4 of 5 baseline runs to clean in 3 of 3 live runs, and no gate reads prose, so **the
+> live bounds are still valid**. Step 1's full live run confirms that and measures `narrative_quality`. Step 0 made the README's current-state figures generated (`make readme`) and
 > checked by `make check`; its as-built §0.0 lists **five false sentences in the README that markers
 > cannot catch** and that step 4 owes.
 > `docs/phases/phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md`, written 2026-09-09. **Read §3 and §4

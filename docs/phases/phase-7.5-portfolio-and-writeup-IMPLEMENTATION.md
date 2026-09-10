@@ -204,7 +204,7 @@ which `evals.md` already says not to write in prose — step 4 should delete it 
 `npm run readme-count` with exit 1. `make check`: **1530 passed** (1522 + 8 new), frontend 428,
 mypy clean over 108 files.
 
-### Step 0.5 — Fix `loop.py:_sentences`, before anything is published — **inserted 2026-09-10**
+### Step 0.5 — Fix `loop.py:_sentences`, before anything is published — **inserted 2026-09-10** — [done]
 
 Decided by sjtroxel 2026-09-10, closing the fourth §8 decision. The diagnosis is phase 7 §8.0: a
 four-claim chain is padded into two sentences and the model fills the second by restating the chain
@@ -219,6 +219,61 @@ table, and it runs behind the usual spend confirmation or not at all.
 
 **Done when:** a four-claim chain no longer restates itself in live captures, and the invalidation
 question has a measured answer written here.
+
+#### 0.5.0 As built, 2026-09-10
+
+**The fix is one line.** Chains of two to four claims are now told "one or two sentences", the same
+permission a fan-out gets. Chains above four keep "two or three": that branch already produced clean
+prose, and changing it would move a thing nobody measured as broken.
+
+**The "before" cost nothing, because it was already on disk.** `eval/transcripts/` holds the narration
+of all five 2026-09-07 baseline runs. The four gold chain cases, five runs each:
+
+| case | claims | asked for | padded |
+|---|---|---|---|
+| `gold_v0_1_016` | 2 | "two sentences" | 0 of 5 — two claims, two sentences, naturally |
+| `gold_v0_1_018` | 3 | "two sentences" | 0 of 5 — four of five wrote one sentence anyway |
+| **`gold_v0_1_019`** | **4** | **"two sentences"** | **4 of 5** |
+| `gold_v0_1_038` | 5 | "two or three" | 0 of 5 — one clean sentence every run |
+
+**The baseline found a worse variant than phase 7 did.** Phase 7's four-claim captures *restated* the
+chain backwards, which is harmless. The baseline's four-claim padding is *editorial*: "connects five
+artists across generations", "a direct line of musical influence", and once **"each shaping the artistic
+direction of the one before them"**, which states the influence in the wrong direction. The embellishment
+ban forbids exactly this and the fixed count overrode it. Nothing gated saw it, because nothing gated
+reads prose.
+
+**The invalidation question, answered by reading the code.** Synthesis runs after the gate, over
+approved claims only, so it cannot change what any gate reads. Checked per gate:
+`edge_groundedness` and `citation_resolution` read approved claims; `refusal_accuracy` reads whether the
+run refused; `traversal_recall` reads claims against the expected path; `injection_resistance` and
+`contested_disclosure` are both exact set operations over claim triples and announced pairs, each
+documented as "no text matching". **So the live bounds stay valid and the $2.61 re-baseline is not
+needed.** That is an answer by construction. The measurement that confirms it is step 1's live run, which
+gates all six anyway. What *can* move is tracked, not gated: output tokens, slightly, and
+`narrative_quality`.
+
+**`narrative_quality` is measured at step 1, not here.** A judged score over three chain cases has no
+power: the judge's own agreement is kappa 0.66-0.73 on that rubric and it disagrees with itself between
+runs. Step 1 needs a fresh release-candidate run and tier 2 anyway to publish a current number, so that
+is where the effect is measured, once, instead of paying for it twice.
+
+**The "after": three live runs of the three short chains, run by him, about 6 cents total.** Transcripts
+`20260910T150827Z`, `T151013Z` and `T151214Z`, each recording revision `c11d97e-dirty` because the fix
+was not yet committed when they ran. The revision that contains it is the commit that lands this
+as-built.
+
+| case | claims | before (5 runs) | after (3 runs) |
+|---|---|---|---|
+| **`gold_v0_1_019`** | **4** | **padded 4 of 5** | **clean 3 of 3**: one sentence, the chain and nothing else |
+| `gold_v0_1_018` | 3 | clean 5 of 5 | clean 3 of 3 |
+| `gold_v0_1_016` | 2 | two sentences, one fact each | one sentence carrying both facts |
+
+Under the old behavior three clean four-claim runs in a row is about a 1-in-125 event (0.2 cubed), which
+is why this was three runs rather than one: the old behavior was clean once in five by itself. **The
+`016` change is a style change, not a defect fixed.** Two one-fact sentences were never padding, and one
+sentence is what a permission produces when the model is not pushed. All three runs scored 3/3 correct
+with 100% groundedness and citation resolution, and gated nothing, correctly, as a subset.
 
 ### Step 1 — The published eval report
 
@@ -336,3 +391,16 @@ before phase 7 and 3 more from the tour. Real, pre-existing, and named so it is 
   **Decided 2026-09-10: fixed, before step 1.** It is step 0.5, with the re-measure question inside it.
 - **Whether to deploy before or after the report exists.** Step 3 as written deploys first so the README
   can point at something true; a reader might reasonably want the report live on the same push.
+- **Whether live result files start being committed. Added 2026-09-10, found at step 0.5, and it bears
+  on steps 1 and 2 directly.** `.gitignore` ignores every `-bedrock.json` on purpose — *"they cost about
+  36 cents and re-running one answers the same question again"* — and commits only judge, tier 2 and
+  held-out runs. So **the five 2026-09-07 baseline runs the live gates were measured on exist only on
+  his disk**, and so does every run §4's "5 of 26 comparable" was counted from. The gates survive that,
+  because `thresholds.json` records its measured values beside each bound. **The trend view does not:**
+  step 2 says it reads `eval/results/`, and from a clone or in CI that directory holds judge files and
+  nothing else. The rule's reasoning also fits a *benchmark* better than a *history*: re-running
+  answers the same question again but produces different numbers — the noise floor exists because it
+  does — and a trend view is exactly the thing that needs the old numbers rather than new ones. Either
+  answer is defensible. Committing the comparable cohort, or a derived summary of it, keeps the published
+  view rebuildable; leaving the rule alone means the view is built locally and its data is published
+  with it. **Settled at step 1, before step 2 builds on either assumption.**

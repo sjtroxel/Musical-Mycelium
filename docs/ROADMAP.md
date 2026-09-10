@@ -148,7 +148,8 @@ that left, and **its IMPLEMENTATION doc was written 2026-09-09, an hour after ph
 "immediately before 7.5 is built" is exactly a gap with no phase in it, and phase 7's lessons were as
 fresh as they will ever be. ~~Phase 7.5 is planned and not started; step 0 is next.~~ **Approved and
 under way 2026-09-10: step 0 is done** — the README's current-state figures are generated and gated —
-**and step 0.5, the `_sentences` fix, was inserted ahead of the report and is next.**
+**and step 0.5, the `_sentences` fix, was inserted ahead of the report and is done the same day.
+Step 1 is next.**
 
 **Step 4 built the motion system with no animation library and no Web Animations API** — CSS keyframes
 on `transform` and `opacity`, with the delays computed by pure functions in `graph/motion.ts` so they are

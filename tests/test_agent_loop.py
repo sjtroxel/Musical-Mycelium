@@ -1044,18 +1044,31 @@ def test_the_sentence_count_follows_the_claim_count() -> None:
     list(synthesize(_fan_in(), llm))
     assert "one or two sentences" in synthesis_prompt(llm)
 
-    chain = ApprovedClaimSet(
-        claims=(
-            Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/1",), HAND),
-            Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/2",), HAND),
+    # A chain is not a list, but its count is a permission as well. Until 2026-09-10 chains of two to
+    # four claims were told "two sentences" -- the one fixed number left in `_sentences` -- and both
+    # four-claim chains phase 7 captured live filled the second sentence by restating the chain
+    # backwards. The five-claim capture, offered a range, wrote one clean sentence.
+    for length, expected in (
+        (2, "one or two sentences"),
+        (4, "one or two sentences"),
+        (5, "two or three sentences"),
+    ):
+        llm = ScriptedLLM([LLMResponse(text="prose")])
+        list(synthesize(_chain(length), llm))
+        assert expected in synthesis_prompt(llm), f"a {length}-claim chain"
+
+
+def _chain(length: int) -> ApprovedClaimSet:
+    """A chain of ``length`` claims over made-up genre ids, in the shape the tracer produces."""
+    ids = [f"Q{9000 + i}" for i in range(length + 1)]
+    return ApprovedClaimSet(
+        claims=tuple(
+            Claim(subject, INFLUENCED_BY, obj, (f"stmt/{i}",), HAND)
+            for i, (subject, obj) in enumerate(pairwise(ids))
         ),
-        labels={HEAVY_METAL: "heavy metal music", BLUES_ROCK: "blues rock", BLUES: "blues"},
-        chain=(HEAVY_METAL, BLUES_ROCK, BLUES),
+        labels={node: f"genre {node}" for node in ids},
+        chain=tuple(ids),
     )
-    llm = ScriptedLLM([LLMResponse(text="prose")])
-    list(synthesize(chain, llm))
-    assert "two sentences" in synthesis_prompt(llm), "a chain is not a list and does need several"
-    assert "one or two" not in synthesis_prompt(llm)
 
 
 def test_kinds_cannot_smuggle_a_node_past_the_gate() -> None:

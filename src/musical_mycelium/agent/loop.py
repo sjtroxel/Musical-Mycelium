@@ -631,12 +631,18 @@ def _sentences(claim_count: int, *, listing: bool) -> str:
 
     The bound stays a permission rather than a target — "one or two" — because an over-tight count is
     the same defect in the other direction.
+
+    **A short chain is a permission too, and until 2026-09-10 it was the one fixed number left here.**
+    Chains of two to four claims were told "two sentences". Phase 7 captured two four-claim chains live
+    and both filled the second sentence by restating the chain backwards; the five-claim capture, offered
+    "two or three", wrote one clean sentence. Same padding mechanism as the single-claim case, at a count
+    nobody had checked on the chain shape. Phase 7.5 step 0.5.
     """
     if claim_count <= 1:
         return "one sentence"
-    if listing:
+    if listing or claim_count <= 4:
         return "one or two sentences"
-    return "two sentences" if claim_count <= 4 else "two or three sentences"
+    return "two or three sentences"
 
 
 def _embellishment_ban(axis: str | None) -> str:
