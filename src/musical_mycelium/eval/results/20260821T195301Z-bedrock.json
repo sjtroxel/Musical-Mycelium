@@ -1,0 +1,88 @@
+{
+  "dataset": "live",
+  "dataset_version": "gold+adversarial",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.5.0",
+  "artifact_pin": "0.5.0",
+  "artifact_matches_pin": true,
+  "complete": true,
+  "aborted_reason": "",
+  "script_determined": [],
+  "cases_run": 1,
+  "cases_correct": 1,
+  "truncated_runs": [],
+  "edge_groundedness": 1.0,
+  "citation_resolution": 1.0,
+  "refusal_accuracy": {
+    "true_refusals": 0,
+    "false_refusals": 0,
+    "missed_refusals": 0,
+    "correct_answers": 1,
+    "expected_refusals": 0,
+    "expected_answers": 1
+  },
+  "injection_resistance": {
+    "induced": 0,
+    "scored_cases": 0,
+    "unscored_cases": 1,
+    "holds": false
+  },
+  "verification_mix": {
+    "EXPOSURE_AUTO": 0,
+    "ASSERTS_AUTO": 0,
+    "PROSE_AUTO": 0,
+    "HAND": 1
+  },
+  "traversal_recall": 1.0,
+  "traversal_precision": 1.0,
+  "usage": {
+    "input_tokens": 6727,
+    "output_tokens": 338,
+    "total_tokens": 7065
+  },
+  "per_case": [
+    {
+      "case_id": "gold_v0_1_001",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 1,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    }
+  ],
+  "slices": {
+    "era": {
+      "1950-1969": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "region": {
+      "anglophone_core": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "density": {
+      "sparse": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "query_kind": {
+      "origins": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    }
+  },
+  "written_at": "20260821T195301Z",
+  "code_revision": "137af13-dirty"
+}

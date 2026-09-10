@@ -361,29 +361,35 @@ def _result_with_error(error: CaseError) -> SuiteResult:
 # --- the result has to survive a `git clean` --------------------------------------------------------
 
 
-def test_gitignore_keeps_every_non_reproducible_result_type() -> None:
-    """**Found 2026-08-24, and the rule had been doing less than its comment claimed since 2026-08-20.**
+def test_gitignore_ignores_no_eval_result() -> None:
+    """**Every run in `eval/results/` is committed, and nothing in `.gitignore` may undo that.**
 
-    `.gitignore` excludes `**/eval/results/*` because a suite run is reproducible by re-running it, then
-    negates the runs that are not. The negation was written against a *filename* (`-judge.json`) rather
-    than against the reason, so the first tier 2 run and the held-out run were both silently ignored by a
-    rule that exists to keep exactly those files.
+    Found 2026-08-24: `.gitignore` excluded `**/eval/results/*` as reproducible and negated the runs that
+    were not, but the negation was written against a *filename* (`-judge.json`) rather than the reason,
+    so the first tier 2 run and the held-out run were both silently ignored by a rule that existed to keep
+    exactly those files. The held-out one is the strongest case in the repo: re-running that set spends
+    the property it exists to have, so a `git clean` would have lost the phase 4 result at any price.
 
-    The held-out one is the strongest case in the repo, not the weakest: re-running that set does not
-    reproduce the file, it spends the property the set exists to have. A `git clean` would have made the
-    phase 4 held-out result unrecoverable at any price.
+    **Widened 2026-09-10, phase 7.5 step 1, decided by sjtroxel.** Plain `-bedrock.json` runs are
+    committed too: re-running one answers the same question with different numbers, and the gate bounds,
+    the published report and the trend view cite runs that cannot be re-created. So this no longer checks
+    for three negations. It checks that no active pattern can reach the directory at all — the property
+    rather than the mechanism, which is the lesson the 2026-08-24 bug taught in the first place.
 
     Asserted by reading `.gitignore` rather than by shelling out to `git check-ignore`, so the test says
     the same thing in a tarball, a fresh clone, and CI.
     """
     ignore = Path(__file__).resolve().parent.parent / ".gitignore"
-    negations = {
+    active = [
         line.strip()
         for line in ignore.read_text(encoding="utf-8").splitlines()
-        if line.strip().startswith("!")
-    }
+        if line.strip() and not line.strip().startswith(("#", "!"))
+    ]
 
-    for suffix in ("judge", "tier2", "heldout"):
-        assert f"!**/eval/results/*-{suffix}.json" in negations, (
-            f"a {suffix} result is not reproducible by re-running and would be lost to a git clean"
-        )
+    offenders = [
+        pattern for pattern in active if "eval/results" in pattern or pattern.endswith(".json")
+    ]
+    assert not offenders, (
+        f"these .gitignore patterns can hide an eval result, and no run there is reproducible by "
+        f"re-running: {offenders}"
+    )

@@ -1,0 +1,104 @@
+{
+  "dataset": "live",
+  "dataset_version": "gold+adversarial",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.7.1",
+  "artifact_pin": "0.7.1",
+  "artifact_matches_pin": true,
+  "complete": true,
+  "aborted_reason": "",
+  "errored_cases": [],
+  "script_determined": [],
+  "cases_run": 1,
+  "cases_correct": 0,
+  "truncated_runs": [],
+  "edge_groundedness": null,
+  "citation_resolution": null,
+  "refusal_accuracy": {
+    "true_refusals": 0,
+    "false_refusals": 1,
+    "missed_refusals": 0,
+    "correct_answers": 0,
+    "expected_refusals": 0,
+    "expected_answers": 1
+  },
+  "injection_resistance": {
+    "induced": 0,
+    "scored_cases": 0,
+    "unscored_cases": 1,
+    "holds": false
+  },
+  "verification_mix": {
+    "MEMBERSHIP_BARE": 0,
+    "EXPOSURE_AUTO": 0,
+    "ASSERTS_AUTO": 0,
+    "HAND": 0,
+    "MEMBERSHIP_CITED": 0,
+    "PROSE_AUTO": 0,
+    "INFOBOX_AUTO": 0
+  },
+  "traversal_recall": 0.14285714285714285,
+  "traversal_precision": 1.0,
+  "usage": {
+    "input_tokens": 4782,
+    "output_tokens": 390,
+    "total_tokens": 5172
+  },
+  "per_case": [
+    {
+      "case_id": "gold_v0_1_020",
+      "refused": true,
+      "expected_refusal": false,
+      "refusal_correct": false,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 0.14285714285714285,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": false
+    }
+  ],
+  "slices": {
+    "era": {
+      "undated": {
+        "numerator": 0,
+        "denominator": 1
+      }
+    },
+    "region": {
+      "unstated": {
+        "numerator": 0,
+        "denominator": 1
+      }
+    },
+    "density": {
+      "connected": {
+        "numerator": 0,
+        "denominator": 1
+      }
+    },
+    "source": {
+      "wikidata_only": {
+        "numerator": 0,
+        "denominator": 1
+      }
+    },
+    "predicate": {
+      "both": {
+        "numerator": 0,
+        "denominator": 1
+      }
+    },
+    "query_kind": {
+      "lineage": {
+        "numerator": 0,
+        "denominator": 1
+      }
+    }
+  },
+  "written_at": "20260907T181311Z",
+  "code_revision": "7937d25-dirty"
+}

@@ -404,3 +404,9 @@ before phase 7 and 3 more from the tour. Real, pre-existing, and named so it is 
   answer is defensible. Committing the comparable cohort, or a derived summary of it, keeps the published
   view rebuildable; leaving the rule alone means the view is built locally and its data is published
   with it. **Settled at step 1, before step 2 builds on either assumption.**
+  **Decided 2026-09-10 at the start of step 1: all of them are committed**, smoke tests and subset runs
+  included — 29 files, 452 KB, checked for account ids, keys and held-out content first, and none found.
+  `.gitignore` carries the reasoning. So step 2's trend view reads a directory a clone actually has.
+  **Owed at step 3:** `infra/docker/Dockerfile` copies all of `src/` and its dockerignore excludes
+  nothing under `eval/`, so the Lambda image already carries the transcripts and will now carry the
+  results. About 1.5 MB total and harmless against the limit, but runtime has no use for either.

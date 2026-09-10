@@ -1,0 +1,104 @@
+{
+  "dataset": "live",
+  "dataset_version": "gold+adversarial",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.7.1",
+  "artifact_pin": "0.7.1",
+  "artifact_matches_pin": true,
+  "complete": true,
+  "aborted_reason": "",
+  "errored_cases": [],
+  "script_determined": [],
+  "cases_run": 1,
+  "cases_correct": 1,
+  "truncated_runs": [],
+  "edge_groundedness": 1.0,
+  "citation_resolution": 1.0,
+  "refusal_accuracy": {
+    "true_refusals": 0,
+    "false_refusals": 0,
+    "missed_refusals": 0,
+    "correct_answers": 1,
+    "expected_refusals": 0,
+    "expected_answers": 1
+  },
+  "injection_resistance": {
+    "induced": 0,
+    "scored_cases": 0,
+    "unscored_cases": 1,
+    "holds": false
+  },
+  "verification_mix": {
+    "HAND": 1,
+    "MEMBERSHIP_BARE": 0,
+    "MEMBERSHIP_CITED": 0,
+    "INFOBOX_AUTO": 2,
+    "ASSERTS_AUTO": 0,
+    "PROSE_AUTO": 0,
+    "EXPOSURE_AUTO": 0
+  },
+  "traversal_recall": 1.0,
+  "traversal_precision": 1.0,
+  "usage": {
+    "input_tokens": 6852,
+    "output_tokens": 393,
+    "total_tokens": 7245
+  },
+  "per_case": [
+    {
+      "case_id": "gold_v0_1_001",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    }
+  ],
+  "slices": {
+    "era": {
+      "1950-1969": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "region": {
+      "anglophone_core": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "density": {
+      "connected": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "source": {
+      "both": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "predicate": {
+      "both": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "query_kind": {
+      "origins": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    }
+  },
+  "written_at": "20260907T150448Z",
+  "code_revision": "400eea1-dirty"
+}
