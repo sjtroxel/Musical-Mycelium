@@ -12,6 +12,24 @@
 > 6, 7 and 8 are DONE; step 2 was DELETED; step 5.5 was INSERTED mid-phase. The DoD audit is
 > `phase-7-cinematic-surface-IMPLEMENTATION.md` §8.9 and the close is §8.10.
 >
+> **PHASE 7.5 IS UNDER WAY. STEP 0 IS DONE (2026-09-10); NEXT IS THE INSERTED STEP 0.5, the
+> `loop.py:_sentences` fix, which goes before the report because the report publishes
+> `narrative_quality`.** Step 0 made the README's current-state figures generated (`make readme`) and
+> checked by `make check`; its as-built §0.0 lists **five false sentences in the README that markers
+> cannot catch** and that step 4 owes.
+> `docs/phases/phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md`, written 2026-09-09. **Read §3 and §4
+> before anything else** — four premises moved under the scope doc and one finding is measured there.
+> The four that matter most, because they are counter-intuitive:
+> **(a) the deployed site is still the `v0.6.0` build**, so nothing from 6.5 or 7 is live and the
+> portfolio phase is the one that fixes that;
+> **(b) `eval/report.py` emits terminal text only** — there is no publishable report to extend, it is new
+> work;
+> **(c) only 5 of 26 stored live runs are comparable to each other**, so the trend view is cohorts, not a
+> line, and the admission rule already exists in `thresholds.py`;
+> **(d) judge-human agreement on `citation_support` is Cohen's kappa 0.44-0.48**, and the same pool
+> scored 14/30, 12/30, 11/30 across three runs — the judge disagrees with itself, and DoD 7 means
+> publishing that.
+>
 > **PHASE 8 `membership-tour` IS SCOPED AND IS AFTER v1.0 — 2026-09-09.**
 > `docs/phases/phase-8-membership-tour.md`. It opens `agent/claims.py:ALLOWED_PREDICATES` to a second
 > predicate, deliberately, and that is why it has a scope doc instead of a commit. **Do not pull it

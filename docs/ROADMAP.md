@@ -143,8 +143,12 @@ definition-of-done audit is `phase-7-cinematic-surface-IMPLEMENTATION.md` §8.9 
 **read those rather than restating them here.** The audit found one real defect (the backdrop did not
 yield to the tour, because a replayed run never touches `steps`), which is the argument for auditing
 rather than ticking. `phase-7.5-portfolio-and-writeup.md` (v1.0) carries the half
-that left and its IMPLEMENTATION doc is deliberately not written yet — it is written immediately before
-7.5 is built, so it can absorb what 7 teaches.
+that left, and **its IMPLEMENTATION doc was written 2026-09-09, an hour after phase 7 closed** —
+`phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md`. That is the convention satisfied rather than jumped:
+"immediately before 7.5 is built" is exactly a gap with no phase in it, and phase 7's lessons were as
+fresh as they will ever be. ~~Phase 7.5 is planned and not started; step 0 is next.~~ **Approved and
+under way 2026-09-10: step 0 is done** — the README's current-state figures are generated and gated —
+**and step 0.5, the `_sentences` fix, was inserted ahead of the report and is next.**
 
 **Step 4 built the motion system with no animation library and no Web Animations API** — CSS keyframes
 on `transform` and `opacity`, with the delays computed by pure functions in `graph/motion.ts` so they are

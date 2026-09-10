@@ -18,15 +18,15 @@ build** — phase 6.5 changed the agent, the datasets and the eval gates, and de
 not yet taken. The live URL serves the SPA at artifact **v0.7.1**
 — a streaming cited answer, an explorable map of the neighborhood around it, and a coverage panel that
 states what the corpus does not hold. Phase 6 gave the corpus a **second, independent source**, which is
-what makes disagreement between sources detectable at all: **82 of 2,284 influence edges carry a second
-source and 2 pairs are contested.** Phase 6 did not make an answer able to *say* so; **phase 6.5 did**,
+what makes disagreement between sources detectable at all: **<!-- n:corroborated -->82<!-- /n --> of <!-- n:influence_edges -->2,284<!-- /n --> influence edges carry a second
+source and <!-- n:contested_pairs -->2<!-- /n --> pairs are contested.** Phase 6 did not make an answer able to *say* so; **phase 6.5 did**,
 and it is complete — a traversal that crosses a contested pair now emits a distinct event before the
 first prose token, naming both directions and both sources and picking no winner.
 *(This paragraph said that ability "is scoped as phase 6.5" until 2026-09-08, while its own first
 sentence said 6.5 was complete. A paragraph edited at the top and not at the bottom.)*
 
 **Phase 7 is under way and none of it is deployed.** The hero now renders the corpus itself as a
-drifting backdrop — 1,465 nodes and 5,058 edges of the largest component, solved offline and inlined —
+drifting backdrop — <!-- n:backdrop_nodes -->1,465<!-- /n --> nodes and <!-- n:backdrop_edges -->5,058<!-- /n --> edges of the largest component, solved offline and inlined —
 but the live URL still serves the `v0.6.0` build, so what is described above is what a visitor sees
 today.
 Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
@@ -34,8 +34,8 @@ Every open item is enumerated in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 Live on AWS: a public Lambda Function URL streams a grounded, cited lineage as typed server-sent events,
 provisioned entirely by Terraform, with budget alarms and log retention armed before the first apply.
 Every claim it emits is checked against a pinned artifact by a deterministic gate before any prose is
-generated. 1465 Python tests and 210 frontend tests, plus 14 that spend real money and are
-deselected by default. `make check` also gates the built page's **bytes**, per asset class.
+generated. At least <!-- n:python_tests_floor -->1,500<!-- /n --> Python tests and at least <!-- n:web_tests_floor -->400<!-- /n --> frontend tests, plus <!-- n:costs_money_tests -->14<!-- /n --> that spend real
+money and are deselected by default. `make check` also gates the built page's **bytes**, per asset class.
 
 **The prose comes from a real model on Bedrock** — Claude Haiku 4.5 on a cross-region inference profile,
 deployed by CI with no long-lived AWS keys, and re-verified against the deployed URL on **2026-09-06** by
@@ -47,12 +47,12 @@ its own token usage per role — traversal and synthesis counted
 separately, never summed, because two roles may run on differently-priced models and one combined number
 cannot be turned into dollars by anyone downstream. Per-query cost lands in CloudWatch from real traffic.
 
-**The corpus is artifact v0.7.1: 1,479 nodes and 5,066 edges**, from **two** sources — Wikidata and
-DBpedia — across two predicates that are never mixed. **2,284 influence edges** say one thing influenced
-another; **2,782 membership edges** say an artist plays a genre, and membership is never narrated as
-derivation. Every edge carries how strongly it was checked: **22 read by hand**, 111 passed an automated
-Wikipedia prose check, 759 passed an influence-assertion filter, 1,335 came from a DBpedia infobox, and
-57 rest on documented exposure rather than a stated influence claim, with 2,782 more across the two
+**The corpus is artifact v<!-- n:artifact -->0.7.1<!-- /n -->: <!-- n:nodes -->1,479<!-- /n --> nodes and <!-- n:edges -->5,066<!-- /n --> edges**, from **two** sources — Wikidata and
+DBpedia — across two predicates that are never mixed. **<!-- n:influence_edges -->2,284<!-- /n --> influence edges** say one thing influenced
+another; **<!-- n:membership_edges -->2,782<!-- /n --> membership edges** say an artist plays a genre, and membership is never narrated as
+derivation. Every edge carries how strongly it was checked: **<!-- n:verified_hand -->22<!-- /n --> read by hand**, <!-- n:verified_prose -->111<!-- /n --> passed an automated
+Wikipedia prose check, <!-- n:verified_asserts -->759<!-- /n --> passed an influence-assertion filter, <!-- n:verified_infobox -->1,335<!-- /n --> came from a DBpedia infobox, and
+<!-- n:verified_exposure -->57<!-- /n --> rest on documented exposure rather than a stated influence claim, with <!-- n:verified_membership -->2,782<!-- /n --> more across the two
 membership tiers. The exposure tier is measured at **20% recall**, so it is a floor on what exists in the
 sources and is never quoted as a count of it.
 
@@ -60,10 +60,10 @@ Two things are deliberately not done, and saying so is the point of this section
 
 - **The corpus has two sources now, and disagreement is visible only where both of them speak.**
   *(This bullet said the corpus was one source deep and that `contested` was locked as unreachable. That
-  was true, and arithmetic, until DBpedia was ingested at artifact v0.7.0.)* **2,202 of 2,284 influence
-  edges are still single-source**, so a second opinion exists on **82** of them, and **2 pairs are
-  contested** — two different sources asserting opposite directions for the same pair. Six pairs point
-  both ways; only two of those are a disagreement, and the loose reading overcounts by 3x. Two separate
+  was true, and arithmetic, until DBpedia was ingested at artifact v0.7.0.)* **<!-- n:single_source -->2,202<!-- /n --> of <!-- n:influence_edges -->2,284<!-- /n --> influence
+  edges are still single-source**, so a second opinion exists on **<!-- n:corroborated -->82<!-- /n -->** of them, and **<!-- n:contested_pairs -->2<!-- /n --> pairs are
+  contested** — two different sources asserting opposite directions for the same pair. Of the <!-- n:reciprocal_pairs -->6<!-- /n --> pairs
+  that point both ways, only <!-- n:contested_pairs -->2<!-- /n --> are a disagreement, and the loose reading overcounts by <!-- n:contested_overcount -->3x<!-- /n -->. Two separate
   fields carry this and must never be collapsed: `verification` says **how strongly one source was
   checked**, `corroboration` says **whether a second source agrees**. Reading a verification tier as
   corroboration is still reading the opposite of the truth.
@@ -75,7 +75,7 @@ Two things are deliberately not done, and saying so is the point of this section
   agent does not read them, no answer will tell you a lineage is disputed, and no eval case exercises
   it.** That is the honest state after phase 6 and it is scheduled work, not a claim in waiting.
 - **Coverage generalization is untested, and the held-out run is a single observation.** Real-model
-  behavior *is* now measured rather than demonstrated: 45 development cases against a live model, a
+  behavior *is* now measured rather than demonstrated: <!-- n:live_cases -->56<!-- /n --> development cases against a live model, a
   noise floor taken over five identical runs, a judged tier 2 pass with judge-human agreement reported as
   a range beside every judged number, and a sealed held-out set opened once, on 2026-08-24, that came
   back 10 of 10 with every metric matching the development set. That is a real negative on the
@@ -92,8 +92,8 @@ Two things are deliberately not done, and saying so is the point of this section
   rather than passed on it.
 
 **Coverage is a computed number, not a disclaimer.** The corpus skews Western, anglophone and recent, and
-the output says so with figures rather than a footnote. But concentration is not absence: it spans 500 CE
-to the present across 29 places, and **43 of its genres name no US or UK origin at all**. See
+the output says so with figures rather than a footnote. But concentration is not absence: it spans <!-- n:earliest_genre_year -->500<!-- /n --> CE
+to the present across <!-- n:places -->65<!-- /n --> places, and **<!-- n:genres_without_us_or_uk -->136<!-- /n --> of its genres name no US or UK origin at all**. See
 [`docs/graph-semantics.md`](docs/graph-semantics.md) for how the corpus was bounded and why it is this
 size, which is the most interesting document in this repo.
 
@@ -105,7 +105,7 @@ plus an independent review.
 ## What it is
 
 A hand-built tool-use loop on Amazon Bedrock's Converse API. Given a genre or an artist, it plans a
-traversal, walks a pre-built provenance graph of musical influence across seven registered tools, and
+traversal, walks a pre-built provenance graph of musical influence across <!-- n:tools -->7<!-- /n --> registered tools, and
 synthesizes a grounded, cited lineage.
 
 You ask it where something came from — "Where did Detroit techno come from?" — and it streams back a
@@ -118,12 +118,12 @@ hop, in whichever order you name them.
   accepted from the model.
 - **Grounded means provenance, not truth.** Every edge traces to a checkable source. Wikidata and
   DBpedia can both be wrong, and musical influence is genuinely contested. **The second source arrived at
-  artifact v0.7.0, so detecting disagreement is now possible where both sources speak — 82 edges of
-  2,284.** Everywhere else the output still distinguishes only how strongly a single source was checked.
+  artifact v0.7.0, so detecting disagreement is now possible where both sources speak — <!-- n:corroborated -->82<!-- /n --> edges of
+  <!-- n:influence_edges -->2,284<!-- /n -->.** Everywhere else the output still distinguishes only how strongly a single source was checked.
   It does not claim to have adjudicated a dispute, because it has not.
 - **Refusal is correct behavior.** An unsourced edge is refused rather than narrated, and the refusal is
-  reported as one. "Who influenced Kate Bush?" refuses on this corpus: she has seven incoming influence
-  edges and zero outgoing ones, so the graph genuinely cannot answer it.
+  reported as one. "Who influenced Kate Bush?" refuses on this corpus: she has <!-- n:refusal_example_influenced -->7<!-- /n --> incoming influence
+  edges and <!-- n:refusal_example_influenced_by -->0<!-- /n --> outgoing ones, so the graph genuinely cannot answer it.
 - **Evaluation is a first-class deliverable.** Because the ground truth is a graph we own, the headline
   correctness metrics are deterministic dictionary lookups rather than judged text comparisons. They
   cost nothing and run on every commit, where they gate **four** of six correctness properties — the

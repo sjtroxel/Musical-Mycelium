@@ -13,8 +13,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "test": "vitest run",
-    "check": "npm run format:check && npm run typecheck && npm run test && npm run build && npm run budget",
+    "test": "vitest run --silent=passed-only --reporter=default --reporter=json --outputFile.json=node_modules/.cache/vitest-results.json",
+    "check": "npm run format:check && npm run typecheck && npm run test && npm run readme-count && npm run build && npm run budget",
+    "readme-count": "node scripts/readme-count.mjs",
     "mark": "node scripts/build-mark.mjs",
     "budget": "node scripts/asset-budget.mjs"
   },

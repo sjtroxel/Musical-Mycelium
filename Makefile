@@ -261,6 +261,12 @@ backdrop: ## Regenerate the SPA's inlined backdrop layout from the pinned artifa
 facts: ## Regenerate web/src/corpus-facts.json from the pinned artifact (free, offline)
 	uv run python -m musical_mycelium.graph.facts
 
+# Phase 7.5 step 0. Rewrites every marked figure in README.md from its source: the artifact, the tool
+# registry, the eval datasets and both test suites (the frontend count needs Node and takes ~7s).
+# `make check` fails when the committed README disagrees with a source; this is the one-command fix.
+readme: ## Rewrite README.md's marked figures from their sources (free, offline)
+	uv run python -m musical_mycelium.eval.published
+
 # Phase 7 step 8. Prints a RANKED LIST, not a winner: choosing the demo route is a judgement made with
 # the columns in front of you, and a blended score would be taste with a decimal point on it.
 #   make routes ARGS='--top 40'          more of the list
