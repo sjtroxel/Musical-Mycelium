@@ -1,0 +1,192 @@
+{
+  "tier": 2,
+  "blocking": false,
+  "sample": "tier2_sample",
+  "sample_size": 20,
+  "seed": 20260823,
+  "sources": [
+    {
+      "written_at": "20260910T164141Z",
+      "dataset": "live",
+      "provider": "bedrock",
+      "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "code_revision": "0dd653b"
+    }
+  ],
+  "judge_model_id": "amazon.nova-pro-v1:0",
+  "judged_at": "20260910T164334Z",
+  "code_revision": "0dd653b",
+  "metrics": {
+    "citation_support": {
+      "supported": 14,
+      "scored": 20,
+      "rate": 0.7,
+      "agreement": {
+        "metric": "citation_support",
+        "validation_runs": 3,
+        "n_low": 30,
+        "n_high": 30,
+        "kappa_low": 0.4444444444444444,
+        "kappa_high": 0.4807692307692307,
+        "kappa_kind": "cohen",
+        "kappa_bands": [
+          "moderate"
+        ],
+        "exact_low": 0.6333333333333333,
+        "exact_high": 0.7,
+        "single_run_caveat": ""
+      }
+    },
+    "narrative_quality": {
+      "mean": 4.15,
+      "scored": 20,
+      "agreement": {
+        "metric": "narrative_quality",
+        "validation_runs": 3,
+        "n_low": 30,
+        "n_high": 30,
+        "kappa_low": 0.6624999999999999,
+        "kappa_high": 0.7284768211920529,
+        "kappa_kind": "quadratic-weighted",
+        "kappa_bands": [
+          "substantial"
+        ],
+        "exact_low": 0.6,
+        "exact_high": 0.6666666666666666,
+        "single_run_caveat": ""
+      }
+    }
+  },
+  "validation_runs": [
+    "20260820T175935Z",
+    "20260821T185921Z",
+    "20260821T190737Z"
+  ],
+  "usage": {
+    "input_tokens": 46998,
+    "output_tokens": 1250,
+    "total_tokens": 48248
+  },
+  "judgements": [
+    {
+      "item_id": "tier2_sample_001",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly follows the chain of influence from Molly Grace to The Velvet Underground as supported by the approved claims, and it is clear, coherent, and directly answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_002",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer lists genres influenced by hip-hop, which is supported by the claims, but it is presented as an unordered list, requiring the reader to do additional work to understand the relationships."
+    },
+    {
+      "item_id": "tier2_sample_003",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is clear, concise, and fully answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_004",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is clear, concise, and directly answers the question asked."
+    },
+    {
+      "item_id": "tier2_sample_005",
+      "citation_support": "UNSUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer reverses the direction of influence, which is unsupported by the provided claims. The narrative quality is a 3 because it answers the question but in a way that requires the reader to do some work to understand the correct direction of influence."
+    },
+    {
+      "item_id": "tier2_sample_006",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claim by suggesting that western music 'came out of' the listed genres, implying a stronger causal relationship than the 'influenced_by' relation in the claims. The narrative quality is a 3 because it answers the question but presents the information in a list-like manner without a clear chain of influence, and includes some throat-clearing by restating the genres without adding connective context."
+    },
+    {
+      "item_id": "tier2_sample_007",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is concise, coherent, and directly answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_008",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 5,
+      "rationale": "The answer is OVERSTATED because it includes 'reggaestep' and 'Na mele paleoleo', which are not supported by the approved claims. The narrative quality is 5 because it clearly and coherently answers the question with no wasted information or unnecessary hedging."
+    },
+    {
+      "item_id": "tier2_sample_009",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the provided claims, and it is concise, coherent, and directly answers the question without any unnecessary elements."
+    },
+    {
+      "item_id": "tier2_sample_010",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly asserts the claim supported by the provided citations and presents a clear, coherent narrative that fully answers the question without any unnecessary elements."
+    },
+    {
+      "item_id": "tier2_sample_011",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claim by suggesting a direct emergence from the influences, rather than simply being influenced by them. The narrative quality is a 3 because it answers the question but presents the information in a less-than-ideal format, listing influences without a clear chain of influence."
+    },
+    {
+      "item_id": "tier2_sample_012",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly states the sourced influences but does not form a coherent lineage, requiring the reader to do additional work to understand the relationship."
+    },
+    {
+      "item_id": "tier2_sample_013",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 4,
+      "rationale": "The answer is supported by the provided claim and directly addresses the question, though it could be slightly more detailed to reach a perfect score."
+    },
+    {
+      "item_id": "tier2_sample_014",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly lists the influences of Western swing as per the approved claims, and it is coherent, concise, and directly answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_015",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly identifies the influences on acid jazz but includes an unsupported claim about jazz influencing punk rock, which is not part of the approved claims. The narrative quality is a 3 because it answers the question but includes unnecessary and incorrect information."
+    },
+    {
+      "item_id": "tier2_sample_016",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly states the influences of bossa nova as per the claims, and it is clear, concise, and directly answers the question without any unnecessary information."
+    },
+    {
+      "item_id": "tier2_sample_017",
+      "citation_support": "OVERSTATED",
+      "narrative_quality": 3,
+      "rationale": "The answer overstates the claim by suggesting a direct emergence from multiple genres without specifying the influence mechanism or direction for each, and while it answers the question, it presents the information as an unordered list rather than a coherent narrative."
+    },
+    {
+      "item_id": "tier2_sample_018",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer correctly identifies the influences on acid jazz as stated in the approved claims, and it is coherent, concise, and directly answers the question without unnecessary repetition or hedging."
+    },
+    {
+      "item_id": "tier2_sample_019",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 5,
+      "rationale": "The answer directly and accurately reflects the approved claims, and it is a clear, concise, and well-structured response to the question asked."
+    },
+    {
+      "item_id": "tier2_sample_020",
+      "citation_support": "SUPPORTED",
+      "narrative_quality": 3,
+      "rationale": "The answer correctly asserts the influence of Etta James on the listed artists, aligning with the provided claims. However, it lacks a clear narrative structure and coherence, presenting the information as a list rather than a connected lineage, which slightly diminishes its quality."
+    }
+  ]
+}
