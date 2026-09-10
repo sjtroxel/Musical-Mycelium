@@ -42,3 +42,10 @@ build
 private
 data
 Makefile
+
+# Eval run history and model transcripts. Committed to the repo since 2026-09-10 (phase 7.5 step 1),
+# which put them in `src/` and therefore in this build context, but the runtime never reads them:
+# nothing outside `eval` may import `eval` (`tests/test_architecture.py`), and the API serves no eval
+# data. About 1.5 MB that would otherwise ride along on every cold start. Phase 7.5 step 3.
+src/musical_mycelium/eval/results
+src/musical_mycelium/eval/transcripts
