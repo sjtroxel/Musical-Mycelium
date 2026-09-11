@@ -91,9 +91,14 @@ def test_span_rejects_a_backwards_range() -> None:
         Span(10, 4)
 
 
-def test_only_the_influence_predicate_is_allowed() -> None:
-    """P279 is absent from the artifact, so this is a second lock on the same door."""
-    assert {INFLUENCED_BY} == ALLOWED_PREDICATES
+def test_only_the_two_lineage_predicates_are_allowed() -> None:
+    """P279 is absent from the artifact, so this is a second lock on the same door.
+
+    Exactly ``influenced_by`` until phase 7.6 step 7, when ``studied_with`` joined on purpose
+    (``agent/claims.py`` says why). Still an exact equality rather than a subset check, so a third
+    predicate cannot join without this line being edited by someone deciding to.
+    """
+    assert {INFLUENCED_BY, "studied_with"} == ALLOWED_PREDICATES
 
 
 # --- approval ---------------------------------------------------------------------------------

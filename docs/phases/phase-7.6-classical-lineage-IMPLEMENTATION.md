@@ -799,7 +799,7 @@ saved only 0.25 MB and was not done.
 
 **Measured:** `make check` exit 0, 1620 passed, frontend 429, scripted gates 4 / 0 / 2 of six.
 
-### Step 7 — The gate, the tools and the prose
+### Step 7 — The gate, the tools and the prose — [done]
 
 - `agent/claims.py`: `ALLOWED_PREDICATES = {influenced_by, studied_with}`; `_find_edge` passes
   `predicates=ALLOWED_PREDICATES` (trap 1). The comment above the constant is rewritten to say it is now
@@ -825,6 +825,92 @@ saved only 0.25 MB and was not done.
   is recorded as the residual risk rather than claimed away.
 
 **Done when:** the disclosure test and a scripted run of "who did Beethoven study with" pass locally.
+
+#### 7.0 As built, 2026-09-11
+
+**Built as planned.** `ALLOWED_PREDICATES = {influenced_by, studied_with}`, and `_find_edge` searches
+with that same set (trap 1). `get_teachers`, `get_students` and `trace_teaching_lineage` are registered
+after `get_descendants`, with `corpus_coverage` still last: ten tools. `get_influences` carries the D5
+sentence. `descent_is_approved` reads influence claims only (trap 4). The refusal reasons name both
+relationships (trap 8). Every synthesis verb, heading and list noun comes from the predicate (trap 3):
+mixed fan-outs and fan-ins are grouped under two headings, mixed chains carry typed hops read off the
+approved claims (D4), and a pair approved under both predicates is narrated with both. `ApprovedClaimSet`
+gained `predicate` and `hops`. `synthesize` still takes exactly one claim-bearing parameter.
+
+**The `loop.py` edit, measured against §3.2.** `run()` changed in three lines, all in the refusal branch
+(the renamed corpus check and two reason constants). Tool dispatch, gating order and event emission are
+untouched, confirmed by diffing `run()` against `HEAD`. **An influence-only claim set renders
+byte-for-byte the prompt it rendered before**: checked once across 4,750 prompts built from every v0.7.1
+node's influence fan-out and fan-in plus 1,458 chains, 0 different, and locked by a test that holds the
+three pre-7.6 templates verbatim. What did move for influence runs is the system prompt, the planning
+prompt and the tool list (three more descriptions every turn), which 7.7's re-baseline measures.
+
+**Decisions this step took inside the plan, recorded so they can be vetoed:**
+- `trace_teaching_lineage` proposes **every** lineage edge between each consecutive pair, not only the
+  edge the walk crossed. Without that, whether Beethoven to Haydn arrived as teaching or as influence
+  would be decided by breadth-first tie-breaking over artifact order, and D4's "never one picked" would
+  hold only by luck.
+- `trace_teaching_lineage` refuses a genre endpoint and points at `trace_lineage`, so it cannot become a
+  looser-worded alias of the influence tracer.
+- The system prompt changed in **two** sentences, not the one §3.2 named: the new rule, and the opening
+  line, which described the graph as influence only and would have contradicted three of its tools.
+- The planning prompt's `origins` and `descendants` lines name teaching questions; `QUERY_KINDS` is
+  unchanged.
+- `synthesize` **raises** on a predicate it has no words for (`_wording`) rather than falling back to
+  influence wording. A fallback is how a future predicate would be narrated as influence without anyone
+  deciding to.
+- `_graph_holds_influences` is now `_graph_holds_lineage` and counts teaching. A refused "who did Józef
+  Elsner study with" (no teacher, three students) says this run found nothing, not that the graph holds
+  nothing about him.
+- The README's generated tool count moved from 7 to 10 (`make readme`, one figure, nothing else). **The
+  deployed site runs 7 tools until 7.7's deploy**; step 10's copy pass decides whether that sentence
+  needs a qualifier until then.
+
+**The disclosure test (DoD 4)** is `tests/test_teaching.py:test_no_teaching_claim_is_ever_narrated_as_
+influence`. It parses the prompt with its own literal headings and verbs, never the loop's constants,
+and checks that every listed name sits under its own claim's predicate, that each typed hop carries
+exactly the predicates approved for its pair, that a one-verb chain is used only when every hop agrees,
+that a teaching-only prompt holds no influence wording, and that the teaching clause and the
+chain-summary ban appear where they must. **Population on v0.10.0, every artist touching a teaching
+edge: 8,373 teaching claim sets, 0 misnarrated** (among them 1,601 teacher fan-outs, 1,018 student
+fan-ins, 3,039 teaching chains, 96 mixed chains, 11 mixed fan-outs, 16 mixed fan-ins). Per-shape floors
+are rounded down, so losing most of a shape fails rather than narrowing the test. Two tests break the
+checker on purpose, with the pre-fix prompt for Beethoven's teachers and a mixed chain told with one
+verb, and it objects to both. **What it cannot test is the model ignoring the instruction**; that is
+the live capture's (step 10) and 7.7's judged pass's to watch.
+
+**Done-when, met.** A scripted "who did Beethoven study with" approves four `studied_with` claims
+(Clementi, Neefe, Salieri, Haydn), all `TEACHING_PROSE_AUTO`, with no rejection, and prompts "stating who
+Ludwig van Beethoven studied with". Also scripted: the D5 answer to "who influenced Beethoven" (one
+influence and four teachers, Haydn under both headings), and trap 4 end to end ("did Czerny influence
+Beethoven" is not "corrected" on the strength of Czerny having studied with Beethoven).
+
+**One pre-existing test defect, found and fixed.** Both every-tool tests in `tests/test_untrusted.py`
+called `trace_lineage` with `from_node_id`/`to_node_id`, which it does not take. Both sides returned the
+same argument error and compared equal, so delimiter stripping and payload marking had never run
+against a real `trace_lineage` payload. The arguments are corrected and both tests now assert that no
+call errors. The property itself held: the real payload is marked.
+
+**Tests read v0.10.0 before the pin moves.** `tests/test_teaching.py` loads `artifact_directory("0.10.0")`
+because v0.7.1 holds no teaching edge and a teaching test on it would pass vacuously. `UNPINNED_CUTS`'
+reason now names that file as the cut's only reader; step 9 points it at the pin.
+
+**Found for step 8, not built here:**
+- **The local stub has no teaching path.** `LocalLLM` sends every non-lineage question to
+  `get_influences` and renders prose by parsing "Documented influences:" and "Chain:". On the stub a
+  teaching answer would read "The graph records no influences for ...". Step 8's done-when ("the running
+  app, on the local stub, shows a teaching answer") needs the stub taught `get_teachers`, "Documented
+  teachers:" and "Hops:". The plan did not list it.
+- `docs/SPEC.md`'s tool list (around line 115) still says seven. Step 8 edits SPEC §6 and §7 and should
+  correct it in the same pass.
+- `describe_node` does not return `birth_year`, so the agent cannot see an artist's dates. Outside this
+  phase's plan; recorded, not done.
+
+**Measured:** `make check` exit 0: **1660 passed**, all 40 new ones in `tests/test_teaching.py`; the
+guard tests in `test_claims.py`, `test_membership.py`, `test_untrusted.py` and `test_tools.py` were moved
+to the new intended state and none was loosened (the predicate lock is still an exact equality). mypy
+clean over 120 files, frontend 429, scripted gates **4 / 0 / 2 of six**, root 17 of 18, every asset
+budget holds.
 
 ### Step 8 — API contract and frontend
 

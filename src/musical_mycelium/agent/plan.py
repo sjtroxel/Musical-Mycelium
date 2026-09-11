@@ -44,8 +44,9 @@ MAX_REASON_CHARS = 200
 #: ``{tools}`` is filled from the registry, never from a literal list — see property 3. The doubled
 #: braces are the JSON example surviving ``str.format``.
 PLANNING_PROMPT_TEMPLATE = f"""\
-Before answering, produce a {PLANNING_SENTINEL} over a graph of documented musical influences: classify \
-the question, then list the calls you expect to make, in order.
+Before answering, produce a {PLANNING_SENTINEL} over a graph of documented musical influences, and of \
+documented teachers and their students: classify the question, then list the calls you expect to make, \
+in order.
 
 Some questions assert an influence instead of asking an open one: "did X come out of Y", "did X \
 influence Y", "X grew out of Y, didn't it". When the question asserts one, report it as \
@@ -58,9 +59,9 @@ the graph afterwards; getting it wrong here by second-guessing the question is w
 premise that turns out to be false.
 
 query_kind is exactly one of:
-- origins      what something came out of
+- origins      what something came out of, or who someone studied with
 - lineage      how two named things connect
-- descendants  what came out of something
+- descendants  what came out of something, or who studied with someone
 - coverage     what this graph does and does not hold
 - unknown      none of the above, or the question is not about this graph
 

@@ -58,6 +58,10 @@ from musical_mycelium.graph.schema import (
 )
 
 ACID_JAZZ, JAZZ = "Q221772", "Q8341"
+#: Two artists with a sourced influence edge at v0.7.1, read off the artifact on 2026-09-11. The pinned
+#: corpus holds no teaching edge yet, so the teaching tools are exercised on real ids with small payloads
+#: here; ``tests/test_teaching.py`` checks their full payloads on v0.10.0.
+U2, THE_BEATLES = "Q396", "Q1299"
 BLUES_ROCK = "Q193355"
 PUNK_ROCK, THRASH_METAL = "Q3071", "Q483352"
 
@@ -231,18 +235,27 @@ def test_a_tool_still_runs_when_the_model_hands_an_id_back_wrapped(
 
 
 def test_stripping_covers_every_registered_tool(registry: ToolRegistry) -> None:
-    """One call at ``ToolRegistry.invoke`` covers all seven and knows nothing about any of them.
+    """One call at ``ToolRegistry.invoke`` covers every registered tool and knows nothing about any of
+    them.
 
     Every tool's real arguments, wrapped and bare, must produce identical results. Note what is **not**
     stripped: the tool *name*. Names reach the model through ``toolConfig``, which this project writes
     and never delimits, so a delimited name is not a thing the model can have been shown — stripping it
     would be defending against a message we do not send.
+
+    **Every bare call must succeed**, asserted since 2026-09-11. Until then ``trace_lineage`` was called
+    here as ``from_node_id``/``to_node_id``, which it does not take, so both sides returned the same
+    argument error and compared equal: the test passed without ever running the tool. Found in phase
+    7.6 step 7 while adding the three teaching tools.
     """
     calls: dict[str, dict[str, Any]] = {
         "resolve_node": {"name": "acid jazz"},
         "get_influences": {"node_id": ACID_JAZZ},
-        "trace_lineage": {"from_node_id": THRASH_METAL, "to_node_id": PUNK_ROCK},
+        "trace_lineage": {"from_id": THRASH_METAL, "to_id": PUNK_ROCK},
         "get_descendants": {"node_id": JAZZ},
+        "get_teachers": {"node_id": U2},
+        "get_students": {"node_id": U2},
+        "trace_teaching_lineage": {"from_id": U2, "to_id": THE_BEATLES},
         "describe_node": {"node_id": ACID_JAZZ},
         "resolve_source": {"source_id": f"{_STATEMENT_PREFIX}{ACID_JAZZ}-a"},
         "corpus_coverage": {},
@@ -250,6 +263,7 @@ def test_stripping_covers_every_registered_tool(registry: ToolRegistry) -> None:
     assert set(calls) == set(registry.names), "a tool was added without extending this test"
 
     for name, arguments in calls.items():
+        assert not registry.invoke(name, arguments).is_error, f"{name} was called wrongly here"
         wrapped = {key: f"<data>{value}</data>" for key, value in arguments.items()}
         assert registry.invoke(name, wrapped).content == registry.invoke(name, arguments).content, (
             f"{name} behaves differently when its arguments arrive delimited"
@@ -260,17 +274,24 @@ def test_stripping_covers_every_registered_tool(registry: ToolRegistry) -> None:
 
 
 def test_no_tool_payload_reaches_the_model_unmarked(registry: ToolRegistry) -> None:
-    """The property the whole design rests on, checked against real payloads from all seven tools.
+    """The property the whole design rests on, checked against real payloads from every registered tool.
 
     Every string in every tool result — keys included — is wrapped by the time it is a message. This is
-    a property test rather than seven hand-written assertions precisely so that a tool added in phase 6
-    is covered without anyone remembering to extend it.
+    a property test rather than one hand-written assertion per tool precisely so that a tool added in
+    phase 6 is covered without anyone remembering to extend it.
+
+    ``not result.is_error`` since 2026-09-11, for the reason ``test_stripping_covers_every_registered_
+    tool`` gives: ``trace_lineage`` was being called with argument names it does not take, so its
+    **real** payload, the one carrying artifact labels, had never been checked here.
     """
     calls: list[tuple[str, dict[str, Any]]] = [
         ("resolve_node", {"name": "acid jazz"}),
         ("get_influences", {"node_id": ACID_JAZZ}),
-        ("trace_lineage", {"from_node_id": THRASH_METAL, "to_node_id": PUNK_ROCK}),
+        ("trace_lineage", {"from_id": THRASH_METAL, "to_id": PUNK_ROCK}),
         ("get_descendants", {"node_id": JAZZ}),
+        ("get_teachers", {"node_id": U2}),
+        ("get_students", {"node_id": U2}),
+        ("trace_teaching_lineage", {"from_id": U2, "to_id": THE_BEATLES}),
         ("describe_node", {"node_id": ACID_JAZZ}),
         ("resolve_source", {"source_id": "not-a-uri"}),
         ("corpus_coverage", {}),
@@ -279,6 +300,7 @@ def test_no_tool_payload_reaches_the_model_unmarked(registry: ToolRegistry) -> N
 
     for name, arguments in calls:
         result = registry.invoke(name, arguments)
+        assert not result.is_error, f"{name} was called wrongly here: {result.content}"
         message = tool_results_message([ToolOutcome("t1", result.content)])
         payload = message["content"][0]["toolResult"]["content"][0]
 

@@ -188,9 +188,11 @@ def test_the_gate_cannot_narrate_a_membership_edge() -> None:
     is the feature: the gate refuses it without ``agent/`` being edited at all. If someone adds the
     predicate to that set to make a metric move, this fails."""
     from musical_mycelium.agent.claims import ALLOWED_PREDICATES
+    from musical_mycelium.graph.schema import PREDICATE_STUDIED_WITH
 
     assert PREDICATE_PLAYS_GENRE not in ALLOWED_PREDICATES
-    assert frozenset({PREDICATE_INFLUENCED_BY}) == ALLOWED_PREDICATES
+    # Teaching joined at phase 7.6 step 7, deliberately; membership did not, and still may not.
+    assert frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH}) == ALLOWED_PREDICATES
 
 
 # --- the artifact-level lock this step owes -------------------------------------------------------

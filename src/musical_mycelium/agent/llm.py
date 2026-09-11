@@ -872,7 +872,7 @@ def undelimit(value: Any) -> Any:
     it was protecting. Marking is for the model's benefit on the way out; the marks are not part of the
     value on the way in.
 
-    Applied at ``ToolRegistry.invoke``, which is one chokepoint for all seven tools and needs no
+    Applied at ``ToolRegistry.invoke``, which is one chokepoint for every registered tool and needs no
     per-tool knowledge, so invariant 4 is untouched.
     """
     if isinstance(value, str):

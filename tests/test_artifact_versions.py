@@ -29,7 +29,8 @@ REPO = Path(__file__).resolve().parents[1]
 UNPINNED_CUTS: dict[str, str] = {
     "0.10.0": (
         "phase 7.6 step 5 wrote it on 2026-09-11; step 9 moves the pin only after every dataset's "
-        "re-pin check, so until then it is built and deliberately not read by anything"
+        "re-pin check, so until then it is built and read only by tests/test_teaching.py (step 7), "
+        "never by the product, the API or an eval"
     ),
 }
 

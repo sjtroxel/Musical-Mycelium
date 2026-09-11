@@ -48,6 +48,7 @@ from enum import StrEnum
 
 from musical_mycelium.graph.schema import (
     PREDICATE_INFLUENCED_BY,
+    PREDICATE_STUDIED_WITH,
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_LEVELS,
@@ -56,10 +57,20 @@ from musical_mycelium.graph.schema import (
 )
 from musical_mycelium.graph.store import Direction, GraphStore
 
-#: Predicates a claim is allowed to assert at v0.1. P279 is absent from the artifact entirely, so this is
-#: a second lock on the same door: even a corpus that later carries ``subclass_of`` cannot have it
-#: narrated as derivation without someone editing this line on purpose.
-ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY})
+#: Predicates a claim is allowed to assert. P279 is absent from the artifact entirely, so this is a
+#: second lock on the same door: even a corpus that later carries ``subclass_of`` cannot have it narrated
+#: as derivation without someone editing this line on purpose.
+#:
+#: **Two predicates, on purpose, since phase 7.6 step 7 (2026-09-11).** ``studied_with`` (P1066) joined
+#: because a teaching claim is sourced, hand-checked (``docs/p1066-handcheck.md``) and narratable in its
+#: own words; it is **not** a kind of influence, and ``agent.loop.synthesize`` takes each claim's verb
+#: from its predicate so it can never be narrated as one. ``plays_genre`` is **still out**: membership is
+#: not derivation in either direction, and narrating it needs the typed-hop wording phase 8 is scoped to
+#: design. A proposal carrying it is still rejected ``UNSUPPORTED_PREDICATE``.
+#:
+#: ``_find_edge`` searches with this same set. The store's default is ``INFLUENCE_ONLY``, so widening
+#: this constant alone would have rejected every teaching claim as ``NOT_IN_GRAPH`` (trap 1).
+ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH})
 
 #: Evidential states this corpus **cannot express**, kept visible with their preconditions so nobody
 #: re-derives them by accident — and so nobody reads the names in a design doc and assumes they are
@@ -250,7 +261,7 @@ def gate(proposals: list[ClaimProposal], store: GraphStore) -> GateResult:
 
     A proposal passes only if all five hold:
 
-    1. the predicate is one v0.1 permits,
+    1. the predicate is one ``ALLOWED_PREDICATES`` permits,
     2. both endpoints are nodes in the artifact,
     3. both endpoints sit on the **same axis** — genre-to-genre or artist-to-artist, never across,
     4. the edge exists in the artifact in the stated direction, and
@@ -346,7 +357,16 @@ def gate(proposals: list[ClaimProposal], store: GraphStore) -> GateResult:
 
 
 def _find_edge(store: GraphStore, proposal: ClaimProposal) -> Edge | None:
-    for edge in store.neighbors(proposal.subject_id, Direction.INFLUENCED_BY):
+    """The artifact edge a proposal names, matched on subject, predicate and object exactly.
+
+    ``predicates=ALLOWED_PREDICATES`` is load-bearing (trap 1): the store walks ``INFLUENCE_ONLY``
+    unless told otherwise, so without it no ``studied_with`` edge is ever found. The exact predicate
+    match below is what keeps the two apart: a teaching edge never approves an influence proposal for
+    the same pair, and the reverse.
+    """
+    for edge in store.neighbors(
+        proposal.subject_id, Direction.INFLUENCED_BY, predicates=ALLOWED_PREDICATES
+    ):
         if edge.object_id == proposal.object_id and edge.predicate == proposal.predicate:
             return edge
     return None

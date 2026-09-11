@@ -52,7 +52,7 @@ risk, evolution, design and evaluation, plus an independent review.
 ## What it is
 
 A hand-built tool-use loop on Amazon Bedrock's Converse API. Given a genre or an artist, it plans a
-traversal, walks a pre-built provenance graph of musical influence using <!-- n:tools -->7<!-- /n --> registered tools, and
+traversal, walks a pre-built provenance graph of musical influence using <!-- n:tools -->10<!-- /n --> registered tools, and
 synthesizes a grounded, cited lineage. It can also take two points and walk the chain between them, hop
 by hop, in whichever order you name them.
 

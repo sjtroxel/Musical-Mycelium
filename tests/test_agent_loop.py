@@ -41,7 +41,7 @@ from musical_mycelium.agent.llm import (
     tool_results_message,
 )
 from musical_mycelium.agent.loop import (
-    REASON_NO_INFLUENCES,
+    REASON_NO_LINEAGE,
     REASON_NOT_IN_GRAPH,
     REASON_RUN_FOUND_NONE,
     ApprovedClaimSet,
@@ -54,7 +54,7 @@ from musical_mycelium.agent.loop import (
     Refused,
     Token,
     ToolCalled,
-    _graph_holds_influences,
+    _graph_holds_lineage,
     refusal_text,
     run,
     synthesize,
@@ -173,6 +173,9 @@ def test_tool_config_is_the_bedrock_shape(registry: ToolRegistry) -> None:
         "get_influences",
         "trace_lineage",
         "get_descendants",
+        "get_teachers",
+        "get_students",
+        "trace_teaching_lineage",
         "describe_node",
         "resolve_source",
         "corpus_coverage",
@@ -2189,7 +2192,7 @@ def test_the_corpus_empty_wording_is_used_only_when_the_corpus_is_actually_empty
 ) -> None:
     """`tread rap` resolves and has no sourced influence edge in either direction, so the strong
     claim is the true one here and the refusal is allowed to make it."""
-    assert not _graph_holds_influences(store, [GENUINELY_EMPTY])
+    assert not _graph_holds_lineage(store, [GENUINELY_EMPTY])
 
     events = list(
         run(
@@ -2200,7 +2203,7 @@ def test_the_corpus_empty_wording_is_used_only_when_the_corpus_is_actually_empty
         )
     )
     refusal = next(e for e in events if isinstance(e, Refused))
-    assert refusal.reason == REASON_NO_INFLUENCES
+    assert refusal.reason == REASON_NO_LINEAGE
     prose = "".join(e.text for e in events if isinstance(e, Token))
     assert prose.startswith("This graph has no sourced answer")
 
@@ -2213,7 +2216,7 @@ def test_a_refusal_over_a_populated_corpus_blames_the_run_and_not_the_graph(
     Acid jazz has five sourced influences. Before 2026-09-07 this refusal told the user it had none,
     in the corpus's voice, on the evidence of one traversal that did not reach a chain.
     """
-    assert _graph_holds_influences(store, [ACID_JAZZ])
+    assert _graph_holds_lineage(store, [ACID_JAZZ])
 
     events = list(
         run(
@@ -2241,7 +2244,7 @@ def test_the_gold_020_subject_can_no_longer_be_told_the_corpus_is_empty(
     stops claiming the corpus is empty about a subject with four sourced parents -- **the honest floor
     exists whether or not the bug does.**
     """
-    assert _graph_holds_influences(store, [FEMTANYL]), (
+    assert _graph_holds_lineage(store, [FEMTANYL]), (
         "femtanyl has four sourced parents; if this ever fails the corpus moved, not the code"
     )
 
@@ -2281,7 +2284,7 @@ def test_membership_edges_do_not_make_the_graph_look_populated() -> None:
     )
     store = InMemoryGraphStore(Artifact(nodes=(artist, genre), edges=(membership,)))
 
-    assert not _graph_holds_influences(store, ["Q1", "Q2"])
+    assert not _graph_holds_lineage(store, ["Q1", "Q2"])
 
 
 def test_refusal_text_does_not_assert_an_empty_graph_when_it_is_not_one() -> None:

@@ -18,6 +18,7 @@ headline metric, and it is only meaningful if the layer underneath declines to i
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from itertools import pairwise
 from typing import Any, Protocol, runtime_checkable
 
 from musical_mycelium.agent.claims import ClaimProposal
@@ -29,8 +30,24 @@ from musical_mycelium.graph.coverage import (
     era_of,
 )
 from musical_mycelium.graph.memory import exact_matches
-from musical_mycelium.graph.schema import DBPEDIA_RESOURCE_PREFIX, PREDICATE_INFLUENCED_BY
+from musical_mycelium.graph.schema import (
+    DBPEDIA_RESOURCE_PREFIX,
+    NODE_KIND_ARTIST,
+    PREDICATE_INFLUENCED_BY,
+    PREDICATE_STUDIED_WITH,
+    Edge,
+)
 from musical_mycelium.graph.store import Direction, GraphStore
+
+#: What ``get_teachers`` and ``get_students`` walk, and nothing else. Added at phase 7.6 step 7.
+TEACHING_ONLY = frozenset({PREDICATE_STUDIED_WITH})
+
+#: What ``trace_teaching_lineage`` walks: teaching **and** influence, his decision D4 (2026-09-11). Sound
+#: because both run the same way in time (the later person learned from, or was shaped by, the earlier
+#: one), which membership does not. Deliberately its own constant rather than
+#: ``claims.ALLOWED_PREDICATES``: if the gate ever admits a third predicate, this walk must not quietly
+#: start crossing it.
+LINEAGE_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH})
 
 #: Wikidata statement URIs encode the QID of the entity the statement belongs to. Same prefix
 #: ``claims.resolve_sources`` parses; kept as its own constant here rather than imported so the tool
@@ -139,8 +156,8 @@ class ToolRegistry:
 
         Arguments are stripped of data delimiters first. Tool results reach the model wrapped in
         ``<data>`` tags, and a model handing an id back verbatim would otherwise pass
-        ``<data>Q483352</data>`` to a tool that only knows ``Q483352``. One call here covers all seven
-        tools and knows nothing about any of them, so the seam is intact.
+        ``<data>Q483352</data>`` to a tool that only knows ``Q483352``. One call here covers every
+        registered tool and knows nothing about any of them, so the seam is intact.
         """
         arguments = undelimit(arguments)
         tool = self._tools.get(name)
@@ -177,8 +194,8 @@ class ResolveNode:
             "Resolve a genre name OR an artist name to its node id in the graph. Returns null when "
             "the name is not in this graph. A null result means the graph does not cover it — say "
             "so; do not substitute something similar. The result carries a 'kind' of 'genre' or "
-            "'artist': influence only ever runs between two nodes of the SAME kind, so never relate "
-            "a genre to an artist."
+            "'artist': influence and teaching only ever run between two nodes of the SAME kind, so "
+            "never relate a genre to an artist."
         ),
         init=False,
     )
@@ -232,6 +249,12 @@ class GetInfluences:
 
     The proposals are built here rather than in the loop, and that is invariant 4 working: the loop
     harvests ``result.proposals`` without knowing this tool exists.
+
+    **It still returns influence only, and proposes ``influenced_by`` only.** The last sentence of the
+    description is his decision D5 (2026-09-11): teaching is often a strong influence, so an influence
+    question about an artist should also ask for teachers, and report them **as teachers**. That is a
+    change to what the model is told, not to what this tool returns: the two answers stay two lists,
+    and ``synthesize`` narrates them under separate headings.
     """
 
     store: GraphStore
@@ -240,7 +263,9 @@ class GetInfluences:
         default=(
             "List the documented influences on a genre — what it came out of. Returns an empty list "
             "when the graph has no sourced influences for that node. An empty list means this graph "
-            "cannot answer the question; it does not mean the genre had no influences."
+            "cannot answer the question; it does not mean the genre had no influences. For an "
+            "artist, teachers are often a strong influence too: also call get_teachers, and report "
+            "what it returns as teachers, never as influences."
         ),
         init=False,
     )
@@ -468,6 +493,270 @@ class GetDescendants:
 
 
 @dataclass(frozen=True, slots=True)
+class GetTeachers:
+    """Who an artist studied with: one hop along ``studied_with``, from the student's side.
+
+    *(Added 2026-09-11, phase 7.6 step 7, by registration alone. The mirror of ``GetInfluences``.)*
+
+    **Trap 17, and why this class owns the call.** ``Direction`` is named for influence:
+    ``INFLUENCED_BY`` means "walk from the subject to the object". A teaching edge is stored *student*
+    ``studied_with`` *teacher*, so a student's teachers are ``neighbors(student, INFLUENCED_BY,
+    predicates=TEACHING_ONLY)``, which reads wrong and would be written wrong at a call site. This class
+    and ``GetStudents`` are the only places that make it, and a test pins that they are not swapped.
+
+    Proposals carry ``studied_with`` and nothing else, built from the edge as every tool here does.
+    """
+
+    store: GraphStore
+    name: str = field(default="get_teachers", init=False)
+    description: str = field(
+        default=(
+            "List who an artist studied with: their documented teachers. This is teaching, not "
+            "influence: report each one as someone the artist studied with, never as an influence. "
+            "Returns an empty list when the graph records no teachers for that artist. An empty list "
+            "means this graph cannot answer the question; it does not mean the artist had no teachers."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "node_id": {"type": "string", "description": "An artist node id from resolve_node."}
+            },
+            "required": ["node_id"],
+        }
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        node_id = kwargs["node_id"]
+        if self.store.get_node(node_id) is None:
+            return ToolResult(
+                content={"error": f"unknown node: {node_id}. Use resolve_node first."},
+                is_error=True,
+            )
+
+        edges = self.store.neighbors(node_id, Direction.INFLUENCED_BY, predicates=TEACHING_ONLY)
+        return ToolResult(
+            content={
+                "teachers": [_listed(self.store, edge.object_id, edge) for edge in edges],
+                "count": len(edges),
+            },
+            sources=tuple(edge.source_id for edge in edges),
+            visited=(node_id, *(edge.object_id for edge in edges)),
+            # A fan-out, not a sequence, so no ``chain``: several teachers are not an ordered descent.
+            proposals=_teaching_proposals(edges),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class GetStudents:
+    """Who studied with an artist: one hop along ``studied_with``, from the teacher's side.
+
+    The mirror of ``GetDescendants``, with the same orientation rule: the walk finds edges where the
+    queried artist is the **object**, so each proposal's subject is the student, read off the edge and
+    never off ``node_id``. Built the other way, "who studied with Haydn" would propose that Haydn
+    studied with each of his students.
+    """
+
+    store: GraphStore
+    name: str = field(default="get_students", init=False)
+    description: str = field(
+        default=(
+            "List who studied with an artist: their documented students. This is teaching, not "
+            "influence: report each one as someone who studied with the artist, never as someone "
+            "the artist influenced. Returns an empty list when the graph records no students for "
+            "that artist. An empty list means this graph cannot answer the question; it does not "
+            "mean the artist had no students."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "node_id": {"type": "string", "description": "An artist node id from resolve_node."}
+            },
+            "required": ["node_id"],
+        }
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        node_id = kwargs["node_id"]
+        if self.store.get_node(node_id) is None:
+            return ToolResult(
+                content={"error": f"unknown node: {node_id}. Use resolve_node first."},
+                is_error=True,
+            )
+
+        edges = self.store.neighbors(node_id, Direction.INFLUENCED, predicates=TEACHING_ONLY)
+        return ToolResult(
+            content={
+                "students": [_listed(self.store, edge.subject_id, edge) for edge in edges],
+                "count": len(edges),
+            },
+            sources=tuple(edge.source_id for edge in edges),
+            visited=(node_id, *(edge.subject_id for edge in edges)),
+            proposals=_teaching_proposals(edges),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class TraceTeachingLineage:
+    """The sourced chain between two artists through teachers **and** influences, with typed hops.
+
+    *(Added 2026-09-11, phase 7.6 step 7. D4 and D5 of the IMPLEMENTATION doc.)*
+
+    **``trace_lineage`` is not touched, deliberately.** It stays influence-only so that no gold path
+    case can silently acquire a shorter route through a teaching hop. This is the tool that walks both.
+
+    **Every hop is typed, and a hop is never given one predicate where the corpus holds two.** The walk
+    finds a shortest route; each consecutive pair on it is then read back off the artifact under both
+    predicates, and **every** edge between that pair is proposed. Beethoven studied with Haydn *and* was
+    influenced by him; proposing whichever edge the walk happened to cross first would narrate half of
+    that and drop the other half by accident of artifact order. Synthesis reads each hop's predicates
+    off the claims the gate approved, never off this tool.
+
+    Artists only. Teaching never touches a genre, so a genre-to-genre walk here would be
+    ``trace_lineage`` under another name with a looser description; it is refused with a pointer
+    instead. Orientation follows ``TraceLineage`` exactly: both walk directions are tried, and the chain
+    is read off the edges, descendant-first, whichever way the arguments were given.
+    """
+
+    store: GraphStore
+    name: str = field(default="trace_teaching_lineage", init=False)
+    description: str = field(
+        default=(
+            "Trace the documented chain between two artists through teachers and influences, hop by "
+            "hop. Each hop is 'studied with', 'influenced by', or both, and the result says which. Give "
+            "it two artist node ids from resolve_node, in either order. Report every hop with its own "
+            "relationship: never describe a teaching hop as influence, and never call the whole chain "
+            "a line of influence. Returns an empty path when the graph holds no sourced chain between "
+            "them: that means this graph cannot connect the two, not that they are unrelated. Do not "
+            "bridge the gap yourself. For two genres, use trace_lineage."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "from_id": {
+                    "type": "string",
+                    "description": "An artist node id from resolve_node.",
+                },
+                "to_id": {"type": "string", "description": "The other artist node id."},
+            },
+            "required": ["from_id", "to_id"],
+        }
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        from_id, to_id = kwargs["from_id"], kwargs["to_id"]
+        for node_id in (from_id, to_id):
+            node = self.store.get_node(node_id)
+            if node is None:
+                return ToolResult(
+                    content={"error": f"unknown node: {node_id}. Use resolve_node first."},
+                    is_error=True,
+                )
+            if node.kind != NODE_KIND_ARTIST:
+                return ToolResult(
+                    content={
+                        "error": (
+                            f"{node.label} is a {node.kind}. Teaching runs only between artists; "
+                            f"for two genres, use trace_lineage."
+                        )
+                    },
+                    is_error=True,
+                )
+
+        walked = self.store.path(
+            from_id, to_id, Direction.INFLUENCED_BY, predicates=LINEAGE_PREDICATES
+        )
+        if not walked:
+            walked = list(
+                reversed(
+                    self.store.path(
+                        from_id, to_id, Direction.INFLUENCED, predicates=LINEAGE_PREDICATES
+                    )
+                )
+            )
+
+        if not walked:
+            return ToolResult(
+                content={
+                    "path": [],
+                    "hops": 0,
+                    "reason": "no sourced chain between these artists in either direction",
+                },
+                visited=(from_id, to_id),
+            )
+
+        chain = (walked[0].subject_id, *(edge.object_id for edge in walked))
+        hops = [self._hop_edges(subject, obj) for subject, obj in pairwise(chain)]
+        edges = [edge for hop in hops for edge in hop]
+
+        return ToolResult(
+            content={
+                "path": [
+                    {
+                        "subject": _label(self.store, hop[0].subject_id),
+                        "predicates": [edge.predicate for edge in hop],
+                        "object": _label(self.store, hop[0].object_id),
+                    }
+                    for hop in hops
+                ],
+                "hops": len(hops),
+            },
+            sources=tuple(edge.source_id for edge in edges),
+            visited=chain,
+            chain=chain,
+            proposals=tuple(
+                ClaimProposal(
+                    subject_id=edge.subject_id, predicate=edge.predicate, object_id=edge.object_id
+                )
+                for edge in edges
+            ),
+        )
+
+    def _hop_edges(self, subject_id: str, object_id: str) -> list[Edge]:
+        """Every lineage edge from ``subject_id`` to ``object_id``, sorted by predicate so the order
+        does not depend on the artifact's. Never empty: the walk crossed at least one of them."""
+        return sorted(
+            (
+                edge
+                for edge in self.store.neighbors(
+                    subject_id, Direction.INFLUENCED_BY, predicates=LINEAGE_PREDICATES
+                )
+                if edge.object_id == object_id
+            ),
+            key=lambda edge: edge.predicate,
+        )
+
+
+def _listed(store: GraphStore, node_id: str, edge: Edge) -> dict[str, str]:
+    """One entry of a fan-out, in the shape ``GetInfluences`` and ``GetDescendants`` already return."""
+    return {"node_id": node_id, "label": _label(store, node_id), "predicate": edge.predicate}
+
+
+def _label(store: GraphStore, node_id: str) -> str:
+    node = store.get_node(node_id)
+    return node.label if node else node_id
+
+
+def _teaching_proposals(edges: list[Edge]) -> tuple[ClaimProposal, ...]:
+    """``studied_with`` proposals, oriented by the edge. The predicate is stated rather than copied so
+    a teaching tool cannot propose anything else even if a caller widened its walk by mistake."""
+    return tuple(
+        ClaimProposal(
+            subject_id=edge.subject_id, predicate=PREDICATE_STUDIED_WITH, object_id=edge.object_id
+        )
+        for edge in edges
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class DescribeNode:
     """When and where, rather than out of what. **Emits no proposals.**
 
@@ -692,11 +981,12 @@ class CorpusCoverage:
 
 
 def default_registry(store: GraphStore) -> ToolRegistry:
-    """The seven tools as of v0.3.
+    """The ten tools as of phase 7.6 (product v0.9).
 
-    ``trace_lineage`` joined at phase 2 step 5 and the last four at phase 3 step 2, all by registration
-    alone. The signature has not changed since the three-tool version, which is invariant 4 stated as a
-    fact about this line rather than as an aspiration.
+    ``trace_lineage`` joined at phase 2 step 5, the next four at phase 3 step 2, and the three teaching
+    tools at phase 7.6 step 7, all by registration alone. The signature has not changed since the
+    three-tool version, which is invariant 4 stated as a fact about this line rather than as an
+    aspiration. ``corpus_coverage`` stays last on purpose; see its docstring.
     """
     return ToolRegistry(
         [
@@ -704,6 +994,9 @@ def default_registry(store: GraphStore) -> ToolRegistry:
             GetInfluences(store),
             TraceLineage(store),
             GetDescendants(store),
+            GetTeachers(store),
+            GetStudents(store),
+            TraceTeachingLineage(store),
             DescribeNode(store),
             ResolveSource(store),
             CorpusCoverage(store),

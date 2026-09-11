@@ -9,7 +9,13 @@
 > **PHASE 7.5 IS SUSPENDED AT STEP 5 AND PHASE 7.6 `classical-lineage` (v0.9) IS NEXT — 2026-09-11, his
 > decision.** Scope doc: `docs/phases/phase-7.6-classical-lineage.md`, **approved 2026-09-11**; its
 > IMPLEMENTATION doc `phase-7.6-classical-lineage-IMPLEMENTATION.md` is **APPROVED 2026-09-11 and the
-> build has started**; its `[done]` markers and as-built subsections are the authority on progress. Order from here: **7.6, then 7.7 `name-resolution` (v0.9.5, scope
+> build has started**; its `[done]` markers and as-built subsections are the authority on progress.
+> **HANDOFF, 2026-09-11: STEPS 0-7 ARE DONE. NEXT IS STEP 8** (API contract and frontend). Read step 7's
+> as-built first: its "found for step 8" list adds the local stub's teaching path, which step 8's
+> done-when needs and the plan did not list. Artifact **v0.10.0 is built
+> but NOT pinned** (step 9 moves the pin; `tests/test_artifact_versions.py:UNPINNED_CUTS` records it, and
+> `tests/test_teaching.py` is its only reader). Crawl data is local in `data/lineage/` (gitignored);
+> `--build` is offline. Order from here: **7.6, then 7.7 `name-resolution` (v0.9.5, scope
 > doc written), then ONE live re-baseline and ONE deploy for both, then 7.5 resumes at step 5.** Typing
 > "mozart" into the site still refuses after 7.6 by design; 7.7 fixes it with one-click offers, never
 > automatic guesses. **The new artifact is

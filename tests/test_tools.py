@@ -250,14 +250,18 @@ def test_corpus_coverage_requires_no_arguments_through_the_registry(
 # --- the seam --------------------------------------------------------------------------------------
 
 
-def test_seven_tools_are_registered_and_coverage_is_last(store: InMemoryGraphStore) -> None:
+def test_ten_tools_are_registered_and_coverage_is_last(store: InMemoryGraphStore) -> None:
+    """Seven until phase 7.6 step 7, when the three teaching tools joined by registration alone."""
     registry = default_registry(store)
-    assert len(registry) == 7
+    assert len(registry) == 10
     assert registry.names == (
         "resolve_node",
         "get_influences",
         "trace_lineage",
         "get_descendants",
+        "get_teachers",
+        "get_students",
+        "trace_teaching_lineage",
         "describe_node",
         "resolve_source",
         "corpus_coverage",
@@ -293,19 +297,22 @@ def test_the_loop_never_names_a_tool_in_its_executable_source() -> None:
     tree = ast.parse(LOOP_SOURCE.read_text(encoding="utf-8"))
     executable = ast.unparse(tree)  # comments are not in the AST; docstrings survive as constants
 
-    offenders = [
-        name
-        for name in (
-            "resolve_node",
-            "get_influences",
-            "trace_lineage",
-            "get_descendants",
-            "describe_node",
-            "resolve_source",
-            "corpus_coverage",
-        )
-        if name in executable
-    ]
+    # The literal list, plus whatever is registered today, so a tool added later is covered the day it
+    # is registered rather than the day somebody remembers this list.
+    names = {
+        "resolve_node",
+        "get_influences",
+        "trace_lineage",
+        "get_descendants",
+        "get_teachers",
+        "get_students",
+        "trace_teaching_lineage",
+        "describe_node",
+        "resolve_source",
+        "corpus_coverage",
+        *default_registry(InMemoryGraphStore.from_directory(artifact_directory())).names,
+    }
+    offenders = sorted(name for name in names if name in executable)
     assert not offenders, (
         f"agent/loop.py names {offenders} in executable source. Adding a tool must never require "
         f"editing the loop, and a loop that knows a tool's name has already broken that."

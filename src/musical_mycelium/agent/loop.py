@@ -49,7 +49,14 @@ from collections.abc import Generator, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from itertools import pairwise
 
-from musical_mycelium.agent.claims import Claim, ClaimProposal, GateResult, Rejection, gate
+from musical_mycelium.agent.claims import (
+    ALLOWED_PREDICATES,
+    Claim,
+    ClaimProposal,
+    GateResult,
+    Rejection,
+    gate,
+)
 from musical_mycelium.agent.llm import (
     LLM,
     ToolOutcome,
@@ -68,6 +75,7 @@ from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
+    PREDICATE_STUDIED_WITH,
 )
 from musical_mycelium.graph.store import Direction, GraphStore
 
@@ -116,7 +124,8 @@ STOP_MAX_TOKENS = "max_tokens"
 #: called. That is invariant 4 leaking through the prose door rather than the code door. Each tool
 #: describes itself in its own ``toolSpec``; this states the rules that hold no matter which one runs.
 SYSTEM_PROMPT = """You answer questions about where music came from and how it connects, using only a \
-graph of documented influences between genres and between artists.
+graph of documented influences between genres and between artists, and of documented teachers and \
+their students.
 
 Start by resolving every genre or artist the user named to a node id. Then use whichever tools answer \
 the question that was actually asked. Then stop and summarise what you found.
@@ -127,6 +136,8 @@ similar, even when close matches are suggested to you.
 - If a tool comes back empty, this graph has no sourced answer. Say so. Do not fill the gap from your \
 own knowledge.
 - Influence runs between two genres, or between two artists. Never between a genre and an artist.
+- Teaching runs only between two artists, and it is never influence: when the graph says one artist \
+studied with another, report it as study, never as an influence.
 - This graph's coverage is uneven. Where it is thin on what was asked, say what is missing rather than \
 answering as though it were complete.
 
@@ -153,8 +164,11 @@ NEUTRAL_INFLUENCE_VERB = "was influenced by"
 #: sentence count was fixed at two while the claim count is not, which is where the fabrications came
 #: from: told to write two sentences about one influence, the model repeated itself verbatim (`026`),
 #: asserted exclusivity the row does not carry (`023`), or invented a second edge (`021`).
-ORIGINS_SYNTHESIS_TEMPLATE = """Write {sentences} stating what {subject} {verb}, using only the \
-influences listed below. Name every one of them. {ban}"""
+#:
+#: **Parameterised by predicate since phase 7.6 step 7** (``{what}``, ``{listed}``), and an influence set
+#: renders byte-for-byte what it rendered before; a test holds that.
+ORIGINS_SYNTHESIS_TEMPLATE = """Write {sentences} stating {what} {subject} {verb}, using only the \
+{listed} listed below. Name every one of them. {ban}"""
 
 #: The descendants form, and **it had no counterpart at all until 2026-08-21** — the shape was simply
 #: absent, and `synthesize` fell through to the origins branch with a subject of ``""``. Asked what came
@@ -165,15 +179,62 @@ influences listed below. Name every one of them. {ban}"""
 #: inverting it is the specific failure this template exists to prevent.
 DESCENDANTS_SYNTHESIS_TEMPLATE = """Every name listed below {verb} {subject}. Write {sentences} saying \
 so, naming every one of them and keeping that direction. Do not state it the other way round: \
-{subject} did not come out of them. {ban}"""
+{subject} did not {reverse} them. {ban}"""
 
 #: The chain form. Same rules, different shape: a sequence to walk rather than a set to list. It is a
 #: separate constant rather than a branch inside one prompt because the failure modes differ — the risk
 #: here is the model reordering the chain or inverting a hop, which is the one error that turns a correct
 #: claim set into false music history.
-CHAIN_SYNTHESIS_TEMPLATE = """Write {sentences} tracing the chain of influence below, in the order \
-given. Each name listed {verb} the one after it. Name every one of them and keep them in that order. \
+#:
+#: Used for a chain whose every hop carries the **same single** predicate. ``{relationship}`` is
+#: "influence" or "teaching"; a chain whose hops differ is ``TYPED_CHAIN_SYNTHESIS_TEMPLATE``'s.
+CHAIN_SYNTHESIS_TEMPLATE = """Write {sentences} tracing the chain of {relationship} below, in the \
+order given. Each name listed {verb} the one after it. Name every one of them and keep them in that \
+order. {ban}"""
+
+#: **Teaching, phase 7.6 step 7.** A ``studied_with`` claim is narrated as study and never as influence
+#: (trap 3, and DoD 4). The verb, the heading and the list noun all come from the claim's predicate, and
+#: this is what the model is told when a claim set holds any teaching at all.
+#:
+#: It is careful about the one case that looks like a contradiction: Beethoven studied with Haydn and
+#: was also influenced by him, as two separately sourced edges. Such a person is both, and is said to be
+#: both. What is forbidden is inferring the influence from the teaching.
+TEACHING_VERB = "studied with"
+TEACHING_CLAUSE_PROMPT = """Studying with someone is teaching, not influence. Say that one person \
+influenced another only where that is listed as an influence; describe a teacher as a teacher, never \
+as an influence, unless they are also listed as one."""
+
+#: A fan-out mixing both predicates: "who influenced Chopin" asked for influences and, by D5, teachers.
+#: **Grouped, never merged**, under the two headings the body carries, which are named here so the
+#: model cannot read the two lists as one.
+MIXED_ORIGINS_SYNTHESIS_TEMPLATE = """Write {sentences} about {subject}, using only the names listed \
+below. They are listed under two different relationships, and the difference matters: {subject} \
+{influence_verb} each name under "{influence_heading}", and studied with each name under \
+"{teaching_heading}". Name every one of them, each with its own relationship. A name listed under both \
+is both. {ban}"""
+
+#: The fan-in mirror: "what came out of Haydn" answered with those he influenced and those who studied
+#: with him.
+MIXED_DESCENDANTS_SYNTHESIS_TEMPLATE = """Write {sentences} about {subject}, using only the names \
+listed below. They are listed under two different relationships, and the difference matters: each \
+name under "{influence_heading}" {influence_verb} {subject}, and each name under "{teaching_heading}" \
+studied with {subject}. Name every one of them, each with its own relationship, and keep that \
+direction: do not state either relationship the other way round. A name listed under both is both. \
 {ban}"""
+
+#: A chain whose hops differ: Czerny studied with Beethoven, who was influenced by Haydn. **His
+#: decision D4, 2026-09-11**, overriding a first draft that refused these. Each hop reaches the prompt
+#: with the relationship read off its own approved claims, so the prose cannot give every hop one verb.
+#:
+#: The last sentence names the summary it forbids because phase 7.5 step 0.5's transcripts showed the
+#: model volunteering exactly that kind of editorial line ("a direct line of musical influence"), and a
+#: mixed chain summed up as influence is teaching narrated as influence one sentence later.
+TYPED_CHAIN_SYNTHESIS_TEMPLATE = """Write {sentences} tracing the chain below, in the order given, one \
+hop at a time. Each hop is listed as a name, its relationship, and the name after it. Keep every hop's \
+relationship exactly as listed: "{teaching_verb}" is teaching, not influence; "{influence_verb}" is \
+influence, not teaching; a hop listed with both is both. Name every one of them and keep them in that \
+order. Do not describe the chain as a whole as a line, lineage or chain of influence, nor of teaching: \
+it is neither. {ban}"""
 
 #: The one addition to a synthesis prompt, appended when the question had it backwards. It reads as an
 #: exception to the "add nothing else" rule above and is worded to say so, since it *is* one.
@@ -491,6 +552,39 @@ class ApprovedClaimSet:
         found = {self.kinds.get(node_id) for node_id in endpoints}
         return found.pop() if len(found) == 1 and None not in found else None
 
+    @property
+    def predicate(self) -> str | None:
+        """The one predicate every claim here carries, or ``None`` when they mix.
+
+        *(Added 2026-09-11, phase 7.6 step 7.)* Read off the approved claims and nothing else, which is
+        what keeps it inside invariant 1: synthesis learns the relationship from the claims it was
+        already given, never from a new input.
+        """
+        predicates = {c.predicate for c in self.claims}
+        return predicates.pop() if len(predicates) == 1 else None
+
+    @property
+    def hops(self) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
+        """The chain as typed hops: ``(subject, object, predicates)`` per consecutive pair, in order.
+
+        *(Added 2026-09-11, phase 7.6 step 7, for his decision D4: mixed chains are narrated with typed
+        hops.)* **Each hop's predicates are read off the approved claims for that pair, never supplied
+        from outside**, so there is no way to hand synthesis a relationship the gate did not approve.
+        A pair approved under both predicates carries both, sorted, and is narrated with both.
+
+        Empty when there is no chain. ``__post_init__`` has already established that every hop is an
+        approved claim, so the lookup below cannot miss.
+        """
+        if not self.chain:
+            return ()
+        by_pair: dict[tuple[str, str], set[str]] = {}
+        for claim in self.claims:
+            by_pair.setdefault((claim.subject_id, claim.object_id), set()).add(claim.predicate)
+        return tuple(
+            (subject, obj, tuple(sorted(by_pair[(subject, obj)])))
+            for subject, obj in pairwise(self.chain)
+        )
+
     def label_of(self, node_id: str) -> str:
         return self.labels.get(node_id, node_id)
 
@@ -523,11 +617,19 @@ def descent_is_approved(descendant: str, ancestor: str, claims: tuple[Claim, ...
     confirmed; this asks a question of the approved set itself, so a reverse established by a fan-out of
     claims that never formed a chain still counts. Nothing is narrated from it either way: it only
     decides whether a framing is admissible.
+
+    **Influence claims only** (trap 4, phase 7.6 step 7). The premise it checks is always an influence
+    premise, so the reverse must be established *as influence*. Before this filter a teaching claim
+    could "establish" it: asked whether Beethoven influenced Czerny, the answer would have told the user
+    the influence runs the other way, on the strength of Czerny having studied with Beethoven, which
+    no source calls influence.
     """
     if descendant == ancestor:
         return False
     ancestors_of: dict[str, list[str]] = {}
     for claim in claims:
+        if claim.predicate != PREDICATE_INFLUENCED_BY:
+            continue
         ancestors_of.setdefault(claim.subject_id, []).append(claim.object_id)
 
     seen = {descendant}
@@ -554,6 +656,13 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
 
     Returns the synthesis usage (step 6). Prose is streamed, so the number can only be known once the
     stream is exhausted; ``yield from`` carries it out without making the caller wait for the text.
+
+    **Every verb, heading and list noun comes from the claims' predicates** (phase 7.6 step 7, trap 3).
+    Until then the verb came from the axis alone, so an artist-to-artist teaching claim would have been
+    narrated "Beethoven was influenced by Haydn": fluent, cited, and false as stated, with every grounding
+    metric reading 100%. A set holding one predicate is narrated in that predicate's words; a set mixing
+    them is grouped (fan-out, fan-in) or typed hop by hop (chain), D4. An influence-only set renders
+    exactly the prompt it rendered before.
     """
     if not claim_set:
         raise ValueError(
@@ -561,42 +670,97 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
         )
 
     axis = claim_set.axis
-    verb = GENRE_INFLUENCE_VERB if axis == NODE_KIND_GENRE else NEUTRAL_INFLUENCE_VERB
     ban = _embellishment_ban(axis)
     noun = {NODE_KIND_GENRE: "Genre", NODE_KIND_ARTIST: "Artist"}.get(axis or "", "Subject")
+    influence = _wording(PREDICATE_INFLUENCED_BY, axis)
+    teaching = _wording(PREDICATE_STUDIED_WITH, axis)
 
     if claim_set.chain:
-        labelled = [claim_set.label_of(node_id) for node_id in claim_set.chain]
-        instruction = CHAIN_SYNTHESIS_TEMPLATE.format(
-            sentences=_sentences(len(labelled) - 1, listing=False), verb=verb, ban=ban
-        )
-        body = f"Chain: {dumps(labelled)}"
+        hops = claim_set.hops
+        kinds = {predicates for _, _, predicates in hops}
+        if len(kinds) == 1 and len(only := kinds.pop()) == 1:
+            wording = _wording(only[0], axis)
+            labelled = [claim_set.label_of(node_id) for node_id in claim_set.chain]
+            instruction = CHAIN_SYNTHESIS_TEMPLATE.format(
+                sentences=_sentences(len(hops), listing=False),
+                relationship=wording.relationship,
+                verb=wording.verb,
+                ban=ban,
+            )
+            body = f"Chain: {dumps(labelled)}"
+        else:
+            instruction = TYPED_CHAIN_SYNTHESIS_TEMPLATE.format(
+                sentences=_sentences(len(hops), listing=False),
+                teaching_verb=teaching.verb,
+                influence_verb=influence.verb,
+                ban=ban,
+            )
+            typed = [
+                [
+                    claim_set.label_of(subject),
+                    _relationship(predicates, axis),
+                    claim_set.label_of(obj),
+                ]
+                for subject, obj, predicates in hops
+            ]
+            body = f"Hops: {dumps(typed)}"
     elif (subject_id := claim_set.subject_id) is not None:
-        instruction = ORIGINS_SYNTHESIS_TEMPLATE.format(
-            sentences=_sentences(len(claim_set.claims), listing=True),
-            subject=claim_set.label_of(subject_id),
-            verb=verb,
-            ban=ban,
+        subject = claim_set.label_of(subject_id)
+        groups = _grouped(claim_set.claims)
+        if len(groups) == 1:
+            ((predicate, claims),) = groups.items()
+            wording = _wording(predicate, axis)
+            instruction = ORIGINS_SYNTHESIS_TEMPLATE.format(
+                sentences=_sentences(len(claims), listing=True),
+                what=wording.what,
+                subject=subject,
+                verb=wording.verb,
+                listed=wording.listed,
+                ban=ban,
+            )
+        else:
+            instruction = MIXED_ORIGINS_SYNTHESIS_TEMPLATE.format(
+                sentences=_sentences(len(claim_set.claims), listing=True),
+                subject=subject,
+                influence_verb=influence.verb,
+                influence_heading=influence.fan_out_heading,
+                teaching_heading=teaching.fan_out_heading,
+                ban=ban,
+            )
+        lists = "\n".join(
+            f"{_wording(predicate, axis).fan_out_heading}: "
+            f"{dumps([claim_set.label_of(c.object_id) for c in claims])}"
+            for predicate, claims in groups.items()
         )
-        influences = [claim_set.label_of(c.object_id) for c in claim_set.claims]
-        body = (
-            f"{noun}: {claim_set.label_of(subject_id)}\nDocumented influences: {dumps(influences)}"
-        )
+        body = f"{noun}: {subject}\n{lists}"
     elif (object_id := claim_set.object_id) is not None:
-        instruction = DESCENDANTS_SYNTHESIS_TEMPLATE.format(
-            sentences=_sentences(len(claim_set.claims), listing=True),
-            subject=claim_set.label_of(object_id),
-            verb=verb,
-            ban=ban,
+        subject = claim_set.label_of(object_id)
+        groups = _grouped(claim_set.claims)
+        if len(groups) == 1:
+            ((predicate, claims),) = groups.items()
+            wording = _wording(predicate, axis)
+            instruction = DESCENDANTS_SYNTHESIS_TEMPLATE.format(
+                sentences=_sentences(len(claims), listing=True),
+                subject=subject,
+                verb=wording.verb,
+                reverse=wording.reverse,
+                ban=ban,
+            )
+        else:
+            instruction = MIXED_DESCENDANTS_SYNTHESIS_TEMPLATE.format(
+                sentences=_sentences(len(claim_set.claims), listing=True),
+                subject=subject,
+                influence_verb=influence.verb,
+                influence_heading=influence.fan_in_heading,
+                teaching_heading=teaching.fan_in_heading,
+                ban=ban,
+            )
+        lists = "\n".join(
+            f"{_wording(predicate, axis).fan_in_heading}: "
+            f"{dumps([claim_set.label_of(c.subject_id) for c in claims])}"
+            for predicate, claims in groups.items()
         )
-        descendants = [claim_set.label_of(c.subject_id) for c in claim_set.claims]
-        # Not the verb: "Documented as came out of it" is what reusing it produces. The participle is
-        # per-axis for the same reason the verb is.
-        heading = {
-            NODE_KIND_GENRE: "Documented as coming out of it",
-            NODE_KIND_ARTIST: "Documented as influenced by them",
-        }.get(axis or "", "Documented as influenced by it")
-        body = f"{noun}: {claim_set.label_of(object_id)}\n{heading}: {dumps(descendants)}"
+        body = f"{noun}: {subject}\n{lists}"
     else:
         # No shape describes this set, and there is no safe prose for a shape nobody has defined. The
         # caller refuses, exactly as it does for an empty set above.
@@ -610,8 +774,98 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
             f"a single-subject fan-out, nor a single-object fan-in; there is no shape to narrate."
         )
 
-    prompt = f"{instruction}{_reversal(claim_set)}\n\n{body}"
+    prompt = f"{instruction}{_teaching_clause(claim_set)}{_reversal(claim_set)}\n\n{body}"
     return (yield from llm.stream([user_message(prompt)], max_tokens=200))
+
+
+#: The order groups and typed hops are rendered in. Also the closed list of predicates synthesis has
+#: words for: ``_wording`` raises on anything else rather than falling back to influence wording, because
+#: a fallback is exactly how a new predicate would get narrated as influence without anyone deciding to.
+NARRATED_PREDICATES = (PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH)
+
+
+@dataclass(frozen=True, slots=True)
+class _Wording:
+    """How one predicate is said, in every slot a synthesis prompt has."""
+
+    #: What the subject did to the object: "came out of", "was influenced by", "studied with".
+    verb: str
+    #: How the origins instruction asks: "what X came out of", "who X studied with".
+    what: str
+    #: The noun for an origins list: "influences", "teachers".
+    listed: str
+    fan_out_heading: str
+    #: Not the verb: "Documented as came out of it" is what reusing it produces.
+    fan_in_heading: str
+    #: The descendants template's forbidden reversal: "X did not <reverse> them".
+    reverse: str
+    #: What a single-predicate chain is a chain of.
+    relationship: str
+
+
+def _wording(predicate: str, axis: str | None) -> _Wording:
+    """The words for ``predicate`` on ``axis``. **Raises on a predicate with no words.**
+
+    Influence keeps the per-axis verb it has had since 2026-08-20 ("came out of" is for genres only).
+    Teaching has one verb on every axis, because it only ever runs between two artists.
+    """
+    if predicate == PREDICATE_INFLUENCED_BY:
+        return _Wording(
+            verb=GENRE_INFLUENCE_VERB if axis == NODE_KIND_GENRE else NEUTRAL_INFLUENCE_VERB,
+            what="what",
+            listed="influences",
+            fan_out_heading="Documented influences",
+            # The participle is per-axis for the same reason the verb is.
+            fan_in_heading={
+                NODE_KIND_GENRE: "Documented as coming out of it",
+                NODE_KIND_ARTIST: "Documented as influenced by them",
+            }.get(axis or "", "Documented as influenced by it"),
+            reverse="come out of",
+            relationship="influence",
+        )
+    if predicate == PREDICATE_STUDIED_WITH:
+        return _Wording(
+            verb=TEACHING_VERB,
+            what="who",
+            listed="teachers",
+            fan_out_heading="Documented teachers",
+            fan_in_heading="Documented as having studied with them",
+            reverse="study with",
+            relationship="teaching",
+        )
+    raise ValueError(
+        f"synthesize() has no words for predicate {predicate!r}; narrating it in another predicate's "
+        f"words would state something its source did not"
+    )
+
+
+def _grouped(claims: tuple[Claim, ...]) -> dict[str, list[Claim]]:
+    """Claims by predicate, in ``NARRATED_PREDICATES`` order, claim order kept within each group."""
+    groups: dict[str, list[Claim]] = {}
+    for predicate in NARRATED_PREDICATES:
+        if members := [c for c in claims if c.predicate == predicate]:
+            groups[predicate] = members
+    unworded = {c.predicate for c in claims} - set(NARRATED_PREDICATES)
+    if unworded:
+        _wording(sorted(unworded)[0], None)  # raises, with the reason
+    return groups
+
+
+def _relationship(predicates: tuple[str, ...], axis: str | None) -> str:
+    """One typed hop's relationship: one verb, or both joined, never one picked out of two."""
+    return " and ".join(
+        _wording(predicate, axis).verb
+        for predicate in NARRATED_PREDICATES
+        if predicate in predicates
+    )
+
+
+def _teaching_clause(claim_set: ApprovedClaimSet) -> str:
+    """``TEACHING_CLAUSE_PROMPT`` when any claim is teaching, and nothing at all otherwise, so an
+    influence-only set renders exactly the prompt it rendered before phase 7.6."""
+    if not any(c.predicate == PREDICATE_STUDIED_WITH for c in claim_set.claims):
+        return ""
+    return f" {TEACHING_CLAUSE_PROMPT}"
 
 
 def _sentences(claim_count: int, *, listing: bool) -> str:
@@ -711,15 +965,30 @@ def refusal_text(query: str, reason: str, *, graph_is_empty: bool = True) -> str
 #: the same day: the acid-jazz-to-turntablism lineage refusal said acid jazz "carries no sourced
 #: influences" while the corpus held **five** for it, and ``gold_v0_1_020`` — the repo's most
 #: reproducible bug, false-refusing in 7 of 7 runs — said the same of femtanyl, which has **four**.
+#:
+#: **Worded for both narratable predicates since phase 7.6 step 7** (trap 8). They spoke only of
+#: influence, so a refused teaching question would have been told the graph holds no sourced
+#: *influences*, which answers a question nobody asked. The loop cannot know which relationship a
+#: question was about without knowing what each tool does (invariant 4), so the wording names both.
 REASON_NOT_IN_GRAPH = "it is not in this graph"
-REASON_NO_INFLUENCES = (
-    "it resolved, and this graph holds no sourced influences for it in either direction"
+REASON_NO_LINEAGE = (
+    "it resolved, and this graph holds no sourced influence or teaching relationship for it in "
+    "either direction"
 )
-REASON_RUN_FOUND_NONE = "this run reached it but established no sourced influence"
+REASON_RUN_FOUND_NONE = (
+    "this run reached it but established no sourced influence or teaching relationship"
+)
+REASON_NO_SINGLE_LINEAGE = "the sourced relationships it found describe no single lineage"
 
 
-def _graph_holds_influences(store: GraphStore, node_ids: Iterable[str]) -> bool:
-    """Whether the corpus holds ANY sourced influence edge touching any node this run visited.
+def _graph_holds_lineage(store: GraphStore, node_ids: Iterable[str]) -> bool:
+    """Whether the corpus holds ANY sourced influence or teaching edge touching any node this run
+    visited.
+
+    *(Renamed from ``_graph_holds_influences`` at phase 7.6 step 7, when it started counting teaching.
+    It counts exactly ``ALLOWED_PREDICATES``, the relationships an answer could have been made of, so
+    the corpus-empty wording is used only when neither exists. Józef Elsner has three students and no
+    teacher: a refused "who did Elsner study with" must not say the graph holds nothing about him.)*
 
     **Both directions, deliberately, and this is the conservative choice rather than the precise one.**
     A rule that checked only ``INFLUENCED_BY`` would be more specific and would be wrong on a
@@ -734,12 +1003,14 @@ def _graph_holds_influences(store: GraphStore, node_ids: Iterable[str]) -> bool:
     the right direction to be imprecise in: the dangerous error is asserting an emptiness the corpus
     does not have, and no wording here can commit it.
 
-    ``neighbors`` defaults to ``INFLUENCE_ONLY``, so a node that only ``plays_genre`` still counts as
-    having no influences. Membership is not derivation and must not make the graph look fuller here
-    than it is.
+    ``plays_genre`` is not in ``ALLOWED_PREDICATES``, so a node that only plays a genre still counts
+    as having nothing. Membership is not derivation and must not make the graph look fuller here than
+    it is.
     """
     return any(
-        store.neighbors(node_id, direction) for node_id in node_ids for direction in Direction
+        store.neighbors(node_id, direction, predicates=ALLOWED_PREDICATES)
+        for node_id in node_ids
+        for direction in Direction
     )
 
 
@@ -900,10 +1171,10 @@ def run(
         # the corpus's voice is the coverage-honesty rule inverted.
         if not visited:
             reason, graph_is_empty = REASON_NOT_IN_GRAPH, True
-        elif _graph_holds_influences(store, visited):
+        elif _graph_holds_lineage(store, visited):
             reason, graph_is_empty = REASON_RUN_FOUND_NONE, False
         else:
-            reason, graph_is_empty = REASON_NO_INFLUENCES, True
+            reason, graph_is_empty = REASON_NO_LINEAGE, True
         text = refusal_text(query, reason, graph_is_empty=graph_is_empty)
         yield Refused(reason=reason, query=query)
         yield Token(text)
@@ -933,7 +1204,7 @@ def run(
             # APPROVED — they simply do not form one lineage. The old opening said "this graph has no
             # sourced answer" in the same sentence as "its sourced influences", which contradicted
             # itself and asserted an emptiness contradicted two lines up by `decision.approved`.
-            reason = "its sourced influences describe no single lineage"
+            reason = REASON_NO_SINGLE_LINEAGE
             text = refusal_text(query, reason, graph_is_empty=False)
             yield Refused(reason=reason, query=query)
             yield Token(text)
