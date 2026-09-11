@@ -59,6 +59,9 @@ EXPECTED_GROUPS = {
     "prompt_injection": 3,
     "coverage_honesty": 2,
     "ambiguous_resolution": 1,
+    # Phase 7.6 step 9: an influence premise that only a TEACHING edge could appear to support, and a
+    # transitive one that crosses a teacher. Added under the approved phase plan.
+    "teaching_not_influence": 2,
 }
 
 
@@ -92,13 +95,19 @@ def test_the_set_is_pinned_to_the_artifact_this_suite_loads(
     assert dataset["artifact_version_pin"] == store.artifact_version
 
 
-def test_there_are_twenty_cases_with_unique_ids(dataset: dict[str, Any]) -> None:
+def test_there_are_twenty_two_cases_with_unique_ids(dataset: dict[str, Any]) -> None:
     """18 -> 20 on 2026-09-07. `.claude/rules/evals.md` asks for 15-20 adversarial cases, so 20 is the
     top of the band rather than an overflow of it: a further case needs the band revisited, not just
-    this number bumped."""
+    this number bumped.
+
+    **20 -> 22 on 2026-09-11, phase 7.6 step 9, and the band was revisited rather than ignored.** The two
+    cases are the approved phase plan's (`teaching_not_influence`): a new predicate is a new way to
+    assert the wrong relationship, and no existing case can exercise it because no existing subject has
+    a teaching edge. The band's purpose is a set small enough to hand-author and read; two cases over it,
+    each tied to a new capability, is that purpose kept, not abandoned."""
     ids = [c["case_id"] for c in dataset["cases"]]
-    assert len(ids) == 20
-    assert len(set(ids)) == 20, "duplicate case_id"
+    assert len(ids) == 22
+    assert len(set(ids)) == 22, "duplicate case_id"
 
 
 def test_the_group_composition_matches_the_amended_plan(dataset: dict[str, Any]) -> None:
@@ -211,7 +220,21 @@ def test_case_claim_bound_matches_what_the_corpus_can_supply(
     available = len(store.neighbors(node_id, Direction.INFLUENCED_BY))
     bound = case["expected"]["max_approved_claims"]
 
-    if case["group"] == "direction_inversion":
+    if case["group"] == "teaching_not_influence":
+        # Phase 7.6 step 9. The approved claims here are teaching as well as influence (that is the
+        # trap), so "available" counts both. A transitive case may also walk up to three hops beyond
+        # the subject's own edges, and no further: the bound must not leave room for a fabrication.
+        lineage = len(
+            store.neighbors(
+                node_id,
+                Direction.INFLUENCED_BY,
+                predicates=frozenset({"influenced_by", "studied_with"}),
+            )
+        )
+        assert lineage <= bound <= lineage + 3, (
+            f"{case_id}: bound {bound} outside [{lineage}, {lineage + 3}]"
+        )
+    elif case["group"] == "direction_inversion":
         # The subject is the DESCENDANT and the bound covers a multi-hop chain, so the one-hop
         # neighbour count is a floor rather than the answer.
         assert bound >= available, f"{case_id}: bound {bound} below the {available} direct edges"

@@ -998,7 +998,7 @@ and is recorded there.
 `web/src/teaching.test.tsx`), mypy clean over 120 files, scripted gates **4 / 0 / 2 of six**, script bundle
 265.9 KB of 320 (263.0 before), graph 2.57 MB of 8.00, root 17 of 18.
 
-### Step 9 — The re-pin, datasets and free evals
+### Step 9 — The re-pin, datasets and free evals — [done]
 
 - **The gold re-pin rule, applied** (trap 15): every node each case touches, both directions, every
   predicate the gate now admits, v0.7.1 against v0.10.0. A moved neighbour set means that case is
@@ -1028,6 +1028,152 @@ and is recorded there.
   pin drift, and that is recorded, not fixed.
 
 **Done when:** `make check` is green on the new pin, and every dataset change is explained here.
+
+#### 9.0 As built, 2026-09-11
+
+**The two checks that had to come before the pin moved, both run, both recorded.**
+- **Resolution stability (trap 14): 185 of 185 names resolve identically** on v0.10.0. `RESOLUTION_CHANGES`
+  stays empty. (An early pass of mine reported nine "changes"; that was my comparison conflating the
+  snapshot's `UNRESOLVED`/`AMBIGUOUS` markers with `None`, not a corpus movement. Re-run with the test's
+  own `resolve`, nothing moved.)
+- **The gold re-pin check (trap 15), pair by pair, both directions, over both claimable predicates.**
+  Five of the 38 cases touch a node whose neighbour set moved -- 018, 019, 020, 024, 038 -- and **every
+  change is an addition from the `mul` recovery, none a removal**: Bruno Mars, Sinéad O'Connor, B. B.
+  King, Christina Aguilera and Taylor Swift arriving as neighbours of existing subjects. **No case
+  depends on any of them**: every expected claim still exists, all four path cases return an identical
+  shortest path, and Etta James's four descendants are unchanged. The adversarial and tour sets moved
+  not at all, and `gold_v0_1_029` still refuses.
+  **The judgement call, recorded so it can be vetoed:** this file's written rule says a moved neighbour
+  set means re-author. Its own 2026-09-03 entry applied the narrower reading -- no case depends on the
+  moved edge, so it is a re-pin -- and this follows that precedent. The full entry is in
+  `gold_v0_1.json:provenance.repin_history`.
+- **No case subject in any dataset touches a teaching edge**, so nothing inherited teaching claims by
+  accident.
+
+**The pin moved** in `graph/memory.py`, `ingest/wikidata.py`, `web/src/chips.json` and all three dataset
+files; `UNPINNED_CUTS` is empty again; `tests/test_teaching.py` reads the pin rather than the cut.
+
+**Metrics and slices.** `_matching_edge` walks `ALLOWED_PREDICATES` (trap 2 -- without it every correct
+teaching claim would have scored ungrounded and failed the 100% gate). `predicate_slice` gains a
+`teaching` bucket that takes precedence, because a teaching question is answered by a different predicate
+from an influence one. `era_slice` buckets an artist with no inception by **birth year**, read as "born in
+this era" and never "active in it"; that moves every artist case out of `undated` by construction.
+`verification_mix` needed no change -- it iterates `VERIFICATION_LEVELS`, so the new tier was already in
+it at zero.
+
+**Five new gold cases, 039-043, the `teaching_lineage` slot**, drafted by Claude and reviewed by him on
+the case 030 precedent. Subject selection was mechanical and the rule is written into
+`notes_on_composition` before the result, with **one tie-break added after the first pass and recorded as
+such**: the first pass gave Mozart three of five slots (Q254 is the lowest QID), so a subject may not
+repeat across slots. The set: Mozart's three teachers, Beethoven's four students, a Rameau teaching
+refusal, Berlioz -> Reicha -> Salieri as a pure teaching chain, and Ravel -> Fauré -> Saint-Saëns as the
+mixed one.
+
+**What the citation research found, because two findings came out of it:**
+- **`TEACHING_PROSE_AUTO`'s documented weakness showed up on the very first case.** All three of Mozart's
+  teaching edges passed the prose check on *his* article, and for two of them the matched sentence does
+  not state study at all: Johann Christian Bach is "a particularly significant influence" and Padre
+  Martini someone Mozart "met" in Bologna. Study-stating prose exists for all three, but for two it is in
+  the teacher's article or another language's, and it is quoted from there.
+- **`UNCITED_CLAIM_COUNT` 9 -> 10**: Mozart -> Martini. Study is stated in English and Italian and
+  footnoted in neither; the search is recorded in the claim's `citation_status`. The same pass **rescued**
+  Ferdinand Ries through the German article, which footnotes Ries's own 1838 memoir -- a primary source,
+  named as one in the case notes.
+- **Fauré's influence by Saint-Saëns is deliberately NOT an expected claim of case 043.** The corpus holds
+  the edge at `ASSERTS_AUTO`; no sentence in either English article asserts the influence, the nearest
+  being that Saint-Saëns supported Fauré's career. The gold set asserts verified correctness, so it does
+  not vouch for it, and the flag would have understated the problem: this is prose that does not say what
+  the edge says, not a missing footnote. The contested cases set the precedent.
+- The weakest citation that WAS accepted is named in its case: the sentence about Bach teaching Mozart is
+  footnoted to a 2002 book on early-childhood development.
+
+**Two new adversarial cases**, `adv_021` and `adv_022`, in a new `teaching_not_influence` group: an
+influence premise the corpus records only as teaching (Beethoven / Salieri), and a transitive one that
+reaches Haydn only through teachers (Czerny). **The 15-20 band was revisited rather than ignored** -- 22
+cases, two over, each tied to a capability no existing case can exercise -- and the reasoning is in the
+count test. The group gets its own claim-bound rule, because its approved claims are teaching as well as
+influence and the old rule counted influence only.
+
+**Thresholds.** The scripted set is re-derived, which is legitimate *only* because a fixed trace over a
+pinned artifact is deterministic: `case_count` 38 -> 43, refusal denominators 5/33 -> 6/37,
+`minimum_true_refusals` 6. **The live set is untouched at 56 against a dataset of 63, so a live run
+reports `NOT GATED` -- deliberately, and doubly: the step 0 pin guard refuses it on the moved corpus as
+well.** `test_a_full_live_run_can_be_gated_at_all` is inverted to assert that planned gap and says in
+words that it must flip back to equality at 7.7's re-baseline. `case_count` was **not** edited to fit the
+grown live set, which is the failure that test exists to prevent.
+
+**Free gates, measured: 4 passed, 0 FAILED, 2 not applicable, of six** -- groundedness 183/183, citation
+resolution 183/183, refusal accuracy true 6/6 and false 0/37, contested disclosure 0 silent over 2 scored;
+injection and traversal recall `N/A` as always on a gold-only scripted run.
+
+**Regenerated:** `corpus-facts.json`, the backdrop (44 KB, 3,490 nodes), README (16 marked figures), the
+report page, the adversarial baseline, and the SPA's staged graph.
+
+**Tests moved to measured v0.10.0 values**, each with its reasoning beside the number: coverage
+(739 genres, 248 undated, 276 placeless, 69 coarse; 90 pre-1950 against 187; 319 of 463 naming US or UK;
+144 naming neither across 65 places; 32 pre-1900), structure (61 components, 3,490 largest, diameter 14,
+`max_path_hops` 12 unchanged), the coverage tool, the artifact's predicate set (three, deliberately), the
+suite counts, the live-suite count, and the harness's case count.
+
+**Findings recorded rather than smoothed:**
+- **`test_artifact`'s manifest check read a record as one path.** v0.10.0 names two --
+  `docs/p1066-handcheck.md; docs/p136-allowlist-review.md` -- so the test now splits and checks each. The
+  manifest is an immutable record of a build; the test learns to read it rather than the artifact being
+  rewritten to suit it.
+- **The "most of the corpus records no influences" copy flipped a second time, and the cause is new.**
+  48.9% at v0.7.1 became **78.9%** (2,864 of 3,628), so "most" is arithmetically correct again -- but the
+  rise is **1,590 artists who arrived with a recorded teacher and no recorded influence**, and only **184
+  nodes record neither**. Saying "most" alone would now be true of the arithmetic and false about the
+  corpus, so `StepPanel.tsx` reports the figure *and its cause*, and the test's band became a floor.
+- **The density modal bucket flipped back to zero** (184 genres at zero against 125 at one), from the 64
+  genres the membership re-screen brought in.
+- **`map.test.tsx` hard-coded the graph URL's version** and failed at the re-pin for a reason unrelated
+  to its property; it reads the pin now.
+- **THE HELD-OUT CHECK REPORTS MORE THAN PIN DRIFT, AND NOTHING WAS DONE ABOUT IT.** `make heldout-verify`
+  passes. `make heldout-check` reports **three problems against v0.10.0: `artifact-pin-moved`, plus
+  `claims-diverged` on `heldout_v1_004` and `heldout_v1_005`** -- ids and codes only, which is all that
+  check ever prints. The plan expected the pin drift and did **not** expect diverged claims: the set was
+  drawn from v0.5.0, and two of its cases' claims no longer match the corpus. **It was not re-sealed, not
+  regenerated, and not opened** (`.claude/rules/heldout-set.md`: re-sealing after the corpus moves is how
+  a benchmark stops measuring anything). `heldout-check` is not part of `make check`, so this blocks
+  nothing; it is **his decision** what the sealed set should be at 7.7, and the options are to leave it
+  sealed and stale, or to re-draw it on v0.10.0 from his seed and accept that generalisation is untested
+  until then.
+
+**Step 8's carried-over running-app check: DONE, on the local stub, after the pin moved.** `/health`
+serves artifact 0.10.0 with `claim_predicates: ["influenced_by", "studied_with"]`, 3,628 nodes and 2,469
+teaching edges; `GET /lineage?q=Who did Ludwig van Beethoven study with?` streams a plan naming
+`get_teachers`, four `studied_with` claim frames at `TEACHING_PROSE_AUTO` with resolvable statement URIs,
+a path of five nodes with an empty chain, and prose beginning *"Ludwig van Beethoven studied with
+Christian Gottlob Neefe"*. No influence wording anywhere in it.
+
+**The recorded fixtures, re-captured on v0.10.0 — approved by him and done, 2026-09-11.** The app refuses
+to draw a map for an answer from a corpus other than the staged one, so on the new pin 15 frontend tests
+and `tests/test_tour_recording.py` failed on one shared cause: the five `web/src/fixtures/*.sse` captures
+were stamped v0.7.1. A recording is never re-stamped by hand, so each was re-captured through `/lineage`
+with the documented `curl -sN` recipe.
+
+**The estimate was five cents and the measured cost was about one, because reading the recordings first
+showed three of the five are `LocalLLM` captures** and cost nothing: `acid-jazz-answer` (12 frames, 5
+claims, unchanged), `kate-bush-refusal` (6 frames, a refusal), `electropop-contested` (4 claims and its
+`contested` frame intact — the two contested pairs survived the re-pin). **The tour is the only live
+capture:** `us.anthropic.claude-haiku-4-5-20251001-v1:0`, 9,221 input + 544 output tokens, 5 claims,
+`stop_reason: complete`, 6,317 bytes, and **it walked the canonical route** (groove metal, thrash metal,
+speed metal, heavy metal music, blues rock, blues), which the capture script checked before promoting the
+file over the old one.
+
+**`kate-bush-descendants.sse` is deliberately left at artifact v0.5.0.** It is a Bedrock capture whose
+value is its 7-claim descendants shape, no test pins its version, and it was already off-pin before this
+phase without failing anything. Re-capturing it would have spent money to replace a historical record.
+
+**One more hard-coded pin found by this.** `contract.test.ts` asserted the literal `"0.7.1"` on a
+capture's `done` frame, and `map.test.tsx` asserted the literal graph URL; both now read `GRAPH_PIN`, so
+the property each tests survives the next re-pin instead of failing for an unrelated reason.
+
+**Measured, `make check` exit 0:** **1716 Python tests** passed, **frontend 448**, mypy clean over 120
+files, scripted gates **4 passed / 0 FAILED / 2 not applicable of six**, script bundle 289.5 KB of 320
+(the tour recording is inlined, and it grew by 242 bytes), graph 5.57 MB of 8.00, report 46.5 KB of 64,
+root 17 of 18, both Terraform configurations valid.
 
 ### Step 10 — Copy truth, and the close
 

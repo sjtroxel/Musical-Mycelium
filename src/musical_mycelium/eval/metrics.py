@@ -20,7 +20,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
-from musical_mycelium.agent.claims import Claim
+from musical_mycelium.agent.claims import ALLOWED_PREDICATES, Claim
 from musical_mycelium.agent.loop import Done
 from musical_mycelium.graph.schema import (
     SOURCE_DBPEDIA,
@@ -134,7 +134,17 @@ def edge_groundedness(claims: list[Claim], store: GraphStore) -> Groundedness:
 
 
 def _matching_edge(claim: Claim, store: GraphStore) -> Edge | None:
-    for edge in store.neighbors(claim.subject_id, Direction.INFLUENCED_BY):
+    """The artifact edge a claim names. **Walks ``ALLOWED_PREDICATES``, not the store's default**
+    (phase 7.6 step 9, trap 2 of its plan).
+
+    The store walks ``INFLUENCE_ONLY`` unless told otherwise, so without this every correct teaching
+    claim would score as ungrounded and fail the 100% gate. The set is the gate's own constant, which is
+    data rather than logic: it keeps the gate and this metric from disagreeing about which edges exist,
+    while the check below still reaches its verdict independently.
+    """
+    for edge in store.neighbors(
+        claim.subject_id, Direction.INFLUENCED_BY, predicates=ALLOWED_PREDICATES
+    ):
         if edge.object_id == claim.object_id and edge.predicate == claim.predicate:
             return edge
     return None

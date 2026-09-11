@@ -185,13 +185,18 @@ def test_the_pinned_corpus_coverage(store: InMemoryGraphStore) -> None:
     "Wikidata has this" would restate the gap without saying the source changed. The honest report is
     three numbers rather than one -- 477 with a Wikidata date, 61 more with an infobox date, 137 with
     none -- and building that is the coverage panel's job at step 8.
+
+    **v0.10.0: 739 / 248 / 276 / 69.** The teaching layer is an artist-axis cut, so the genre figures
+    moved only through the membership re-screen that came with it (64 new genre nodes). The proportions
+    are unchanged, which is the same finding this docstring has recorded at every cut: a bigger corpus
+    is not a better-documented one.
     """
     c = store.coverage
 
-    assert c.genres == 675
-    assert c.without_inception == 198
-    assert c.without_country == 222
-    assert c.coarser_than_year == 64
+    assert c.genres == 739
+    assert c.without_inception == 248
+    assert c.without_country == 276
+    assert c.coarser_than_year == 69
     assert c.top_country == "United States"
 
 
@@ -206,11 +211,18 @@ def test_the_corpus_is_recent_and_says_so(store: InMemoryGraphStore) -> None:
     186, 2.35x.** Each corpus expansion has made the corpus *less* concentrated in the era it is worst
     at. Relaxing a bound because the number got better is maintenance; relaxing one because the number
     got worse is a finding, and this bound has never been touched for the second reason.
+
+    **v0.10.0: 90 against 187, 2.08x**, and the margin over the bound is now thin: 187 against a bound
+    of 180. The direction is still the good one -- every cut has made the corpus less concentrated in
+    the era it is worst at -- but the next cut that adds pre-1900 genres will break this assertion by
+    making the corpus *better*, and that is a finding to record rather than a bound to pre-emptively
+    loosen. **Genre dates only.** The 2,111 artists born before 1900 that arrived with this artifact are
+    counted in ``artist_birth_eras``, never folded in here: a birth year is not a genre's inception.
     """
     c = store.coverage
     before_1950 = c.eras["pre-1900"] + c.eras["1900-1949"]
 
-    assert before_1950 == 79
+    assert before_1950 == 90
     assert c.eras["1970-1989"] > before_1950 * 2.0
 
 
@@ -244,13 +256,17 @@ def test_the_corpus_is_anglophone_dense_and_says_so(store: InMemoryGraphStore) -
     genres the anglophone-seeded membership crawl had not. **This is the first corpus expansion in the
     project's history to reduce the concentration rather than raise it**, and it is worth saying plainly
     because the previous three did the opposite.
+
+    **v0.10.0: 317/453 = 0.70 became 319/463 = 0.689**, and ``top_country_share`` 0.541 -> 0.533. The
+    second consecutive cut to reduce the concentration, by a smaller margin than the last, because this
+    artifact's growth is on the artist axis and only 64 new genres came with it.
     """
     c = store.coverage
     with_country = c.genres - c.without_country
     naming_us_or_uk = with_country - c.genres_without_us_or_uk
 
-    assert with_country == 453
-    assert naming_us_or_uk == 317
+    assert with_country == 463
+    assert naming_us_or_uk == 319
     assert 0.65 < naming_us_or_uk / with_country < 0.75
 
 
@@ -274,10 +290,13 @@ def test_the_corpus_is_not_only_anglophone_and_the_numbers_must_say_that_too(
     **43, not 44, since 2026-08-07.** ``UK drill``'s P495 is ``Brixton`` — a London district — which an
     exact-string test against ``ANGLOPHONE_CORE`` read as "names no UK". The counterweight figure gets
     audited as hard as the bias figure; see ``coverage.PLACE_TO_COUNTRY``.
+
+    **v0.10.0: 136 -> 144 genres naming neither, across the same 65 places.** The counterweight has
+    grown at every cut without exception.
     """
     c = store.coverage
 
-    assert c.genres_without_us_or_uk == 136
+    assert c.genres_without_us_or_uk == 144
     assert c.distinct_countries == 65
 
 
@@ -320,6 +339,12 @@ def test_the_corpus_spans_far_more_than_the_post_war_era(store: InMemoryGraphSto
     6 -> 14 at v0.6.0 -> **23 at v0.7.1**, where the ``cultural_origins`` parse supplied century-precision
     dates for genres Wikidata had none for — bomba and bélé at the 17th century, son cubano, banda music
     and méringue at the 19th. Those are exactly the pre-1900, non-anglophone entries the corpus was
-    thinnest on, so this counterweight and the geographic one grew from the same work."""
+    thinnest on, so this counterweight and the geographic one grew from the same work.
+
+    23 at v0.7.1 -> **32 at v0.10.0**, from the 64 genres the teaching layer's membership re-screen
+    brought in. Separately, and not counted here, the artifact's artists carry birth years for the first
+    time: 2,111 of them were born before 1900. The two must not be added together -- one counts genres by
+    inception and the other people by birth -- and ``Coverage`` keeps them in different fields for that
+    reason."""
     c = store.coverage
-    assert c.eras["pre-1900"] == 23
+    assert c.eras["pre-1900"] == 32

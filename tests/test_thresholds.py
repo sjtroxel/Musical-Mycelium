@@ -237,11 +237,30 @@ def test_a_full_live_run_can_be_gated_at_all(committed: dict[str, Any]) -> None:
     The resolution was the one the marker demanded and NOT the one it warned against: `case_count` was
     not edited to fit the set. Five identical live runs were measured on 2026-09-07 ($2.61, ~2.4 hours)
     and every bound was rewritten from that floor.
+
+    **INVERTED 2026-09-11, phase 7.6 step 9, and only because the ungating is PLANNED.** The live
+    dataset is 63 cases -- the gold set gained five teaching cases and the adversarial set two -- against
+    a baseline measured over 56, so a live run reports `NOT GATED` and this test now asserts that
+    mismatch on purpose. Two independent guards say the same thing: the corpus also moved to v0.10.0,
+    which the step 0 pin guard refuses the live set on regardless of case count.
+
+    **What must not happen is the thing the 2026-09-06 failure taught: `case_count` being edited to fit
+    the set.** It is untouched at 56. The restoration is phase 7.7's, whose close runs ONE live
+    re-baseline over the grown set (his decision, 2026-09-11) and rewrites every bound from that floor.
+    **When that happens this test flips back to equality** -- the assertion below fails the moment the
+    baseline is re-measured, which is exactly how it should announce that the deliberate gap is closed.
     """
     live = next(s for s in committed["sets"] if s["applies_to"]["provider"] == "bedrock")
-    assert len(live_cases()) == live["case_count"], (
+    assert len(live_cases()) == 63, "the live dataset is gold (43) plus adversarial (20 attacked)"
+    assert live["case_count"] == 56, (
+        "the 2026-09-07 baseline is 56 cases and must NOT be edited to fit a grown dataset; "
+        "phase 7.7 re-measures it"
+    )
+    assert len(live_cases()) != live["case_count"], (
         f"the live dataset holds {len(live_cases())} cases and {live['name']!r} was measured over "
-        f"{live['case_count']}. A live run of this dataset reports NOT GATED."
+        f"{live['case_count']}, so a live run reports NOT GATED -- deliberately, until phase 7.7's "
+        f"re-baseline. If these are equal again, the baseline was re-measured: restore the equality "
+        f"assertion this test carried until 2026-09-11."
     )
 
 

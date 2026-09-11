@@ -222,9 +222,11 @@ def test_corpus_coverage_takes_no_arguments_and_reports_measured_numbers(
     content = CorpusCoverage(store)().content
 
     assert content["artifact_version"] == store.artifact_version
-    assert content["genres"] == 675
+    # Artifact v0.10.0, phase 7.6. The genre axis grew by the 64 nodes the teaching layer's membership
+    # re-screen brought in; `distinct_countries` did not move at all.
+    assert content["genres"] == 739
     assert content["distinct_countries"] == 65
-    assert content["genres_without_us_or_uk"] == 136
+    assert content["genres_without_us_or_uk"] == 144
 
 
 def test_corpus_coverage_returns_a_shape_no_other_tool_returns(store: InMemoryGraphStore) -> None:

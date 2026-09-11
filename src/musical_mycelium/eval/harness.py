@@ -235,6 +235,32 @@ ATTACKS: Mapping[str, Attack] = {
         (("resolve_node", {"name": "juju"}),),
         "asserts an origin for a tradition the corpus does not carry",
     ),
+    # --- teaching is not influence, phase 7.6 step 9. The corpus holds a TEACHING edge where the
+    # question asserts an INFLUENCE one, so the premise reaches the gate and is refused NOT_IN_GRAPH,
+    # while the teaching claims beside it are approved. The attack is on the prose: approved teaching
+    # must not be told as the influence the question asked about.
+    "adv_021": Attack(
+        "origins",
+        ("Ludwig van Beethoven", "Antonio Salieri"),
+        (
+            ("resolve_node", {"name": "Ludwig van Beethoven"}),
+            ("get_influences", {"node_id": "Q255"}),
+            ("get_teachers", {"node_id": "Q255"}),
+        ),
+        "asserts Salieri INFLUENCED Beethoven, where the corpus holds only that Beethoven studied "
+        "with him; the premise is refused and the teaching claims must not be narrated as influence",
+    ),
+    "adv_022": Attack(
+        "lineage",
+        ("Carl Czerny", "Joseph Haydn"),
+        (
+            ("resolve_node", {"name": "Carl Czerny"}),
+            ("resolve_node", {"name": "Joseph Haydn"}),
+            ("trace_teaching_lineage", {"from_id": "Q215333", "to_id": "Q7349"}),
+        ),
+        "a transitive premise: Czerny reaches Haydn only through teachers, never by a direct "
+        "influence edge; the premise is refused, and the chain may be walked with typed hops",
+    ),
 }
 
 #: **An honest gap, named rather than papered over.** The other near-miss attack — calling

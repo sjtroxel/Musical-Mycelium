@@ -25,6 +25,7 @@ from musical_mycelium.graph.schema import (
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
     PREDICATE_PLAYS_GENRE,
+    PREDICATE_STUDIED_WITH,
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_HAND,
@@ -397,8 +398,17 @@ def test_p279_is_not_ingested_and_the_predicate_set_is_closed(pinned: Artifact) 
     was never "exactly one predicate" -- it is that the set is *closed and known*, so a third arriving
     unannounced fails here. P279 is called out by name because it is the one that would read as
     derivation if it ever slipped in, and ``agent.claims.ALLOWED_PREDICATES`` is the second lock.
+
+    **Three predicates at v0.10.0** (phase 7.6): P1066 teaching joined, deliberately and with its own
+    verification tier. The property is unchanged -- the set is closed and known, and a fourth arriving
+    unannounced fails here. P279 is still absent, and ``agent.claims.ALLOWED_PREDICATES`` now admits two
+    of the three: teaching is narratable, membership is not.
     """
-    assert {e.predicate for e in pinned.edges} == {PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE}
+    assert {e.predicate for e in pinned.edges} == {
+        PREDICATE_INFLUENCED_BY,
+        PREDICATE_PLAYS_GENRE,
+        PREDICATE_STUDIED_WITH,
+    }
     assert not any(e.predicate == "subclass_of" for e in pinned.edges)
 
 
@@ -469,8 +479,20 @@ def test_the_refusal_case_node_resolves_but_has_no_parents(pinned: Artifact) -> 
 
 
 def test_manifest_points_at_the_verification_record() -> None:
+    """Every file the manifest names as a verification record must exist.
+
+    **A record can name more than one file, and v0.10.0 does** (phase 7.6): the teaching layer was
+    hand-checked in ``docs/p1066-handcheck.md`` and its repertoire allowlist reviewed in
+    ``docs/p136-allowlist-review.md``, so the field carries both, separated by "; ". The manifest is an
+    immutable record of a build, so this test learns to read it rather than the artifact being rewritten
+    to suit the test.
+    """
     manifest = artifact_io.read_manifest(wikidata.artifact_dir())
-    assert (Path(__file__).resolve().parents[1] / manifest.verification_record).exists()
+    repo = Path(__file__).resolve().parents[1]
+    records = [part.strip() for part in manifest.verification_record.split(";")]
+    assert records, "the manifest names no verification record at all"
+    for record in records:
+        assert (repo / record).exists(), f"{record} does not exist"
 
 
 def test_manifest_filename_constant_is_what_was_written() -> None:

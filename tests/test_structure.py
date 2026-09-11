@@ -37,9 +37,15 @@ from musical_mycelium.graph.structure import analyse, components
 # artists, and this test's own docstring recorded that P737 among genres could not provide it. 1,336
 # sourced genre-to-genre edges changed that. The islands finding and the shallowness finding have now
 # both been overturned, by different steps, three phases apart.
-PINNED_COMPONENTS = 7
-PINNED_LARGEST = 1465
-PINNED_DIAMETER = 10
+#: Artifact v0.10.0, measured 2026-09-11 (phase 7.6). **Components went UP, 7 -> 61, and that is
+#: connection rather than fragmentation**: the teaching layer brought in 2,066 artists whose only edge is
+#: `studied_with`, and 54 of their lineages hang together without touching the main body. The largest
+#: component grew with them, 1,465 -> 3,490 of 3,628 nodes. `max_path_hops` is unchanged at 12 because it
+#: counts influence hops only -- `path()`'s default -- while `diameter` is undirected over every edge and
+#: went 10 -> 14.
+PINNED_COMPONENTS = 61
+PINNED_LARGEST = 3490
+PINNED_DIAMETER = 14
 PINNED_MAX_PATH_HOPS = 12
 
 

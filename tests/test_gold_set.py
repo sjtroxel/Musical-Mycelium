@@ -36,7 +36,12 @@ from musical_mycelium.graph.store import Direction
 #: Refusal is deliberately **not** a shape. It is a ``difficulty``, because a refusal is a property of
 #: what the corpus can answer, not of what was asked — case 005 asks an origins question and case 010
 #: asks the same question of a node with no parents.
-CASE_SHAPES = frozenset({"origins", "descendants", "path"})
+CASE_SHAPES = frozenset({"origins", "descendants", "path", "teachers", "students", "teaching_path"})
+
+#: Phase 7.6 step 9. What the teaching shapes walk: teaching alone for a fan, teaching and influence
+#: together for a teaching path (the tool's own set, D4).
+TEACHING = frozenset({"studied_with"})
+LINEAGE = frozenset({"studied_with", "influenced_by"})
 
 GOLD_PATH = (
     Path(__file__).resolve().parents[1]
@@ -53,7 +58,11 @@ GOLD_PATH = (
 #: line, and a case can never appear in the dataset without someone saying so here. The target was 25,
 #: distributed across the slots in ``notes_on_composition.composition_plan``. The requirement is
 #: 20 to 30 (``.claude/rules/evals.md``, ``planning/07`` 3.1); 25 is a choice inside it, not the rule.
-EXPECTED_CASE_COUNT = 38
+#: **38 -> 43 on 2026-09-11, phase 7.6 step 9**: the five-case `teaching_lineage` slot (039-043), drafted
+#: by Claude and reviewed by sjtroxel on the case 030 precedent. 43 is over the 20-30 requirement; the
+#: set has been over it since 031, and what the requirement protects -- a set small enough to hand-verify
+#: -- is kept by every new case carrying its own sources.
+EXPECTED_CASE_COUNT = 43
 
 #: How many gold claims carry no independent citation and say so via ``citation_status``. Locked for the
 #: same reason as the case count, and it matters more: this one is an escape hatch from the project's
@@ -74,7 +83,15 @@ EXPECTED_CASE_COUNT = 38
 #: ``musica popular brasileira -> bossa nova`` was RESCUED by the Portuguese Wikipedia, which
 #: footnotes an academic work with a DOI where the English article is uncited. Searching one
 #: language is not a search.
-UNCITED_CLAIM_COUNT = 9
+#:
+#: **9 -> 10 on 2026-09-11, phase 7.6 step 9**: ``Mozart -> Giovanni Battista Martini`` (case 039).
+#: Study is stated in prose in two languages, English and Italian, and footnoted in neither; the search
+#: is recorded in its ``citation_status``. The same pass RESCUED Ferdinand Ries through the German
+#: article's footnote, so the flag again marks what is genuinely unsourced, not what was inconvenient.
+#: A second candidate, Faure's influence by Saint-Saens (case 043), was NOT flagged but left out of
+#: ``expected_claims`` altogether: its problem is that no prose asserts it, which is a different and
+#: worse finding than a missing footnote, and the flag would have understated it.
+UNCITED_CLAIM_COUNT = 10
 
 
 @pytest.fixture(scope="module")
@@ -124,6 +141,24 @@ def corpus_edges_for(case: dict[str, Any], store: InMemoryGraphStore) -> set[tup
     if shape == "path":
         end_id = case["expected_terminus"]["node_id"]
         return {(e.subject_id, e.object_id) for e in store.path(node_id, end_id)}
+    # The teaching shapes, phase 7.6 step 9. Same invariant, same orientation rule: a student is the
+    # SUBJECT of `studied_with`, so their teachers are the INFLUENCED_BY direction, as `get_teachers`
+    # reads them. Getting this backwards swaps teachers and students (trap 17).
+    if shape == "teachers":
+        return {
+            (e.subject_id, e.object_id)
+            for e in store.neighbors(node_id, Direction.INFLUENCED_BY, predicates=TEACHING)
+        }
+    if shape == "students":
+        return {
+            (e.subject_id, e.object_id)
+            for e in store.neighbors(node_id, Direction.INFLUENCED, predicates=TEACHING)
+        }
+    if shape == "teaching_path":
+        end_id = case["expected_terminus"]["node_id"]
+        return {
+            (e.subject_id, e.object_id) for e in store.path(node_id, end_id, predicates=LINEAGE)
+        }
     raise AssertionError(f"{case['case_id']}: unknown shape {shape!r}")
 
 
@@ -251,7 +286,9 @@ def test_case_claims_match_the_corpus_exactly(
         for c in case["expected_claims"]
         if not any(
             e.object_id == c["object_id"] and e.predicate == c["predicate"]
-            for e in store.neighbors(c["subject_id"], Direction.INFLUENCED_BY)
+            # LINEAGE, not the store's influence-only default: a teaching claim that exists would
+            # otherwise read as lost (phase 7.6 step 9).
+            for e in store.neighbors(c["subject_id"], Direction.INFLUENCED_BY, predicates=LINEAGE)
         )
     ]
     assert not missing, (
@@ -278,7 +315,7 @@ def test_case_declares_a_shape_the_harness_understands(case_id: str, gold: dict[
     """
     case = get_case(gold, case_id)
     assert case["shape"] in CASE_SHAPES, f"{case_id}: unknown shape {case['shape']!r}"
-    if case["shape"] == "path":
+    if case["shape"] in ("path", "teaching_path"):
         assert case.get("expected_terminus"), f"{case_id}: a path case needs an expected_terminus"
 
 

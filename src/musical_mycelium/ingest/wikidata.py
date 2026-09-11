@@ -57,7 +57,7 @@ from musical_mycelium.ingest import artifact as artifact_io
 from musical_mycelium.ingest.discovery import Exclusion, Screening
 from musical_mycelium.ingest.labels import WBGETENTITIES_LANGUAGES, entity_label
 
-ARTIFACT_VERSION = "0.7.1"
+ARTIFACT_VERSION = "0.10.0"
 VERIFICATION_RECORD = "docs/phases/phase-1-edge-verification.md"
 
 #: Written beside the artifact: every discovered candidate that did not make the corpus, with a

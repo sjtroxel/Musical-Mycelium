@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { GRAPH_PIN } from "./graph/staticGraph";
 import { SseParser } from "./stream";
 import { applyFrame } from "./useLineageRun";
 import type { StepState } from "./useLineageRun";
@@ -10,7 +11,12 @@ import type { Frame } from "./types";
  * The contract test between two separately-deployed halves.
  *
  * The fixtures are **real bytes captured from the API**, not hand-written strings: `/lineage` against a
- * local run of `api/app.py` on artifact v0.7.1. Synthetic frames test the parser against my idea of the
+ * local run of `api/app.py`. **Re-captured on artifact v0.10.0 on 2026-09-11** (phase 7.6 step 9), because
+ * the app refuses to draw a map for an answer from a corpus other than the staged one and a recording is
+ * never re-stamped by hand. Three of these are `LocalLLM` captures and cost nothing; the tour recording
+ * is a real Bedrock run, re-captured the same day for about a cent. `kate-bush-descendants.sse` is
+ * deliberately left at artifact v0.5.0: it is a Bedrock capture whose value is the 7-claim descendants
+ * shape, no test pins its version, and re-capturing it would spend money to replace a historical record. Synthetic frames test the parser against my idea of the
  * protocol; these test it against the protocol. The backend and the frontend ship on different
  * schedules — Lambda through `deploy.yml`, the SPA through an S3 sync — so a field that quietly changes
  * name has no other place to fail loudly.
@@ -99,7 +105,9 @@ describe("a real answer capture", () => {
 
   it("reports a corpus summary on done", () => {
     const state = fold(replay(raw, 64));
-    expect(state.done?.artifact_version).toBe("0.7.1");
+    // Read from the pin rather than written out, since 2026-09-11: a capture comes from the pinned
+    // corpus, so pinning the literal made this fail at the re-pin for a reason that is not the property.
+    expect(state.done?.artifact_version).toBe(GRAPH_PIN);
     expect(state.done?.corpus.nodes).toBeGreaterThan(0);
   });
 });

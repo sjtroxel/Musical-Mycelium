@@ -190,7 +190,13 @@ def test_the_tour_set_is_not_in_the_live_suite() -> None:
     from musical_mycelium.eval.live import live_cases
 
     ids = [case.case_id for case in live_cases()]
-    assert len(ids) == 56
+    # 56 -> 63 on 2026-09-11, phase 7.6 step 9: the gold set gained five teaching cases and the
+    # adversarial set two. **The live suite is therefore ungated until phase 7.7 re-measures the
+    # bounds**, which is this test's own warning arriving as a planned cost rather than as an accident
+    # -- `thresholds.py:_ungateable` says so in words on every live run, and the pin guard from step 0
+    # refuses the run independently because the corpus moved too. What this test still asserts is
+    # unchanged: no tour case is ever in the live suite.
+    assert len(ids) == 63
     assert not [case_id for case_id in ids if case_id.startswith("tour_")]
 
 

@@ -34,7 +34,7 @@ came from and states how strongly that source was checked.
 ## Status, 2026-09-11
 
 **v1.0 is deployed.** The live site serves this repository's build: artifact
-v<!-- n:artifact -->0.7.1<!-- /n -->, the contested-source disclosure, the animated corpus backdrop, the guided tour, and the
+v<!-- n:artifact -->0.10.0<!-- /n -->, the contested-source disclosure, the animated corpus backdrop, the guided tour, and the
 evaluation report. It sits behind a free Vercel proxy so the address survives a full
 `terraform destroy` and `terraform apply`, and that round-trip has been run for real, not assumed.
 
@@ -81,7 +81,7 @@ date.
 - **Correctness is a lookup, not a judgment.** Because the ground truth is a graph this project owns,
   the headline metrics are deterministic: does this edge exist in the pinned artifact, does this
   citation resolve. The free, scripted part runs on every commit.
-- **The live suite runs a real model** over <!-- n:live_cases -->56<!-- /n --> development cases and blocks a release on six
+- **The live suite runs a real model** over <!-- n:live_cases -->63<!-- /n --> development cases and blocks a release on six
   correctness properties, among them 100% edge groundedness, 100% citation resolution, zero successful
   prompt injections and zero contested pairs crossed silently. Its bounds were set only after measuring
   the noise floor over five identical runs at the current corpus, on 2026-09-07. A full run costs about
@@ -103,7 +103,7 @@ date.
 
 ## What it does not do
 
-- **It cannot say where most influence claims are disputed.** <!-- n:single_source -->2,202<!-- /n --> of <!-- n:influence_edges -->2,284<!-- /n --> influence edges have a
+- **It cannot say where most influence claims are disputed.** <!-- n:single_source -->2,227<!-- /n --> of <!-- n:influence_edges -->2,309<!-- /n --> influence edges have a
   single source. A second source speaks on <!-- n:corroborated -->82<!-- /n --> of them, and <!-- n:contested_pairs -->2<!-- /n --> pairs are contested, meaning two
   different sources assert opposite directions. Of the <!-- n:reciprocal_pairs -->6<!-- /n --> pairs that point both ways, only <!-- n:contested_pairs -->2<!-- /n --> are
   a disagreement; the other four are one source describing mutual influence, and counting them would
@@ -119,25 +119,25 @@ date.
   the difference between the two statements is the reason it gets a phase of its own.
 - **Its coverage is skewed.** The corpus leans Western, anglophone and recent. The app states this with
   figures rather than a footnote, and concentration is not absence: the corpus reaches back to
-  <!-- n:earliest_genre_year -->500<!-- /n --> CE across <!-- n:places -->65<!-- /n --> places, and <!-- n:genres_without_us_or_uk -->136<!-- /n --> of its genres name no US or UK origin at all. Whether answers hold up
+  <!-- n:earliest_genre_year -->500<!-- /n --> CE across <!-- n:places -->65<!-- /n --> places, and <!-- n:genres_without_us_or_uk -->144<!-- /n --> of its genres name no US or UK origin at all. Whether answers hold up
   as well on older or non-Western material is untested.
 
 ## The corpus
 
-**Artifact v<!-- n:artifact -->0.7.1<!-- /n -->: <!-- n:nodes -->1,479<!-- /n --> nodes and <!-- n:edges -->5,066<!-- /n --> edges** from two sources, Wikidata and DBpedia, across two
-kinds of edge that are never mixed. **<!-- n:influence_edges -->2,284<!-- /n --> influence edges** say one thing influenced another.
-**<!-- n:membership_edges -->2,782<!-- /n --> membership edges** say an artist plays a genre, and those are never narrated as
+**Artifact v<!-- n:artifact -->0.10.0<!-- /n -->: <!-- n:nodes -->3,628<!-- /n --> nodes and <!-- n:edges -->9,276<!-- /n --> edges** from two sources, Wikidata and DBpedia, across two
+kinds of edge that are never mixed. **<!-- n:influence_edges -->2,309<!-- /n --> influence edges** say one thing influenced another.
+**<!-- n:membership_edges -->4,498<!-- /n --> membership edges** say an artist plays a genre, and those are never narrated as
 derivation. The agent reads only this versioned, immutable artifact at runtime; it never queries
 Wikidata live.
 
 Every edge records how strongly it was checked: **<!-- n:verified_hand -->22<!-- /n --> read by hand**, <!-- n:verified_prose -->111<!-- /n --> passed an automated
-Wikipedia prose check, <!-- n:verified_asserts -->759<!-- /n --> passed an influence-assertion filter, <!-- n:verified_infobox -->1,335<!-- /n --> came from a DBpedia infobox,
-and <!-- n:verified_exposure -->57<!-- /n --> rest on documented exposure rather than a stated influence claim, with <!-- n:verified_membership -->2,782<!-- /n --> more across the
+Wikipedia prose check, <!-- n:verified_asserts -->784<!-- /n --> passed an influence-assertion filter, <!-- n:verified_infobox -->1,335<!-- /n --> came from a DBpedia infobox,
+and <!-- n:verified_exposure -->57<!-- /n --> rest on documented exposure rather than a stated influence claim, with <!-- n:verified_membership -->4,498<!-- /n --> more across the
 two membership tiers. The exposure filter was measured at 20% recall on held-out data on 2026-08-06, so
 that count is a floor on what the sources contain, never a count of it.
 
-The organism is connected, in one specific way. Counting both kinds of edge, <!-- n:backdrop_nodes -->1,465<!-- /n --> of the <!-- n:nodes -->1,479<!-- /n --> nodes
-sit in one component, and that component, drawn with its <!-- n:backdrop_edges -->2,276<!-- /n --> lineage lines, is the backdrop drifting behind the
+The organism is connected, in one specific way. Counting both kinds of edge, <!-- n:backdrop_nodes -->3,490<!-- /n --> of the <!-- n:nodes -->3,628<!-- /n --> nodes
+sit in one component, and that component, drawn with its <!-- n:backdrop_edges -->4,700<!-- /n --> lineage lines, is the backdrop drifting behind the
 app. Through influence edges alone the graph is far more fragmented. What actually ties genres together here is
 the musicians who play across them, not an unbroken chain of genre-to-genre influence, and nothing in
 the app says otherwise. [`docs/graph-semantics.md`](docs/graph-semantics.md) covers how the corpus was
@@ -169,7 +169,7 @@ credits, so the invoice read $0.00. The invoice applies the credits line by line
 at $0.00, so it does not say how that $6.28 splits between Bedrock and the rest. The claim that Bedrock
 is the line item rests on measured eval spend, not on the invoice.
 
-At least <!-- n:python_tests_floor -->1,600<!-- /n --> Python tests and at least <!-- n:web_tests_floor -->400<!-- /n --> frontend tests, plus <!-- n:costs_money_tests -->14<!-- /n --> that spend real money and are
+At least <!-- n:python_tests_floor -->1,700<!-- /n --> Python tests and at least <!-- n:web_tests_floor -->400<!-- /n --> frontend tests, plus <!-- n:costs_money_tests -->14<!-- /n --> that spend real money and are
 deselected by default. `make check` also gates the built page's size, per asset class, and fails if any
 figure in this README drifts from its source.
 

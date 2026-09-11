@@ -26,6 +26,7 @@ from musical_mycelium.graph.coverage import ANGLOPHONE_CORE, PLACE_TO_COUNTRY, e
 from musical_mycelium.graph.schema import (
     INFLUENCE_ONLY,
     PREDICATE_PLAYS_GENRE,
+    PREDICATE_STUDIED_WITH,
     PREDICATES,
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
@@ -108,12 +109,20 @@ def era_slice(node: Node | None) -> str:
     so decade precision lands in the right one anyway; the two century-precision genres are named in the
     baseline record rather than silently rebucketed, because inventing a year Wikidata does not state is
     the "grounded slides into correct" failure in miniature.
+
+    **An artist with no inception is bucketed by birth year, since phase 7.6 step 9** (artifact v0.10.0
+    is the first to carry P569). Read it as "born in this era", never "active in it": Beethoven lands in
+    ``pre-1900`` because he was born in 1770, which is a fact about a date and not about a career. A
+    group keeps its P571 formation year, which is what ``inception_year`` already means for one. This
+    moves every artist case out of ``undated`` by construction, and the report says so rather than
+    presenting the shift as a result.
     """
     if node is None:
         return UNKNOWN
-    if node.inception_year is None:
+    year = node.inception_year if node.inception_year is not None else node.birth_year
+    if year is None:
         return UNDATED
-    return era_of(node.inception_year)
+    return era_of(year)
 
 
 def region_slice(node: Node | None) -> str:
@@ -194,6 +203,14 @@ def predicate_slice(node: Node | None, store: GraphStore) -> str:
     """
     if node is None:
         return UNKNOWN
+    # Phase 7.6 step 9: a node with any teaching edge is its own bucket, whatever else it carries. A
+    # teaching question is answered by a different predicate from an influence one, so folding these
+    # into "both" or "influence_only" would hide exactly the cases this phase added.
+    if any(
+        store.neighbors(node.id, direction, predicates=frozenset({PREDICATE_STUDIED_WITH}))
+        for direction in Direction
+    ):
+        return "teaching"
     influence = bool(store.neighbors(node.id, Direction.INFLUENCED_BY, predicates=INFLUENCE_ONLY))
     membership = any(
         edge.predicate == PREDICATE_PLAYS_GENRE

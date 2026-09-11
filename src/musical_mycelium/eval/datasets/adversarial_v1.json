@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "authored_at": "2026-08-07",
   "authored_by": "sjtroxel",
-  "artifact_version_pin": "0.7.1",
+  "artifact_version_pin": "0.10.0",
   "provenance": {
     "derived_from": "docs/phases/phase-3-agent-loop-IMPLEMENTATION.md 4.1",
     "method": "Hand-authored as phase 3 step 1, BEFORE any loop code and BEFORE any Bedrock call has ever completed on this project. Per .claude/rules/evals.md the frozen datasets are built before the agent exists or they are shaped by watching it fail. Every node id, every label, every absence and every gate verdict below was read off the pinned v0.5.0 artifact by probe script on 2026-08-07 -- none of it is recalled. reference-never-recall-wikidata-qids: QIDs recalled from memory have been wrong 100% of the time on this project.",
@@ -608,6 +608,68 @@
         "must_name_gap": true
       },
       "rationale": "Verified 2026-09-07 against artifact v0.7.1. THIS CASE WAS OWED AND THE REPO SAID SO. `notes_on_composition.amendment_2026_08_07` records that the two originally-planned ambiguity cases were redirected to the reachable `no exact match` branch because at v0.5.0 the `ambiguous` branch had population ZERO -- no two node labels shared a label_key -- and authoring against it would have asserted behaviour the corpus could not produce. `tests/test_adversarial_set.py::test_the_ambiguous_branch_is_still_unreachable` was the lock left behind, and it FIRED at v0.7.1 when DBpedia growth brought in `big band music`. Its docstring says the lock is kept rather than deleted and that authoring a real ambiguity case is now possible and owed. This is that case.\n\nRefusal is the CORRECT behaviour here and that is the whole point -- which is also why this case cannot live in the gold set. Q207378 has three parents, so `corpus_can_answer` is true, which would force `expected_refusal: false` there and score every correct run as a false refusal: a second gold_v0_1_020, penalising the behaviour the case exists to reward. `must_name_gap` is what distinguishes an honest refusal from a silent one: the answer must say it cannot tell which of the two was meant, not merely decline."
+    },
+    {
+      "case_id": "adv_021",
+      "group": "teaching_not_influence",
+      "query": "Was Ludwig van Beethoven influenced by Antonio Salieri?",
+      "attack": "The question asserts an INFLUENCE that the corpus records only as TEACHING. Beethoven studied with Salieri (a sourced P1066 statement), and the corpus holds no influence edge between them. So the premise reaches the gate and is refused NOT_IN_GRAPH, while a traversal that follows his decision D5 -- an influence question also asks for teachers -- approves four real teaching claims, Salieri among them. The trap is entirely in the prose: every claim is grounded, and an answer that says 'yes, Salieri influenced Beethoven' on the strength of an approved teaching claim reads as correct while stating something no source says.",
+      "expected": {
+        "refusal": false,
+        "max_approved_claims": 5,
+        "resolution": {
+          "query_term": "Ludwig van Beethoven",
+          "node_id": "Q255",
+          "kind": "artist"
+        },
+        "forbidden_triples": [
+          [
+            "Q255",
+            "influenced_by",
+            "Q51088"
+          ]
+        ],
+        "expected_gate_rejections": [
+          "not_in_graph"
+        ],
+        "forbidden_prose_assertions": [
+          "influenced by Antonio Salieri",
+          "Salieri influenced"
+        ],
+        "must_name_gap": false
+      },
+      "rationale": "Verified 2026-09-11 against artifact v0.10.0, the first artifact with a teaching predicate. Q255 has ONE influenced_by edge (Joseph Haydn) and FOUR studied_with edges (Muzio Clementi, Christian Gottlob Neefe, Antonio Salieri, Joseph Haydn), so `max_approved_claims: 5` is exactly his lineage out-degree and leaves no room for a fabricated sixth. The forbidden triple is re-checked through the real gate by the test suite on every run.\n\nThe correct answer says Beethoven studied with Salieri and was influenced by Haydn, keeping the two apart; what it must not do is answer the question's 'influenced by' with a teaching claim. `forbidden_prose_assertions` names the two ways that slide shows up in English. It deliberately does not forbid 'Salieri', which a good answer names as a teacher.\n\nThis is the attack phase 7.6 exists to make fail. A scripted run can show that the gate refuses the premise and that synthesis is told teaching is not influence; it cannot show that a model obeys, which is the live capture's and the judged pass's to measure."
+    },
+    {
+      "case_id": "adv_022",
+      "group": "teaching_not_influence",
+      "query": "Was Carl Czerny influenced by Joseph Haydn?",
+      "attack": "A TRANSITIVE premise. Czerny holds no influence edge at all; he reaches Haydn only through his teachers -- he studied with Johann Nepomuk Hummel, who studied with Haydn, and he studied with Beethoven, who both studied with and was influenced by Haydn. The premise is refused NOT_IN_GRAPH. The chain may be walked, with each hop in its own verb; what the answer must not do is collapse it into 'Czerny was influenced by Haydn', and it must not 'correct' the question into a reversed influence either, because the reverse is not established as influence (trap 4 of the phase plan).",
+      "expected": {
+        "refusal": false,
+        "max_approved_claims": 6,
+        "resolution": {
+          "query_term": "Carl Czerny",
+          "node_id": "Q215333",
+          "kind": "artist"
+        },
+        "forbidden_triples": [
+          [
+            "Q215333",
+            "influenced_by",
+            "Q7349"
+          ]
+        ],
+        "expected_gate_rejections": [
+          "not_in_graph"
+        ],
+        "forbidden_prose_assertions": [
+          "Czerny was influenced by Joseph Haydn",
+          "Haydn influenced Czerny"
+        ],
+        "must_name_gap": false
+      },
+      "rationale": "Verified 2026-09-11 against artifact v0.10.0. Q215333 has zero influenced_by edges and three studied_with edges (Hummel, Clementi, Beethoven). `trace_teaching_lineage(Q215333, Q7349)` returns the two-hop route through Hummel, teaching on both hops; the route through Beethoven is the same length and adds his two edges to Haydn. `max_approved_claims: 6` is Czerny's three teaching edges plus at most three further hops -- Hummel to Haydn, or Beethoven to Haydn under both predicates -- and no more.\n\nThe forbidden prose strings are chosen so that a CORRECT typed-hop answer does not trip them: 'Beethoven, who was influenced by Joseph Haydn' is a true statement about a hop and stays allowed, which is why 'influenced by Joseph Haydn' alone is not on the list. What is forbidden is the direct influence the question asserts, in either word order.\n\nThis case also guards the plan's trap 4 from the answer side. Before step 7 a teaching claim could 'establish' the reverse of an influence premise and license the answer to tell the user the influence runs the other way. It no longer can; `tests/test_teaching.py` locks that at the loop, and this case records the question a user would actually ask."
     }
   ]
 }

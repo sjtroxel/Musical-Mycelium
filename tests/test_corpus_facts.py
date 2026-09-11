@@ -104,12 +104,22 @@ def test_most_of_the_corpus_records_no_influences(
     wrong, and rewriting it ~~is owed at step 8~~ **was done at phase 6 step 8** -- DoD #8, arriving
     from the unfamiliar direction of copy that *understates* the corpus rather than overstating it.
     ``StepPanel.tsx`` now records that the word is no longer available and why.
+
+    **AND IT FLIPPED BACK AT v0.10.0, for a reason that is not "influence coverage got worse"
+    (phase 7.6 step 9).** The figure is **2,864 of 3,628, 78.9%**, so "most" is arithmetically correct
+    again — because the teaching layer brought in **1,590 artists with a recorded teacher and no
+    recorded influence**. They count toward this number while being documented people. Measured the
+    same day: **184 nodes record neither an influence nor a teacher.**
+
+    So the band becomes a floor, and the copy says the figure *and its cause* rather than the
+    quantifier alone. A bare "most of the corpus records nothing" would now be true of the arithmetic
+    and false about the corpus, which is the same defect this test caught from the other direction.
     """
     share = facts["nodes_without_recorded_influences"] / len(node_ids)
-    assert 0.4 < share < 0.5, (
-        f"{share:.1%} record no influences. Below 40% the 'absence is not evidence' argument needs "
-        f"restating on different grounds; above 50% the word 'most' is correct again. Either way the "
-        f"copy has to move, so this fails rather than drifting."
+    assert share > 0.5, (
+        f"{share:.1%} record no influences. Below 50% the word 'most' is no longer available and the "
+        f"copy in StepPanel.tsx has to move; it has moved twice already, so this fails rather than "
+        f"drifting."
     )
 
 
@@ -233,8 +243,14 @@ def test_the_corpus_is_thin_in_the_way_the_panel_says_it_is(
     total = len(genre_degrees)
     modal_bucket = max(density["connections"], key=lambda k: density["connections"][k])
 
+    # **v0.10.0 flipped the modal bucket back to zero, 2026-09-11 (phase 7.6 step 9).** 184 genres at
+    # zero against 125 at one. The teaching layer's membership re-screen brought in 64 genres, and they
+    # arrived the way the v0.6.0 membership crawl's did: with artists who play them and no recorded
+    # influence of their own. Genres with no recorded origin went 266 -> 330 of 739, which is still
+    # under half, so the panel's first claim holds as written; the mode is asserted directly rather
+    # than through an inequality precisely so this shows up as a fact rather than as a passing test.
     assert 0.3 < density["genres_without_recorded_origins"] / total < 0.5
-    assert modal_bucket == "1"
+    assert modal_bucket == "0"
     assert density["connections"]["0"] < total / 2
     assert density["busiest_genre_connections"] > 20
 

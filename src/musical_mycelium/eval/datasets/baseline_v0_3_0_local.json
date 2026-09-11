@@ -1,7 +1,7 @@
 {
   "measures": "the machinery, not the model: every run is scripted, so these numbers show that the gate and the loop refuse unsupported claims, NOT that a real model resists. Real-model behaviour is DoD #10 and #11 and requires Bedrock.",
-  "artifact_version": "0.7.1",
-  "cases_run": 18,
+  "artifact_version": "0.10.0",
+  "cases_run": 20,
   "cases_excluded": {
     "adv_014": "synthetic poisoned-label artifact; driven by tests/test_untrusted.py",
     "adv_015": "hostile stub tool; driven by tests/test_untrusted.py"
@@ -11,31 +11,32 @@
     "true_refusals": 15,
     "false_refusals": 0,
     "missed_refusals": 0,
-    "correct_answers": 3,
+    "correct_answers": 5,
     "expected_refusals": 15,
-    "expected_answers": 3
+    "expected_answers": 5
   },
   "injection_resistance": {
     "induced": 0,
-    "scored_cases": 5,
+    "scored_cases": 7,
     "unscored_cases": 13,
     "holds": true
   },
   "edge_groundedness": 1.0,
   "citation_resolution": 1.0,
   "verification_mix": {
-    "ASSERTS_AUTO": 0,
-    "MEMBERSHIP_CITED": 0,
-    "EXPOSURE_AUTO": 0,
+    "TEACHING_PROSE_AUTO": 6,
     "INFOBOX_AUTO": 4,
-    "PROSE_AUTO": 0,
+    "HAND": 7,
     "MEMBERSHIP_BARE": 0,
-    "HAND": 7
+    "ASSERTS_AUTO": 0,
+    "EXPOSURE_AUTO": 1,
+    "PROSE_AUTO": 0,
+    "MEMBERSHIP_CITED": 0
   },
-  "claim_bound_respected": 18,
-  "gate_rejections_consistent": 18,
+  "claim_bound_respected": 20,
+  "gate_rejections_consistent": 20,
   "plan_divergence": {
-    "0": 18
+    "0": 20
   },
   "slices": {
     "era": {
@@ -43,13 +44,25 @@
         "numerator": 9,
         "denominator": 9
       },
-      "undated": {
-        "numerator": 5,
-        "denominator": 5
+      "1950-1969": {
+        "numerator": 1,
+        "denominator": 1
       },
       "1970-1989": {
         "numerator": 4,
         "denominator": 4
+      },
+      "undated": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "1900-1949": {
+        "numerator": 3,
+        "denominator": 3
+      },
+      "pre-1900": {
+        "numerator": 2,
+        "denominator": 2
       }
     },
     "region": {
@@ -58,8 +71,8 @@
         "denominator": 9
       },
       "unstated": {
-        "numerator": 4,
-        "denominator": 4
+        "numerator": 6,
+        "denominator": 6
       },
       "anglophone_core": {
         "numerator": 4,
@@ -76,12 +89,12 @@
         "denominator": 9
       },
       "isolated": {
-        "numerator": 6,
-        "denominator": 6
+        "numerator": 7,
+        "denominator": 7
       },
       "sparse": {
-        "numerator": 1,
-        "denominator": 1
+        "numerator": 2,
+        "denominator": 2
       },
       "connected": {
         "numerator": 2,
@@ -94,12 +107,12 @@
         "denominator": 9
       },
       "none": {
-        "numerator": 6,
-        "denominator": 6
+        "numerator": 7,
+        "denominator": 7
       },
       "wikidata_only": {
-        "numerator": 1,
-        "denominator": 1
+        "numerator": 2,
+        "denominator": 2
       },
       "both": {
         "numerator": 2,
@@ -126,16 +139,20 @@
       "influence_only": {
         "numerator": 1,
         "denominator": 1
+      },
+      "teaching": {
+        "numerator": 2,
+        "denominator": 2
       }
     },
     "query_kind": {
       "origins": {
-        "numerator": 14,
-        "denominator": 14
+        "numerator": 15,
+        "denominator": 15
       },
       "lineage": {
-        "numerator": 4,
-        "denominator": 4
+        "numerator": 5,
+        "denominator": 5
       }
     }
   }

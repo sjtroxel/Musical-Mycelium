@@ -42,13 +42,15 @@ def outcomes(store: InMemoryGraphStore) -> tuple:
 
 
 def test_every_case_is_either_attacked_or_named_as_run_elsewhere() -> None:
-    """No case may be silently absent. **20 in the frozen set since 2026-09-07**; 18 attacked here and
+    """No case may be silently absent. **22 in the frozen set since 2026-09-11**; 20 attacked here and
     2 with their fixtures in the test suite, where a poisoned artifact belongs and the shipped package
     does not. adv_019 (Roy/Joy Orbison) and adv_020 (big band) both script cleanly and need no fixture:
     one asserts a real edge about the wrong subject, the other asserts an origin for a name that cannot
-    resolve at all."""
+    resolve at all. adv_021 and adv_022 (phase 7.6 step 9) script cleanly too: both assert an influence
+    the corpus records only as teaching, so the gate refuses the premise and the attack lands on the
+    prose."""
     ids = {case.case_id for case in load_cases()}
-    assert len(ids) == 20
+    assert len(ids) == 22
     assert ids == set(ATTACKS) | set(RUN_ELSEWHERE)
     assert not set(ATTACKS) & set(RUN_ELSEWHERE)
 

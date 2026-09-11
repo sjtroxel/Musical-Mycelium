@@ -248,18 +248,21 @@ export function StepPanel({
           {/* Requirement 5: never a negative claim. The corpus cannot support "nobody influenced X",
               and this figure is why — it is checked by tests/test_corpus_facts.py.
 
-              **The word was "most" until phase 6 step 8 and it is no longer available.** The figure
-              was a majority from v0.1 through v0.6.0; the DBpedia axis took it to 723 of 1,479,
-              which is 48.9% — a large minority. `test_most_of_the_corpus_records_no_influences`
-              bounds it to 40-50% precisely so this sentence fails rather than drifts, and it did
-              its job. The ARGUMENT is unchanged: nearly half recording nothing still makes a
-              missing edge weak evidence of a missing influence. Only the quantifier moved, and it
-              moved because the corpus got better, which is the unfamiliar direction for DoD 8. */}
+              **The quantifier has now moved twice and the second move is not a reversal of the
+              first.** It was "most" from v0.1 through v0.6.0; the DBpedia axis took it to 723 of
+              1,479, 48.9%, and the word became unavailable. At artifact v0.10.0 it is 2,864 of
+              3,628 — 78.9% — so "most" is arithmetically correct again, and saying only that would
+              be misleading. The rise is the teaching layer: 1,590 artists arrived with a recorded
+              TEACHER and no recorded influence, so they count here while being anything but
+              undocumented. **184 nodes record neither.** The sentence therefore reports the figure
+              and its cause, which is the honest version of a number that moved for a reason that
+              has nothing to do with influence coverage getting worse. */}
           <p>
             A missing edge is not evidence of a missing influence.{" "}
             {facts.nodes_without_recorded_influences} of the corpus&rsquo;s {facts.nodes} nodes
-            &mdash; nearly half &mdash; record no influences at all, so silence here is the state of
-            the sources rather than a finding about the music.
+            record no influence at all &mdash; most of them artists this corpus knows through a
+            teacher rather than an influence &mdash; so silence here is the state of the sources
+            rather than a finding about the music.
           </p>
         </div>
       )}

@@ -44,15 +44,27 @@ SHAPE_TOOL = {
     "origins": "get_influences",
     "descendants": "get_descendants",
     "path": "trace_lineage",
+    # Phase 7.6 step 9, the teaching_lineage slot. Three shapes rather than a flag on the existing
+    # three, because each asks a different tool and the tool is what the shape selects.
+    "teachers": "get_teachers",
+    "students": "get_students",
+    "teaching_path": "trace_teaching_lineage",
 }
 
 #: Gold ``shape`` to ``Plan.query_kind``. Both vocabularies are closed sets and neither is a superset of
-#: the other, so the mapping is explicit and ``load_cases`` refuses a shape missing from it.
+#: the other, so the mapping is explicit and ``load_cases`` refuses a shape missing from it. A teaching
+#: shape is one of the existing kinds (``plan.QUERY_KINDS`` is unchanged in phase 7.6).
 SHAPE_QUERY_KIND = {
     "origins": "origins",
     "descendants": "descendants",
     "path": "lineage",
+    "teachers": "origins",
+    "students": "descendants",
+    "teaching_path": "lineage",
 }
+
+#: The shapes that name two endpoints and so need an ``expected_terminus``.
+PATH_SHAPES = frozenset({"path", "teaching_path"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,7 +123,7 @@ def load_cases(path: Path = GOLD_DATASET) -> tuple[GoldCase, ...]:
         if shape not in SHAPE_TOOL:
             raise ValueError(f"{case['case_id']}: unknown shape {shape!r}")
         terminus = case.get("expected_terminus") or {}
-        if shape == "path" and not terminus:
+        if shape in PATH_SHAPES and not terminus:
             raise ValueError(f"{case['case_id']}: a path case needs an expected_terminus")
         cases.append(
             GoldCase(
@@ -155,7 +167,7 @@ def trace_of(case: GoldCase) -> tuple[tuple[str, dict[str, Any]], ...]:
     broke against the first real model on 2026-08-11, which a single-tool-per-turn script never touches.
     """
     tool = SHAPE_TOOL[case.shape]
-    if case.shape == "path":
+    if case.shape in PATH_SHAPES:
         assert case.terminus_id is not None  # load_cases refuses a path case without one
         return (
             ("resolve_node", {"name": case.subject_name}),
@@ -184,7 +196,7 @@ def build_script(case: GoldCase, *, prose: str = "A grounded answer.") -> list[L
     """
     trace = trace_of(case)
     turns: tuple[tuple[tuple[str, dict[str, Any]], ...], ...] = (
-        (trace[:2], trace[2:]) if case.shape == "path" else tuple((call,) for call in trace)
+        (trace[:2], trace[2:]) if case.shape in PATH_SHAPES else tuple((call,) for call in trace)
     )
 
     payload = {

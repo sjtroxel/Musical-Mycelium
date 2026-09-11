@@ -10,9 +10,14 @@
 > decision.** Scope doc: `docs/phases/phase-7.6-classical-lineage.md`, **approved 2026-09-11**; its
 > IMPLEMENTATION doc `phase-7.6-classical-lineage-IMPLEMENTATION.md` is **APPROVED 2026-09-11 and the
 > build has started**; its `[done]` markers and as-built subsections are the authority on progress.
-> **HANDOFF, 2026-09-11: STEPS 0-8 ARE BUILT. NEXT IS STEP 9** (the re-pin). Two things wait on the
-> pin and are recorded in step 8's as-built: step 8's running-app check on the local stub, and a live
-> re-capture of the tour recording (stamped v0.7.1, about a cent, behind confirmation). Artifact **v0.10.0 is built
+> **HANDOFF, 2026-09-11: STEPS 0-9 ARE DONE. NEXT IS STEP 10** (copy truth and the close). **The pin is
+> v0.10.0 everywhere**, `make check` is green (1,716 Python, 448 frontend), and the free gates read
+> **4 passed / 0 failed / 2 N/A**. Step 8's running-app check is done on the local stub, and the five
+> `.sse` fixtures were re-captured on v0.10.0 — three free stub captures plus one live tour capture at
+> about a cent, which walked the canonical route. **ONE FINDING STILL OPEN FOR HIM: `make heldout-check`
+> reports `artifact-pin-moved` AND `claims-diverged` on `heldout_v1_004` and `heldout_v1_005`.** Nothing
+> was re-sealed or opened; the set is sealed, stale against v0.10.0, and his call at 7.7 — leave it, or
+> re-draw from his seed. See step 9's as-built. Artifact **v0.10.0 is built
 > but NOT pinned** (step 9 moves the pin; `tests/test_artifact_versions.py:UNPINNED_CUTS` records it, and
 > `tests/test_teaching.py` is its only reader). Crawl data is local in `data/lineage/` (gitignored);
 > `--build` is offline. Order from here: **7.6, then 7.7 `name-resolution` (v0.9.5, scope

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "authored_at": "2026-08-02",
   "authored_by": "sjtroxel",
-  "artifact_version_pin": "0.7.1",
+  "artifact_version_pin": "0.10.0",
   "provenance": {
     "derived_from": "docs/phases/phase-1-edge-verification.md",
     "method": "Hand-authored from the same verification pass that produced the v0.1 artifact, BEFORE the agent exists. Per .claude/rules/evals.md a gold set written after the agent exists is contaminated by its output.",
@@ -17,7 +17,8 @@
     ],
     "repin_history": [
       "Authored against artifact v0.1.0 (21 edges) on 2026-08-02. Re-pinned to v0.2.0 (133 edges) on 2026-08-04 when phase 2 replaced the hand-verified edge list with the full P737 discovery. Re-pinning is only safe because the neighbour set of every one of the five case subjects is IDENTICAL under both corpora -- checked pair-by-pair, not assumed -- so no case gained or lost an expected claim. The cases themselves are unchanged and remain pre-agent. If a future corpus change moves any case's neighbours, the gold set must be re-authored rather than re-pinned: re-pinning past a real divergence is exactly how a benchmark silently stops measuring anything.",
-      "2026-09-03, phase 6 step 3: re-pinned v0.5.0 -> v0.6.0, the P136 membership cut (1,313 nodes, 3,731 edges, 509 genres). Checked pair-by-pair as this file's own rule requires, over all 73 distinct nodes the 25 cases touch, in BOTH directions: exactly one neighbour set moved. Nine Inch Nails (Q11647) lost 'influenced_by Pink Floyd (Q2306)', dropped by step 2's re-check of inherited edges against Wikidata's deprecated rank. NO CASE DEPENDS ON IT -- gold_v0_1_020 walks through Q11647 via Q125603, and its claim set is unchanged. No case gained or lost an expected claim and no expected_path node is missing from the new corpus, so this is a re-pin and not a re-authoring. The membership axis adds no claims to any case: plays_genre is absent from ALLOWED_PREDICATES, and graph traversal filters to influence by default from this step onward."
+      "2026-09-03, phase 6 step 3: re-pinned v0.5.0 -> v0.6.0, the P136 membership cut (1,313 nodes, 3,731 edges, 509 genres). Checked pair-by-pair as this file's own rule requires, over all 73 distinct nodes the 25 cases touch, in BOTH directions: exactly one neighbour set moved. Nine Inch Nails (Q11647) lost 'influenced_by Pink Floyd (Q2306)', dropped by step 2's re-check of inherited edges against Wikidata's deprecated rank. NO CASE DEPENDS ON IT -- gold_v0_1_020 walks through Q11647 via Q125603, and its claim set is unchanged. No case gained or lost an expected claim and no expected_path node is missing from the new corpus, so this is a re-pin and not a re-authoring. The membership axis adds no claims to any case: plays_genre is absent from ALLOWED_PREDICATES, and graph traversal filters to influence by default from this step onward.",
+      "2026-09-11, phase 7.6 step 9: re-pinned v0.7.1 -> v0.10.0 (3,628 nodes, 9,276 edges; the Wikidata mul-label recovery, the studied_with teaching layer, artist birth years and aliases). Checked pair by pair over every node the 38 cases touch, in BOTH directions, over every predicate the gate now admits (influenced_by and studied_with), v0.7.1 against v0.10.0. FIVE CASES TOUCH A NODE WHOSE NEIGHBOUR SET MOVED, every change an ADDITION from the mul recovery and none a removal: 018 (Famous Oberogo gained influenced_by Bruno Mars), 019 and 020 (Bob Dylan gained Sinead O'Connor as a descendant), 024 (Bridgit Mendler gained Bruno Mars and B. B. King as influences, Sofia Coll gained Christina Aguilera), 038 (Molly Grace gained influenced_by Taylor Swift). NO CASE DEPENDS ON ANY OF THEM: every expected claim of all five still exists, the shortest path of each path case (018, 019, 020, 038) is identical on both corpora, and Etta James's four descendants (024) are unchanged. This file's rule says a moved neighbour set means re-author; the 2026-09-03 entry above applied it as 'no case depends on the moved edge, so this is a re-pin', and this re-pin follows that reading, stated here so it can be vetoed rather than inherited silently. No case subject in any dataset touches a teaching edge. gold_v0_1_029 (classical music, the pre-1900 refusal) is unchanged and still refuses. Names: all 185 recorded in tests/resolution_snapshot_v0_7_1.json resolve identically on v0.10.0."
     ],
     "schema_history": [
       "2026-08-12: added expected_path to every case. eval/metrics.py traversal_recall(visited, gold) takes NODE IDS, and this schema had no field it could read -- which is why that metric has never scored a single run, scripted or live: its only callers were its own unit tests. The field is AUTHORED, not derived from expected_claims, for two reasons. (1) A refusal case has zero claims, so a derived node set gives Rate(0, 0). Rate already refuses to call that 100% -- score returns None -- so the failure is not a false perfect score but something quieter: traversal_recall would be permanently UNDEFINED on every refusal case, and the behaviour those cases exist to test would go unmeasured while the suite looked healthy. Refusal cases carry the subject alone, so the denominator is 1 and the metric asks a real question: did the traversal REACH the node before correctly declining to narrate it. (2) traversal_precision penalises visiting nodes off the gold path, so what counts as on-path has to be a judgement, not an inference -- a path case legitimately visits intermediates that produce no claim, and deriving from claims would score correct exploration as wandering. Additive and no case changed: all five expected_path values were computed from artifact v0.5.0 and every one matches that case's existing claim set exactly, checked pair-by-pair. test_gold_set.py locks the field so it can be broader than the claims but never narrower.",
@@ -27,7 +28,7 @@
   "notes_on_composition": {
     "authoring_is_incremental": "Cases 006 onward are authored one at a time across separate sittings, and that is the intended mode, not a compromise: docs/phases/phase-3-agent-loop-IMPLEMENTATION.md says 'Nothing about it requires one sitting, and a set labelled while fatigued is a worse set -- this is measurement equipment, and the whole eval suite inherits its errors permanently.' This file is the save point. tests/test_gold_set.py declares EXPECTED_CASE_COUNT, which is bumped to the real count at the end of each sitting, so the suite is green at every stopping point and a case can never be added silently.",
     "composition_plan": {
-      "target_total": 38,
+      "target_total": 43,
       "why_a_distribution_and_not_a_count": "Stopping early is fine; stopping lopsided is not. .claude/rules/evals.md requires results sliced by era, region, density and query type, and a set that is 100% genre-origins cannot exercise traversal_recall at all -- every path in artifact v0.5.0 past 4 hops is artists. Slots are filled in an order that keeps the distribution balanced as the set grows.",
       "slots": {
         "genre_origins_v0_1": "5 of 5 filled -- cases 001-005, authored 2026-08-02",
@@ -39,7 +40,8 @@
         "deliberate_exposure_auto": "2 of 2 filled -- cases 015 (John Lydon) and 025 (Fela Kuti).",
         "contested_pairs": "2 of 2 filled -- cases 030 (electropop/electroclash) and 031 (western music/New Mexico music), authored 2026-09-07. Both carry NO expected_claims deliberately: the gold set asserts verified correctness and a contested pair is exactly where correctness is unknown, because two sources assert opposite directions and this project does not adjudicate. They exist to put a contested-crossing query into the frozen set now that phase 6.5 step 4 makes an answer able to say the sources disagree. Citation research FAILED for both and the failures are the finding, recorded in each case's notes.",
         "dbpedia_only": "6 of 6 filled -- cases 032 (G-funk), 033 (bebop), 034 (soca music), 035 (musica popular brasileira), 036 (progressive soul), 037 (danzon), authored 2026-09-07. The slice held FOUR cases against 48% of corpus genres, below the slicer's own n<5 floor, so it reported a count rather than a rate. Subjects chosen MECHANICALLY and the rule is restated so it can be re-run: the 321 dbpedia_only genres with at least one parent that resolve unambiguously as search(label)[0] and are not already gold subjects, bucketed by region_slice x density_slice, lowest QID in each of the six buckets. The era spread (1900-1949 through undated) fell out of that rule rather than being arranged. Four carry independent citations; two are flagged.",
-        "long_path_second": "0 of 1 -- OWED. Molly Grace -> The Velvet Underground, 5 hops, chosen 2026-09-07 by sjtroxel over Nine Inch Nails -> Woody Guthrie. NIN was rejected on a measurement: all five of its hops already sit inside gold_v0_1_020's expected path, so it adds ZERO new edges, and gold_v0_1_019 already shares Beatles->Dylan->Guthrie with 020 -- a third case over that route would move cases_correct by 3/38 for one corpus fact. Molly Grace adds 4 new edges. The slot exists to settle whether paths longer than four hops fail in general or gold_v0_1_020 fails specifically, which is currently untestable because 020 is the only path case above four hops."
+        "teaching_lineage": "5 of 5 filled -- cases 039 (teachers: Wolfgang Amadeus Mozart), 040 (students: Ludwig van Beethoven), 041 (teaching refusal: Jean-Philippe Rameau), 042 (teaching chain: Hector Berlioz -> Anton Reicha -> Antonio Salieri), 043 (mixed chain: Maurice Ravel -> Gabriel Faure -> Camille Saint-Saens), authored 2026-09-11, phase 7.6 step 9, drafted by Claude (Opus 5) and reviewed by sjtroxel on the case 030 precedent -- the same weakening, named the same way. SUBJECT SELECTION IS MECHANICAL and the rule is stated before the result so it can be re-run: the population is every artist in artifact v0.10.0 with a birth year before 1900 whose label resolves to itself exactly and uniquely and who is not already a subject or terminus in any dataset (2,110 people). In slot order, take the LOWEST numeric QID meeting the slot's condition -- teachers: 2 to 4 recorded teachers; students: 2 to 4 recorded students; refusal: at least one student, no teacher and no influence edge in either direction; teaching chain: a 2-hop route that trace_teaching_lineage returns with studied_with alone on both hops and that trace_lineage cannot find in either direction; mixed chain: a 2- or 3-hop route that trace_teaching_lineage returns with at least one teaching-only hop and at least one influence hop, and that trace_lineage cannot find. ONE TIE-BREAK WAS ADDED AFTER THE FIRST PASS AND IS RECORDED AS SUCH: the first pass gave Mozart three of the five slots, because Q254 is the lowest QID in the population; a subject or chain endpoint may not repeat one chosen for an earlier slot in this group. Claims are read off the artifact's edge list; prose and citations are quoted from Wikipedia and the published works it cites, in the student's article, the teacher's article, or another language's article, and every one is named.",
+        "long_path_second": "1 of 1 filled -- case 038, authored 2026-09-07. (This slot read '0 of 1 -- OWED' until 2026-09-11; case 038 had been added without the slot being updated.) Molly Grace -> The Velvet Underground, 5 hops, chosen 2026-09-07 by sjtroxel over Nine Inch Nails -> Woody Guthrie. NIN was rejected on a measurement: all five of its hops already sit inside gold_v0_1_020's expected path, so it adds ZERO new edges, and gold_v0_1_019 already shares Beatles->Dylan->Guthrie with 020 -- a third case over that route would move cases_correct by 3/38 for one corpus fact. Molly Grace adds 4 new edges. The slot exists to settle whether paths longer than four hops fail in general or gold_v0_1_020 fails specifically, which is currently untestable because 020 is the only path case above four hops."
       }
     },
     "shape": "The first five are origins-shaped, because v0.1's get_influences walks parent edges only. Descendant and path queries are later phases (docs/SPEC.md 2.2).",
@@ -2029,6 +2031,276 @@
         }
       ],
       "notes": "The SECOND long-path case, added 2026-09-07 (phase 6.5 step 5). It exists to settle a question the set could not previously answer: `gold_v0_1_020` is the only path-shaped case above four hops, so *\"paths longer than four hops fail\"* and *\"that one case fails\"* fit the evidence identically and no number of re-runs can separate them.\n\n**Chosen over Nine Inch Nails -> Woody Guthrie on a measurement, not a preference.** All five of NIN's hops already sit inside gold_v0_1_020's expected path -- it adds ZERO new edges -- and gold_v0_1_019 already shares Beatles->Dylan->Guthrie with 020, so a third case over that route would move cases_correct by 3/38 for one corpus fact. This chain adds four new edges and shares exactly one hop (Chappell Roan <- Lady Gaga) with gold_v0_1_019, whose claim is reused here verbatim rather than re-researched. NIN -> Guthrie remains the tighter DIAGNOSTIC for the femtanyl finding -- same route, different subject -- and can be run any time with `make eval-live ARGS='--case-ids ...'`; it was deliberately not frozen into the set.\n\n**THREE of the five hops are claimed, and the two omissions are findings rather than shortcuts.** A claim subset has been permitted since 2026-09-04, and `expected_path` carries the full chain, so traversal_recall -- the thing this case exists to measure -- is unaffected.\n\n1. **Molly Grace <- Chappell Roan is NOT claimed, and the reason is a caught footnote.** en.wikipedia.org/wiki/Molly_Grace says \"Grace has referenced artists such as Lizzo, Chappell Roan, Lawrence, Renee Rapp, Remi Wolf, Taylor Swift and Freddie Mercury as influences\" and attaches two citations to that seven-name list. **The Armenian Mirror-Spectator article (Kezelian, 2021-04-01) was opened and does not mention Chappell Roan at all** -- it names Sammy Rae & The Friends, Lake Street Dive and Lawrence, and it predates Roan's breakout. The other citation is ragman.org, an artist-management page, which is not independent. This is the same defect the set already records for Lady Gaga -> the Beatles, and it was caught only by opening the source, which `provenance.honest_limits` says is normally NOT done. Flagging it `source_uncited` would have understated it: the finding is not that no source was found, it is that the cited source does not support the name.\n2. **Lady Gaga <- Madonna is NOT claimed.** No sentence citing Madonna as an influence could be located in the Lady Gaga article, and searching surfaced mainly Madonna asserting that she influenced Gaga -- a different claim, from the other party, in the middle of a documented public dispute about exactly this question. Asserting it as gold would be picking a side in it."
+    },
+    {
+      "case_id": "gold_v0_1_039",
+      "query": "Who did Wolfgang Amadeus Mozart study with?",
+      "shape": "teachers",
+      "difficulty": "middle",
+      "authored_at": "2026-09-11",
+      "axis": "artist",
+      "era": "pre-1900",
+      "expected_resolution": {
+        "name": "Wolfgang Amadeus Mozart",
+        "node_id": "Q254"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q254",
+        "Q106641",
+        "Q156280",
+        "Q283651"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q254",
+          "predicate": "studied_with",
+          "object_id": "Q106641",
+          "subject_label": "Wolfgang Amadeus Mozart",
+          "object_label": "Johann Christian Bach",
+          "wikidata_statement": "Q254 P1066 Q106641",
+          "supporting_prose": "Bach then spent five months teaching Mozart in composition.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Johann_Christian_Bach, read 2026-09-11",
+          "independent_citations": [
+            "Shore, Rebecca Ann, Baby Teacher: Nurturing Neural Networks From Birth to Age Five, R&L Education, 2002, p. 86"
+          ]
+        },
+        {
+          "subject_id": "Q254",
+          "predicate": "studied_with",
+          "object_id": "Q156280",
+          "subject_label": "Wolfgang Amadeus Mozart",
+          "object_label": "Leopold Mozart",
+          "wikidata_statement": "Q254 P1066 Q156280",
+          "supporting_prose": "While Leopold was a devoted teacher to his children, there is evidence that Mozart was keen to progress beyond what he was taught",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Wolfgang_Amadeus_Mozart, read 2026-09-11",
+          "independent_citations": [
+            "Solomon, Maynard, Mozart: A Life, HarperCollins, New York, 1995, pp. 39-40"
+          ]
+        },
+        {
+          "subject_id": "Q254",
+          "predicate": "studied_with",
+          "object_id": "Q283651",
+          "subject_label": "Wolfgang Amadeus Mozart",
+          "object_label": "Giovanni Battista Martini",
+          "wikidata_statement": "Q254 P1066 Q283651",
+          "supporting_prose": "Among Martini's pupils: the Belgian Andre Ernest Modeste Gretry, the Bohemian Josef Myslivecek, the Ukrainian Maksym Berezovsky, his fellow Conventual Franciscan friar, Stanislao Mattei, who succeeded him as conductor of the girls choir, as well as the young Wolfgang Amadeus Mozart, Johann Christian Bach and the famous Italian cellist Giovanni Battista Cirri.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Giovanni_Battista_Martini, read 2026-09-11",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_uncited",
+            "searched": [
+              "en.wikipedia.org/wiki/Giovanni_Battista_Martini -- the pupils sentence and the lead's 'a mentor to Mozart' both carry no inline reference.",
+              "en.wikipedia.org/wiki/Wolfgang_Amadeus_Mozart -- names Martini only as someone Mozart met in Bologna, beside his admission to the Accademia Filarmonica; no sentence states study.",
+              "it.wikipedia.org/wiki/Giovanni_Battista_Martini -- 'e annoverato tra i maestri di Wolfgang Amadeus Mozart' (he is counted among Mozart's teachers), with no reference on the sentence."
+            ],
+            "finding": "Study is stated in prose in two languages and cited in neither. The edge is fully traceable -- Wikidata statement, article, named sentence -- but no published work is cited for it."
+          }
+        }
+      ],
+      "notes": "The teachers slot of the teaching_lineage group; the rule in notes_on_composition picked Mozart because Q254 is the lowest QID with two to four recorded teachers. Mozart is also the person whose absence opened phase 7.6: the Wikidata `mul` label bug excluded him from every artifact before v0.10.0.\n\n**A finding about TEACHING_PROSE_AUTO, measured on the very first teaching case.** The prose check passed all three edges on Mozart's OWN article, and for two of the three the sentence it matched does not state study: Johann Christian Bach is named as 'a particularly significant influence', and Padre Martini as someone Mozart met in Bologna. That is exactly the tier's documented limit -- it confirms the article names the teacher, not that the naming sentence is about study -- seen on the case a reader is most likely to check. Study-stating prose exists for all three, but for two of them it is in the TEACHER'S article or another language's. It is quoted from there.\n\n**The Bach citation is weak and is named as weak.** The teaching sentence in the Johann Christian Bach article is footnoted to a 2002 book on early-childhood development, not to a music-historical work. It is a published work Wikipedia cites, which is this set's standard, and it is recorded as that and no more."
+    },
+    {
+      "case_id": "gold_v0_1_040",
+      "query": "Who studied with Ludwig van Beethoven?",
+      "shape": "students",
+      "difficulty": "rich",
+      "authored_at": "2026-09-11",
+      "axis": "artist",
+      "era": "pre-1900",
+      "expected_resolution": {
+        "name": "Ludwig van Beethoven",
+        "node_id": "Q255"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q255",
+        "Q1246313",
+        "Q213558",
+        "Q215333",
+        "Q93373"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1246313",
+          "predicate": "studied_with",
+          "object_id": "Q255",
+          "subject_label": "Dorothea von Ertmann",
+          "object_label": "Ludwig van Beethoven",
+          "wikidata_statement": "Q1246313 P1066 Q255",
+          "supporting_prose": "The couple moved to Vienna, where Dorothea Ertmann began taking lessons with Ludwig van Beethoven; he called her his \"Dorothea-Cecilia\".",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Dorothea_von_Ertmann, read 2026-09-11",
+          "independent_citations": [
+            "Warrack, John, \"Ertmann, Dorothea von\", Grove Music Online, Oxford University Press"
+          ]
+        },
+        {
+          "subject_id": "Q213558",
+          "predicate": "studied_with",
+          "object_id": "Q255",
+          "subject_label": "Ferdinand Ries",
+          "object_label": "Ludwig van Beethoven",
+          "wikidata_statement": "Q213558 P1066 Q255",
+          "supporting_prose": "Ries was then the pupil of Ludwig van Beethoven, who had received some early instruction at Bonn from Ries's father, Franz Ries.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Ferdinand_Ries, read 2026-09-11",
+          "independent_citations": [
+            "Wegeler, Franz Gerhard and Ries, Ferdinand, Biographische Notizen uber Ludwig van Beethoven, K. Badeker, Koblenz, 1838 (cited by de.wikipedia.org/wiki/Ferdinand_Ries)"
+          ]
+        },
+        {
+          "subject_id": "Q215333",
+          "predicate": "studied_with",
+          "object_id": "Q255",
+          "subject_label": "Carl Czerny",
+          "object_label": "Ludwig van Beethoven",
+          "wikidata_statement": "Q215333 P1066 Q255",
+          "supporting_prose": "Beethoven was impressed with the 10-year-old and accepted him as a pupil.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Carl_Czerny, read 2026-09-11",
+          "independent_citations": [
+            "Thayer, Alexander Wheelock, rev. and ed. Elliot Forbes, Thayer's Life of Beethoven, Princeton University Press, 1991, pp. 226-228"
+          ]
+        },
+        {
+          "subject_id": "Q93373",
+          "predicate": "studied_with",
+          "object_id": "Q255",
+          "subject_label": "Archduke Rudolf of Austria",
+          "object_label": "Ludwig van Beethoven",
+          "wikidata_statement": "Q93373 P1066 Q255",
+          "supporting_prose": "Perhaps his most important aristocratic patron was Archduke Rudolf of Austria, the youngest son of Emperor Leopold II, who in 1803 or 1804 began to study piano and composition with him.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Ludwig_van_Beethoven, read 2026-09-11",
+          "independent_citations": [
+            "Cooper, Barry, Beethoven, Oxford University Press, Oxford, 2008, pp. 78-79"
+          ]
+        }
+      ],
+      "notes": "The students slot; the rule picked Beethoven as the lowest QID with two to four recorded students once Mozart held the teachers slot. The corpus records four; history records more (Wikidata simply does not state them), so this is a fan-in over what the corpus holds, not a claim about everyone he taught.\n\n**The Ries citation is a primary source and is named as one.** Ries's pupilship is footnoted, in the German article, to the reminiscences of Beethoven that Ries himself co-wrote with Franz Wegeler in 1838. That is a published work independent of Wikidata, which is this set's standard, but it is the student's own account rather than a historian's, and a reader weighing the claim should know that.\n\nThe Archduke's claim is quoted from Beethoven's article rather than his own, because that sentence carries the citation; his own article states the same lessons uncited."
+    },
+    {
+      "case_id": "gold_v0_1_041",
+      "query": "Who did Jean-Philippe Rameau study with?",
+      "shape": "teachers",
+      "difficulty": "refusal",
+      "authored_at": "2026-09-11",
+      "axis": "artist",
+      "era": "pre-1900",
+      "expected_resolution": {
+        "name": "Jean-Philippe Rameau",
+        "node_id": "Q1145"
+      },
+      "expected_refusal": true,
+      "expected_path": [
+        "Q1145"
+      ],
+      "expected_claims": [],
+      "independent_citations": [],
+      "expected_behavior": "The node RESOLVES, holds two recorded students (Bernard Jumentier and Francois Joseph Gossec) and no recorded teacher. The correct output states that this run found no sourced account of who Rameau studied with, and does NOT say the graph holds nothing about him: it holds his students.",
+      "notes": "The refusal slot of the teaching_lineage group, and the case for trap 8 of the phase plan. Before step 7 a refused teaching question would have been answered in influence words ('this graph holds no sourced influences'), and the corpus-empty opening would have fired for a node the corpus plainly knows as a teacher. Rameau has no influence edge either way, so the only thing distinguishing the two refusal openings here is the teaching edges -- which is what makes him the right subject for it rather than an arbitrary one. The rule picked him mechanically: lowest QID with a student, no teacher and no influence edge.\n\nThe pretraining surface is large and the graph is silent, which is the adversarial shape this set's refusal cases share. Nothing about who taught Rameau is asserted here, because nothing about it is sourced here."
+    },
+    {
+      "case_id": "gold_v0_1_042",
+      "query": "How does Hector Berlioz connect back to Antonio Salieri through his teachers?",
+      "shape": "teaching_path",
+      "difficulty": "middle",
+      "authored_at": "2026-09-11",
+      "axis": "artist",
+      "era": "pre-1900",
+      "expected_resolution": {
+        "name": "Hector Berlioz",
+        "node_id": "Q1151"
+      },
+      "expected_terminus": {
+        "name": "Antonio Salieri",
+        "node_id": "Q51088"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1151",
+        "Q311387",
+        "Q51088"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1151",
+          "predicate": "studied_with",
+          "object_id": "Q311387",
+          "subject_label": "Hector Berlioz",
+          "object_label": "Anton Reicha",
+          "wikidata_statement": "Q1151 P1066 Q311387",
+          "supporting_prose": "In 1826 Franz Liszt, Hector Berlioz and Henri Cohen became students of his, as did composers Charles Gounod and Pauline Viardot sometime later.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Anton_Reicha, read 2026-09-11",
+          "independent_citations": [
+            "Jezic, Diane Peacock and Wood, Elizabeth, Women Composers: The Lost Tradition Found, Feminist Press at the City University of New York, 1994, p. 103"
+          ]
+        },
+        {
+          "subject_id": "Q311387",
+          "predicate": "studied_with",
+          "object_id": "Q51088",
+          "subject_label": "Anton Reicha",
+          "object_label": "Antonio Salieri",
+          "wikidata_statement": "Q311387 P1066 Q51088",
+          "supporting_prose": "Once there, like Beethoven and the young Schubert, he studied with Antonio Salieri and Johann Georg Albrechtsberger.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Anton_Reicha, read 2026-09-11",
+          "independent_citations": [
+            "Cernusak, Gracian; Stedron, Bohumir; Novacek, Zdenko (eds.), Ceskoslovensky hudebni slovnik II. M-Z, Statni hudebni vydavatelstvi, Prague, 1963, p. 415"
+          ]
+        }
+      ],
+      "notes": "The pure teaching chain, two hops, teaching on both. `trace_lineage` finds no route between these two in either direction -- checked, and part of the selection rule -- so the case can only be answered through `trace_teaching_lineage`, which is the tool it exists to exercise. Berlioz's own article also states the first hop ('counterpoint and fugue with Anton Reicha') but without a footnote on that sentence; the quoted sentence is from Reicha's article, which carries one.\n\nThe Czech music dictionary citation is independent of the English-language sourcing most of this set rests on, which is worth having on a pre-1900 case."
+    },
+    {
+      "case_id": "gold_v0_1_043",
+      "query": "How does Maurice Ravel connect back to Camille Saint-Saens through his teachers?",
+      "shape": "teaching_path",
+      "difficulty": "middle",
+      "authored_at": "2026-09-11",
+      "axis": "artist",
+      "era": "pre-1900",
+      "expected_resolution": {
+        "name": "Maurice Ravel",
+        "node_id": "Q1178"
+      },
+      "expected_terminus": {
+        "name": "Camille Saint-Saëns",
+        "node_id": "Q150445"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q1178",
+        "Q104919",
+        "Q150445"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q1178",
+          "predicate": "studied_with",
+          "object_id": "Q104919",
+          "subject_label": "Maurice Ravel",
+          "object_label": "Gabriel Fauré",
+          "wikidata_statement": "Q1178 P1066 Q104919",
+          "supporting_prose": "His later teacher Gabriel Fauré understood this, but it was not generally acceptable to the conservative faculty of the Conservatoire of the 1890s.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Maurice_Ravel, read 2026-09-11",
+          "independent_citations": [
+            "Kelly, Barbara L., \"History and Homage\", in Deborah Mawer (ed.), The Cambridge Companion to Ravel, Cambridge University Press, 2000, p. 7"
+          ]
+        },
+        {
+          "subject_id": "Q104919",
+          "predicate": "studied_with",
+          "object_id": "Q150445",
+          "subject_label": "Gabriel Fauré",
+          "object_label": "Camille Saint-Saëns",
+          "wikidata_statement": "Q104919 P1066 Q150445",
+          "supporting_prose": "When Niedermeyer died in March 1861, Camille Saint-Saëns took charge of piano studies and introduced contemporary music, including that of Schumann, Liszt and Wagner.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Gabriel_Fauré, read 2026-09-11",
+          "independent_citations": [
+            "Jones, J Barrie, Gabriel Fauré: A Life in Letters, B T Batsford, London, 1989, p. 16"
+          ]
+        }
+      ],
+      "notes": "The mixed chain, his decision D4 of the phase plan. The route the tool returns is Ravel studied with Faure, and Faure BOTH studied with Saint-Saens AND is recorded as influenced by him -- two separately sourced edges on one hop, which `trace_teaching_lineage` proposes together and synthesis must narrate with both verbs. `trace_lineage` finds no route between the endpoints.\n\n**The influence half of the second hop is deliberately NOT an expected claim, and the reason is a research finding.** The corpus holds `Q104919 influenced_by Q150445` at ASSERTS_AUTO. No sentence in the English Faure or Saint-Saens articles asserts that influence: the nearest is 'Saint-Saens took great pleasure in his pupil's progress, which he helped whenever he could; Nectoux comments that at each step in Faure's career \"Saint-Saens's shadow can effectively be taken for granted\"', which is about support for a career, not influence on the music. The gold set asserts verified correctness, so it does not vouch for an edge whose prose does not say what the edge says. The contested cases (030, 031) set the precedent: where correctness is not established, the case carries no claim for it and the failed research is the finding. The claims here are a required subset, so a run that approves the influence edge is not penalised; the edge simply is not certified by this file.\n\nA student is not thereby an influence and a teacher is not thereby a model, which is why the two predicates were kept apart in the first place. This case is where that separation earns its keep: the teaching is cited, the influence is not."
     }
   ]
 }

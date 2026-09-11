@@ -3,7 +3,7 @@
   "version": "v1.0",
   "authored_at": "2026-09-09",
   "authored_by": "sjtroxel",
-  "artifact_version_pin": "0.7.1",
+  "artifact_version_pin": "0.10.0",
   "provenance": "Hand-authored for phase 7 step 7. Routes verified against artifact v0.7.1 with store.path() before the file was written; every case below was run, not assumed.",
   "notes_on_composition": [
     "WHAT THIS SET IS FOR, AND IT IS NOT MORE PATH COVERAGE. gold_v0_1 already holds six path cases and",

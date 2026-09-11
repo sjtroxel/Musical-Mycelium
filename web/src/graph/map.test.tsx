@@ -6,7 +6,7 @@ import { App } from "../App";
 import { StepPanel } from "../components/StepPanel";
 import type { StepState } from "../useLineageRun";
 import type { Artifact } from "./staticGraph";
-import { indexArtifact, resetStaticGraphCache } from "./staticGraph";
+import { GRAPH_PIN, indexArtifact, resetStaticGraphCache } from "./staticGraph";
 
 /**
  * DoD 3 end to end: the graph reaches the browser, renders what the run returned, and marks the
@@ -154,7 +154,10 @@ describe("the corpus download", () => {
       const asked = fetcher.mock.calls
         .map(([url]) => String(url))
         .find((u) => u.includes("/graph/"));
-      expect(asked).toContain("/graph/v0.7.1/graph.json");
+      // Read from the pin rather than written out, since 2026-09-11: this asserted the literal
+      // "v0.7.1" and so failed at the phase 7.6 re-pin for a reason that has nothing to do with the
+      // property, which is that the app asks for the version the chips name.
+      expect(asked).toContain(`/graph/v${GRAPH_PIN}/graph.json`);
     });
   });
 });

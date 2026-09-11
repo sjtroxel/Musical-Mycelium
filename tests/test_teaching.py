@@ -13,9 +13,9 @@ parses it with its own literal strings rather than the loop's constants, so a ch
 instruction**; that residual risk is watched by the live capture and phase 7.7's judged pass, and is
 recorded here rather than claimed away.
 
-These tests read **artifact v0.10.0 directly, before the pin moves** at step 9, because v0.7.1 holds no
-teaching edge and a test of teaching on it would pass vacuously. ``TEACHING_ARTIFACT`` becomes the pin
-at step 9 and this constant goes away with ``UNPINNED_CUTS``.
+These tests read **artifact v0.10.0**. Until phase 7.6 step 9 they loaded it directly, before the pin
+moved, because v0.7.1 holds no teaching edge and a test of teaching on it would pass vacuously; since step
+9 v0.10.0 is the pin, and ``TEACHING_ARTIFACT`` is simply that.
 """
 
 from __future__ import annotations
@@ -62,7 +62,11 @@ from musical_mycelium.agent.loop import (
     synthesize,
 )
 from musical_mycelium.agent.tools import ToolRegistry, default_registry
-from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.memory import (
+    PINNED_ARTIFACT_VERSION,
+    InMemoryGraphStore,
+    artifact_directory,
+)
 from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
@@ -75,8 +79,8 @@ from musical_mycelium.graph.schema import (
 )
 from musical_mycelium.graph.store import Direction
 
-#: The unpinned cut these tests read. See the module docstring.
-TEACHING_ARTIFACT = "0.10.0"
+#: The cut these tests read: the pin, since step 9. See the module docstring.
+TEACHING_ARTIFACT = PINNED_ARTIFACT_VERSION
 
 #: Read off artifact v0.10.0 on 2026-09-11, never recalled (``reference-never-recall-wikidata-qids``).
 BEETHOVEN, HAYDN, CZERNY, LISZT = "Q255", "Q7349", "Q215333", "Q41309"
