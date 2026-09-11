@@ -94,7 +94,10 @@ def merge_axes(*artifacts: Artifact) -> Artifact:
 
     return Artifact(
         nodes=tuple(sorted(by_id.values(), key=lambda n: n.id)),
-        edges=tuple(sorted(edges.values(), key=lambda e: (e.subject_id, e.object_id))),
+        # Predicate in the key since v0.10.0 (phase 7.6 trap 12). One pair can now carry two predicates
+        # (Beethoven `influenced_by` and `studied_with` Haydn), and without it their order would rest on
+        # dict insertion order. No earlier pair carried two, so no v0.7.1 edge moves.
+        edges=tuple(sorted(edges.values(), key=lambda e: (e.subject_id, e.object_id, e.predicate))),
     )
 
 

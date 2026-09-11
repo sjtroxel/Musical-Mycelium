@@ -532,7 +532,7 @@ adequately included".** Three decisions and one measurement followed, all his ca
 **Step 3 is done: he reviewed the allowlist sheet on 2026-09-11 and approved it as proposed** (20 keep;
 all 6 borderline values dropped, ballet included; 64 drop).
 
-### Step 4 — Schema
+### Step 4 — Schema — [done]
 
 - `graph/schema.py`: `PREDICATE_STUDIED_WITH`; `PREDICATES` widened; `INFLUENCE_ONLY` **unchanged**; the
   teaching tier(s) from D3 added to `VERIFICATION_LEVELS` with docstrings saying what they do and do not
@@ -545,6 +545,41 @@ all 6 borderline values dropped, ballet included; 64 drop).
   new fields round-trips; no existing edge reorders.
 
 **Done when:** v0.1.0 through v0.7.1 all still load, and `make check` is green with no artifact change.
+
+#### 4.0 As built, 2026-09-11
+
+**Built as planned:** `PREDICATE_STUDIED_WITH`; `PREDICATES` widened and `INFLUENCE_ONLY` untouched;
+`VERIFICATION_TEACHING_PROSE_AUTO`, whose docstring carries what the hand check measured (27 of 30 on a
+study sentence, never a confirmed teaching relation); `VERIFICATION_TEACHING_LEVELS`; `Node.birth_year`,
+`birth_precision` and `aliases`; the predicate in `merge_axes`' edge sort key.
+
+**One addition beyond the plan, because it turns DoD 5 from a convention into a constructor rule:**
+`TIERS_BY_PREDICATE` maps each predicate to the only tiers it may carry, and `Edge` refuses anything
+else. A teaching edge wearing `PROSE_AUTO`, an influence edge wearing the teaching tier, a membership
+edge wearing an influence tier: none can be built. Every edge of every loadable artifact already
+complied.
+
+**Two findings:**
+- **`PREDICATES`' comment has said "validated on `Edge`" since v0.6.0, and nothing validated it.** A
+  typo'd predicate constructed without complaint. The check now exists.
+- **The done-when above was wrong about v0.1.0 and v0.2.0.** They predate `Node.kind` and could not load
+  under the current schema **before** this step either, measured by loading every version with and
+  without the change (identical: v0.3.0 through v0.7.1 load, v0.1.0 and v0.2.0 do not). The test
+  covers the six loadable versions and says why the other two are absent.
+
+**One test fixture had to change, correctly:** `tests/test_corroboration.py:_edge` stamped an influence
+tier on every predicate, which the new rule refuses. It now picks each predicate's own tier. A new test
+there asserts teaching edges are never reciprocal or contested (a step 6 promise, cheap to lock now).
+
+**Tests:** `tests/test_teaching_schema.py`, 21: the tier rule in both directions, the unknown predicate,
+the tier map partitioning every tier exactly once, the new node fields round-tripping (and defaulting
+to absent), every loadable artifact loading, verifying against its recorded hash and agreeing with its
+manifest's counts, and the sort key leaving v0.7.1's **stored** edge order exactly as it is.
+
+**Measured:** `make check` exit 0: 1598 passed (22 new), mypy clean over 117 files, frontend 429,
+scripted gates 4 / 0 / 2 of six, root 17 of 18. **No artifact changed**, and `make facts`, `make readme`
+and `make report` all regenerate byte-identical. The new tier appears at 0 in the API's verification
+counts; the coverage panel does not render those counts, so nothing reaches the page before step 8.
 
 ### Step 5 — The v0.10.0 layer
 

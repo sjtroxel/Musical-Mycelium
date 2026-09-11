@@ -40,10 +40,25 @@ PREDICATE_INFLUENCED_BY = "influenced_by"
 #: artist. Two independent locks, both pre-existing. Do not add it to that set to make a metric move.
 PREDICATE_PLAYS_GENRE = "plays_genre"
 
+#: ``P1066`` — "student of", stored as *student* ``studied_with`` *teacher*. Added at v0.10.0, phase 7.6.
+#:
+#: **It is teaching, and it is not influence, however often the two coincide.** The deciding reason is
+#: sourcing: P1066 says "student of", and a claim must state what its source asserts. Storing it as
+#: ``influenced_by`` would make the corpus assert an inference no source made, which is the "grounded
+#: slides into correct" failure ``CLAUDE.md`` forbids. (He put it that teaching is a strong kind of
+#: influence, and the product lets an influence question surface teachers, labelled as teachers; the
+#: separation here is about what is claimed, not about whether the two are related.)
+#:
+#: Hand-checked before a row was ingested (``docs/p1066-handcheck.md``): 0 of 40 a wrong relation or
+#: inverted. Artist-to-artist, like artist ``influenced_by``, and the direction runs the same way in
+#: time: the later person learned from the earlier one. A ``studied_with`` edge never corroborates an
+#: ``influenced_by`` edge; ``graph.corroboration`` reads influence only.
+PREDICATE_STUDIED_WITH = "studied_with"
+
 #: Every predicate an artifact may carry. Validated on ``Edge`` because a typo'd predicate is otherwise
 #: a silent edge that no traversal finds and no test misses. Widening this is additive; the gate decides
 #: separately, and far more strictly, what may become a *claim*.
-PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE})
+PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE, PREDICATE_STUDIED_WITH})
 
 #: What a traversal walks unless a caller says otherwise. Added at v0.6.0 alongside
 #: ``PREDICATE_PLAYS_GENRE``, and the default is restrictive on purpose.
@@ -167,6 +182,19 @@ VERIFICATION_MEMBERSHIP_BARE = "MEMBERSHIP_BARE"
 #: sources, and it compares them by ``Edge.source``, never by this field.
 VERIFICATION_INFOBOX_AUTO = "INFOBOX_AUTO"
 
+#: A ``P1066`` teaching statement **whose student's English Wikipedia article names the teacher in body
+#: prose**. Added at v0.10.0, phase 7.6.
+#:
+#: **What it does and does not mean, measured rather than assumed** (``docs/p1066-handcheck.md``). It is
+#: the same prose check the influence tiers use, applied to a teaching statement, and it confirms that
+#: the student's article names the teacher, not that the naming sentence is about study. On the hand
+#: check, 27 of the 30 rows it passed rested on a sentence stating study; 3 rested on a meeting, an
+#: interest and two successions to a post. About one in ten, as a direction (n=30). So it is **not** a
+#: confirmed teaching relation, and it is **never** one of the influence tiers: ``PROSE_AUTO`` means an
+#: influence statement passed this check, and reusing it for teaching would make one tier mean two
+#: things, the collapse this project has corrected three times.
+VERIFICATION_TEACHING_PROSE_AUTO = "TEACHING_PROSE_AUTO"
+
 VERIFICATION_LEVELS = frozenset(
     {
         VERIFICATION_HAND,
@@ -176,6 +204,7 @@ VERIFICATION_LEVELS = frozenset(
         VERIFICATION_MEMBERSHIP_CITED,
         VERIFICATION_MEMBERSHIP_BARE,
         VERIFICATION_INFOBOX_AUTO,
+        VERIFICATION_TEACHING_PROSE_AUTO,
     }
 )
 
@@ -184,6 +213,26 @@ VERIFICATION_LEVELS = frozenset(
 VERIFICATION_MEMBERSHIP_LEVELS = frozenset(
     {VERIFICATION_MEMBERSHIP_CITED, VERIFICATION_MEMBERSHIP_BARE}
 )
+
+#: The teaching tiers, on the ``VERIFICATION_MEMBERSHIP_LEVELS`` precedent. One today; a set so that a
+#: second (a teaching-assertion filter, if one is ever measured) is a widening, not a new question.
+VERIFICATION_TEACHING_LEVELS = frozenset({VERIFICATION_TEACHING_PROSE_AUTO})
+
+#: The influence tiers: every level that is neither membership nor teaching.
+VERIFICATION_INFLUENCE_LEVELS = (
+    VERIFICATION_LEVELS - VERIFICATION_MEMBERSHIP_LEVELS - VERIFICATION_TEACHING_LEVELS
+)
+
+#: **Which tiers each predicate may carry, enforced by ``Edge``.** Added at v0.10.0, phase 7.6 step 4, so
+#: that "no verification tier means two different things" (phase 7.6 DoD 5) is a property a row cannot
+#: be constructed without, rather than a convention three predicates have to remember. Every edge in
+#: every edge of every loadable artifact, v0.3.0 through v0.7.1, already satisfied it, checked by loading
+#: each on 2026-09-11 (v0.1.0 and v0.2.0 predate ``Node.kind`` and did not load before this rule either).
+TIERS_BY_PREDICATE: Mapping[str, frozenset[str]] = {
+    PREDICATE_INFLUENCED_BY: VERIFICATION_INFLUENCE_LEVELS,
+    PREDICATE_PLAYS_GENRE: VERIFICATION_MEMBERSHIP_LEVELS,
+    PREDICATE_STUDIED_WITH: VERIFICATION_TEACHING_LEVELS,
+}
 
 #: A genre: bebop, trip hop, blues rock. Every node through v0.2 was one, which is why this field did not
 #: need to exist until the artist axis arrived.
@@ -328,6 +377,31 @@ class Node:
     #: ``Edge.source_id`` carries DBpedia's. ``DATA-LICENSES.md`` states the terms.
     infobox_source: str = ""
 
+    #: Year of ``P569`` (date of birth), for **people**. Added at v0.10.0, phase 7.6.
+    #:
+    #: **A separate field from ``inception_year``, deliberately.** ``inception_year`` means P571 and only
+    #: P571, and its own docstring forbids laundering another source into it; a person's birth is P569, a
+    #: different statement. A **group's** date stays in ``inception_year``, because for a group P571 is
+    #: already its formation. Every artist node through v0.7.1 had no date at all (0 of 804), so "how many
+    #: pre-1900 composers does the corpus hold" could not be answered from the artifact.
+    #:
+    #: **A birth year is not an era of activity.** Coverage reports "born before 1900", never "active
+    #: before 1900", and nothing may word it otherwise.
+    birth_year: int | None = None
+
+    #: Precision of :attr:`birth_year`, in the same codes ``P571`` uses (7 century, 8 decade, 9 year, and
+    #: finer), for the same reason ``inception_precision`` is carried: many early births are known only to
+    #: the decade or century, and rendering one as a year states something the source does not.
+    birth_precision: int | None = None
+
+    #: Wikidata's ``en`` and ``mul`` aliases, ``en`` first, deduplicated, never repeating the label
+    #: (``ingest.labels.entity_aliases``). Added at v0.10.0, phase 7.6.
+    #:
+    #: **Stored, not used, in phase 7.6.** Nothing resolves a name by alias until phase 7.7, and even then
+    #: an alias only ever produces an *offer* a person must choose, never a resolution (his decision,
+    #: 2026-09-11, holding the Joy/Roy Orbison rejection). Stored here so 7.7 needs no second re-ingest.
+    aliases: tuple[str, ...] = ()
+
     def __post_init__(self) -> None:
         # JSON round-trips a tuple as a list, so ``Artifact.from_json`` would otherwise rebuild this
         # field as an unhashable list and break equality against a freshly-built node.
@@ -335,6 +409,8 @@ class Node:
             object.__setattr__(self, "countries", tuple(self.countries))
         if not isinstance(self.infobox_countries, tuple):
             object.__setattr__(self, "infobox_countries", tuple(self.infobox_countries))
+        if not isinstance(self.aliases, tuple):
+            object.__setattr__(self, "aliases", tuple(self.aliases))
         _require(self.id, "id", "node")
         _require(self.label, "label", f"node {self.id}")
         _require(self.source, "source", f"node {self.id}")
@@ -400,6 +476,16 @@ class Edge:
             raise ValueError(
                 f"{row} has verification {self.verification!r}, expected one of "
                 f"{sorted(VERIFICATION_LEVELS)}"
+            )
+        if self.predicate not in PREDICATES:
+            raise ValueError(
+                f"{row} has predicate {self.predicate!r}, expected one of {sorted(PREDICATES)}"
+            )
+        if self.verification not in TIERS_BY_PREDICATE[self.predicate]:
+            raise ValueError(
+                f"{row} carries {self.verification!r}, which is not a {self.predicate} tier. A tier "
+                f"that means two different things is the collapse TIERS_BY_PREDICATE exists to refuse; "
+                f"expected one of {sorted(TIERS_BY_PREDICATE[self.predicate])}"
             )
 
 

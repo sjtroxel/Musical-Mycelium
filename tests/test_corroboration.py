@@ -24,10 +24,14 @@ from musical_mycelium.graph.schema import (
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
     PREDICATE_PLAYS_GENRE,
+    PREDICATE_STUDIED_WITH,
+    PROSE_TIER_NOT_APPLICABLE,
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_INFOBOX_AUTO,
+    VERIFICATION_MEMBERSHIP_CITED,
     VERIFICATION_PROSE_AUTO,
+    VERIFICATION_TEACHING_PROSE_AUTO,
     Artifact,
     Edge,
     Node,
@@ -54,6 +58,17 @@ def _edge(
     corroboration: str | None = None,
     predicate: str = PREDICATE_INFLUENCED_BY,
 ) -> Edge:
+    # Each predicate carries only its own tiers since v0.10.0 (``schema.TIERS_BY_PREDICATE``). This helper
+    # stamped an influence tier on every predicate until then, which the schema now refuses to build.
+    if predicate == PREDICATE_PLAYS_GENRE:
+        prose_tier, verification = PROSE_TIER_NOT_APPLICABLE, VERIFICATION_MEMBERSHIP_CITED
+    elif predicate == PREDICATE_STUDIED_WITH:
+        prose_tier, verification = "PROSE", VERIFICATION_TEACHING_PROSE_AUTO
+    else:
+        prose_tier = "PROSE"
+        verification = (
+            VERIFICATION_INFOBOX_AUTO if source == SOURCE_DBPEDIA else VERIFICATION_PROSE_AUTO
+        )
     return Edge(
         subject_id=subject,
         predicate=predicate,
@@ -61,10 +76,8 @@ def _edge(
         source=source,
         source_id=f"http://example/{subject}",
         retrieved_at=STAMP,
-        prose_tier="PROSE",
-        verification=(
-            VERIFICATION_INFOBOX_AUTO if source == SOURCE_DBPEDIA else VERIFICATION_PROSE_AUTO
-        ),
+        prose_tier=prose_tier,
+        verification=verification,
         corroboration=corroboration,
     )
 
@@ -132,6 +145,20 @@ def test_membership_edges_are_never_reciprocal_or_contested() -> None:
     artifact = _artifact(
         _edge("Q1", "Q2", predicate=PREDICATE_PLAYS_GENRE),
         _edge("Q2", "Q1", predicate=PREDICATE_PLAYS_GENRE),
+    )
+    assert reciprocal_pairs(artifact) == ()
+    assert contested_pairs(artifact) == ()
+
+
+def test_teaching_edges_are_never_reciprocal_or_contested() -> None:
+    """Phase 7.6: a teacher never corroborates or contests an influence claim. ``studied_with`` says who
+    taught whom, which is a different assertion from influence, so two opposite teaching edges are not a
+    disagreement about influence, and a teaching edge beside an influence edge is not a second source."""
+    artifact = _artifact(
+        _edge("Q1", "Q2", predicate=PREDICATE_STUDIED_WITH),
+        _edge("Q2", "Q1", predicate=PREDICATE_STUDIED_WITH),
+        _edge("Q3", "Q4", SOURCE_WIKIDATA),
+        _edge("Q4", "Q3", SOURCE_DBPEDIA, predicate=PREDICATE_STUDIED_WITH),
     )
     assert reciprocal_pairs(artifact) == ()
     assert contested_pairs(artifact) == ()
