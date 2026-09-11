@@ -71,7 +71,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -98,6 +98,49 @@ QID_MUSIC_GENRE = "Q188451"
 #: Reason code for an object that is not a music genre. Distinct from the other axes' codes because the
 #: exclusions are a published number and a rejection naming the wrong axis is worse than none.
 NOT_A_GENRE = "NOT_A_GENRE"
+
+#: **Real repertoire the music-genre type test drops, admitted past it by review.** Phase 7.6 step 3,
+#: reviewed and approved by sjtroxel on 2026-09-11; the record is ``docs/p136-allowlist-review.md``.
+#:
+#: The type test (``P31/P279*`` of ``Q188451``) is right for most of what it refuses: art movements,
+#: comedy and fiction genres, ensembles, instruments. It is too narrow for classical repertoire, which
+#: Wikidata types as musical *forms* and *types of musical work* rather than as genres: song, suite,
+#: canon, piano sonata. These QIDs are admitted **as Wikidata's own statements say**; the allowlist only
+#: widens what counts as a genre object, and it never re-points a statement at a different item.
+#:
+#: **Deliberately absent, by the same review:** ballet (``Q41425``, the dance; the corpus already holds
+#: the music genre ``Q4851628``, and a second "ballet" node would make the name ambiguous), spoken word,
+#: ode, ballad, string quartet (the ensemble) and Catholic Mass (the rite). The collision rule that kept
+#: ballet out is enforced in code by the builder, not by this list alone.
+REPERTOIRE_ALLOWLIST: Mapping[str, str] = {
+    "Q4816198": "Atlanta hip-hop",
+    "Q7366": "song",
+    "Q837182": "impressionism in music",
+    "Q1546995": "piano sonata",
+    "Q2003283": "organ repertoire",
+    "Q779024": "concertino",
+    "Q715028": "viola sonata",
+    "Q377141": "sinfonia",
+    "Q203005": "suite",
+    "Q1746015": "piano piece",
+    "Q1746028": "piano concerto",
+    "Q7148059": "patriotic song",
+    "Q53831": "canon",
+    "Q841238": "chaconne",
+    "Q464769": "rhapsody",
+    "Q873000": "canzone",
+    "Q1824109": "song form",
+    "Q535611": "neoclassicism (music)",
+    "Q1294582": "Roman School",
+    # Already a genre node in v0.7.1; today's Wikidata no longer types it as one. Admitting it restores
+    # one existing artist's edge and creates no node.
+    "Q153071": "polka",
+}
+
+
+def admitted(membership: Membership, allowlist: Mapping[str, str] = REPERTOIRE_ALLOWLIST) -> bool:
+    """Whether a P136 object may become a genre: typed as one by Wikidata, or reviewed repertoire."""
+    return membership.object_in_axis or membership.genre_id in allowlist
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,8 +224,15 @@ def build(
     revisions: dict[str, int],
     known_genres: frozenset[str],
     retrieved_at: str | None = None,
+    allowlist: Mapping[str, str] | None = None,
 ) -> Artifact:
     """Membership edges, plus a genre node for every object the corpus does not already hold.
+
+    ``allowlist`` admits reviewed repertoire past the music-genre type test (``REPERTOIRE_ALLOWLIST``,
+    phase 7.6). **It defaults to none**, so the v0.6.0 build path keeps exactly the behaviour it shipped
+    with; only a caller that passes the list widens the test. A genre whose label is empty is never
+    given a node (``Node`` would refuse it); before the phase 7.6 ``mul`` fix that was a crash waiting
+    for the first unlabelled genre, and now it is a skipped object the caller can count.
 
     ``retrieved_at`` is this layer's own, not the P737 crawl's, and they will differ by weeks. That is
     correct: provenance is per row, and a corpus assembled from reads taken at different times should
@@ -190,7 +240,7 @@ def build(
     is exactly how ``Villano Antillano`` ended up in the artifact with no surviving corpus-genre P136.
     """
     stamp = retrieved_at or datetime.now(UTC).isoformat(timespec="seconds")
-    in_axis = [m for m in memberships if m.object_in_axis]
+    in_axis = [m for m in memberships if admitted(m, allowlist or {})]
 
     nodes = tuple(
         Node(
@@ -203,7 +253,7 @@ def build(
             revision_id=revisions.get(qid),
         )
         for qid in sorted({m.genre_id for m in in_axis} - known_genres)
-        if qid in labels
+        if labels.get(qid)
     )
     known_labels = {n.id for n in nodes} | known_genres
     edges = tuple(

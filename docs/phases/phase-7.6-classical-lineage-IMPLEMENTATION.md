@@ -581,7 +581,7 @@ scripted gates 4 / 0 / 2 of six, root 17 of 18. **No artifact changed**, and `ma
 and `make report` all regenerate byte-identical. The new tier appears at 0 in the API's verification
 counts; the coverage panel does not render those counts, so nothing reaches the page before step 8.
 
-### Step 5 — The v0.10.0 layer
+### Step 5 — The v0.10.0 layer — [done]
 
 A new module, `ingest/lineage.py`, `--source 0.7.1 --version 0.10.0`, on the `membership.py` and
 `dbpedia.py` pattern. Local only, never in CI, $0, 1 request per second to Wikipedia with the
@@ -611,6 +611,127 @@ project's contactable User-Agent.
 
 **Done when:** `artifacts/v0.10.0/` exists with its manifest, the diff report is committed in this doc's
 as-built, and Mozart is in it. **The pin has not moved yet.**
+
+#### 5.0 As built, 2026-09-11
+
+**The module:** `ingest/lineage.py`, in two phases on the `artists.py` pattern. `--crawl recovery|teaching
+|facts` does every network read and saves each part to `data/lineage/`, resumable part by part; `--build`
+is offline and deterministic given those parts, runs the diff classifier, and **refuses to write** if any
+change fits none of D2's classes. The allowlist lives in `ingest/membership.py:REPERTOIRE_ALLOWLIST`;
+`membership.build` gained an `allowlist` parameter that **defaults to none**, so the v0.6.0 build path is
+unchanged. 19 tests in `tests/test_lineage.py` run the same pure functions on synthetic inputs, including
+an end-to-end build and four planted unclassifiable changes that must each stop it.
+
+**Three bugs caught in review before any test ran:** a convoluted date query (rewritten as a plain
+`UNION`); a dangling-edge bug where an allowlisted genre could attach to a person the build later refuses
+(allowlisted repertoire now goes only to artists actually in the corpus); and a field-name mismatch
+between the date query and its parser.
+
+**(a) `mul` recovery, crawled and measured.** 81 entities were unlabelled in the 2026-08-05 crawl; 212
+candidate rows touched one; 53 subject articles were re-read. 32 passed the prose check and **25 new
+influence edges** survived the assertion filter, bringing **19 artists** into the corpus: Wolfgang Amadeus
+Mozart (influenced by Johann Sebastian Bach, `ASSERTS_AUTO`), Taylor Swift, B. B. King, Radiohead,
+Megadeth, Muse, Bruno Mars, Dua Lipa, Lauryn Hill, Christina Aguilera, Sinéad O'Connor, The Smashing
+Pumpkins and others. **22 entities are still unlabelled after the fix**: they have no `en` or `mul`
+label at all, only other languages, so they cannot become nodes, correctly.
+
+**(b) Teaching, crawled and measured, on the third attempt.** 3,449 distinct statements over 2,584 people,
+**exactly the morning's independent pull**, so the re-split windows lost nothing. 2,035 student articles
+fetched at one per second (about 40 minutes). **2,487 passed the prose check (72%)**, against 30 of 40 in
+the step 2 sample; 861 `ORPHAN`, 101 `MISLINKED`.
+
+**The first two attempts failed before fetching a single article, both on Wikidata's query service, and
+both failure shapes are now handled for every later crawl in this module:**
+1. **A read timeout.** `wikidata.sparql` sends a short query by GET with a 60 s limit and retries HTTP
+   429/5xx, not a timeout. The discovery query also used `FILTER EXISTS` for the sitelink tests where the
+   morning's successful pull used plain joins. Fixed: plain joins, and `patient_sparql`, which sends by
+   POST (the project's 180 s path) and waits and retries on a timeout.
+2. **A truncated response.** The same window then came back as a **200 carrying half a JSON document**:
+   the service hit its own timeout mid-stream and signalled no error. Fixed: `patient_sparql` retries a
+   decode failure too, and the discovery runs in **eight** birth-year windows instead of four. All eight
+   returned (202, 302, 233, 362, 348, 458, 686, 860 rows).
+The facts crawl's date, membership and coverage queries go through `patient_sparql` as well, so the fix
+covers the part that had not yet failed.
+
+**(c)(d)(e) The facts crawl then failed a third way, and was stopped by hand before its retries ran out.**
+Its first date query, 200 artists, drew four HTTP 504s in a row: the service saying the query was too
+heavy, not that it was unlucky, and retrying the same query does not change that. Stopped and cut to
+50 artists per date query and 75 per membership query. **The first 50-artist batch drew two more 504s**,
+which settled it: the query *shape* (a `UNION` over value nodes) was the problem, not its size. Stopped
+again, and **dates now come from Wikidata's entity API** (`wbgetentities`, 40 entities per request, the
+same API this project already reads labels through), converted by `date_rows_from_entities` into exactly
+the rows `parse_dates` already read, so the ranking and precision rules stayed in one tested place. A
+test pins the conversion. Membership stays on the query service at 75 per query, where the morning's
+P136 measurements succeeded at 150 and 250. Nothing was lost across the three stops: the recovery and
+teaching parts were saved, and the facts part writes only when it completes.
+
+**(c)(d)(e) crawled** on the fourth attempt, with peak memory measured at **75 MB**. The third attempt was
+killed by the system for low memory during the alias fetch; the measurement shows the crawl was not the
+cause, the rest of the machine was.
+
+**The first build passed the classifier and wrote v0.10.0: 3,650 nodes (2,911 artists, 739 genres) and
+9,304 edges** (2,309 `influenced_by`, 4,508 `plays_genre`, 2,487 `studied_with`). Every change fell into
+D2's classes:
+
+| class | rows |
+|---|---|
+| (a) recovery | 19 artist nodes, 25 `influenced_by` edges |
+| (b) teaching | 2,088 artist nodes, 2,487 `studied_with` edges |
+| (c) dates, on existing nodes | 574 birth years, 220 group formation years |
+| (d) aliases, on existing nodes | 1,148 |
+| (e) membership | 64 genre nodes, 1,726 `plays_genre` edges |
+
+**One genre refused by the collision rule, as designed:** a second "chanson" (`Q1062328`) folds onto the
+existing "chanson" (`Q1062400`). **Build exclusions: 0**; no recovered or teaching statement is deprecated.
+
+**What the corpus now says, spot-checked:** Mozart studied with Johann Christian Bach, Leopold Mozart and
+Padre Martini, was influenced by J. S. Bach, plays opera, Classical period, chamber music and symphony,
+and taught Hummel, Attwood, Süssmayr, Eberl, Seyfried and Ployer. Beethoven studied with Haydn,
+Salieri, Clementi and Neefe (and is still influenced by Haydn, a separate edge). Liszt has 41 recorded
+students; Chopin studied with Elsner, Żywny and Würfel and has 8. **2,674 of 2,911 artists carry a birth
+year, 2,133 born before 1900.** 977 teaching endpoints have no P136 genre, shown as the gap he chose.
+
+**Size:** `graph.json` is **5.86 MB raw, 482 KB compressed**, against the "5 MB or so" he accepted.
+Step 6 decides, per D6 as amended.
+
+**Found by the first build, and fixed:** the succession detector missed "professor", "his master" and
+"learn", so it miscalled three real teaching lines (Vaughan Williams under Stanford, Leoni under Asola,
+Fauré) as succession-only: 12 flagged, **9 after the fix**, each of the three pinned in a test.
+
+**The build review, reviewed and approved by sjtroxel the same afternoon:** `docs/p1066-build-review.md`.
+53 younger-teacher edges (kept 43, excluded 10, **two of them reversed outright**: Ondříček's article
+names Kubelík as *his* pupil, Benoist's names Adolphe Adam as *his* student) and 9 succession-only edges
+(all excluded); 18 distinct, since Ercole Pasquini fell under both rules. They are
+`ingest/lineage.py:TEACHING_REJECTED`, each with its reason, and a test keeps that list unique and
+explained.
+
+**The final build**, v0.10.0 rewritten in place (unreleased, `--overwrite`), classifier clean:
+
+| | first build | final build |
+|---|---|---|
+| nodes / edges | 3,650 / 9,304 | **3,628 / 9,276** |
+| `studied_with` edges | 2,487 | **2,469** (the 18 excluded) |
+| teaching-only artist nodes | 2,088 | **2,066** (22 whose only teaching edge was excluded left with it) |
+| `plays_genre` edges added | 1,726 | **1,716** (those 22 people's genres left too) |
+| younger teachers flagged | 53 | **43**, every one a reviewed keep |
+| succession-only | 9 | **0** |
+| `graph.json` | 5.86 MB | **5.84 MB** |
+
+**None of the 18 is in the artifact**, checked by loading it rather than by reading the build's log.
+`tests/test_artifact_versions.py` records v0.10.0 in `UNPINNED_CUTS`: it is built, and deliberately read
+by nothing, until step 9 moves the pin.
+
+**Done:** `artifacts/v0.10.0/` exists with its manifest, the diff report is recorded above, and Mozart is
+in it. **The pin has not moved.**
+
+**Two pre-existing behaviours the recovery exposes, recorded rather than changed:**
+- **"William Shakespeare" enters as an artist node.** The artist axis has always typed a P737 object as an
+  artist when it is any human (`Q5`), so a musician citing Shakespeare as an influence brings him in. This
+  phase inherits the rule; it did not introduce it.
+- **The influence-assertion filter already reads teaching as influence** (`ingest/assertion.py`:
+  `\bteacher` and `learned\sfrom` are among its ASSERT patterns). That is sound where it applies, because
+  those rows are P737 *influence* statements and the claim still matches its source. It is the same
+  overlap he raised about teaching and influence, visible in the existing data.
 
 ### Step 6 — Graph, derived views and budgets
 

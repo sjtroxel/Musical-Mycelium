@@ -26,7 +26,12 @@ REPO = Path(__file__).resolve().parents[1]
 #: step 5 writes ``artifacts/v0.10.0/`` before step 9 moves the pin (so the new corpus can be checked
 #: before anything reads it); step 5 adds "0.10.0" here with that reason and step 9 removes it. A cut
 #: that sits here after its phase closes is a pin somebody forgot to move.
-UNPINNED_CUTS: dict[str, str] = {}
+UNPINNED_CUTS: dict[str, str] = {
+    "0.10.0": (
+        "phase 7.6 step 5 wrote it on 2026-09-11; step 9 moves the pin only after every dataset's "
+        "re-pin check, so until then it is built and deliberately not read by anything"
+    ),
+}
 
 _VERSION = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 

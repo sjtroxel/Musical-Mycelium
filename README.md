@@ -169,7 +169,7 @@ credits, so the invoice read $0.00. The invoice applies the credits line by line
 at $0.00, so it does not say how that $6.28 splits between Bedrock and the rest. The claim that Bedrock
 is the line item rests on measured eval spend, not on the invoice.
 
-At least <!-- n:python_tests_floor -->1,500<!-- /n --> Python tests and at least <!-- n:web_tests_floor -->400<!-- /n --> frontend tests, plus <!-- n:costs_money_tests -->14<!-- /n --> that spend real money and are
+At least <!-- n:python_tests_floor -->1,600<!-- /n --> Python tests and at least <!-- n:web_tests_floor -->400<!-- /n --> frontend tests, plus <!-- n:costs_money_tests -->14<!-- /n --> that spend real money and are
 deselected by default. `make check` also gates the built page's size, per asset class, and fails if any
 figure in this README drifts from its source.
 
