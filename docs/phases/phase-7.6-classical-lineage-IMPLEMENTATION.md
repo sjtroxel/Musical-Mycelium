@@ -912,7 +912,7 @@ to the new intended state and none was loosened (the predicate lock is still an 
 clean over 120 files, frontend 429, scripted gates **4 / 0 / 2 of six**, root 17 of 18, every asset
 budget holds.
 
-### Step 8 — API contract and frontend
+### Step 8 — API contract and frontend — [built; its running-app check runs right after step 9's re-pin]
 
 - `docs/SPEC.md` §6 and §7: `studied_with` in the claim contract, the new tier(s) in the verification
   list, and the rule that a claim's predicate is always shown.
@@ -928,6 +928,75 @@ budget holds.
 
 **Done when:** the running app, on the local stub, shows a teaching answer with its own verb, its own
 line style and its own inspector section, and the frontend suite is green.
+
+#### 8.0 As built, 2026-09-11
+
+**Built.**
+- **`SPEC.md`.** §6: `claim_predicates` replaces `"predicate": "influenced_by"`, which was a literal typed
+  into `api/app.py` and false from the day step 7 opened the gate. It is now read from
+  `ALLOWED_PREDICATES`, so it cannot drift again. The eighth verification key and the ten-tool registry
+  are noted. §7: `studied_with` in the claim contract, `TEACHING_PROSE_AUTO` in the tier list, and the
+  rule that **a claim's predicate is always shown in its own words**, with no surface falling back to
+  influence wording for a predicate it does not know.
+- **Types.** `Verification` gains `TEACHING_PROSE_AUTO`; `CorpusSummary.claim_predicates`;
+  `PREDICATE_STUDIED_WITH`; `ArtifactNode.birth_year`, optional because older cuts do not carry it.
+- **`ClaimList`.** The verb comes from the predicate (`relationOf`). An unknown predicate prints as its
+  own name, never as either verb. The teaching tier has its own wording.
+- **`subgraph.ts`.** A claimed edge's predicate is read from the claim and checked against
+  `CLAIMABLE_PREDICATES`; anything else throws, which is the loud failure the old comment asked for.
+  **An edge's identity now includes its predicate.** Keyed on the pair alone, a claimed teaching edge
+  Beethoven to Haydn would have hidden the same pair's influence edge from the context pass and from
+  `hidden`, and one of two sourced statements would have left the picture.
+- **`GraphView`.** A third line style: teaching is a long dash `[6, 3]` in its own token, `--edge-teaching`
+  `#3f7a5e` (3.88:1 against `--ground`, 3.59:1 against `--card`, a hue no other line uses). A claimed
+  teaching line keeps the accent and the arrowhead and takes the dash. An unknown predicate falls to
+  dotted, never solid, because solid is the one style that asserts derivation. A teaching line on a
+  pair also joined by influence is offset 3 px and its ordinal badge moves to the other side, so both
+  lines stay visible. The caption explains dashed lines only when one is drawn. The entering animation
+  keys on the predicate too.
+- **`NodeInspector`.** "Studied with" and "Taught" sections; the degree and the empty-state sentence
+  count teaching. A person's birth year is shown as "born 1770", never as a date of activity.
+- **`CoveragePanel`.** A "When the artists were born" axis: birth eras with a no-birth-year bucket, and
+  the born-before-1900 figure with its skew stated in the same note. On a corpus with no birth years
+  at all (the pinned v0.7.1 today) it says so rather than printing zero as if it were a measurement. The
+  lede said artists were unmeasured "because date and place are genre properties"; that is false at
+  v0.10.0 and was corrected.
+- `layout.ts` is untouched, and a test asserts teaching is inert to layering.
+- **The local stub** (found at step 7, not in this plan): it routes "Who did X study with?", "Who taught
+  X?" and "Who studied with X?", and renders teachers, students and typed hops each in their own verb.
+  A partial name still refuses.
+
+**Findings.**
+- **The stub lowercased names.** `_lead` used `str.capitalize()`, which lowercases everything after the
+  first letter: "Carl Czerny" came out "Carl czerny", and "UK drill" would have come out "Uk drill".
+  Pre-existing, caught by the first test to lead a stub sentence with a person. Fixed to uppercase the
+  first character only; every all-lowercase genre label renders exactly as before.
+- `styles.css` never defined `--edge-membership`, so membership has always drawn in `GraphView`'s
+  fallback colour. Left as it is; noted.
+- The corpus `predicate` literal is the same class of defect as step 7's stale refusal wording: a typed
+  literal that nothing computed, so nothing could notice it had become false.
+
+**Decisions taken inside the plan, open to veto:** birth years in the inspector; the teaching offset on
+shared pairs; the dash and the green; throwing on an unknown claimed predicate; and renaming the corpus
+field rather than adding beside it. The rename is safe because the SPA and the API deploy together at
+7.7; the recorded fixtures still carry the old key, which the client ignores.
+
+**The tour recording, checked.** All five recorded edges are on v0.10.0 with the same source and the
+same tier, the shortest route between the endpoints is unchanged, and every label is identical. **But the
+recording is stamped v0.7.1**, the page prints that stamp, `StepPanel` refuses to draw a map whose
+answer came from a different corpus, and `tests/test_tour_recording.py` asserts the stamp equals the
+pin. So the rule's second condition fires: **the tour must be re-captured live after step 9 moves the
+pin** (about a cent, behind confirmation). Capturing it now would record v0.7.1 again.
+
+**Done-when: the frontend suite is green; the running-app check is not done yet, and cannot be.** Nothing
+serves v0.10.0 until step 9 moves the pin. There is no artifact-version override, and adding one for a
+single check would be a new runtime path. The check runs on the stub immediately after step 9's re-pin
+and is recorded there.
+
+**Measured:** `make check` exit 0: **1666 Python tests** (6 new: five for the stub in
+`tests/test_teaching.py`, one in `tests/test_api.py`), **frontend 448** (19 new, in
+`web/src/teaching.test.tsx`), mypy clean over 120 files, scripted gates **4 / 0 / 2 of six**, script bundle
+265.9 KB of 320 (263.0 before), graph 2.57 MB of 8.00, root 17 of 18.
 
 ### Step 9 — The re-pin, datasets and free evals
 

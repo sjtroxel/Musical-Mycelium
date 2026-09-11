@@ -22,6 +22,8 @@ export interface ArtifactNode {
   inception_year: number | null;
   inception_precision: string | null;
   countries: string[];
+  /** P569, artists only, from artifact v0.10.0. Absent on older cuts, so optional. Not an era of activity. */
+  birth_year?: number | null;
   source: string;
   source_id: string;
   retrieved_at: string;
@@ -40,9 +42,15 @@ export interface ArtifactNode {
  * Mirrors `graph/schema.py`'s `PREDICATE_INFLUENCED_BY` / `PREDICATE_PLAYS_GENRE`. Only the first is
  * in `agent/claims.py:ALLOWED_PREDICATES`, so a *claimed* edge is always influence and a membership
  * edge can only ever reach the map as context.
+ *
+ * **A third since artifact v0.10.0 (phase 7.6): `studied_with`**, stored *student* `studied_with`
+ * *teacher*. It is teaching, not influence, and it is claimable: the gate admits it beside
+ * `influenced_by`. So a claimed edge is now influence OR teaching, read from the claim, and every
+ * surface that draws or words one says which. Membership is still never a claim.
  */
 export const PREDICATE_INFLUENCED_BY = "influenced_by";
 export const PREDICATE_PLAYS_GENRE = "plays_genre";
+export const PREDICATE_STUDIED_WITH = "studied_with";
 
 export interface ArtifactEdge {
   subject_id: string;

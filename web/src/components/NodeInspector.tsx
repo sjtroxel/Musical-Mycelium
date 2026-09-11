@@ -1,4 +1,8 @@
-import { PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE } from "../graph/staticGraph";
+import {
+  PREDICATE_INFLUENCED_BY,
+  PREDICATE_PLAYS_GENRE,
+  PREDICATE_STUDIED_WITH,
+} from "../graph/staticGraph";
 import type { ArtifactEdge, StaticGraph } from "../graph/staticGraph";
 import type { RenderNode } from "../graph/subgraph";
 
@@ -39,9 +43,20 @@ import type { RenderNode } from "../graph/subgraph";
 export function split(
   graph: StaticGraph,
   id: string,
-): { parents: ArtifactEdge[]; children: ArtifactEdge[]; membership: ArtifactEdge[] } {
+): {
+  parents: ArtifactEdge[];
+  children: ArtifactEdge[];
+  membership: ArtifactEdge[];
+  teachers: ArtifactEdge[];
+  students: ArtifactEdge[];
+} {
   const incident = [...(graph.incident.get(id) ?? [])];
   const influence = incident.filter((edge) => edge.predicate === PREDICATE_INFLUENCED_BY);
+  // Phase 7.6 step 8, trap 6: split only knew influence and membership, so a teaching edge fell in
+  // neither list and vanished from the panel. `student studied_with teacher`, so an edge where THIS
+  // node is the subject names one of its teachers: the same orientation rule as influence, and the
+  // same way to get it backwards.
+  const teaching = incident.filter((edge) => edge.predicate === PREDICATE_STUDIED_WITH);
   return {
     // `subject influenced_by object`: influence runs object -> subject. So an edge where THIS node
     // is the subject is one of its parents. Getting this backwards is the project's named failure
@@ -49,6 +64,8 @@ export function split(
     parents: influence.filter((edge) => edge.subject_id === id),
     children: influence.filter((edge) => edge.object_id === id),
     membership: incident.filter((edge) => edge.predicate === PREDICATE_PLAYS_GENRE),
+    teachers: teaching.filter((edge) => edge.subject_id === id),
+    students: teaching.filter((edge) => edge.object_id === id),
   };
 }
 
@@ -151,8 +168,9 @@ export function NodeInspector({
     );
   }
 
-  const { parents, children, membership } = split(graph, node.id);
-  const degree = parents.length + children.length + membership.length;
+  const { parents, children, membership, teachers, students } = split(graph, node.id);
+  const degree =
+    parents.length + children.length + membership.length + teachers.length + students.length;
 
   return (
     <aside className="inspector" aria-label={`About ${node.label}`}>
@@ -170,7 +188,14 @@ export function NodeInspector({
 
       <p className="inspector__facts">
         {node.kind}
-        {node.year === null ? ", no inception date in the corpus" : `, ${node.year}`}.{" "}
+        {/* A person's birth year where the corpus has one (P569, artifact v0.10.0). Worded as a
+            birth, never as a date of activity: being born in 1770 is not being active in 1770. */}
+        {node.born != null
+          ? `, born ${node.born}`
+          : node.year === null
+            ? ", no inception date in the corpus"
+            : `, ${node.year}`}
+        .{" "}
         {/* Which of the two things this node is, said in words. A visitor who clicks a faint dot
             must not be left to infer from a ring whether the answer went there. */}
         {node.role === "walked"
@@ -189,8 +214,9 @@ export function NodeInspector({
       {degree === 0 ? (
         <p className="inspector__facts">
           {/* Never a negative claim about the music — the same rule the refusal panel follows. */}
-          The corpus records no influences and no genre membership for this node in either
-          direction. That is the state of the sources, not a finding about the music.
+          The corpus records no influences, no teachers or students, and no genre membership for
+          this node in either direction. That is the state of the sources, not a finding about the
+          music.
         </p>
       ) : (
         <>
@@ -234,6 +260,23 @@ export function NodeInspector({
               deliberately worded so it cannot be read as either. It reads differently depending on
               which end you are standing at, because the relation is not symmetric in English even
               though it is one edge. */}
+          {/* Teaching, phase 7.6 step 8. Its own two headings, worded as study so neither can be
+              read as "came out of" or "led to": a student is not descended from a teacher in the
+              sense those headings carry, and the source says "student of", not "influenced by". */}
+          <NeighbourList
+            title="Studied with"
+            edges={teachers}
+            id={node.id}
+            graph={graph}
+            onFollow={onFollow}
+          />
+          <NeighbourList
+            title="Taught"
+            edges={students}
+            id={node.id}
+            graph={graph}
+            onFollow={onFollow}
+          />
           <NeighbourList
             title={node.kind === "artist" ? "Played in" : "Artists recorded in it"}
             edges={membership}

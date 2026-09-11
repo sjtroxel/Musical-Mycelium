@@ -26,7 +26,11 @@ export type Verification =
   | "EXPOSURE_AUTO"
   | "INFOBOX_AUTO"
   | "MEMBERSHIP_CITED"
-  | "MEMBERSHIP_BARE";
+  | "MEMBERSHIP_BARE"
+  // Artifact v0.10.0, phase 7.6. Carried only by `studied_with` claims (`graph/schema.py:
+  // TIERS_BY_PREDICATE`), and never one of the influence tiers: it says the student's article names the
+  // teacher, not that the naming sentence is about study.
+  | "TEACHING_PROSE_AUTO";
 
 export interface Span {
   start: number;
@@ -103,7 +107,11 @@ export interface CorpusSummary {
   verification: Record<string, number>;
   structure: Record<string, number>;
   coverage: Coverage;
-  predicate: string;
+  /**
+   * The predicates a claim can carry: `agent/claims.py:ALLOWED_PREDICATES`. Replaced a single
+   * `predicate: "influenced_by"` at phase 7.6 step 8, which had become false when teaching joined.
+   */
+  claim_predicates: string[];
 }
 
 /** `complete` is the only value that may be presented as a finished answer. See `DoneFrame`. */

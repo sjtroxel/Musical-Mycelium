@@ -38,6 +38,7 @@ from musical_mycelium.agent.claims import (
 )
 from musical_mycelium.agent.llm import (
     LLMResponse,
+    LocalLLM,
     ScriptedLLM,
     ToolOutcome,
     ToolUse,
@@ -819,6 +820,97 @@ def test_synthesis_refuses_a_predicate_it_has_no_words_for() -> None:
     )
     with pytest.raises(ValueError, match="no words for predicate"):
         _prompt(ApprovedClaimSet(claims=(claim,)))
+
+
+# --- the local stub, phase 7.6 step 8 ---------------------------------------------------------------
+#
+# The stub is what `make dev` runs, so it is how step 8's done-when ("the running app, on the local stub,
+# shows a teaching answer") can be met at all. It is a fixture, not a model: these check that it walks
+# the teaching tools and renders each relationship in its own words, never that anything chose well.
+
+BEETHOVENS_TEACHER_LABELS = (
+    "Joseph Haydn",
+    "Antonio Salieri",
+    "Muzio Clementi",
+    "Christian Gottlob Neefe",
+)
+
+
+def test_the_local_stub_answers_who_beethoven_studied_with(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    events = list(
+        run(
+            "Who did Ludwig van Beethoven study with?",
+            store=store,
+            llm=LocalLLM(),
+            registry=registry,
+        )
+    )
+
+    assert [e.name for e in events if isinstance(e, ToolCalled)] == ["resolve_node", "get_teachers"]
+    assert {e.claim.object_id for e in events if isinstance(e, ClaimApproved)} == (
+        BEETHOVENS_TEACHERS
+    )
+    prose = "".join(e.text for e in events if isinstance(e, Token))
+    assert prose.startswith("Ludwig van Beethoven studied with ")
+    assert all(label in prose for label in BEETHOVENS_TEACHER_LABELS)
+    assert "influenced" not in prose and "came out of" not in prose
+
+
+def test_the_local_stub_answers_who_studied_with_haydn(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    events = list(
+        run("Who studied with Joseph Haydn?", store=store, llm=LocalLLM(), registry=registry)
+    )
+
+    assert [e.name for e in events if isinstance(e, ToolCalled)] == ["resolve_node", "get_students"]
+    prose = "".join(e.text for e in events if isinstance(e, Token))
+    assert "Ludwig van Beethoven" in prose
+    assert prose.endswith("studied with Joseph Haydn. Every link above traces to a cited source.")
+
+
+def test_the_local_stub_still_refuses_a_partial_name(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """Resolution needs an exact full label. Offering "Ludwig van Beethoven" for "Beethoven" is phase
+    7.7's, and the stub must not quietly do it first."""
+    events = list(
+        run("Who did Beethoven study with?", store=store, llm=LocalLLM(), registry=registry)
+    )
+    assert [e for e in events if isinstance(e, Refused)]
+    assert not [e for e in events if isinstance(e, ClaimApproved)]
+
+
+def test_the_local_stub_gives_each_typed_hop_its_own_verb(store: InMemoryGraphStore) -> None:
+    claims = gate(
+        [
+            ClaimProposal(CZERNY, STUDIED, BEETHOVEN),
+            ClaimProposal(BEETHOVEN, STUDIED, HAYDN),
+            ClaimProposal(BEETHOVEN, INFLUENCED, HAYDN),
+        ],
+        store,
+    ).approved
+    claim_set = _claim_set(store, claims, chain=(CZERNY, BEETHOVEN, HAYDN))
+    prose = "".join(synthesize(claim_set, LocalLLM()))
+    assert prose.startswith(
+        "Carl Czerny studied with Ludwig van Beethoven, who was influenced by and studied with "
+        "Joseph Haydn."
+    )
+
+
+def test_the_local_stub_keeps_influences_and_teachers_in_separate_sentences(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    proposals = [
+        *registry.invoke("get_influences", {"node_id": BEETHOVEN}).proposals,
+        *registry.invoke("get_teachers", {"node_id": BEETHOVEN}).proposals,
+    ]
+    claim_set = _claim_set(store, gate(proposals, store).approved)
+    prose = "".join(synthesize(claim_set, LocalLLM()))
+    assert "Ludwig van Beethoven was influenced by Joseph Haydn." in prose
+    assert "Ludwig van Beethoven studied with " in prose
 
 
 # --- untrusted text: the teaching payloads are marked like every other --------------------------------

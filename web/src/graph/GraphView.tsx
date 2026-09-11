@@ -12,7 +12,8 @@ import {
   type MotionMode,
   type View,
 } from "./motion";
-import { PREDICATE_INFLUENCED_BY } from "./staticGraph";
+import { PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH } from "./staticGraph";
+import { sharedTeachingPairs } from "./subgraph";
 import { onFrame } from "./ticker";
 import type { RenderEdge, RenderGraph, RenderNode } from "./subgraph";
 import {
@@ -83,7 +84,7 @@ interface SimLink {
   source: SimNode;
   target: SimNode;
   kind: RenderEdge["kind"];
-  /** Influence or membership. Carried through so the draw loop never has to guess. */
+  /** Influence, membership or teaching. Carried through so the draw loop never has to guess. */
   predicate: string;
   order: number | null;
   /** True when the gate approved this edge since the last draw. Only ever true for a claimed edge. */
@@ -103,6 +104,29 @@ const MAX_HEIGHT = 460;
 const ROW_PITCH = 30;
 const FALLBACK_WIDTH = 640;
 
+/**
+ * A claimed edge's identity for the entering animation: endpoints AND predicate (phase 7.6 step 8).
+ * A pair approved under both influence and teaching is two edges, and each should enter when the gate
+ * approves it rather than the second being treated as already on screen.
+ */
+const claimKey = (edge: { from: string; to: string; predicate: string }): string =>
+  `${edgeKey(edge.from, edge.to)}:${edge.predicate}`;
+
+/**
+ * The three kinds of line, by dash. **Three different statements, three different patterns**, and none
+ * the `[2, 2]` a node's ring uses for an incomplete record.
+ * - influence: solid. Derivation, running in time.
+ * - membership: dotted `[1, 3]`. An artist worked in a genre; nothing about what came first.
+ * - teaching: long dash `[6, 3]`, phase 7.6 step 8. One artist studied with another. Teaching runs
+ *   the same way in time as influence, which is why it keeps the arrowhead, and it is not influence,
+ *   which is why it never gets the solid line.
+ */
+const DASH_MEMBERSHIP = [1, 3];
+const DASH_TEACHING = [6, 3];
+
+/** How far a teaching line is moved off a pair that is also joined by influence, in pixels. */
+const PAIR_OFFSET = 3;
+
 function palette(root: Element): Record<string, string> {
   const style = getComputedStyle(root);
   const token = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
@@ -118,6 +142,9 @@ function palette(root: Element): Record<string, string> {
     // for the same reason step 6 split `--edge-context` off `--rule`: two meanings sharing one
     // value is a collision waiting for the next redesign to make visible.
     edgeMembership: token("--edge-membership", "#c9c4d8"),
+    // Teaching, phase 7.6 step 8. Its own token and its own hue, for the same reason membership got
+    // one: a third meaning sharing a colour with either of the other two is a collision.
+    edgeTeaching: token("--edge-teaching", "#3f7a5e"),
     card: token("--card", "#ffffff"),
     accent: token("--accent", "#3d5a45"),
   };
@@ -331,10 +358,13 @@ function GraphViewImpl({
           // Only a claimed edge can enter. A context edge appearing is a side effect of the
           // neighbourhood growing, not a thing the gate decided, and animating it would give the
           // corpus's unwalked lines the same arrival as an approved claim.
-          entering: edge.kind === "claimed" && !seenEdges.has(edgeKey(edge.from, edge.to)),
+          entering: edge.kind === "claimed" && !seenEdges.has(claimKey(edge)),
         },
       ];
     });
+
+    // Teaching lines that share a pair with an influence line, so the draw loop can move them aside.
+    const shifted = sharedTeachingPairs(graph.edges);
 
     const radius = (node: SimNode) => (node.role === "walked" ? 6 : 3.5);
 
@@ -462,31 +492,51 @@ function GraphViewImpl({
       // Dotted `[1, 3]`, deliberately NOT the `[2, 2]` dash a node's ring uses for an incomplete
       // record. Two dash patterns carrying two unrelated meanings in one picture is how an encoding
       // starts lying; these are different elements AND different patterns.
-      for (const link of links) {
+      //
+      // **Teaching is the third kind, phase 7.6 step 8** (trap 6 of its plan). This loop drew
+      // anything that was not influence in the membership style, so a teaching line would have
+      // read as "plays genre". Each predicate now picks its own style, and an unknown one still
+      // falls to dotted: never solid, because solid is the one style that asserts derivation.
+      const isTeaching = (link: SimLink) => link.predicate === PREDICATE_STUDIED_WITH;
+      const ends = (link: SimLink): [number, number, number, number] => {
         const source = link.source as SimNode;
         const target = link.target as SimNode;
-        if (link.kind !== "context") continue;
-        const membership = link.predicate !== PREDICATE_INFLUENCED_BY;
         const [sx, sy] = px(source);
         const [tx, ty] = px(target);
-        ctx.strokeStyle = membership
-          ? (colors.edgeMembership ?? "#c9c4d8")
-          : (colors.edgeContext ?? "#b0b0a7");
+        if (!isTeaching(link) || !shifted.has(`${source.id}>${target.id}`)) return [sx, sy, tx, ty];
+        const len = Math.max(Math.hypot(tx - sx, ty - sy), 1);
+        const ox = (-(ty - sy) / len) * PAIR_OFFSET;
+        const oy = ((tx - sx) / len) * PAIR_OFFSET;
+        return [sx + ox, sy + oy, tx + ox, ty + oy];
+      };
+
+      for (const link of links) {
+        if (link.kind !== "context") continue;
+        const influence = link.predicate === PREDICATE_INFLUENCED_BY;
+        const teaching = isTeaching(link);
+        const dash = influence ? null : teaching ? DASH_TEACHING : DASH_MEMBERSHIP;
+        const [sx, sy, tx, ty] = ends(link);
+        ctx.strokeStyle = influence
+          ? (colors.edgeContext ?? "#b0b0a7")
+          : teaching
+            ? (colors.edgeTeaching ?? "#3f7a5e")
+            : (colors.edgeMembership ?? "#c9c4d8");
         ctx.lineWidth = 1;
-        if (membership) ctx.setLineDash([1, 3]);
+        if (dash) ctx.setLineDash(dash);
         ctx.beginPath();
         ctx.moveTo(sx, sy);
         ctx.lineTo(tx, ty);
         ctx.stroke();
-        if (membership) ctx.setLineDash([]);
+        if (dash) ctx.setLineDash([]);
       }
 
       for (const link of links) {
-        const source = link.source as SimNode;
         const target = link.target as SimNode;
         if (link.kind !== "claimed") continue;
-        const [sx, sy] = px(source);
-        const [tx, ty] = px(target);
+        const [sx, sy, tx, ty] = ends(link);
+        // A claimed teaching line keeps the accent, because the gate approved it, and takes the
+        // teaching dash, because approval is not what makes it influence.
+        const teaching = isTeaching(link);
 
         // The one motion in this file that means something. The line grows from the object toward
         // the subject — the direction influence actually runs, per `RenderEdge.from` — so watching it
@@ -499,10 +549,12 @@ function GraphViewImpl({
         ctx.strokeStyle = colors.accent ?? "#3d5a45";
         ctx.fillStyle = colors.accent ?? "#3d5a45";
         ctx.lineWidth = 2;
+        if (teaching) ctx.setLineDash(DASH_TEACHING);
         ctx.beginPath();
         ctx.moveTo(sx, sy);
         ctx.lineTo(hx, hy);
         ctx.stroke();
+        if (teaching) ctx.setLineDash([]);
         // The arrowhead only lands once the line has arrived. A head travelling ahead of its own
         // line reads as a cursor rather than as a connection being made.
         if (t >= 1) arrowhead(ctx, [sx, sy], [tx, ty], radius(target) + 3);
@@ -601,9 +653,15 @@ function GraphViewImpl({
         // which on the acid jazz chip is the subject itself, the label a visitor most needs. Pushed
         // back toward the parents, the ordinals sit in empty space, and the parents' own labels have
         // already been placed on their outward side.
+        // A teaching line moved aside for a shared pair puts its badge on the other side, or the two
+        // ordinals of one pair would land on top of each other.
+        const side =
+          link.predicate === PREDICATE_STUDIED_WITH && shifted.has(`${source.id}>${target.id}`)
+            ? -1
+            : 1;
         const len = Math.max(Math.hypot(tx - sx, ty - sy), 1);
-        const mx = sx + (tx - sx) * 0.33 - ((ty - sy) / len) * 10;
-        const my = sy + (ty - sy) * 0.33 + ((tx - sx) / len) * 10;
+        const mx = sx + (tx - sx) * 0.33 - ((ty - sy) / len) * 10 * side;
+        const my = sy + (ty - sy) * 0.33 + ((tx - sx) / len) * 10 * side;
         ctx.beginPath();
         ctx.arc(mx, my, 8, 0, Math.PI * 2);
         ctx.fillStyle = colors.card ?? "#ffffff";
@@ -632,11 +690,7 @@ function GraphViewImpl({
       shown.current = {
         signature,
         positions: new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }])),
-        claimed: new Set(
-          graph.edges
-            .filter((edge) => edge.kind === "claimed")
-            .map((edge) => edgeKey(edge.from, edge.to)),
-        ),
+        claimed: new Set(graph.edges.filter((edge) => edge.kind === "claimed").map(claimKey)),
         view: targetView,
       };
       startedAt.current = null;
@@ -880,6 +934,15 @@ function GraphViewImpl({
           </>
         )}
         {graph.truncated && " The neighborhood is larger than what is drawn here."}
+        {/* Phase 7.6 step 8. Conditional for the reason the outline sentence below is: explaining a
+            line nobody can see teaches a visitor to look for it. */}
+        {graph.edges.some((edge) => edge.predicate === PREDICATE_STUDIED_WITH) && (
+          <>
+            {" "}
+            <strong>Dashed</strong> lines are teaching: one artist studied with the other. Teaching
+            is not influence, and the map never draws it as influence.
+          </>
+        )}
         {/* Step 9, DoD 7. The encoding needs one sentence or it is decoration, and the sentence has
             to be conditional: on a map where nothing is marked, explaining a mark nobody can see
             would teach a visitor to look for something that is not there. When nothing is marked

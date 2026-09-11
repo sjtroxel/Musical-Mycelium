@@ -114,6 +114,11 @@ Notes on the composition, since it is doing work:
   emit a reversed influence claim. The registry went from three tools to seven at phase 3 step 2:
   `get_descendants`, `describe_node`, `resolve_source`, `corpus_coverage`. The five gold cases above are
   unchanged and stay origins-shaped.)*
+
+  *(2026-09-11, phase 7.6 step 7: **ten tools.** `get_teachers`, `get_students` and
+  `trace_teaching_lineage` joined by registration, with no loop branch. `trace_lineage` is unchanged
+  and still walks influence only; the teaching tracer walks teaching and influence together and
+  reports each hop's relationship.)*
 - 1 is the trivial case and 2 is the showpiece, at four parents — the richest node in the artifact, and the
   case most likely to expose a traversal that stops early. It also carries a story: acid jazz is the genre
   whose article started the prose check on 2026-07-31.
@@ -324,8 +329,14 @@ Owned by the v0.1 IMPLEMENTATION doc, and it should be written **before** anythi
 { "artifact_version": "0.7.1", "nodes": 1479, "edges": 5066,
   "verification": { "HAND": 22, "PROSE_AUTO": 111, "ASSERTS_AUTO": 759, "EXPOSURE_AUTO": 57,
                     "INFOBOX_AUTO": 1335, "MEMBERSHIP_BARE": 1363, "MEMBERSHIP_CITED": 1419 },
-  "predicate": "influenced_by" }
+  "claim_predicates": ["influenced_by", "studied_with"] }
 ```
+
+*(**Amended 2026-09-11, phase 7.6 step 8.** The last field was `"predicate": "influenced_by"`, a literal
+typed into `api/app.py` that became false the day the gate admitted teaching. It is now
+`claim_predicates`, read from `agent/claims.py:ALLOWED_PREDICATES`, so it cannot drift from the gate
+again. Artifact v0.10.0 also adds an eighth `verification` key, `TEACHING_PROSE_AUTO`, carried only by
+`studied_with` edges. The figures above are v0.7.1's and stay illustrative.)*
 
 *(Values refreshed **2026-09-06, phase 6 step 10**, measured from the pinned store rather than typed.
 They read `0.5.0`, 973 nodes, 950 edges and a **four**-value `verification` map until then. The map is
@@ -472,9 +483,23 @@ prose second: the agent emits claims, a deterministic gate approves them, and pr
 approved set only. Prose generation cannot see anything else. See
 `.claude/rules/grounding-and-claims.md`.
 
+**`predicate` is `influenced_by` or `studied_with` — added 2026-09-11, phase 7.6.** `studied_with` is
+P1066, stored *student* `studied_with` *teacher*, hand-checked before ingestion
+(`docs/p1066-handcheck.md`). **It is teaching and it is never influence**: a source that says "student
+of" is not a source that says "influenced by", and a claim states what its source asserts. Three rules
+follow and all three are tested:
+
+- **A claim's predicate is always shown, in its own words.** Every surface that renders a claim (the
+  synthesis prompt, the claim list, the map, the inspector) takes its verb from the predicate. None
+  has a fixed verb and none falls back to influence wording for a predicate it does not know; the
+  synthesis layer raises instead, and the map throws.
+- **Teaching carries its own verification tier**, `TEACHING_PROSE_AUTO`, and no influence tier.
+  `graph/schema.py:TIERS_BY_PREDICATE` makes the pairing a constructor rule.
+- **`plays_genre` is still never a claim.** The gate admits exactly the two predicates above.
+
 **`verification` added 2026-08-08 (phase 3 step 4).** One of `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`,
-`EXPOSURE_AUTO`, `INFOBOX_AUTO` or the two `MEMBERSHIP_*` tiers — **seven as of artifact v0.7.1, four
-when this paragraph was written** — copied off the artifact edge by the gate exactly as `source_ids` is,
+`EXPOSURE_AUTO`, `INFOBOX_AUTO`, the two `MEMBERSHIP_*` tiers, or `TEACHING_PROSE_AUTO` — **eight as of
+artifact v0.10.0, seven at v0.7.1, four when this paragraph was written** — copied off the artifact edge by the gate exactly as `source_ids` is,
 so the model may not supply it and cannot inflate it. It says **how strongly this claim's one source was
 checked. It is not a count of agreeing sources and not a disputed flag.**
 

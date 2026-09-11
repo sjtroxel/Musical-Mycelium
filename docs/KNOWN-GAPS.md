@@ -10,9 +10,9 @@
 > decision.** Scope doc: `docs/phases/phase-7.6-classical-lineage.md`, **approved 2026-09-11**; its
 > IMPLEMENTATION doc `phase-7.6-classical-lineage-IMPLEMENTATION.md` is **APPROVED 2026-09-11 and the
 > build has started**; its `[done]` markers and as-built subsections are the authority on progress.
-> **HANDOFF, 2026-09-11: STEPS 0-7 ARE DONE. NEXT IS STEP 8** (API contract and frontend). Read step 7's
-> as-built first: its "found for step 8" list adds the local stub's teaching path, which step 8's
-> done-when needs and the plan did not list. Artifact **v0.10.0 is built
+> **HANDOFF, 2026-09-11: STEPS 0-8 ARE BUILT. NEXT IS STEP 9** (the re-pin). Two things wait on the
+> pin and are recorded in step 8's as-built: step 8's running-app check on the local stub, and a live
+> re-capture of the tour recording (stamped v0.7.1, about a cent, behind confirmation). Artifact **v0.10.0 is built
 > but NOT pinned** (step 9 moves the pin; `tests/test_artifact_versions.py:UNPINNED_CUTS` records it, and
 > `tests/test_teaching.py` is its only reader). Crawl data is local in `data/lineage/` (gitignored);
 > `--build` is offline. Order from here: **7.6, then 7.7 `name-resolution` (v0.9.5, scope

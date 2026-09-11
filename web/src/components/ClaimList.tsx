@@ -1,6 +1,24 @@
 import type { Claim } from "../types";
 import { STREAMED_DELAY } from "../graph/motion";
+import { PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH } from "../graph/staticGraph";
 import { shortSourceId, wikidataUrl } from "../wikidata";
+
+/**
+ * The relationship a claim states, in words, **read from its predicate** (phase 7.6 step 8).
+ *
+ * This said " influenced by " on every claim until teaching became claimable, which would have
+ * printed "Ludwig van Beethoven influenced by Joseph Haydn" under a source that says "student of".
+ * A predicate with no entry here prints as its own name rather than falling back to either verb: the
+ * rule in `SPEC.md` §7 is that a claim's predicate is always shown, and a fallback verb is how a new
+ * one would be shown as something it is not.
+ */
+const PREDICATE_WORDING: Record<string, string> = {
+  [PREDICATE_INFLUENCED_BY]: "influenced by",
+  [PREDICATE_STUDIED_WITH]: "studied with",
+};
+
+export const relationOf = (predicate: string): string =>
+  PREDICATE_WORDING[predicate] ?? predicate.split("_").join(" ");
 
 /**
  * Human-readable wording for the verification tier.
@@ -32,6 +50,10 @@ const VERIFICATION_WORDING: Record<string, string> = {
   // claim. They are here because the map draws membership as context and the inspector names it.
   MEMBERSHIP_CITED: "a genre membership statement carrying a reference",
   MEMBERSHIP_BARE: "a genre membership statement with no reference beyond the statement itself",
+  // Teaching, artifact v0.10.0. The hand check found about one in ten of these resting on a sentence
+  // that names the teacher without being about study, so the wording says what was checked and stops.
+  TEACHING_PROSE_AUTO:
+    "an automated check found the teacher named in the student's article prose, not that the sentence is about study",
 };
 
 interface Props {
@@ -62,7 +84,7 @@ export function ClaimList({ claims, labels }: Props) {
           >
             <p className="claim__statement">
               <span className="claim__node">{name(claim.subject_id)}</span>
-              <span className="claim__predicate"> influenced by </span>
+              <span className="claim__predicate"> {relationOf(claim.predicate)} </span>
               <span className="claim__node">{name(claim.object_id)}</span>
             </p>
             <p className="claim__verification">

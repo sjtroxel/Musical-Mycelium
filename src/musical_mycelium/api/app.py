@@ -27,6 +27,7 @@ from fastapi import FastAPI, Query
 from fastapi.responses import StreamingResponse
 
 from musical_mycelium.agent import loop as agent_loop
+from musical_mycelium.agent.claims import ALLOWED_PREDICATES
 from musical_mycelium.agent.llm import ROLE_SYNTHESIS, ROLE_TRAVERSAL, build_llm
 from musical_mycelium.agent.loop import (
     ClaimApproved,
@@ -195,7 +196,10 @@ def corpus_summary() -> dict[str, Any]:
                 for pair in STORE.contested
             ],
         },
-        "predicate": "influenced_by",
+        # What a claim may assert, read from the gate rather than typed. This was
+        # `"predicate": "influenced_by"` until phase 7.6 step 8, a literal that became false the day
+        # the gate admitted teaching, and nothing would have noticed because nothing computed it.
+        "claim_predicates": sorted(ALLOWED_PREDICATES),
     }
 
 

@@ -223,6 +223,15 @@ def test_health_reports_the_corpus(client: TestClient) -> None:
     assert body["corpus"]["artifact_version"] == PINNED_ARTIFACT_VERSION
 
 
+def test_the_corpus_names_the_predicates_a_claim_can_carry(client: TestClient) -> None:
+    """Phase 7.6 step 8. This field read ``"predicate": "influenced_by"``, typed as a literal, and became
+    false the day the gate admitted teaching. It is read from the gate now, and the old key is gone
+    rather than left beside the new one saying something untrue."""
+    corpus = client.get("/health").json()["corpus"]
+    assert corpus["claim_predicates"] == ["influenced_by", "studied_with"]
+    assert "predicate" not in corpus
+
+
 def test_the_corpus_states_its_connectivity(client: TestClient) -> None:
     """The connectivity limit is a published number, not something a visitor infers from an empty
     answer. "Relate two genres" is a capability *within* a component, and an edge count alone implies a

@@ -35,6 +35,12 @@
      visible, still clearly not part of the answer. Deliberately under the 3:1 bar, which the skill
      allows when relief exists — the caption states the count and every claim is listed in text. */
   --edge-context: #4a4160;
+  /* Teaching lines on the map, phase 7.6 step 8: one artist studied with another. Its own hue and its
+     own dash (GraphView's DASH_TEACHING), because teaching is not influence and must not read as
+     either influence or genre membership. Green because no other line uses it, and it is neither the
+     claim rose nor the disagreement cyan. Measured 3.88:1 against --ground and 3.59:1 against --card:
+     brighter than a faint influence line, dimmer than anything the gate approved. */
+  --edge-teaching: #3f7a5e;
   --accent: #ff5cae;
   --accent-soft: #2a1526;
 

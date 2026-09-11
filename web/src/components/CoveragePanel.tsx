@@ -33,7 +33,10 @@ import facts from "../corpus-facts.json";
  * pinned artifact whole. Nothing here is typed into the markup.
  */
 
-const { coverage, density, corroboration } = facts;
+const { coverage, density, corroboration, artists } = facts;
+
+/** The shape of `corpus-facts.json`'s `artists` block, which `graph/facts.py` writes. */
+export type ArtistFacts = typeof artists;
 
 /** How many places get their own bar before the tail is drawn as marks instead. */
 export const NAMED_PLACES = 8;
@@ -105,6 +108,58 @@ function When() {
       <p className="cov__note">
         {coverage.coarser_than_year} are dated to a decade or a century, not a year. The earliest
         are dated 500.
+      </p>
+    </section>
+  );
+}
+
+/**
+ * When the artists were born. Phase 7.6 step 8, DoD 6.
+ *
+ * **A birth year is not an era of activity, and the wording says birth every time.** Beethoven born
+ * in 1770 and working in 1800 is one person on two dates; calling the first his era would be the
+ * corpus asserting something P569 does not say.
+ *
+ * **The skew is stated beside the figure, not below it**, on this panel's own rule. The pre-1900
+ * artists here are overwhelmingly composers in the Western European art tradition, because that is
+ * what Wikidata's teacher-student records cover densely. The corpus does not ingest where a person
+ * came from, so it cannot count that skew, and the sentence says so rather than implying the figure
+ * is a sample of the world's music before 1900.
+ *
+ * Takes its figures as a prop, defaulting to the pinned facts, so both branches are testable: the
+ * pinned corpus can hold no birth years at all (every cut before v0.10.0), and saying "0 of 804 were
+ * born before 1900" there would read as a measurement when it is an absence.
+ */
+export function WhenArtistsWereBorn({ figures = artists }: { figures?: ArtistFacts }) {
+  if (figures.with_birth_year === 0) {
+    return (
+      <section className="cov__axis">
+        <h3 className="cov__axisTitle">When the artists were born</h3>
+        <p className="cov__note">
+          This corpus records no birth year for any of its {figures.artists} artists.
+        </p>
+      </section>
+    );
+  }
+
+  const eras = figures.birth_eras as Record<string, number>;
+  const max = Math.max(...Object.values(eras));
+
+  return (
+    <section className="cov__axis">
+      <h3 className="cov__axisTitle">When the artists were born</h3>
+      <div className="cov__rows">
+        {ERA_ORDER.map((era) => (
+          <Bar key={era} label={ERA_LABEL[era] ?? era} count={eras[era] ?? 0} max={max} />
+        ))}
+        <Bar label="no birth year recorded" count={eras.unknown ?? 0} max={max} muted />
+      </div>
+      <p className="cov__note">
+        {figures.born_before_1900} of the {figures.artists} artists were born before 1900. A birth
+        year is not a period of activity. Most of them are composers in the Western European art
+        tradition, because that is where the teacher and student records these came from are dense;
+        the corpus does not record where a person came from, so that skew is stated here, not
+        counted.
       </p>
     </section>
   );
@@ -316,13 +371,14 @@ export function CoveragePanel({ answeredVersion }: { answeredVersion: string | n
           </p>
         )}
         <p className="cov__lede">
-          Measured from the pinned artifact, not asserted. These describe its {coverage.genres}{" "}
-          genres; the {facts.nodes - coverage.genres} artist nodes are deliberately unmeasured,
-          because date and place are genre properties in Wikidata.
+          Measured from the pinned artifact, not asserted. The date, place and density figures
+          describe its {coverage.genres} genres; its {artists.artists} artists are counted by birth
+          year alone, because this corpus records place for genres and not for people.
         </p>
 
         <div className="cov__axes">
           <When />
+          <WhenArtistsWereBorn />
           <Where />
           <HowDensely />
           <WhereSourcesDisagree />

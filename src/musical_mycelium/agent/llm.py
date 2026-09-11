@@ -434,6 +434,10 @@ class LocalLLM:
         if pair is not None:
             return self._lineage_turn(messages, pair, usage)
 
+        teaching = _teaching_question(messages)
+        if teaching is not None:
+            return self._teaching_turn(messages, teaching, usage)
+
         resolved = _last_resolved_node(messages)
         if resolved is None and not _has_tool_result(messages):
             return LLMResponse(
@@ -462,6 +466,7 @@ class LocalLLM:
         to do and is also why local runs give a plan-adherence of exactly 1.0 — a number that means
         nothing until a real model produces it, and is labelled as a fixture value wherever it appears.
         """
+        teaching = _teaching_question(messages)
         if _genre_pair(messages) is not None:
             plan = {
                 "query_kind": "lineage",
@@ -469,6 +474,15 @@ class LocalLLM:
                     {"tool": "resolve_node", "reason": "resolve the first name"},
                     {"tool": "resolve_node", "reason": "resolve the second name"},
                     {"tool": "trace_lineage", "reason": "walk between the two ids"},
+                ],
+            }
+        elif teaching is not None:
+            tool, _ = teaching
+            plan = {
+                "query_kind": "origins" if tool == "get_teachers" else "descendants",
+                "steps": [
+                    {"tool": "resolve_node", "reason": "resolve the artist asked about"},
+                    {"tool": tool, "reason": "list the teaching the graph records"},
                 ],
             }
         else:
@@ -520,6 +534,29 @@ class LocalLLM:
             )
         return LLMResponse(text="Done.", stop_reason="end_turn", usage=usage)
 
+    def _teaching_turn(
+        self, messages: list[dict[str, Any]], question: tuple[str, str], usage: Usage
+    ) -> LLMResponse:
+        """The third fixed script, phase 7.6 step 8: resolve the artist, then ask for teachers or
+        students. Sequenced off the calls already made, like ``_lineage_turn``, so a name that does not
+        resolve falls through to the end turn and the run refuses rather than retrying."""
+        tool, name = question
+        calls = _tool_call_names(messages)
+        if "resolve_node" not in calls:
+            return LLMResponse(
+                tool_uses=(ToolUse(id="local-s1", name="resolve_node", arguments={"name": name}),),
+                stop_reason="tool_use",
+                usage=usage,
+            )
+        resolved = _last_resolved_node(messages)
+        if resolved is not None and tool not in calls:
+            return LLMResponse(
+                tool_uses=(ToolUse(id="local-s2", name=tool, arguments={"node_id": resolved}),),
+                stop_reason="tool_use",
+                usage=usage,
+            )
+        return LLMResponse(text="Done.", stop_reason="end_turn", usage=usage)
+
     def stream(
         self,
         messages: list[dict[str, Any]],
@@ -541,6 +578,17 @@ class LocalLLM:
         reversed_premise = json.loads(_after(prompt, "Asked as: ") or "[]")
         preface = "In this graph the influence runs the other way: " if reversed_premise else ""
 
+        # Typed hops, phase 7.6 step 8: a chain whose hops differ. Each hop keeps the relationship the
+        # prompt gave it, so the fixture cannot give every hop one verb either.
+        hops = json.loads(_after(prompt, "Hops: ") or "[]")
+        if hops:
+            subject, relationship, obj = hops[0]
+            yield f"{preface}{_lead(str(subject), preface)} {relationship} {obj}"
+            for _, relationship, obj in hops[1:]:
+                yield f", who {relationship} {obj}"
+            yield ". Every link above traces to a cited source."
+            return usage
+
         chain = json.loads(_after(prompt, "Chain: ") or "[]")
         if chain:
             yield f"{preface}{_lead(str(chain[0]), preface)} came out of {chain[1]}"
@@ -551,6 +599,29 @@ class LocalLLM:
 
         genre = _after(prompt, "Genre: ")
         influences = json.loads(_after(prompt, "Documented influences: ") or "[]")
+
+        # Teaching, phase 7.6 step 8, read off the headings synthesis now writes for it. A set holding
+        # any teaching is rendered here, each relationship in its own sentence and its own verb, so an
+        # influence and a teacher are never run together into one list. Influence-only sets fall
+        # through to the unchanged rendering below.
+        artist = _after(prompt, "Artist: ")
+        teachers = json.loads(_after(prompt, "Documented teachers: ") or "[]")
+        students = json.loads(_after(prompt, "Documented as having studied with them: ") or "[]")
+        if teachers or students:
+            influenced = json.loads(_after(prompt, "Documented as influenced by them: ") or "[]")
+            sentences = []
+            if influences:
+                sentences.append(f"{artist} was influenced by {_listing(influences)}.")
+            if teachers:
+                sentences.append(f"{artist} studied with {_listing(teachers)}.")
+            if influenced:
+                verb = "was" if len(influenced) == 1 else "were"
+                sentences.append(f"{_listing(influenced)} {verb} influenced by {artist}.")
+            if students:
+                sentences.append(f"{_listing(students)} studied with {artist}.")
+            yield f"{preface}{' '.join(sentences)} "
+            yield "Every link above traces to a cited source."
+            return usage
 
         if not influences:
             yield f"The graph records no influences for {genre}."
@@ -564,6 +635,31 @@ class LocalLLM:
         yield f"{preface}{_lead(genre, preface)} came out of {listed}. "
         yield "Every link above traces to a cited source."
         return usage
+
+
+def _teaching_question(messages: list[dict[str, Any]]) -> tuple[str, str] | None:
+    """``(tool, name)`` for a teaching question the fixture recognises, or ``None``.
+
+    Three phrasings, matched as plainly as ``_genre_pair`` matches its own: "who did X study with" and
+    "who taught X" ask for teachers, "who studied with X" for students. The name must still resolve
+    exactly, so "who did Beethoven study with" refuses until phase 7.7, as it does on a real model.
+    """
+    raw = _first_user_text(messages).strip().rstrip("?").strip()
+    lowered = raw.lower()
+    if lowered.startswith("who did ") and lowered.endswith(" study with"):
+        return "get_teachers", raw[len("who did ") : -len(" study with")].strip()
+    if lowered.startswith("who taught "):
+        return "get_teachers", raw[len("who taught ") :].strip()
+    if lowered.startswith("who studied with "):
+        return "get_students", raw[len("who studied with ") :].strip()
+    return None
+
+
+def _listing(names: list[str]) -> str:
+    """ "A", "A and B", "A, B and C". The join the influence rendering already writes out inline."""
+    if len(names) == 1:
+        return str(names[0])
+    return ", ".join(str(name) for name in names[:-1]) + f" and {names[-1]}"
 
 
 def _text_of(messages: list[dict[str, Any]]) -> str:
@@ -682,8 +778,14 @@ def _first_user_text(messages: list[dict[str, Any]]) -> str:
 
 
 def _lead(label: str, preface: str) -> str:
-    """A label at the head of a sentence, or mid-sentence after a preface. Capitalisation only."""
-    return label if preface else label.capitalize()
+    """A label at the head of a sentence, or mid-sentence after a preface. Capitalisation only.
+
+    First character only. This used ``str.capitalize()``, which also LOWERCASES the rest, and so
+    turned "Carl Czerny" into "Carl czerny" and would have turned "UK drill" into "Uk drill". Found
+    at phase 7.6 step 8 by the first test to lead a stub sentence with a person's name; every
+    all-lowercase genre label renders exactly as before.
+    """
+    return label if preface else label[:1].upper() + label[1:]
 
 
 def _after(text: str, marker: str) -> str:

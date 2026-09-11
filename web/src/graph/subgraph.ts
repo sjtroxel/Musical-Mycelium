@@ -1,6 +1,18 @@
 import type { Claim, Verification } from "../types";
-import { PREDICATE_INFLUENCED_BY } from "./staticGraph";
+import { PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH } from "./staticGraph";
 import type { StaticGraph } from "./staticGraph";
+
+/**
+ * The predicates a claim can carry, mirroring `agent/claims.py:ALLOWED_PREDICATES`. Phase 7.6 step 8.
+ *
+ * A claimed edge now takes its predicate from the claim, and ONLY from this set. Anything else throws,
+ * which is the "break here, loudly" this file promised when every claim was influence: a backend that
+ * started approving membership must not quietly start drawing it as an approved line.
+ */
+export const CLAIMABLE_PREDICATES: ReadonlySet<string> = new Set([
+  PREDICATE_INFLUENCED_BY,
+  PREDICATE_STUDIED_WITH,
+]);
 
 /**
  * Choosing what the map shows, as pure functions.
@@ -33,6 +45,8 @@ export interface RenderNode {
   kind: string;
   year: number | null;
   role: NodeRole;
+  /** An artist's birth year (P569), when the corpus has one. `year` stays P571 and only P571. */
+  born?: number | null;
   /**
    * How many of this node's corpus connections are **not** drawn on this map.
    *
@@ -74,9 +88,10 @@ export interface RenderEdge {
    * `influenced_by` — membership became the majority — and every consumer that had quietly assumed
    * influence started stating derivation about musicians. See `layout.ts:layerOf` and `GraphView`.
    *
-   * A `claimed` edge is always `influenced_by`: the gate's `ALLOWED_PREDICATES` holds nothing else,
-   * so a membership edge cannot become a claim. It is set explicitly rather than left implicit
-   * because "it cannot happen" is how it happens.
+   * ~~A `claimed` edge is always `influenced_by`.~~ **Since phase 7.6 step 8 a claimed edge is
+   * `influenced_by` or `studied_with`, read from its claim and checked against
+   * `CLAIMABLE_PREDICATES`.** For `studied_with`, `from` is the teacher and `to` the student, which
+   * runs the same way in time as influence. A membership edge still cannot become a claim.
    */
   predicate: string;
   /** 1-based gate-approval order for a claimed edge, `null` for context. DoD 3's "in the order it was walked". */
@@ -157,7 +172,32 @@ export const MAX_CONTEXT_NODES = 40;
  */
 export const NEIGHBOURS_PER_OPEN = 30;
 
-const pairKey = (from: string, to: string) => `${from}>${to}`;
+/**
+ * One drawn edge's identity: endpoints AND predicate. **The predicate is in the key since phase 7.6
+ * step 8**, because Beethoven studied with Haydn and was influenced by him, as two sourced edges on one
+ * pair. Keyed on the pair alone, whichever arrived first would stand in for both.
+ */
+const edgeId = (from: string, to: string, predicate: string) => `${from}>${to}:${predicate}`;
+
+/**
+ * Teaching edges on a pair this map also joins by influence, as `from>to` keys. Such a teaching line is
+ * drawn offset from the influence line so that both stay visible; drawn on top of each other, the
+ * solid influence line would show through the teaching dash and one of two sourced statements would
+ * disappear from the picture.
+ */
+export function sharedTeachingPairs(
+  edges: readonly { from: string; to: string; predicate: string }[],
+): Set<string> {
+  const influence = new Set(
+    edges.filter((e) => e.predicate === PREDICATE_INFLUENCED_BY).map((e) => `${e.from}>${e.to}`),
+  );
+  return new Set(
+    edges
+      .filter((e) => e.predicate === PREDICATE_STUDIED_WITH)
+      .map((e) => `${e.from}>${e.to}`)
+      .filter((pair) => influence.has(pair)),
+  );
+}
 
 /**
  * The node ids named in a tool call's arguments.
@@ -213,18 +253,25 @@ export function buildRenderGraph(
   //    so this can only happen when the SPA's graph and the answer's graph are different versions,
   //    and `StepPanel` refuses to draw the map at all in that case.
   view.claims.forEach((claim, index) => {
+    // Read from the claim since phase 7.6 step 8, and checked, rather than stamped. This line said
+    // `PREDICATE_INFLUENCED_BY` for every claim, which would have drawn every teaching claim as an
+    // approved line of influence. The check is what the old comment asked for: a widening of
+    // ALLOWED_PREDICATES that nobody mirrored here breaks here, loudly, instead of drawing.
+    if (!CLAIMABLE_PREDICATES.has(claim.predicate)) {
+      throw new Error(
+        `a claim arrived with predicate "${claim.predicate}", which the map does not know how to ` +
+          `draw; the gate admits only ${[...CLAIMABLE_PREDICATES].join(" and ")}`,
+      );
+    }
     if (!graph.nodes.has(claim.subject_id) || !graph.nodes.has(claim.object_id)) return;
-    const key = pairKey(claim.object_id, claim.subject_id);
+    const key = edgeId(claim.object_id, claim.subject_id, claim.predicate);
     if (drawn.has(key)) return;
     drawn.add(key);
     edges.push({
       from: claim.object_id,
       to: claim.subject_id,
       kind: "claimed",
-      // Not `claim.predicate`: the gate approves nothing else, and reading it from the frame would
-      // make a backend widening of ALLOWED_PREDICATES silently start drawing membership as an
-      // approved arrow of history. If that widening ever happens it should break here, loudly.
-      predicate: PREDICATE_INFLUENCED_BY,
+      predicate: claim.predicate,
       order: index + 1,
       verification: claim.verification,
     });
@@ -265,7 +312,7 @@ export function buildRenderGraph(
           roles.set(other, "context");
         }
 
-        const key = pairKey(edge.object_id, edge.subject_id);
+        const key = edgeId(edge.object_id, edge.subject_id, edge.predicate);
         if (drawn.has(key)) continue;
         drawn.add(key);
         edges.push({
@@ -297,7 +344,7 @@ export function buildRenderGraph(
     const node = graph.nodes.get(id);
     if (node === undefined) return [];
     const hidden = (graph.incident.get(id) ?? []).filter(
-      (edge) => !drawn.has(pairKey(edge.object_id, edge.subject_id)),
+      (edge) => !drawn.has(edgeId(edge.object_id, edge.subject_id, edge.predicate)),
     ).length;
     return [
       {
@@ -305,6 +352,7 @@ export function buildRenderGraph(
         label: node.label,
         kind: node.kind,
         year: node.inception_year,
+        born: node.birth_year ?? null,
         role,
         hidden,
       },
