@@ -1225,6 +1225,28 @@ code {
   color: inherit;
 }
 
+/* Phase 7.5 step 4. The copyright line shared with his other apps: small, muted, the GitHub mark inline
+   between the name and the period. The period hugs the icon, as it does in theirs. */
+.footer .footer__copyright {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.9rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.footer__copyright a {
+  display: inline-flex;
+  color: inherit;
+  margin-right: -0.3rem;
+}
+
+.footer__copyright a:hover,
+.footer__copyright a:focus-visible {
+  color: var(--ink-soft);
+}
+
 /* Phase 7 step 6, surface C. Deliberately quieter than `.ask__submit`: the ask box is what the project
    is, and the tour is an offer beside it. Same shape and same rule colour as `.cancel` so it reads as
    part of the chrome rather than as a second call to action competing with the first. */

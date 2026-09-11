@@ -56,6 +56,10 @@ PAGE = EVAL_DIR.parents[2] / "web" / "public" / "report" / "index.html"
 #: name so a renamed set is still found, and a second live set is an error rather than a silent pick.
 LIVE = {"dataset": "live", "provider": "bedrock"}
 
+#: The third stop on the recruiter path (landing, report, repo). Phase 7.5 step 4: until then neither
+#: the site nor this page linked to the code at all.
+REPO_URL = "https://github.com/sjtroxel/Musical-Mycelium"
+
 #: What each verdict reads as. **N/A says in words that it is not a pass**, because the failure this
 #: page exists to avoid is a table where two untested gates sit in a column of green.
 VERDICT_LABEL = {PASS: "pass", FAIL: "FAIL", NOT_APPLICABLE: "N/A: not tested, and not a pass"}
@@ -89,7 +93,10 @@ COPY: dict[str, str] = {
     ),
     "slices": (
         "Cases answered correctly, sliced. The corpus skews Western, anglophone and recent, and an "
-        "aggregate that looks healthy can hide a thin slice. Slices under five cases are marked."
+        "aggregate that looks healthy can hide a thin slice. Slices under five cases are marked. "
+        '"unknown" is not missing data: it holds the cases whose subject is not in the corpus at all, '
+        'which in the current set are all cases the system is expected to refuse. "undated" and '
+        '"unstated" are real entries with no recorded year or region.'
     ),
     "judged": (
         "Judged by a model from a different family than the one being judged, on a sample. Tracked, "
@@ -608,7 +615,8 @@ def render() -> str:
         "<h1>How Musical Mycelium is evaluated</h1>",
         _p(COPY["intro"], "lede"),
         _p(COPY["grounded"]),
-        f'<p><a href="/">Back to the app</a> · artifact {_e(current)}</p>',
+        f'<p><a href="/">Back to the app</a> · <a href="{REPO_URL}">The code</a> · '
+        f"artifact {_e(current)}</p>",
         live_gates_section(live, gated),
         scripted_gates_section(scripted),
         metrics_section(label, run, floor),

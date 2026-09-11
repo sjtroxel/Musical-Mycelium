@@ -487,12 +487,69 @@ DNS fix, which only the next round-trip can.
   $5 budget is warning on September's $6.61 forecast while the invoice will read $0.00, so a runaway
   cost would still be caught while credits hide it from the bill.
 
-### Step 4 — The README and the recruiter path
+### Step 4 — The README and the recruiter path — built 2026-09-11, done on deploy
 
 The shape a stranger meets first. Structured here; **the narrative prose is his** — see §6.
 
 **Done when:** the README describes what is deployed, every number in it is covered by step 0, and the
 path from landing to report to repo is walkable in one sitting.
+
+#### 4.0 As built, 2026-09-11 — built, and done once the next deploy lands
+
+**The prose is mine, by his decision.** On 2026-09-11 he gave permission for Claude-written prose in
+this phase, after the §6 warning was put to him first. §6 records the amendment.
+
+**The README was rewritten whole, not patched.** Its status section had been annotated in place three
+times, and two of its paragraphs contradicted each other. New order, built for a stranger: the three
+links (app, report, repo), how to try it, dated status, what it is, how it is evaluated, **what it does
+not do**, the corpus, data and licenses, stack and cost, layout. All 28 marked figures survive; `make
+readme` rewrote none of them.
+
+**The five false sentences from §0.0, each gone:** "phase 7 is under way"; "the agent does not read
+them … no eval case exercises it" (the contested notice and `contested_disclosure` exist); the noise
+floor "measured at v0.5.0 … not re-measured" (re-measured 2026-09-07 at v0.7.1; the held-out run is
+still the 0.5.0 one, and the README says so); "the frontend, which arrives at v0.5"; MusicBrainz as "a
+phase 6 question" (it is not used, and the README says why). Also removed: the "**four** of six" gate
+count `evals.md` forbids in prose, and "20% recall" now carries its date, 2026-08-06. The layout block's
+`ingest/` line said "Wikidata + MusicBrainz"; it says DBpedia.
+
+**Three facts were checked against the repo before they were written, and one was caught wrong.**
+- I first wrote "55 cases passing every time" for the zero-variance trap. Traversal recall covers 38
+  cases, not 56: 37 perfect, one failing. Fixed before the check ran.
+- The Kate Bush chip is labelled "Kate Bush", not "Who influenced Kate Bush?"; the README describes the
+  chip as it is.
+- Demo questions are quoted from `chips.json` labels only, because those are validated against the
+  artifact by `tests/test_chips.py`. The old README's "Detroit techno" example was prose, the category
+  phase 7 step 5 found unprotected.
+
+**The recruiter path had a hole nobody had named: nothing linked back to the code.** The site linked to
+the report and the report linked to the site, and neither reached the repo. The app footer now ends with
+the copyright line his other apps share, **"© 2026 sjtroxel [GitHub mark]. All rights reserved."**,
+matched to Wildlife Sentinel, Poster Pilot, Heritage Odyssey and Patchwork at his request, including
+their Octicon path; the mark links to the repo. The report's nav line carries "The code"
+(`report_page.REPO_URL`). The repo is public; checked with `gh repo view`. Rendered at 1280 wide in
+headless Chromium and looked at.
+
+**One mismatch left standing, by his choice to match the other apps:** this repo's `LICENSE` is MIT,
+while Patchwork's reads "All rights reserved." An MIT grant and an "All rights reserved" line are not a
+legal conflict (the copyright holder keeps the copyright and licenses it), but they can read as mixed
+signals to a careful visitor.
+
+**The `unknown` slice sentence** went into `COPY["slices"]`. Checked, not assumed: all nine `unknown`
+cases are adversarial cases with no `resolution.node_id`, and all nine expect a refusal.
+
+**The invoice split is recorded as unavailable from the invoice**, his read on 2026-09-11. The README
+says the invoice shows every service at $0.00 after credits and rests the Bedrock claim on measured eval
+spend.
+
+**Measured:** `make check` exit 0 — 1556 passed, 14 deselected, mypy clean over 112 files, frontend 429
+across 23, readme floor holds, script 276.4 KB of 320, report 46.5 KB of 64, scripted gates 4 passed /
+0 failed / 2 N/A of six.
+
+**Why this is not yet `[done]`:** `deploy.yml` is `workflow_dispatch` only, so the footer link, the
+report's repo link and the `unknown` sentence are not live until he dispatches it with
+`llm_provider=bedrock` and `reserved_concurrency=-1`. The walkable-path half of done-when is verified
+after that, by hand.
 
 ### Step 5 — The writeup
 
@@ -531,6 +588,11 @@ prose he cannot walk through cold.
 
 **What this does not cover:** code, config, commit messages, test docstrings, and this document. Those are
 mine to write and always have been.
+
+**Amended 2026-09-11, by him:** after this section's warning was put to him, he gave permission for
+Claude to write the prose in this phase. Step 4's README is written under that permission. The
+watermark facts above are unchanged by it, and so is DoD 3's "he can walk through it cold", which prose
+he did not write makes harder; step 5 should plan for that rather than assume it.
 
 ## 7. Testing, and which eval metrics apply
 

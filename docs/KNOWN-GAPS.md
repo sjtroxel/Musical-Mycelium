@@ -1,6 +1,11 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-10
+> ## START HERE — where things stand, 2026-09-11
+>
+> **PHASE 7.5 STEP 4 IS BUILT, NOT YET DEPLOYED — 2026-09-11.** The README is rewritten against the
+> deployed site; the report and the app footer now link to the repo. **Step 4 is done when a
+> `deploy.yml` dispatch puts the footer link live** — see the newest section below. Next after that is
+> step 5, the writeup. The block below is dated 2026-09-10 and its "NEXT IS STEP 4" is superseded.
 >
 > **PHASE 6.5 IS COMPLETE** — all ten DoD items, `v0.6.5` tagged and pushed. As-built:
 > `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`, **and that doc is the authority**.
@@ -83,23 +88,37 @@
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
 
+## PHASE 7.5 STEP 4 — the README and the recruiter path, 2026-09-11
+
+**As-built is `phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md` §4.0.** Open items:
+
+- **The deployed site does not carry the repo link yet.** The footer link and the report's new
+  "The code" link and `unknown` sentence ship on the next `deploy.yml` dispatch, which is manual and
+  must pass `-f llm_provider=bedrock -f reserved_concurrency=-1` or it reverts the live model to the stub.
+  Until then the path runs README -> site -> report, and back to the repo only via the README.
+- **The README carries unmarked figures, all deliberately.** Dated history (97.1%, 37 cases, four of 56,
+  kappa 0.44-0.48, 14/12/11, $6.28, ~7,000 tokens, half a dollar a run) is dated or tied to a named
+  measurement, per step 0's rule. "Five hops" (the tour) and "four parents" (acid jazz) are data held by
+  `tour_v1.json` and `chips.json`, and nothing checks the README's copy of them.
+
 ## PHASE 7.5 STEPS 0 THROUGH 3 — report, trend, deploy, round-trip, bill, 2026-09-10
 
 **As-built is `phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md` §0.0 through §3.0, and those are the
 authority.** Only the items still open are listed here, each deferred on purpose.
 
-- **The README's status section is false in five places**, including "the deployed site is the `v0.6.0`
-  build". Annotated in place on 2026-09-10; **step 4 rewrites it, in his words.** Markers protect its
-  numbers and cannot protect its sentences.
+- ~~**The README's status section is false in five places**~~ **Closed 2026-09-11, step 4:** rewritten
+  whole, with his permission for Claude-written prose in this phase.
 - **The smoke-test DNS fix in `deploy.yml` is unproven against a fresh hostname.** The green run
   `34517439601` ran against an existing one. Only the next round-trip proves it.
-- **The invoice's per-service split was not read.** August: usage $6.28, invoiced $0.00 under credits
-  expiring 2027-07-30. "Bedrock is the line item" is backed by measured eval spend, not by the invoice.
-  One Cost Explorer charge-type filter closes it, free in the console.
+- ~~**The invoice's per-service split was not read.**~~ **Closed 2026-09-11 as not available from the
+  invoice**, his read: the invoice applies credits line by line and shows every service at $0.00. The
+  README says so and rests "Bedrock is the line item" on measured eval spend. Cost Explorer with
+  charge type set to exclude credits may still show the split; not pursued, and nothing needs it.
 - **The report page's explanatory sentences are a Claude draft** in `eval/report_page.py:COPY`, **kept by
   his decision on 2026-09-10.** Not a blocker.
-- **The report's `unknown` slice needs one explaining line**: it means the case's subject never resolved,
-  not missing data (step 1 as-built).
+- ~~**The report's `unknown` slice needs one explaining line**~~ **Closed 2026-09-11:** the slices
+  sentence now says `unknown` holds cases whose subject is not in the corpus, which in the current set are
+  all the nine expected refusals, and separates it from `undated` and `unstated`.
 - **The Vercel proxy is the one piece of hosting outside Terraform.** After any re-apply, move
   `infra/vercel/vercel.json`'s destination and push.
 
