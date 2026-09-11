@@ -130,6 +130,16 @@ def build(store: InMemoryGraphStore) -> dict[str, Any]:
             "busiest_genre_connections": coverage.busiest_genre_connections,
             "connections": coverage.connections,
         },
+        # **Artists, by birth. Added 2026-09-11, phase 7.6 step 6**, beside `density` rather than in
+        # `coverage` for the same reason `density` is: `coverage` is the API wire contract and these
+        # would widen it. BIRTH, never activity: "born before 1900" is the only wording these support.
+        # Zero birth years through v0.7.1 is a true reading of that corpus, not a missing measurement.
+        "artists": {
+            "artists": coverage.artists,
+            "with_birth_year": coverage.artists_with_birth_year,
+            "born_before_1900": coverage.artists_born_before_1900,
+            "birth_eras": coverage.artist_birth_eras,
+        },
     }
 
 

@@ -26,15 +26,25 @@ understating the bias would, and this module exists to do neither.
 equivalents are different properties entirely (date of birth, country of citizenship) and are not
 ingested. Reporting one number over both axes would let 804 unmeasured artist nodes dilute a genre
 coverage figure toward zero and read as a much thinner corpus than it is.
+
+**Amended 2026-09-11, phase 7.6 step 6: artists now carry a birth year, and are measured separately.**
+Artifact v0.10.0 ingests P569 onto people (``Node.birth_year``). The genre figures above are unchanged
+in meaning, and the artist figures sit in **their own fields** (``artists_*``), never folded into the
+genre denominator, for the reason the paragraph above gives. They are also **kept out of** ``as_dict()``,
+which is the API wire contract; ``graph.facts`` publishes them to the SPA beside ``density``. Two limits,
+stated: a birth year is **not an era of activity** ("born before 1900", never "active before 1900"), and
+**country of citizenship is still not ingested**, so the Western European skew of pre-1900 art music is
+a known property of the sources that this module cannot yet count.
 """
 
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from musical_mycelium.graph.schema import (
+    NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
     Artifact,
@@ -168,6 +178,19 @@ class Coverage:
     top_country: str
     top_country_share: float
 
+    #: Artist nodes, people and groups. **Not in ``as_dict()``**: see the module docstring.
+    artists: int = 0
+
+    #: Artists carrying a P569 birth year. Groups never do (their date is formation, in P571).
+    artists_with_birth_year: int = 0
+
+    #: Artists **born** before 1900. The figure phase 7.6 exists to move; read it as birth, not activity.
+    artists_born_before_1900: int = 0
+
+    #: Artists per era bucket **of birth**, over the same ``ERA_BOUNDS`` as the genres, plus
+    #: ``"unknown"`` for every artist without a birth year (groups included). Sums to ``artists``.
+    artist_birth_eras: dict[str, int] = field(default_factory=dict)
+
     def as_dict(self) -> dict[str, Any]:
         return {
             "genres": self.genres,
@@ -240,7 +263,21 @@ def analyse(artifact: Artifact) -> Coverage:
     top_country, top_count = countries.most_common(1)[0] if countries else ("", 0)
     share = round(top_count / with_country, 3) if with_country else 0.0
 
+    # Artists, by birth. Their own figures and their own denominator, never mixed into the genre ones.
+    artists = [node for node in artifact.nodes if node.kind == NODE_KIND_ARTIST]
+    born: Counter[str] = Counter()
+    for node in artists:
+        born["unknown" if node.birth_year is None else era_of(node.birth_year)] += 1
+    birth_eras = {name: born.get(name, 0) for name, _, _ in ERA_BOUNDS}
+    birth_eras["unknown"] = born.get("unknown", 0)
+
     return Coverage(
+        artists=len(artists),
+        artists_with_birth_year=sum(1 for n in artists if n.birth_year is not None),
+        artists_born_before_1900=sum(
+            1 for n in artists if n.birth_year is not None and n.birth_year < 1900
+        ),
+        artist_birth_eras=birth_eras,
         genres=len(genres),
         distinct_countries=len(countries),
         genres_without_us_or_uk=without_us_or_uk,

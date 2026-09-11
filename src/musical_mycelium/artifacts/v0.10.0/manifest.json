@@ -87,12 +87,12 @@
     "without_inception": 248
   },
   "edge_count": 9276,
-  "generated_at": "2026-09-11T19:51:58+00:00",
+  "generated_at": "2026-09-11T20:03:25+00:00",
   "generator": "musical_mycelium.ingest.lineage",
   "node_count": 3628,
   "notes": "v0.7.1 plus five classified changes (phase 7.6 D2): {'a: artist node': 19, 'a: influenced_by edge': 25, 'b: artist node': 2066, 'b: studied_with edge': 2469, 'c: birth_precision set': 574, 'c: birth_year set': 574, 'c: inception_precision set': 220, 'c: inception_year set': 220, 'd: aliases set': 1148, 'e: genre node': 64, 'e: plays_genre edge': 1716}. Build-time exclusions: 18. Genre label collisions refused: 1. Teaching endpoints with no P136 genre on Wikidata: 964, shown as a gap and never inferred. v0.10.0 follows v0.7.1 on purpose; see docs/ROADMAP.md section 2.",
   "predicate": "P737 (influenced_by) + P136 (plays_genre) + P1066 (studied_with)",
-  "sha256": "8ab545193b73aeced2a131d9e75b89a20c9e442db0e7f06517c8dc3c35a8c8fb",
+  "sha256": "ea2578a3e9ef235ddae11ae0851f661c9b084d201aa495659406a3c63aa2df46",
   "source": "dbpedia+wikidata+enwiki",
   "source_snapshot": {
     "Q101109587": 2516474946,
@@ -840,7 +840,7 @@
     "diameter": 14,
     "isolated_nodes": 0,
     "largest_component": 3490,
-    "max_path_hops": 13
+    "max_path_hops": 12
   },
   "verification_counts": {
     "ASSERTS_AUTO": 784,

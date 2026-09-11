@@ -40,7 +40,7 @@ from pathlib import Path
 
 from musical_mycelium.agent.tools import default_registry
 from musical_mycelium.eval.live import live_cases
-from musical_mycelium.graph.backdrop import largest_component
+from musical_mycelium.graph.backdrop import DRAWN_PREDICATES, largest_component
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE, Artifact
 from musical_mycelium.graph.store import Direction
@@ -82,8 +82,12 @@ def corpus_figures(store: InMemoryGraphStore, artifact: Artifact) -> dict[str, i
     # layout solve, which is the expensive half and says nothing about the counts.
     graph = json.loads((artifact_directory() / "graph.json").read_text(encoding="utf-8"))
     keep = set(largest_component(graph["nodes"], graph["edges"]))
+    # The lines the backdrop DRAWS, since phase 7.6 step 6: lineage edges only (DRAWN_PREDICATES).
+    # Counting every edge in the component would state a picture the page does not show.
     backdrop_edges = sum(
-        1 for e in graph["edges"] if e["subject_id"] in keep and e["object_id"] in keep
+        1
+        for e in graph["edges"]
+        if e["subject_id"] in keep and e["object_id"] in keep and e["predicate"] in DRAWN_PREDICATES
     )
 
     return {

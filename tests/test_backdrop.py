@@ -66,4 +66,23 @@ def test_the_backdrop_holds_the_largest_component_and_says_so() -> None:
     # v0.7.1: 7 components, 1,465 of 1,479 nodes in the largest. Asserted as a floor rather than an
     # equality so a corpus change fails the test above -- which explains itself -- rather than this one.
     assert fresh["node_count"] >= 1_000
-    assert fresh["edge_count"] >= fresh["node_count"]
+    assert fresh["edge_count"] > 0
+
+
+def test_the_backdrop_draws_every_lineage_line_and_no_membership_line() -> None:
+    """Phase 7.6 step 6, his decision: every node of the component, but only lineage lines drawn.
+
+    Replaced ``edge_count >= node_count``, which held while every component edge was drawn and means
+    nothing now that membership lines are not. The property worth holding is exact: the drawn count is
+    the component's influence and teaching edges, all of them, and nothing else.
+    """
+    import json
+
+    from musical_mycelium.graph.backdrop import ARTIFACT, DRAWN_PREDICATES, largest_component
+
+    graph = json.loads(ARTIFACT.read_text(encoding="utf-8"))
+    keep = set(largest_component(graph["nodes"], graph["edges"]))
+    inside = [e for e in graph["edges"] if e["subject_id"] in keep and e["object_id"] in keep]
+    lineage = [e for e in inside if e["predicate"] in DRAWN_PREDICATES]
+    assert "plays_genre" not in DRAWN_PREDICATES
+    assert build()["edge_count"] == len(lineage)

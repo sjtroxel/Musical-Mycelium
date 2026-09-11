@@ -137,7 +137,7 @@ two membership tiers. The exposure filter was measured at 20% recall on held-out
 that count is a floor on what the sources contain, never a count of it.
 
 The organism is connected, in one specific way. Counting both kinds of edge, <!-- n:backdrop_nodes -->1,465<!-- /n --> of the <!-- n:nodes -->1,479<!-- /n --> nodes
-sit in one component, and that component, with its <!-- n:backdrop_edges -->5,058<!-- /n --> edges, is the backdrop drifting behind the
+sit in one component, and that component, drawn with its <!-- n:backdrop_edges -->2,276<!-- /n --> lineage lines, is the backdrop drifting behind the
 app. Through influence edges alone the graph is far more fragmented. What actually ties genres together here is
 the musicians who play across them, not an unbroken chain of genre-to-genre influence, and nothing in
 the app says otherwise. [`docs/graph-semantics.md`](docs/graph-semantics.md) covers how the corpus was

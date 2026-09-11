@@ -688,8 +688,9 @@ existing "chanson" (`Q1062400`). **Build exclusions: 0**; no recovered or teachi
 Padre Martini, was influenced by J. S. Bach, plays opera, Classical period, chamber music and symphony,
 and taught Hummel, Attwood, Süssmayr, Eberl, Seyfried and Ployer. Beethoven studied with Haydn,
 Salieri, Clementi and Neefe (and is still influenced by Haydn, a separate edge). Liszt has 41 recorded
-students; Chopin studied with Elsner, Żywny and Würfel and has 8. **2,674 of 2,911 artists carry a birth
-year, 2,133 born before 1900.** 977 teaching endpoints have no P136 genre, shown as the gap he chose.
+students; Chopin studied with Elsner, Żywny and Würfel and has 8. ~~2,674 of 2,911 artists carry a birth
+year, 2,133 born before 1900.~~ *(First-build figures, corrected at step 6: the final build, after the 18
+reviewed exclusions removed 22 people, holds **2,652 of 2,889 with a birth year, 2,111 born before 1900**.)* 977 teaching endpoints have no P136 genre, shown as the gap he chose.
 
 **Size:** `graph.json` is **5.86 MB raw, 482 KB compressed**, against the "5 MB or so" he accepted.
 Step 6 decides, per D6 as amended.
@@ -733,7 +734,7 @@ in it. **The pin has not moved.**
   those rows are P737 *influence* statements and the claim still matches its source. It is the same
   overlap he raised about teaching and influence, visible in the existing data.
 
-### Step 6 — Graph, derived views and budgets
+### Step 6 — Graph, derived views and budgets — [done]
 
 - `graph/structure.py`, `graph/coverage.py` and `graph/facts.py` read the new predicate correctly:
   coverage gains artists by birth era and a "born before 1900" count; `corroboration.py` is asserted by
@@ -743,6 +744,60 @@ in it. **The pin has not moved.**
 
 **Done when:** every budget holds, with any cap change carrying updated reasoning, and the structure,
 coverage and corroboration numbers are recorded here.
+
+#### 6.0 As built, 2026-09-11
+
+**Sequencing, stated so nobody expects otherwise:** `make facts` and `make backdrop` regenerate committed
+files from the **pinned** corpus, and the pin moves at step 9. So this step changed the code, measured
+everything on v0.10.0 directly, and regenerated the committed files **on v0.7.1** (where they are still
+true). They are regenerated on v0.10.0 at step 9, with the pin.
+
+**`structure.max_path_hops` was inaccurate, and v0.10.0 exposed it.** Documented as "the deepest chain
+`path()` can return", it walked **every** edge, genre membership included, which no path can traverse.
+Through v0.7.1 the two definitions agreed (12 and 12); on v0.10.0 they did not (13 against 12). It now
+walks influence edges only, matching `path()`'s default. v0.10.0 was rebuilt so its manifest records the
+corrected figure. Components stay undirected over every edge, deliberately (decision C1).
+
+**Artist coverage, in its own fields.** `Coverage` gained `artists`, `artists_with_birth_year`,
+`artists_born_before_1900` and `artist_birth_eras`, **kept out of `as_dict()`** so the API wire contract
+does not widen; `graph/facts.py` publishes them in a new `artists` block of `corpus-facts.json`, beside
+`density`. The module docstring now states the two limits: a birth year is not an era of activity, and
+country of citizenship is still not ingested, so the Western European skew of pre-1900 art music is a
+known property of the sources this corpus cannot yet count.
+
+**The backdrop: every node, lineage lines only. Decided by him.** Every edge of the largest component still
+shapes the layout; only influence and teaching edges are shipped and drawn (`backdrop.DRAWN_PREDICATES`).
+Checked on v0.7.1: **node positions byte-identical**, 1,465 nodes, drawn lines 5,058 to 2,276, the module
+35.9 KB to 21.2 KB, the bundle 277.4 KB to **263.0 KB of 320**. The README's backdrop sentence and its
+generated figure now count drawn lines, and `test_backdrop.py` replaces a check that no longer meant
+anything (`edges >= nodes`) with the exact property: every lineage edge in the component is drawn, and no
+membership edge is.
+
+**Measured on v0.10.0, before the pin moves:**
+
+| | v0.7.1 | v0.10.0 |
+|---|---|---|
+| components / largest | 7 / 1,465 | **61 / 3,490** |
+| diameter / max_path_hops | 10 / 12 | 14 / **12** (corrected definition) |
+| backdrop | 1,465 nodes, 2,276 lines, 21.2 KB | **3,490 nodes, 4,700 lines, 44.2 KB**; bundle about 286 KB of 320 |
+| artists / with birth year / born before 1900 | 804 / 0 / 0 | **2,889 / 2,652 / 2,111** |
+| artist birth eras | none | pre-1900 2,111; 1900-49 203; 1950-69 108; 1970-89 145; 1990-2009 85; unknown 237 |
+| genres / dated before 1900 | 675 / 23 | 739 / **32** |
+| genres naming no US or UK origin | 136 | **144** |
+| influence edges / corroborated / contested pairs | 2,284 / 82 / 2 | 2,309 / **82 / 2** (the 25 recovered edges are single-source) |
+| `graph.json` | 2.69 MB, 187 KB compressed | **5.84 MB, 450 KB compressed** |
+
+**The 54 new components** are small teaching lineages not connected to the main body. Real structure, and
+every sentence that quotes "7 components" is step 10's to correct.
+
+**The graph cap: 8 MB, decided by him.** D6 as amended said raise it to fit the measured size; the file is
+5.84 MB. 6.5 MB was recommended; he asked about 10 MB, and the answer given was that the cap's value is
+as a tripwire on unplanned growth (its own recorded reasoning), which 10 MB would blunt to a 70% jump. He
+chose **8 MB**, between the two: it still trips on roughly 35% unplanned growth over v0.10.0. The reasoning
+sits beside the number in `web/scripts/asset-budget.mjs`. Dropping aliases from the map's copy would have
+saved only 0.25 MB and was not done.
+
+**Measured:** `make check` exit 0, 1620 passed, frontend 429, scripted gates 4 / 0 / 2 of six.
 
 ### Step 7 — The gate, the tools and the prose
 

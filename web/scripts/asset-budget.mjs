@@ -62,12 +62,16 @@ export const BUDGET = {
       "where growth is the point.",
   },
   graph: {
-    cap: 3 * MB,
+    cap: 8 * MB,
     observed: 2694624,
     why:
-      "The pinned artifact, copied verbatim by `stage-graph.mjs` (201 KB gzipped). It moves only when " +
-      "the pin moves, so this cap is really a tripwire on an unplanned re-pin rather than a budget. " +
-      "**It caught a real one on its first run** -- see `PRUNES_STALE_PINS` in `stage-graph.mjs`.",
+      "The pinned artifact, copied verbatim by `stage-graph.mjs`. It moves only when the pin moves, so " +
+      "this cap is really a tripwire on an unplanned re-pin rather than a budget. **It caught a real one " +
+      "on its first run** -- see `PRUNES_STALE_PINS` in `stage-graph.mjs`. **Raised from 3 MB to 8 MB on " +
+      "2026-09-11, phase 7.6 step 6, by sjtroxel**, for a planned re-pin: artifact v0.10.0 is 5.84 MB " +
+      "raw (450 KB compressed; CloudFront compresses it, and it is fetched only after a first question or " +
+      "the tour, never at first paint). 6.5 MB was recommended and 10 MB asked about; 8 MB was his " +
+      "choice between them. It still trips on roughly 35% unplanned growth over v0.10.0.",
   },
   media: {
     cap: 0,

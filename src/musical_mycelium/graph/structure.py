@@ -30,7 +30,7 @@ from __future__ import annotations
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass
 
-from musical_mycelium.graph.schema import Artifact
+from musical_mycelium.graph.schema import INFLUENCE_ONLY, Artifact
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,13 +83,24 @@ def _undirected_adjacency(artifact: Artifact) -> dict[str, set[str]]:
     return dict(adjacency)
 
 
-def _descendant_adjacency(artifact: Artifact) -> dict[str, list[str]]:
-    """Ancestor -> the genres it influenced. One direction is enough for ``max_path_hops``: the
+def _descendant_adjacency(
+    artifact: Artifact, predicates: frozenset[str] = INFLUENCE_ONLY
+) -> dict[str, list[str]]:
+    """Ancestor -> what it influenced. One direction is enough for ``max_path_hops``: the
     distance from a to b down the arrows equals the distance from b to a up them, so the maximum over
-    all ordered pairs is the same number either way."""
+    all ordered pairs is the same number either way.
+
+    **Influence edges only by default, since 2026-09-11 (phase 7.6 step 6).** ``max_path_hops`` is
+    documented as "the deepest chain ``path()`` can return", and ``path()`` walks ``INFLUENCE_ONLY``
+    unless a caller widens it. This walked **every** edge, membership included, which no path can
+    traverse. The two happened to agree through v0.7.1 (12 and 12) and stopped agreeing at v0.10.0
+    (13 against 12), which is how the mismatch surfaced. Components stay undirected over every edge,
+    deliberately: reachability through the people who play across the corpus is decision C1's point.
+    """
     adjacency: defaultdict[str, list[str]] = defaultdict(list)
     for edge in artifact.edges:
-        adjacency[edge.object_id].append(edge.subject_id)
+        if edge.predicate in predicates:
+            adjacency[edge.object_id].append(edge.subject_id)
     return dict(adjacency)
 
 
