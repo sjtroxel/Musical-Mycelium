@@ -494,6 +494,8 @@ Phase 6 step 10 audits every surface for both.
 
 ---
 
+---
+
 ## 7. Reproducing this
 
 Scripts were written to a session scratchpad and are **not yet in the repo**. They are stdlib-only, have
@@ -515,3 +517,51 @@ WDQS was fully responsive on 2026-07-31 despite the degradation documented in
 RateYourMusic, MasterClass, Presto Music and Fandom all return 403/402 to automated fetch, so independent
 citation retrieval is substantially a manual task. Search results for micro-genres are dominated by
 AI-generated content farms, which any automated sourcing attempt will have to exclude.
+
+---
+
+## 8. P1066 `student of` — hand-checked 2026-09-11, before ingestion
+
+Phase 7.6 step 2. The full record, all 40 rows with the sentence each verdict rests on, is
+`docs/p1066-handcheck.md`; the scripts are in `scripts/handcheck/`. Why this property at all: of 9,212
+composers born before 1880 with an English article, 56 carry a P737 influence statement and 1,766 carry
+P1066 naming another composer. The classical tradition's lineage is recorded as teaching.
+
+**The property passes, and emphatically — the opposite result from P279.** Zero of 40 were a wrong
+relation (a colleague, patron, relative or rival recorded as a teacher) and zero were inverted, against
+P279's 47 of 47 category errors. 31 of 40 were supported as teaching by the two Wikipedia articles: 26
+formal study, 2 brief lessons, 3 where the article itself hedges ("presumably", "may have", "perhaps").
+The other 9 could not be confirmed or refuted from Wikipedia. The stop rule written before reading was
+"more than 8 wrong or inverted stops the phase"; the count is 0.
+
+**What the prose check confirms for teaching, which names the verification tier.** Of the 30 rows the
+existing check passed, **27 rest on a sentence that states study** and **3 on a sentence that does not**:
+Mozart "met" Martini (true lessons, but the check found the wrong sentence), Tartini "took an interest
+in" Naumann, and two successions to a post ("succeeding Nicolas Gombert"). About one in ten, as a
+direction; the same check over-accepts influence at roughly one in five (§4.7), because "studied with"
+is exactly what a biography says. So the tier is honestly **"a P1066 statement whose student's article
+names the teacher in body prose"**, and it is not labelled as a confirmed teaching relation.
+
+**What it misses, in the conservative direction.** 4 of the 31 supported rows were not passed:
+"*Karl* Friedberg" for Wikidata's "Carl", "Professor Hiller" by surname only, Yves Nat named only in
+his teacher's article, and Gaffi excluded by the mislink guard because his label carries a middle name
+his article title does not. Excluding real teaching loses an edge and never narrates a false one, which
+is the direction this project prefers. Loosening name matching would also move the influence axis, so it
+is **not** changed in phase 7.6.
+
+**No split by reference, unlike P136.** Unverifiable rows fell evenly: 5 of 20 referenced statements, 4 of
+20 unreferenced. P136's reference split rested on 17 of 18 against 5 of 12; nothing like it appears here.
+
+**Two things to watch, both early-era.** Unverifiable rows cluster before 1700 (5 of 13, against 2 of 13
+in the 1700s and 2 of 14 in the 1800s): Wikipedia says less about Renaissance and Baroque careers. And
+**both succession sentences are pre-1700**, which suggests a systematic shape: a maestro di cappella who
+succeeded another recorded as that person's pupil. Two rows is not a finding, so phase 7.6 step 5
+measures it across the whole population (rows whose only supporting sentence speaks of succeeding and
+never of study) before deciding anything.
+
+**One younger teacher, and it was right.** José Sevenants (b. 1868) is recorded as studying harmony with
+Joseph Jongen (b. 1873), and his article says so. A teacher younger than the student is suspicious, not
+disqualifying, which is why the phase 7.6 plan hand-reads every such edge rather than excluding them
+automatically.
+
+**Reviewed by sjtroxel on 2026-09-11**, every row not judged formal study (the 14 in other categories plus the flagged younger-teacher row): he agreed with all fifteen verdicts and changed none.

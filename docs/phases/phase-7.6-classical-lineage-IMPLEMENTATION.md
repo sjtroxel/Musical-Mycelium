@@ -219,10 +219,12 @@ disagrees (so the test cannot pass by accident).
   mirroring `influenced_by`'s *later* `influenced_by` *earlier*. The P1066 statement lives on the
   student's item, so its URI encodes the subject's QID and `claims.resolve_sources` verifies it
   unchanged.
-- **D2. One layer, four classified changes.** v0.10.0 is v0.7.1 plus exactly: **(a)** `mul` recovery
+- **D2. One layer, five classified changes.** v0.10.0 is v0.7.1 plus exactly: **(a)** `mul` recovery
   (entities and rows the bug excluded, re-screened), **(b)** the `studied_with` layer, **(c)** artist
-  dates, **(d)** aliases. A diff report classifies every added, removed or changed row into (a) to (d).
-  An unclassifiable change stops the step.
+  dates, **(d)** aliases, **(e)** membership: P136 edges for every artist new in (a) or (b), and the
+  reviewed repertoire allowlist applied to every artist (added 2026-09-11 at step 3, his decision). A
+  diff report classifies every added, removed or changed row into (a) to (e). An unclassifiable change
+  stops the step.
 - **D3. Verification tiers are predicate-scoped.** `studied_with` gets its own tier(s), never an
   influence tier. The name and count are fixed after the hand check (step 2), because the check says
   what the prose check actually confirms for teaching. The working name is `TEACHING_PROSE_AUTO`: a P1066
@@ -267,10 +269,15 @@ disagrees (so the test cannot pass by accident).
   measured at 7.7's re-baseline.
 - **D6. Budgets are decided from measurements, and the default is to keep the caps.** Step 6 measures
   the real v0.10.0 graph and backdrop sizes first. If over:
-  - **graph**: the SPA's staged copy becomes a named **projection** (fields the map does not read,
-    such as aliases, are dropped by `stage-graph.mjs`, and the file says it is a projection), before
-    any cap is raised. If the projection is still over, the cap moves with its recorded reasoning
-    updated, which is the budget file's own rule.
+  - **graph**: ~~the SPA's staged copy becomes a named projection before any cap is raised~~
+    **Amended 2026-09-11 by his decision: raise the cap to fit the measured size, around 5 MB, with its
+    recorded reasoning updated.** Why that is cheap rather than merely tolerated: CloudFront compresses
+    the file (`infra/terraform/main/frontend.tf:88`, `compress = true`) and the JSON compresses about
+    13 to 1 (2.69 MB is 201 KB gzipped, measured), so 5 MB is roughly 380 KB on the wire; and the graph
+    is fetched only after a first question or the tour, never before first paint (`App.test.tsx`
+    asserts that). The cap's own reasoning already calls it "a tripwire on an unplanned re-pin rather
+    than a budget", and this re-pin is planned. A projection is revisited only if the real file lands
+    well past 5 MB.
   - **backdrop**: the backdrop keeps a fixed node ceiling chosen by a stated rule, the README sentence
     that says "that component … is the backdrop" is rewritten to match, and the ceiling is a named
     constant with a test.
@@ -418,7 +425,7 @@ read. No test touches the network.
 scripted gates 4 / 0 / 2 of six, root 17 of 18. **No artifact changed**: the fix only matters to the
 next ingest, which is step 5.
 
-### Step 2 — The P1066 hand check, before any ingestion
+### Step 2 — The P1066 hand check, before any ingestion — [done]
 
 **The rule is `.claude/rules/graph-semantics.md`: hand-check before ingesting.** P279 was read at 47
 edges and changed the design; P136 at 30.
@@ -441,7 +448,33 @@ edges and changed the design; P136 at 30.
 
 **Done when:** the 40 rows and the verdict are committed, and he has reviewed the flagged ones.
 
-### Step 3 — The bound, from measurements
+#### 2.0 As built, 2026-09-11 — read, and reviewed by him the same day
+
+**Record:** `docs/p1066-handcheck.md` (all 40 rows, each with the sentence its verdict rests on) and
+`docs/graph-semantics.md` §8 (the summary). Scripts committed this time, in `scripts/handcheck/`, because
+§7 of that doc records the P279 scripts never were.
+
+**The population was 3,449 distinct statements, not 3,606:** the extra rows were people with more than
+one recorded birth date. The earliest was kept.
+
+**Verdict: 0 of 40 wrong relation, 0 inverted. The stop rule proceeds.** 26 formal study, 2 lessons, 3
+disputed by their own article, 9 unverifiable from Wikipedia.
+
+**Three findings that change the build, each already folded into this plan:**
+1. **The tier is "the student's article names the teacher in body prose"** (D3's working name,
+   `TEACHING_PROSE_AUTO`, stands). 27 of the 30 rows the check passed rest on a sentence stating study;
+   3 rest on a meeting, an interest and two successions. It is not labelled a confirmed teaching relation.
+2. **No reference split.** Unverifiable rows fell 5 of 20 referenced against 4 of 20 unreferenced.
+3. **The succession shape is measured in step 5** across the whole population before any rule is made.
+
+**What the check misses, left alone on purpose:** 4 real teaching rows failed it (a Carl/Karl spelling,
+a surname-only mention, a teacher-article-only mention, and the mislink guard tripping on a middle name).
+Missing an edge never narrates a false one, and loosening name matching would move the influence axis.
+
+**Reviewed by sjtroxel, 2026-09-11:** all fifteen non-formal-study rows (including #20, the younger
+teacher). He agreed with every verdict and changed none. Step 2 is done.
+
+### Step 3 — The bound, from measurements — [done]
 
 - Bound A measured again with the step 2 exclusions applied; bound B (any musical occupation) measured
   in chunks by birth century so the query service does not time out.
@@ -450,6 +483,54 @@ edges and changed the design; P136 at 30.
 - The chosen bound is written here with its numbers. Bound A is the default (D7).
 
 **Done when:** the bound is recorded and he has seen the numbers.
+
+#### 3.0 As built, 2026-09-11
+
+**Bound A is chosen.** Bound B (any of 15 common musical occupations instead of composer only) **could
+not be measured**: split into birth-year windows, every window returned 504 Gateway Timeout and one
+returned **429 Too Many Requests**, the service asking us to back off. The run was stopped rather than
+retried, per the rate-limit rule. Widening to performers is a backlog item, not a guess; D7's argument
+stands on the one fact that was checked (all five of Liszt's teachers carry the composer occupation).
+
+**Bound A, measured from the pulled population:**
+
+| | count |
+|---|---|
+| distinct P1066 statements | **3,449** |
+| students / teachers / distinct people | 2,035 / 1,319 / **2,584** |
+| of those people, already in v0.7.1 | **30**, all artists |
+| their P136 membership statements | **2,075**, on 1,362 of the 2,584 |
+| distinct genres those point at | 132, of which **92 are not in the corpus** (top: opera 818, classical music 557, symphony 216) |
+
+**Size projection**, from v0.7.1's measured averages (394 bytes per artist node, 340 per edge) and the
+step 2 pass rate (30 of 40, a direction): about 2,600 teaching edges (~0.9 MB), at most 2,554 new people
+(~1.1 MB), about 2,100 membership edges and 92 genres (~0.8 MB), and aliases on every node, not yet
+measured (~0.4 to 1.2 MB). **Roughly 6 to 7 MB raw, about 0.5 MB compressed.** That is past the "5 MB or
+so" he accepted; the aliases are the one part the map never reads, so step 6 measures the real file and
+decides whether the map's copy leaves them out.
+
+~~**Open for him, raised here because the plan did not settle it:** whether the new composers also get
+their P136 membership edges.~~ **DECIDED 2026-09-11 by him: yes, with "each composer's full repertoire
+adequately included".** Three decisions and one measurement followed, all his calls:
+
+- **Full repertoire is Wikidata's whole P136 list, which the membership layer already takes.** Every
+  non-deprecated statement, objects not bounded to the corpus. Measured on the famous cases: Mozart
+  gets opera, Classical period, chamber music and symphony; Beethoven five; Liszt four.
+- **The type filter was too narrow for classical repertoire, so a reviewed allowlist admits real
+  repertoire past it, for every artist, old and new.** Over 4,838 statements it dropped 132 across 90
+  values; the review sheet is `docs/p136-allowlist-review.md` (20 keep, 6 borderline, 64 drop, each with
+  its reason). **A collision rule came out of measuring:** a value whose label folds to an existing
+  node's label is never admitted and never re-pointed. That is why Tchaikovsky's "ballet" (Wikidata's
+  *dance* item, while the corpus already holds the *music* genre "ballet") cannot be kept: the fix is
+  upstream, on Wikidata.
+- **Composers with no P136 on Wikidata are shown as a gap, never inferred.** 1,232 of the 2,584 have
+  none, **Chopin, Brahms and Schumann among them** (confirmed directly, no deprecated statements either).
+  They are in the corpus through their teachers and students; the coverage panel and report count them.
+- **This adds a fifth change class to D2: (e) membership**, the new composers' P136 edges plus the
+  allowlisted repertoire for existing artists. Step 5 builds it through the existing membership code.
+
+**Step 3 is done: he reviewed the allowlist sheet on 2026-09-11 and approved it as proposed** (20 keep;
+all 6 borderline values dropped, ballet included; 64 drop).
 
 ### Step 4 — Schema
 
@@ -479,8 +560,15 @@ project's contactable User-Agent.
 - **(b) `studied_with`.** Discovery within the step 3 bound, excluding deprecated statements; the prose
   check on the student's article; the step 2 exclusions honoured; edges built with statement URIs.
   **Every edge whose teacher is recorded as younger than the student is listed and hand-read** (trap 16).
+  **And the succession shape is measured** (added from step 2): every passing row whose only supporting
+  sentences speak of succeeding someone and never of study is counted and listed. Step 2 saw it twice in
+  40, both before 1700; if it is common, it is handled then with a stated rule, not guessed at now.
 - **(c) Dates** for every artist node (D8).
 - **(d) Aliases** for every node, `en` and `mul`.
+- **(e) Membership**, through the existing `membership.discover`/`build`: P136 for every artist new in
+  (a) or (b), and the reviewed allowlist (`docs/p136-allowlist-review.md`) admitted past the type test
+  for every artist, with the collision rule enforced in code, not by review alone. Artists left with no
+  genre are counted into the manifest's coverage.
 - **The diff report** v0.7.1 to v0.10.0: counts per class (a) to (d), every removed row listed (there
   should be none), and a hard failure on any change it cannot classify.
 - Tests over recorded fixtures: the layer is deterministic, the classification catches a planted
