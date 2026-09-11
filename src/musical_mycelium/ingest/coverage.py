@@ -22,6 +22,7 @@ from dataclasses import dataclass, replace
 from typing import Any
 
 from musical_mycelium.graph.schema import NODE_KIND_GENRE, Artifact, Node
+from musical_mycelium.ingest.labels import SPARQL_LABEL_LANGUAGES
 
 PROPERTY_INCEPTION = "P571"
 PROPERTY_COUNTRY = "P495"
@@ -52,7 +53,7 @@ SELECT ?g ?inception ?precision ?countryLabel WHERE {{
     ?node wikibase:timeValue ?inception ; wikibase:timePrecision ?precision .
   }}
   OPTIONAL {{ ?g wdt:{PROPERTY_COUNTRY} ?country . }}
-  SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+  SERVICE wikibase:label {{ bd:serviceParam wikibase:language "{SPARQL_LABEL_LANGUAGES}". }}
 }}
 """
 

@@ -2,10 +2,23 @@
 
 > ## START HERE — where things stand, 2026-09-11
 >
-> **PHASE 7.5 STEP 4 IS BUILT, NOT YET DEPLOYED — 2026-09-11.** The README is rewritten against the
-> deployed site; the report and the app footer now link to the repo. **Step 4 is done when a
-> `deploy.yml` dispatch puts the footer link live** — see the newest section below. Next after that is
-> step 5, the writeup. The block below is dated 2026-09-10 and its "NEXT IS STEP 4" is superseded.
+> **PHASE 7.5 STEP 4 IS DONE — 2026-09-11.** README rewritten against the deployed site; the app footer
+> carries his standard copyright line with the GitHub mark and the report links to the repo. Deployed
+> (run `34608268096`, commit `2b1eb02`) and verified by hand.
+>
+> **PHASE 7.5 IS SUSPENDED AT STEP 5 AND PHASE 7.6 `classical-lineage` (v0.9) IS NEXT — 2026-09-11, his
+> decision.** Scope doc: `docs/phases/phase-7.6-classical-lineage.md`, **approved 2026-09-11**; its
+> IMPLEMENTATION doc `phase-7.6-classical-lineage-IMPLEMENTATION.md` is **APPROVED 2026-09-11 and the
+> build has started**; its `[done]` markers and as-built subsections are the authority on progress. Order from here: **7.6, then 7.7 `name-resolution` (v0.9.5, scope
+> doc written), then ONE live re-baseline and ONE deploy for both, then 7.5 resumes at step 5.** Typing
+> "mozart" into the site still refuses after 7.6 by design; 7.7 fixes it with one-click offers, never
+> automatic guesses. **The new artifact is
+> v0.10.0, and the jump from v0.7.1 is deliberate, not a typo**: every nearer number collides with a
+> product version or understates a new predicate (`ROADMAP.md` §2, under the version table). **Compare
+> artifact versions numerically, never as strings** — as text "0.10.0" sorts before "0.7.1". 7.6 fixes the Wikidata `mul` label bug (Mozart), adds
+> a `studied_with` predicate from P1066, and opens the gate to it. **Do NOT start drafting the launch
+> post.** 7.5 resumes at step 5 on 7.6's artifact; the post plan (the writeup is the LinkedIn launch post,
+> kit in `docs/launch/`, draft, audit, step 6, THEN post) still stands for then. The block below is dated 2026-09-10 and its "NEXT IS STEP 4" is superseded.
 >
 > **PHASE 6.5 IS COMPLETE** — all ten DoD items, `v0.6.5` tagged and pushed. As-built:
 > `docs/phases/phase-6.5-debt-and-disagreement-IMPLEMENTATION.md`, **and that doc is the authority**.
@@ -88,14 +101,38 @@
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
 
+## FINDING — Mozart is missing because of Wikidata's `mul` labels, 2026-09-11
+
+**Found by him, typing "mozart" into the live site.** The app refused, correctly given its corpus, but
+the corpus is wrong. Diagnosed the same morning, and nothing has been changed yet.
+
+- **Cause.** `ingest/prosecheck.py:fetch_entities` asks `wbgetentities` for `languages=en` only.
+  Wikidata now lets an item hold its label in `mul`, a default shared across languages, with no
+  separate `en` label. Mozart (`Q254`) has only `mul: Wolfgang Amadeus Mozart`; Muse and Christina
+  Aguilera are the same. Checked live on 2026-09-11. The label came back `''`, and the label-versus-article
+  check then excluded him as `MISLINKED`: `''` does not match "Wolfgang Amadeus Mozart".
+- **Reach, measured from `data/artist_screening.json`.** 44 entities with an English article came back
+  unlabelled: among them Mozart, Taylor Swift, B. B. King, Megadeth, Snoop Dogg, Dua Lipa, Bruno Mars,
+  Lauryn Hill, Frank Ocean, Roxy Music. 92 exclusion rows touch them, 18 of them rows where the prose
+  check *found* support pointing at one (e.g. Beethoven "composed in the classical style of Haydn and
+  Wolfgang Amadeus Mozart"). **How many would be admitted after a fix is unknown until a re-ingest**:
+  some would still fail other checks, and not all 44 are musicians (Victor Hugo is on the list).
+- **Genre axis unaffected**: 0 of 395 genre entities are unlabelled. No node in artifact v0.7.1 has an
+  empty label; the bug excluded, it did not corrupt.
+- **Why it is not fixed in phase 7.5.** The fix is small, but it moves the artifact pin, and the 7.5 scope
+  doc forbids that: "if the honest fix is a code change, that is a finding and it gets its own phase."
+  A new pin also invalidates the live baseline ($2.61 and about 2.4 hours to re-measure). Placement,
+  before or after the launch post, is his decision.
+
 ## PHASE 7.5 STEP 4 — the README and the recruiter path, 2026-09-11
 
 **As-built is `phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md` §4.0.** Open items:
 
-- **The deployed site does not carry the repo link yet.** The footer link and the report's new
-  "The code" link and `unknown` sentence ship on the next `deploy.yml` dispatch, which is manual and
-  must pass `-f llm_provider=bedrock -f reserved_concurrency=-1` or it reverts the live model to the stub.
-  Until then the path runs README -> site -> report, and back to the repo only via the README.
+- ~~**The deployed site does not carry the repo link yet.**~~ **Closed 2026-09-11:** deployed in run
+  `34608268096` and verified by hand. Reminder that outlives it: `deploy.yml` is manual and must pass
+  `-f llm_provider=bedrock -f reserved_concurrency=-1`, or it reverts the live model to the stub.
+- **The footer says "All rights reserved" and `LICENSE` is MIT.** His choice, to match his other apps.
+  Not a legal conflict; a possible mixed signal to a careful reader. One line to change if he wants.
 - **The README carries unmarked figures, all deliberately.** Dated history (97.1%, 37 cases, four of 56,
   kappa 0.44-0.48, 14/12/11, $6.28, ~7,000 tokens, half a dollar a run) is dated or tied to a named
   measurement, per step 0's rule. "Five hops" (the tour) and "four parents" (acid jazz) are data held by

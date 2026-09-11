@@ -55,6 +55,7 @@ from musical_mycelium.graph.schema import (
 )
 from musical_mycelium.ingest import artifact as artifact_io
 from musical_mycelium.ingest.discovery import Exclusion, Screening
+from musical_mycelium.ingest.labels import WBGETENTITIES_LANGUAGES, entity_label
 
 ARTIFACT_VERSION = "0.7.1"
 VERIFICATION_RECORD = "docs/phases/phase-1-edge-verification.md"
@@ -319,14 +320,15 @@ def fetch_entities(qids: list[str]) -> dict[str, EntityFacts]:
                     "action": "wbgetentities",
                     "ids": "|".join(chunk),
                     "props": "labels|info",
-                    "languages": "en",
+                    # `en|mul`, not `en`: the 2026-09-11 `mul` bug. See `ingest.labels`.
+                    "languages": WBGETENTITIES_LANGUAGES,
                     "format": "json",
                 }
             )
         )
         entities: dict[str, Any] = _get(url)["entities"]
         for qid, entity in entities.items():
-            label = entity.get("labels", {}).get("en", {}).get("value", "")
+            label = entity_label(entity)
             facts[qid] = EntityFacts(
                 qid=qid,
                 label=label,

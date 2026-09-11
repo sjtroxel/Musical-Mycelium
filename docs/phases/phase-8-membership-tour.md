@@ -8,6 +8,16 @@
 > **The slug is provisional.** `membership-tour` names the mechanism. If the build shows the phase is really
 > about something else, rename it then rather than defending the name.
 
+> **Amended 2026-09-11: this is no longer the first phase to open `ALLOWED_PREDICATES`.** Phase 7.6
+> `classical-lineage` (v0.9, before v1.0) opens it first, for `studied_with` from Wikidata P1066. So
+> phase 8 is the second opening. Whatever 7.6 builds for predicate-typed claims and hops is what this phase
+> inherits rather than designs, and §4's question "whether the tour is one structure or two" has a
+> first answer from 7.6: **mixed routes are one path with typed hops** (his decision, 2026-09-11, for
+> teaching plus influence). Note what does not transfer: teaching and influence both run forward in
+> time, and membership does not, so phase 8 still has to decide whether that answer is safe for it. §6's framing ("this phase is someone editing that line
+> on purpose") now describes 7.6 first. Nothing else here changes: membership stays un-narratable until
+> this phase, and §3's "no new corpus" still holds here, because the new corpus arrives in 7.6.
+
 ## 0. Why this phase exists, and why it is after v1.0
 
 **It was found in phase 7 step 5's re-read, on 2026-09-09**, and the finding is recorded in

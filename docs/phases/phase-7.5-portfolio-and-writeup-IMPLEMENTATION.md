@@ -15,6 +15,13 @@
 >
 > Steps are marked `[done]` as they land, and each carries an as-built subsection recording where reality
 > disagreed with this plan. The doc is allowed to be wrong. It is not allowed to be silently wrong.
+>
+> **SUSPENDED 2026-09-11 at step 5, by his decision, while phase 7.6 `classical-lineage` runs.** Steps 0
+> through 4 are done and stay done. **Resumes at step 5 on the corpus 7.6 produces**, so v1.0 ships on
+> that artifact rather than on v0.7.1. Why: the live site refused "mozart", which exposed a label bug and
+> a missing relationship (teacher and student) that together keep most pre-1900 composers out of the
+> corpus. See `phase-7.6-classical-lineage.md` §0. **A cold session must not start drafting the launch
+> post until 7.6 is closed.**
 
 ## 1. What this phase delivers, in one sentence
 
@@ -112,6 +119,12 @@ than after.
 The live eval baseline. 56 cases, bounds measured over five identical runs at $2.61 and ~2.4 hours.
 **Nothing in this phase adds a live case**, because `thresholds.py:_ungateable` returns before any
 per-metric check the moment the count moves. The held-out set stays sealed at run count 1.
+
+*Corrected 2026-09-11:* the premise that v1.0 ships on artifact v0.7.1, unchanged, no longer holds.
+Phase 7.6 moves the pin to **v0.10.0** (decided 2026-09-11; the jump from 0.7.1 is deliberate, see
+`ROADMAP.md` §2 under the version table), and re-measures the
+live baseline itself behind a spend confirmation. This phase still adds no live case and still moves no
+pin of its own; it inherits 7.6's.
 
 ## 4. The finding this plan adds: only 5 of 26 stored live runs are comparable — *built as the trend view at step 2*
 
@@ -487,14 +500,14 @@ DNS fix, which only the next round-trip can.
   $5 budget is warning on September's $6.61 forecast while the invoice will read $0.00, so a runaway
   cost would still be caught while credits hide it from the bill.
 
-### Step 4 — The README and the recruiter path — built 2026-09-11, done on deploy
+### Step 4 — The README and the recruiter path — [done]
 
 The shape a stranger meets first. Structured here; **the narrative prose is his** — see §6.
 
 **Done when:** the README describes what is deployed, every number in it is covered by step 0, and the
 path from landing to report to repo is walkable in one sitting.
 
-#### 4.0 As built, 2026-09-11 — built, and done once the next deploy lands
+#### 4.0 As built, 2026-09-11
 
 **The prose is mine, by his decision.** On 2026-09-11 he gave permission for Claude-written prose in
 this phase, after the §6 warning was put to him first. §6 records the amendment.
@@ -546,18 +559,150 @@ spend.
 across 23, readme floor holds, script 276.4 KB of 320, report 46.5 KB of 64, scripted gates 4 passed /
 0 failed / 2 N/A of six.
 
-**Why this is not yet `[done]`:** `deploy.yml` is `workflow_dispatch` only, so the footer link, the
-report's repo link and the `unknown` sentence are not live until he dispatches it with
-`llm_provider=bedrock` and `reserved_concurrency=-1`. The walkable-path half of done-when is verified
-after that, by hand.
+**Deployed and verified by hand, 2026-09-11.** `deploy.yml` is `workflow_dispatch` only; he dispatched
+it with `llm_provider=bedrock` and `reserved_concurrency=-1`, run `34608268096` on commit `2b1eb02`,
+green on every step including both smoke tests. Then, by hand, against the live site rather than the
+run's own checks:
+- the Vercel address serves a bundle carrying the copyright line and the repo link;
+- `/report/index.html` is **byte-identical** to the committed page and carries "The code" and the
+  `unknown` sentence;
+- the Function URL's `/health` reads artifact 0.7.1, 7 components, 2 contested pairs;
+- a real query, "How is the blues connected to heavy metal?", sent with the Vercel origin: CORS header
+  returned for that origin, 2 claims, first byte 0.20 s, total 6.3 s.
 
-### Step 5 — The writeup
+So the path README -> app -> report -> repo is walkable, and step 4's done-when is met. **This deploy
+was an existing hostname**, so it does not prove the smoke-test DNS fix; only the next round-trip does.
 
-DoD 3, and the constraint in §6 is absolute. **Interview, structure, and let him write.** The material
-exists: every phase has an as-built with its findings, and the good ones are findings a reader would not
-guess.
+### Step 5 — The writeup, which is the LinkedIn launch post — SUSPENDED 2026-09-11, not started
 
-**Done when:** it exists, it is his words, and he can walk through it cold.
+*Waits for phase 7.6. When it resumes, re-check every number and candidate angle below against the new
+artifact first: the corpus, the chips and possibly the strongest angle (a classical lineage) will have
+moved.*
+
+~~DoD 3, and the constraint in §6 is absolute. **Interview, structure, and let him write.**~~
+*(Superseded 2026-09-11 on two counts, both his decisions: §6's constraint was lifted for this phase,
+and the writeup became the LinkedIn launch post. The original text is kept because the reasoning it
+carried, that he must be able to walk through it cold, still governs.)*
+
+**What it is.** A LinkedIn feed post announcing Musical Mycelium, written for recruiters and the
+engineers they forward it to, **not** for music fans who would use the app. That is the reframe that
+fixed the Patchwork launch draft on 2026-07-06, and it applies here unchanged: the artifact proves the
+skills, and the reader is evaluating the engineer. At least five of his project posts have gone up
+before this one, so this step reuses a working pattern rather than inventing one.
+
+#### 5.1 What the past posts establish, read from their files on 2026-09-11
+
+Sources: `~/job-search-headquarters/portfolio/` — `patchwork-launch/`, `patchwork-grounding-benchmark/`,
+`heritage-odyssey-blog/HERITAGE_ODYSSEY_POST_FINAL.md`, `blog-posts/BLOG_SERIES_PLAN_MAY_2026.md` —
+and the recruiter-copy, post-the-work, engagement and ELI5 memories in the shared store.
+
+- **Shape.** One main post under LinkedIn's **3,000-character** cap; the first **~210 characters**
+  show before "see more", so the hook is written and A/B'd separately. Heritage Odyssey ran 2,844
+  characters. Prose paragraphs, no bullets, which was the house style by July. Stack line near the end,
+  live link last, then **3 to 5 specific hashtags** including `#OpenToWork`.
+- **Voice.** Product-forward, near-zero first person. The system and its findings are the subject of
+  the sentences. The Patchwork benchmark post kept exactly two first-person beats and each was flagged
+  as a deliberate choice. No emoji, em dashes minimized, no "excited to share" opener.
+- **Do not lead with the vendor.** Never "Claude" in the hook. This project is the easiest one yet to
+  get right: it runs on **Bedrock**, with a **non-Anthropic judge** (Nova Pro), behind a provider seam,
+  which is a model-agnostic story a recruiter at any shop can read. Name the models in the body where
+  they carry signal.
+- **Depth over defense.** A paragraph defending the work (cost discipline, limits, failure handling)
+  loses to a second architecture paragraph. **The honesty machinery here is architecture, not
+  defense** — the claims-first gate, the disagreement disclosure, the eval gates — so it belongs in the
+  post. The coverage skew is the defensive part and it goes in the first comment, which is the Heritage
+  Odyssey precedent: a scope note posted immediately after, 1,053 characters.
+- **Every claim audited.** "Unverified claims kill trust" was the single most repeated demerit across
+  twelve Vibeathon judge reports. Patchwork's benchmark post shipped with an audited numbers table in
+  its `README.md` and a rule that no other number could appear. This repo can do better than a table
+  (5.3).
+- **Media is the lever this project finally has.** Patchwork's launch post was his least engaging, and
+  the diagnosis was the medium: its best qualities were invisible in a scroll. **Musical Mycelium is the
+  most screenshot-able thing he has built** — a live corpus backdrop and a guided tour that moves a
+  camera across the graph. A multi-image post animates a GIF (≤ ~6 MB, ≤ 500 frames); a PDF carousel
+  freezes it. Portrait 1080×1350, rendered at 2x, render tall then crop.
+- **Engagement is not the measure.** The post is there when a hiring manager clicks his profile weeks
+  later. The bar is that it goes up.
+
+#### 5.2 Deliverables — the launch kit
+
+Built in this repo under `docs/launch/`, because the claim audit reads repo files, and a top-level
+`writeups/` like Patchwork's would spend the root's last free slot (17 of 18). **After it is posted, the folder is copied to
+`~/job-search-headquarters/portfolio/musical-mycelium-launch/`**, the 2026-07-23 rule that all post
+material lives in one place.
+
+1. **`POST.md`** — the main post, paste-ready; three alternate hook lines; the optional first comment;
+   posting notes.
+2. **The claim audit** — every number and every factual sentence in the post and the slides, each with
+   the file or command that backs it (5.3).
+3. **`carousel/`** — a build script and a render script, and the rendered portrait slides, following the
+   `patchwork-grounding-benchmark/carousel/` layout. The palette is the app's own, validated with the
+   dataviz checks as the trend chart was at step 2.
+4. **The tour GIF** — the guided tour captured headlessly and converted with the two-stage ffmpeg
+   palette recipe (`reference-linkedin-gif-recipe`). The tour replays a recorded answer, so the capture
+   is deterministic, needs no network, and costs nothing.
+5. **A cold walk-through** — see 5.4.
+
+**Candidate slides, to be cut, not all shipped:** the landing with the backdrop; the tour mid-walk;
+one claim showing its source and its verification tier; the contested-disagreement notice; the
+claims-first pipeline as a diagram; the report's six gates; the trend chart with its per-case table;
+the coverage panel. Eight is the most any past carousel used; five is plenty.
+
+**Candidate angles, for him to pick, not decided here.** Each is a real finding from this build, and
+the best posts led with one:
+- *The architecture:* the model proposes claims, deterministic code decides, and prose is written only
+  from what passed. The model cannot narrate an edge the gate refused.
+- *The data finding:* zero of 47 Wikidata "subclass of" edges carried a historical claim, so the
+  obvious way to build a music-history graph produces a graph of Wikidata's filing system.
+- *The eval finding:* a metric that read an identical 97.1% across five runs was one case failing the
+  same way every time, and a case that failed three runs straight passed the next two.
+- *The honesty position:* "grounded" means traceable, not true, and when two sources disagree the
+  answer says so and picks neither.
+
+#### 5.3 The claim audit, and why this repo can make it a check
+
+The README's numbers are generated and `make check` fails on drift (step 0). A post is different in
+one way: **once published it is history and must not change**, so it cannot be regenerated after the
+fact. Two options, **decided in the step, not here**:
+- **A. Audit table**, the Patchwork precedent: a table of every figure with its source, verified by hand
+  on posting day. Cheap; nothing re-checks it.
+- **B. Markers until posted, then frozen.** The draft carries the same `<!-- n:key -->` markers the
+  README uses and is checked by the same test while it is a draft. `make post` writes the marker-free
+  paste text. On posting day the file is stamped with its date and moves out of the check, becoming a
+  dated record rather than a live claim. More work; it makes "every number is generated" true of the
+  post as well, which is a sentence the post itself could use.
+
+Either way, the rule from `grounding-and-claims.md` is the one most at risk here: this is the most
+marketing-shaped text the project will produce, and "grounded" must not slide into "correct".
+
+#### 5.4 Drafting under his permission, and the cold walk-through
+
+He gave permission on 2026-09-11 for Claude-written prose in this phase. The working pattern that
+fits it is the one the May series and the Patchwork posts used: **Claude drafts, he edits hard as the
+critical editor, and every editorial change is shown rather than folded in.** Two facts stay true under
+the permission and are recorded rather than re-argued:
+- **The watermark.** The post goes out under his name. Heavy editing by him leaves little to detect; a
+  paste leaves all of it. Detection is Anthropic-only as of this writing. His call, made knowingly.
+- **DoD 3 is "he can walk through it cold."** Prose he did not write is harder to do that with. So the
+  walk-through is a real step, not a formality: after the draft settles, he explains each paragraph
+  back without the page, and anything he cannot explain is either learned or cut. The 2026-07-23 ELI5
+  memory is why this is worth doing: writing up his own system was when it "clicked", and the post is
+  the rep.
+
+#### 5.5 Order, and what it is not
+
+**Draft, audit, then step 6, then post.** Step 6's definition-of-done audit is the last check before
+anything goes to strangers, so the post goes up after it rather than before. Posting time is Tuesday to
+Thursday morning by the May plan, but that read churns: **search the current guidance the week of
+posting** rather than asserting it from memory.
+
+**Not in this step:** a second post. Patchwork planned two and stopped after one, and the lesson taken
+was not "plan fewer" but that a follow-up needs its own reason. If the first post draws a question the
+eval report answers, that is the follow-up, and it is decided then. Also not: a long-form blog article
+off LinkedIn. The two explainers and the report already carry the depth for anyone who clicks through.
+
+**Done when:** the post is published with its media, every claim in it passed the audit, the kit is
+copied to the job-search portfolio, and he has walked through it cold.
 
 ### Step 6 — The definition-of-done audit, and the close
 
@@ -568,6 +713,11 @@ a new caller that forgot to call it.**
 
 **Done when:** each of the seven items has a verdict with evidence, defects found are fixed or recorded,
 and the phase is closed in `ROADMAP.md` and `docs/KNOWN-GAPS.md`.
+
+*Added 2026-09-11: this audit runs against the artifact phase 7.6 cuts, v0.10.0, not v0.7.1.* Steps 1 through 4
+were verified on v0.7.1, so their generated outputs (the README figures, the report, the trend cohorts)
+are re-checked on the new pin as part of this pass rather than assumed to carry over. The deploy and
+round-trip evidence from step 3 carries over; the deployed build does not.
 
 ## 6. The writeup is his, and this is not negotiable
 

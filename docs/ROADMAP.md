@@ -56,7 +56,9 @@ so both columns are labeled. Reading one as the other is the confusion this head
 | **6** `density-and-coverage` **DONE 2026-09-06, `v0.6.0` deployed** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **6.5** `debt-and-disagreement` **COMPLETE 2026-09-07** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6, delivered: `contested` reaches an answer, three honest refusal states, `ResolveSource` verifies DBpedia, 9 gold + 2 adversarial cases, a sixth gate, and a live suite gated on a measured floor | Agent package, which phase 6 DoD #6 forbade |
 | **7** `cinematic-surface` **COMPLETE 2026-09-09** | **v0.8** | **v0.7.1** (pinned, unchanged) | The guided tour, the signature moment on one timeline, and the design half: full-page backdrop, motion system, asset budget | Frontend, plus one tool behind the existing tool contract |
-| **7.5** `portfolio-and-writeup` | **v1.0** | **v0.7.1** (pinned, unchanged) | The published eval report, the trend view, the writeup, the README and the recruiter path; the Terraform round-trip and a verified bill | No architecture change |
+| **7.6** `classical-lineage` **SCOPED 2026-09-11, inserted before 7.5 closes** | **v0.9** | **v0.10.0** (decided 2026-09-11; why the jump, see below the table) | Pre-1900 lineage: the `mul` label fix, a `studied_with` predicate from P1066, artist birth years, and the gate opened to a second predicate on purpose | Ingestion + artifact schema, plus `agent/claims.py:ALLOWED_PREDICATES` |
+| **7.7** `name-resolution` **SCOPED 2026-09-11, after 7.6, before 7.5 resumes** | **v0.9.5** | **v0.10.0** (no cut of its own; uses 7.6's stored aliases) | Partial names and Wikidata aliases are OFFERED as one-click choices, never resolved by the system; the one live re-baseline and the one deploy for 7.6 and 7.7 together | `graph/memory.py` resolution, the SSE contract, the frontend |
+| **7.5** `portfolio-and-writeup` **SUSPENDED 2026-09-11 at step 5** | **v1.0** | ~~v0.7.1 (pinned, unchanged)~~ **v0.10.0, inherited from 7.6** | The published eval report, the trend view, the writeup, the README and the recruiter path; the Terraform round-trip and a verified bill | No architecture change |
 | **8** `membership-tour` **SCOPED 2026-09-09, not started** | **v1.1** | **v0.7.1** (pinned, unchanged) | The tour crosses axes: genre to artist to genre, so the corpus's one connected component becomes something the product can walk rather than a number in a structure report | `agent/claims.py:ALLOWED_PREDICATES`, a one-way door opened on purpose |
 
 **Phase 8 was scoped on 2026-09-09 and is deliberately after v1.0.** It is the first phase past the
@@ -73,6 +75,23 @@ to feel like two phases, it is — split it."* It did. `polish-and-portfolio` be
 reading one version line as the other as the confusion it exists to prevent. A product v0.7 beside an
 artifact v0.7.1 is that confusion delivered rather than prevented, so the product line skips from v0.6.5 to
 **v0.8**.
+
+**The artifact jumps from v0.7.1 to v0.10.0, deliberately — decided by sjtroxel 2026-09-11 for phase
+7.6. It looks odd and it is not a typo.** The two version lines are independent, but they share one
+reader, and every nearer number would read as the other line:
+- **v0.8.x** would sit beside product **v0.8** (phase 7) — the same confusion that retired product v0.7.
+- **v0.9.x** would sit beside product **v0.9** (phase 7.6 itself), the phase that cuts it.
+- **v0.7.2** would read as a patch, and this cut adds a whole new predicate (`studied_with`), which is
+  not a patch.
+- **v1.0.0 or v2.0.0** would read as the product release or as a breaking schema change.
+
+v0.10.0 is valid semantic versioning (the minor number goes 7, then 10; 0.10 is **after** 0.9, not
+equal to 0.1) and names no product version. **Compare artifact versions numerically, never as
+strings**: as text, `"0.10.0"` sorts before `"0.7.1"`. On 2026-09-11 no code sorted or ordered artifact
+versions: every reader matches one exact pinned string (`graph/memory.py:PINNED_ARTIFACT_VERSION` and
+its mirrors), Terraform uploads every `v*/` directory without ordering them, and the one version
+pattern in the repo (`web/scripts/stage-graph.mjs`, `^\d+\.\d+\.\d+$`) accepts two-digit parts. Phase
+7.6 adds a test that keeps it that way.
 
 **Phases 3, 4 and 5 do not cut a new artifact.** The corpus does not change, and re-cutting it would
 silently invalidate every prior benchmark for nothing. Phase 5's pin read `pinned, TBD` until 2026-08-24;
@@ -103,7 +122,9 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | 5 | written; **amended 2026-08-24 (§0) at phase start** | written 2026-08-24; **all 10 steps built, phase complete 2026-09-02, tagged `v0.5.0`** |
 | 6 | written 2026-07-31, after the validation | written 2026-09-02; **steps 0-7 built 09-02 to 09-04; step 8 next** |
 | 7 | written 2026-07-30; **amended 2026-08-24 (§0), and 2026-09-08 (§0) at phase start when the phase split** | **written 2026-09-08 at phase start; awaiting the build** |
-| 7.5 | **written 2026-09-08**, at the moment the phase was conceived | at phase start — deliberately not yet, so it can absorb what phase 7 teaches |
+| 7.5 | **written 2026-09-08**, at the moment the phase was conceived; **amended 2026-09-11** (writeup is the LinkedIn post; pin moves in 7.6) | written 2026-09-09; **steps 0-4 done; SUSPENDED 2026-09-11 at step 5 until 7.6 closes** |
+| 7.6 | **written and approved 2026-09-11**, at the moment the phase was conceived; **amended the same day** (aliases stored; re-baseline and deploy moved to 7.7's close) | **written and APPROVED 2026-09-11; building** |
+| 7.7 | **written 2026-09-11**, at the moment the phase was conceived | not yet — written after 7.6 closes |
 
 Phase 6's scope doc was deliberately last. It is density and coverage, the phase most directly exposed to what
 the P279 taxonomy can actually carry, and hand-validating the edges first meant it could be written against
@@ -329,6 +350,30 @@ exists.
 *(The five entries below were rescued from §2's status board on 2026-08-24 when it was replaced. They are
 findings that outlive the step that produced them, which is what this section is for; the status board was
 not.)*
+
+- **2026-09-11 — Phase 7.7 `name-resolution` inserted at v0.9.5, after 7.6; one re-baseline and one
+  deploy for both.** Found while planning 7.6: even with Mozart ingested, typing "mozart" refuses,
+  because resolution needs an exact full label, and he pointed out it is general ("dolly" should reach
+  Dolly Parton). Phase 6.5 had measured and **rejected** a guessing resolver (Joy/Roy Orbison), so his
+  decision is that partial names and aliases are **offered as one-click choices and never resolved by
+  the system**. Its own phase because it touches the resolver, the SSE contract and the frontend rather
+  than the corpus. The live re-baseline (about $3, 2.5 hours) and the deploy run once, at 7.7's close,
+  so the site, the report and the gates describe one corpus. Scope doc:
+  `docs/phases/phase-7.7-name-resolution.md`.
+
+- **2026-09-11 — Phase 7.6 `classical-lineage` inserted at v0.9, BEFORE v1.0; phase 7.5 suspended at
+  step 5.** He typed "mozart" into the live site and it refused. Two causes, measured the same morning.
+  **A bug:** `ingest/prosecheck.py:fetch_entities` asks Wikidata for `en` labels only, and Mozart's label
+  now lives only in `mul`, so it came back empty and screening excluded him as `MISLINKED`; 44 entities
+  with English articles were hit, Taylor Swift and B. B. King among them. **A gap, and the reason this is
+  a phase:** of 9,212 composers born before 1880 with an English article, **56** carry an `influenced by`
+  (P737) statement and **1,766** carry `student of` (P1066) naming another composer. The corpus ingests
+  P737 only, so the classical tradition's recorded lineage could not reach it. **His decision:** full
+  scope (narrated `studied_with`), before the launch post, numbered 7.6 at product v0.9. This makes 7.6,
+  not phase 8, the first phase to open `ALLOWED_PREDICATES`; phase 8's scope doc is amended to say so.
+  Scope doc: `docs/phases/phase-7.6-classical-lineage.md`, **approved 2026-09-11**. **The same day he
+  chose artifact v0.10.0** for the cut, on the reasoning in §2 under the version table: every nearer
+  number collides with a product version or understates a new predicate.
 
 - **2026-09-09 — Phase 8 `membership-tour` scoped at v1.1, and placed AFTER v1.0 rather than before it.**
   Found in phase 7 step 5's re-read: the guided tour's canonical route, *"take me from delta blues to
@@ -584,5 +629,7 @@ instead.
 - Time as a real spatial axis in the layout rather than force-directed placement.
 - ~~A plain-English write-up per phase, accumulating into the project writeup.~~ **Left the backlog
   2026-09-08 — it is phase 7.5, and its per-phase halves are already written as each phase was built.**
+  *(Corrected 2026-09-11: only two exist, `eval-suite-explained.md` for phase 4 and `spa-explained.md`
+  for phase 5. The writeup itself became the LinkedIn launch post the same day; phase 7.5 step 5.)*
 - Contested pair rendering inside the guided tour's camera walk, if the demo route crosses one. Preference,
   not a requirement — `phase-7-cinematic-surface-IMPLEMENTATION.md` §13.

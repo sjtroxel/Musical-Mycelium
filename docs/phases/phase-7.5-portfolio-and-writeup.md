@@ -42,6 +42,13 @@ one artifact that has to be in his own words.
   plot it, recorded at `phase-4-eval-suite-IMPLEMENTATION.md` §972 and locked by `tests/test_live.py`.
 - **The writeup.** Assembled from the per-phase plain-English explanations written as each phase was built,
   not reconstructed at the end. **He writes it.** See §6.
+  **Amended 2026-09-11, by him: the writeup IS the LinkedIn launch post**, the same job his Heritage
+  Odyssey, Wildlife Sentinel and two Patchwork posts did — the artifact proves the skills, and the reader
+  is evaluating the engineer. It expands to a launch kit: the post itself, alternate hook lines, an
+  optional first comment, a portrait carousel with the guided tour as an animated GIF, and a claim audit
+  that ties every number in the copy to a file in this repo. The per-phase premise above was only half
+  true: two plain-English explainers exist (`eval-suite-explained.md`, `spa-explained.md`), not one per
+  phase. The IMPLEMENTATION doc's step 5 is the plan.
 - **The portfolio surface:** README, the recruiter path, the demo script, and the media.
 - **A stated coverage position.** What the graph covers, what it does not, and why — visible on the page,
   not disclaimed in a footnote.
@@ -53,6 +60,10 @@ one artifact that has to be in his own words.
 
 New corpus. New metrics. New agent capability. New tools. Any architectural change. Anything that moves the
 artifact pin. Re-running the held-out set. Re-measuring the live noise floor.
+
+**Amended 2026-09-11:** the artifact pin does move before v1.0, but not in this phase. Phase 7.6
+`classical-lineage` was inserted mid-arc by his decision and moves it, outside 7.5. This phase inherits
+the result rather than causing it, and the not-list above stands for everything 7.5 itself does.
 
 **Specifically not: tuning anything because the report made a number look bad.** A metric published and then
 improved is fine; a metric improved *so that it publishes well* is the failure this whole eval suite exists
@@ -87,6 +98,9 @@ Items 1 through 5 are phase 7's DoD items 3 through 7, restated verbatim in inte
    points that the gate logic itself would refuse to compare.
 3. The writeup exists and he can walk through it cold. This is the articulation rep, and it is the point of
    having written it phase by phase.
+   **Amended 2026-09-11:** "the writeup" is the LinkedIn launch kit (§2). Done means the post is
+   **published**, every claim in it passed the audit, and he has walked through it cold. A post that is
+   perfect and unpublished does not meet this item: the bar is "did the post happen", not "did it win".
 4. `terraform destroy` still removes everything, and `terraform apply` still rebuilds it — run, not asserted.
 5. Fixed monthly infrastructure cost is still approximately $0, verified against a real bill rather than the
    estimate. If a domain was registered, the number and the sentence both change.
@@ -110,6 +124,11 @@ hand him finished paragraphs. This is not a preference; it is the standing rule 
 
 It also happens to be the right thing on the merits. DoD item 3 is *"he can walk through it cold,"* and
 prose he did not write is prose he cannot walk through cold.
+
+**Amended 2026-09-11, by him:** after this constraint was put to him, he gave permission for Claude to
+write the prose in this phase. The watermark facts are unchanged by that, and a LinkedIn post under his
+name is exactly the surface they concern. The IMPLEMENTATION doc's step 5 records how the post is
+drafted under that permission.
 
 ## 7. Known risks
 

@@ -117,7 +117,15 @@ def as_live(result: SuiteResult, **changes: object) -> SuiteResult:
     ``dataclasses.replace``, and spelling the three relabelled fields out here keeps the
     ``script_determined=()`` in one place. Dropping that marker is the point — a live run has no
     script-determined metrics, which is what lets the traversal gate engage at all.
+
+    **The artifact is relabelled too, to the one the live bounds were measured on** (phase 7.6 step 0).
+    `_ungateable` now refuses a live run on any other corpus, and the scripted run follows the repo's
+    pin, so without this every live-bound test here would stop testing its bound the day the pin moves
+    past the baseline, and pass or fail for the wrong reason. Read from the committed file rather than
+    written down, for the reason `live_case_count` gives. A caller testing the corpus guard itself passes
+    ``artifact_version`` explicitly, which overrides this.
     """
+    changes.setdefault("artifact_version", live_measured_artifact())
     return dataclasses.replace(
         result,
         dataset="live",
@@ -125,6 +133,14 @@ def as_live(result: SuiteResult, **changes: object) -> SuiteResult:
         script_determined=(),
         **changes,  # type: ignore[arg-type]
     )
+
+
+def live_measured_artifact() -> str:
+    """The artifact the live bounds were measured on, read from the committed thresholds file."""
+    thresholds = load()
+    assert thresholds is not None
+    live = next(s for s in thresholds.sets if s.applies_to.get("provider") == "bedrock")
+    return str(live.derived_from["artifact_version"])
 
 
 # --- the committed file ------------------------------------------------------
@@ -666,6 +682,55 @@ def test_neither_message_tells_the_reader_to_re_run_the_live_suite(scripted: Sui
     reason = _reason_for(_sized(scripted, live_case_count() + 1))
     for nudge in ("re-run", "rerun", "run it again", "run again"):
         assert nudge not in reason.lower()
+
+
+# --- the corpus guard ---------------------------------------------------------------------------------
+#
+# Added 2026-09-11, phase 7.6 step 0, BEFORE the artifact pin moved to v0.10.0. Until then nothing in
+# `_ungateable` asked which corpus a run used, so a live run over the same 56 cases on a new corpus would
+# have been graded against bounds measured on the old one. Phase 7.6 IMPLEMENTATION trap 7.
+
+#: A corpus the live bounds were certainly not measured on. Deliberately not the next real pin: the
+#: property is "any other corpus", and a real version here would read as a claim about that version.
+OTHER_ARTIFACT = "99.0.0"
+
+
+def test_a_live_run_on_the_measured_corpus_is_gated(scripted: SuiteResult) -> None:
+    """The control. Without it the refusal below could be the guard refusing everything."""
+    outcome = gate(_sized(scripted, live_case_count()))
+    assert outcome.report is not None, "\n".join(outcome.lines)
+
+
+def test_a_live_run_on_another_corpus_is_not_gated(scripted: SuiteResult) -> None:
+    run = as_live(
+        _sized(scripted, live_case_count()),
+        artifact_version=OTHER_ARTIFACT,
+    )
+    reason = _reason_for(run)
+    assert OTHER_ARTIFACT in reason
+    assert live_measured_artifact() in reason
+    assert "says nothing about another" in reason
+
+
+def test_the_corpus_guard_is_never_a_pass_and_never_a_failure(scripted: SuiteResult) -> None:
+    """Un-gateable is neither green nor red: the gates were skipped, not cleared, and the build does
+    not fail for a run that could not be judged."""
+    outcome = gate(as_live(_sized(scripted, live_case_count()), artifact_version=OTHER_ARTIFACT))
+    assert outcome.report is None
+    assert outcome.exit_code == 0
+    assert "not a pass" in "\n".join(outcome.lines).lower()
+
+
+def test_the_scripted_set_records_no_corpus_and_stays_gated_on_any(scripted: SuiteResult) -> None:
+    """The free every-commit run must keep gating across a re-pin. Its bounds are invariants that hold
+    on any corpus, which is why its set records no artifact and why the guard skips it."""
+    thresholds = load()
+    assert thresholds is not None
+    chosen = thresholds.set_for(scripted)
+    assert chosen is not None
+    assert "artifact_version" not in chosen.derived_from
+    moved = dataclasses.replace(scripted, artifact_version=OTHER_ARTIFACT)
+    assert gate(moved).report is not None
 
 
 def test_a_size_mismatch_of_either_sign_is_never_a_pass(scripted: SuiteResult) -> None:

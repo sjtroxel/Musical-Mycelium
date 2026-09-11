@@ -99,6 +99,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
+from musical_mycelium.ingest.labels import WBGETENTITIES_LANGUAGES, entity_aliases, entity_label
+
 WD_API = "https://www.wikidata.org/w/api.php"
 WP_API = "https://en.wikipedia.org/w/api.php"
 
@@ -752,7 +754,8 @@ def fetch_entities(qids: Sequence[str], *, pause: float = 1.0) -> dict[str, Enti
                     "action": "wbgetentities",
                     "ids": "|".join(chunk),
                     "props": "labels|aliases|sitelinks",
-                    "languages": "en",
+                    # `en|mul`, not `en`: the 2026-09-11 `mul` bug. See `ingest.labels`.
+                    "languages": WBGETENTITIES_LANGUAGES,
                     "sitefilter": "enwiki",
                     "format": "json",
                 }
@@ -763,11 +766,9 @@ def fetch_entities(qids: Sequence[str], *, pause: float = 1.0) -> dict[str, Enti
             sitelink = entity.get("sitelinks", {}).get("enwiki", {})
             out[qid] = Entity(
                 qid=qid,
-                label=entity.get("labels", {}).get("en", {}).get("value", ""),
+                label=entity_label(entity),
                 enwiki_title=sitelink.get("title", ""),
-                aliases=tuple(
-                    alias["value"] for alias in entity.get("aliases", {}).get("en", []) if alias
-                ),
+                aliases=entity_aliases(entity),
             )
         time.sleep(pause)
     return out

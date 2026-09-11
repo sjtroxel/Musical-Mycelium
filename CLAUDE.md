@@ -116,6 +116,10 @@ Patchwork and Heritage Odyssey both reached 26 root entries.
 - **The ingestion artifact is the only data source at runtime.** The agent never queries Wikidata live.
 - **Evals run against a pinned artifact version.** Otherwise every corpus change silently invalidates
   every previous benchmark.
+- **Artifact v0.10.0 follows v0.7.1 on purpose (decided 2026-09-11, phase 7.6).** v0.8 and v0.9 would
+  collide with product versions, and v0.7.2 would understate a new predicate; `ROADMAP.md` §2 has the
+  reasoning. **Compare artifact versions numerically, never as strings** — as text "0.10.0" sorts
+  before "0.7.1".
 
 ## Cost and safety
 

@@ -589,6 +589,25 @@ def _ungateable(result: SuiteResult, chosen: ThresholdSet) -> str | None:
             f"the run did not finish ({why}). Its numbers cover the cases that ran, "
             "chosen by exhaustion rather than at random, so they are not comparable to a baseline."
         )
+    # **The fourth condition, added 2026-09-11 at phase 7.6 step 0, before the artifact pin moved.**
+    # `matches` keys on dataset and provider, and the size checks below compare case counts, so nothing
+    # here ever asked which CORPUS a run used. Phase 7.5 step 2 recorded that the gate "never checks the
+    # corpus pin". Harmless while the pin sat still; phase 7.6 moves it to v0.10.0, and a live run over
+    # the same 56 cases would then have been graded against bounds measured on v0.7.1 and could print a
+    # pass it had not earned. A bound measured on one corpus says nothing about another.
+    #
+    # It applies only where a set RECORDS the artifact its bounds were measured on. The live set does
+    # (`derived_from.artifact_version`); the scripted set does not, because its bounds are invariants
+    # (100% groundedness, zero silent crossings) that hold on any corpus, so it stays gated across a
+    # re-pin exactly as the free every-commit run needs it to.
+    measured_on = chosen.derived_from.get("artifact_version")
+    if measured_on is not None and str(measured_on) != result.artifact_version:
+        return (
+            f"this run used artifact {result.artifact_version} and the {chosen.name!r} bounds were "
+            f"measured on artifact {measured_on}. A bound measured on one corpus says nothing about "
+            f"another, so these numbers cannot be judged against it until the bounds are re-measured "
+            f"on {result.artifact_version}."
+        )
     if result.cases_run < chosen.case_count:
         return (
             f"this run scored {result.cases_run} cases and the {chosen.name!r} baseline was measured "
