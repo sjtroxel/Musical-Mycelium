@@ -5,7 +5,7 @@ import { GRAPH_PIN } from "./graph/staticGraph";
 import { SseParser } from "./stream";
 import { applyFrame } from "./useLineageRun";
 import type { StepState } from "./useLineageRun";
-import type { Frame } from "./types";
+import type { Frame, OfferFrame } from "./types";
 
 /**
  * The contract test between two separately-deployed halves.
@@ -16,7 +16,11 @@ import type { Frame } from "./types";
  * never re-stamped by hand. Three of these are `LocalLLM` captures and cost nothing; the tour recording
  * is a real Bedrock run, re-captured the same day for about a cent. `kate-bush-descendants.sse` is
  * deliberately left at artifact v0.5.0: it is a Bedrock capture whose value is the 7-claim descendants
- * shape, no test pins its version, and re-capturing it would spend money to replace a historical record. Synthetic frames test the parser against my idea of the
+ * shape, no test pins its version, and re-capturing it would spend money to replace a historical record.
+ * `mozart-offer.sse` and `metal-offer-over-cap.sse` were captured on **2026-09-12** (phase 7.7 step 4),
+ * both `LocalLLM` and therefore free. Two rather than one because the `offer` frame has **two** wire
+ * shapes — a listed set, and a capped-away set whose `candidates` is empty while `total` is 34 — and
+ * hand-typing the second is exactly what these fixtures exist to avoid. Synthetic frames test the parser against my idea of the
  * protocol; these test it against the protocol. The backend and the frontend ship on different
  * schedules — Lambda through `deploy.yml`, the SPA through an S3 sync — so a field that quietly changes
  * name has no other place to fail loudly.
@@ -176,5 +180,59 @@ describe("a real contested capture", () => {
     const state = fold(replay(raw, 29));
     expect(state.outcome).toBe("answer");
     expect(state.claims.length).toBeGreaterThan(0);
+  });
+});
+
+describe("a real offer capture", () => {
+  const raw = fixture("mozart-offer.sse");
+
+  it("carries the offer as its own frame, before the refusal it accompanies", () => {
+    const frames = replay(raw, 29);
+    const names = frames.map((f) => f.type);
+    expect(names).toContain("offer");
+    expect(names).toContain("refused");
+    // D3, on the wire rather than in the loop: an offer accompanies a refusal and never replaces it.
+    // `eval.runner` reads `refused` off this frame and `refusal_accuracy` was baselined on it.
+    expect(names.indexOf("offer")).toBeLessThan(names.indexOf("refused"));
+    expect(names.indexOf("offer")).toBeLessThan(names.indexOf("token"));
+  });
+
+  it("approves no claims, because an offer is not a claim", () => {
+    const state = fold(replay(raw, 29));
+    expect(state.claims).toHaveLength(0);
+    expect(state.refusal).not.toBeNull();
+  });
+
+  it("says why each candidate is there, including the noisy ones", () => {
+    const frames = replay(raw, 29);
+    const offer = frames.find((f): f is OfferFrame => f.type === "offer")!;
+    expect(offer.term).toBe("mozart");
+    expect(offer.total).toBe(5);
+    expect(offer.shown).toBe(5);
+    expect(offer.candidates).toHaveLength(5);
+
+    for (const candidate of offer.candidates) {
+      expect(["label", "alias"]).toContain(candidate.via);
+      // The alias text rides along exactly when it is the reason, and is null otherwise. Timbaland
+      // under "mozart" has to be legible rather than mysterious.
+      expect(candidate.alias === null).toBe(candidate.via === "label");
+    }
+    const byAlias = offer.candidates.filter((c) => c.via === "alias");
+    expect(byAlias.map((c) => [c.label, c.alias])).toEqual([
+      ["Timbaland", "Mozart Timadeas"],
+      ["Samuel Wesley", "The English Mozart"],
+    ]);
+  });
+
+  it("reads `total` rather than `candidates.length` when the list is capped away", () => {
+    // The other wire shape, captured rather than hand-typed: over the cap of 25 the list is EMPTY and
+    // the count is still true. A client reading `candidates.length` reports 0 where the answer is 34.
+    const frames = replay(fixture("metal-offer-over-cap.sse"), 29);
+    const offer = frames.find((f): f is OfferFrame => f.type === "offer")!;
+    expect(offer.term).toBe("metal");
+    expect(offer.candidates).toEqual([]);
+    expect(offer.shown).toBe(0);
+    expect(offer.total).toBe(34);
+    expect(offer.total).not.toBe(offer.candidates.length);
   });
 });

@@ -473,6 +473,50 @@ model configured, both ids are equal and the split costs nothing.
 synthesis was billed and never counted; what changed is that the missing half now has a name rather than
 being silently absent.
 
+**Added 2026-09-12 (phase 7.7 step 4).** A run that could not resolve a typed name may emit an `offer`
+frame, **before** the `refused` frame it accompanies:
+
+```json
+{ "term": "mozart", "total": 5, "shown": 5,
+  "candidates": [
+    { "node_id": "Q254", "label": "Wolfgang Amadeus Mozart", "kind": "artist",
+      "via": "label", "alias": null },
+    { "node_id": "Q179257", "label": "Timbaland", "kind": "artist",
+      "via": "alias", "alias": "Mozart Timadeas" }
+  ] }
+```
+
+**An offer is a choice for a person, and it is never a resolution, a claim, or a suggestion the model
+may act on.** It carries no citation and never reaches the gate, because candidates are reached by
+*alias* as well as by label and 37 aliases in this corpus equal a **different** node's label. Choosing
+one re-asks the original question with `term` replaced by the chosen exact label, and that re-asked
+query resolves by exact label like any other — so nothing here widens what resolves, only what a person
+can be shown.
+
+**It accompanies a refusal and never replaces one.** The `refused` frame still ships, with the same
+reason it would have carried before offers existed. That is a contract guarantee and not an
+implementation detail: `eval.runner` reads `refused` off that frame and `refusal_accuracy` was
+baselined on it, so an offer that suppressed a refusal would silently change what the headline metric
+measures.
+
+**`total` and `shown` are both present and they are not always equal.** At or under a cap of 25, every
+candidate is listed and the two agree. Above it, `candidates` is **empty**, `shown` is `0`, and `total`
+still states the true count — `{"term": "metal", "candidates": [], "total": 34, "shown": 0}` is a valid
+frame and means "34 of them, say more of the name". A client that reads `candidates.length` as the count
+will report zero where the answer is thirty-four; read `total`. Truncating a long list instead would be
+ranking under another name, and **this is resolution rather than a search page: no ranking, no
+autocomplete** (`docs/phases/phase-7.7-name-resolution.md` §7).
+
+`via` is `"label"` or `"alias"`, and `alias` carries the alias text as the source wrote it whenever
+`via` is `"alias"` and is `null` otherwise. It exists so that Timbaland appearing under "mozart" is
+legible rather than mysterious, which is the honest way to present a noisy source. Absence of the frame
+is meaningful too: a name with no candidates at all emits none, so an empty offer is never something a
+client has to render and dismiss.
+
+*(The `contested` frame, added 2026-09-07 in phase 6.5 step 4, is **not** documented in this section and
+should be. Recorded here rather than fixed silently: `agent/loop.py:Contested` and
+`web/src/types.ts:ContestedFrame` are the contract until someone writes it down.)*
+
 ## 7. Claim contract — SETTLED in detail and in shape
 
 *(Headed "OPEN in detail, fixed in shape" until 2026-08-24. The detail closed in phase 3: `verification`

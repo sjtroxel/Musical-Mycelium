@@ -118,6 +118,12 @@ export function applyFrame(step: StepState, frame: Frame): StepState {
     // `plan` is consumed but not stored.
     case "plan":
       return step;
+    // Phase 7.7 step 4 declares the frame; **step 5 owns rendering it.** Ignored here on purpose, the
+    // way `plan` is: an offer is presentation state for the refusal panel, not a mutation of the
+    // claim/path state this reducer folds. Present so the switch stays exhaustive over `Frame`, which
+    // is what makes a new frame type a compile error rather than a silent drop.
+    case "offer":
+      return step;
   }
 }
 

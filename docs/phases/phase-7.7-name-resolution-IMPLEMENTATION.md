@@ -631,7 +631,7 @@ written as `["big band music", "big band"]` from recollection of earlier output 
 argument for step 1 was that counts and orders get remembered wrongly, and this is the same failure at
 the smallest possible scale.
 
-### Step 4 — The wire contract
+### Step 4 — The wire contract — [done]
 
 One line in `api/app.py:EVENT_NAMES`, the `SPEC.md` §6 amendment with the frame documented and dated, and
 a new `web/src/fixtures/*.sse` capture so the frontend tests run on a real frame rather than a hand-typed
@@ -639,6 +639,53 @@ one.
 
 **Done when:** `web/src/contract.test.ts` sees the frame in a captured stream and `SPEC.md` §6 describes
 it.
+
+#### 4.0 As built — what the plan did not know
+
+**Status: done. `make check` green — 1,746 Python passed, 0 skipped, 452 frontend (up 4), free gates
+4 / 0 / 2 N/A of six.** The `EVENT_NAMES` line landed in step 3 and is recorded there as a declared
+scope bleed, so this step was the `SPEC.md` §6 amendment, the fixtures, the `OfferFrame` type, and the
+contract assertions.
+
+**TWO fixtures, not one, because the frame has two wire shapes.** `mozart-offer.sse` (term `mozart`,
+total 5, shown 5, two candidates reached by alias) and `metal-offer-over-cap.sse`
+(`{"term": "metal", "candidates": [], "total": 34, "shown": 0}`). Both captured 2026-09-12 from a local
+`api/app.py` on `LocalLLM`, so both were **free**. Hand-typing the second is precisely what the fixture
+convention exists to prevent, and it is the shape a client is most likely to get wrong.
+
+**The contract's sharpest hazard, now written down in three places:** `candidates.length` is **not** the
+count. Over the cap the list is empty and `total` still says 34, so a client reading the array length
+reports zero where the answer is thirty-four. `SPEC.md` §6 says it, `types.ts:OfferFrame` says it, and
+`contract.test.ts` asserts `offer.total !== offer.candidates.length` on the real capture.
+
+**Adding `OfferFrame` to the `Frame` union surfaced a SECOND exhaustive switch that neither the plan nor
+I knew existed.** `web/src/graph/timeline.ts:dwell` maps every frame type to a dwell time and has no
+`default`, so the union change failed `tsc` with "Function lacks ending return statement". That is the
+property working exactly as intended — a new frame type is a **compile error rather than a silent drop**
+— and it is the argument for declaring the type in this step rather than leaving it to step 5. `offer`
+is grouped with `contested` at `STEP_MS`: same kind of cue, a panel a reader takes in beside the answer
+rather than a beat the camera moves for. Unreachable in the shipped tour, whose recording is a
+successful path query.
+
+**`applyFrame` gets `case "offer": return step;` and nothing more.** Declared here, rendered in step 5,
+the way `plan` is already ignored by this reducer and handled elsewhere. The frame is presentation state
+for the refusal panel, not a mutation of the claim and path state `applyFrame` folds.
+
+**A citation I got wrong, caught by him reading the file, 2026-09-12.** The §6 text ended "Truncating a
+long list instead would be ranking, which §2 forbids." I carried that from this doc's step 2, where it
+correctly reads "scope §7", and dropped the word "scope" — so inside `SPEC.md` the bare number
+re-pointed at §2 *Canonical queries*, which forbids nothing of the kind. The rule actually lives at
+`docs/phases/phase-7.7-name-resolution.md:118`. Now stated rather than cited, with the document named.
+**The generalizable bit, and it is today's theme for the third time: a bare section number is true in
+the document it was written for and false in the one it is pasted into.** Every other `§` in `SPEC.md`
+names its document or says "below"; mine was the only unqualified cross-document reference in the file.
+
+**A finding recorded rather than fixed: the `contested` frame is not documented in `SPEC.md` §6.** It
+has shipped since phase 6.5 step 4 and §6 has never described it, which I only noticed while looking for
+a template to follow. Noted in §6 itself with a pointer to `agent/loop.py:Contested` and
+`web/src/types.ts:ContestedFrame` as the de facto contract. Not fixed in this step because documenting
+a different phase's frame is not this step's scope and doing it quietly would hide that it was missing
+for five days.
 
 ### Step 5 — The frontend
 

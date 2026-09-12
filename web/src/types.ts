@@ -201,6 +201,36 @@ export interface ContestedFrame {
   b_label: string;
 }
 
+/**
+ * A choice for a **person** when a typed name resolved to nothing. Phase 7.7 step 4; `SPEC.md` §6.
+ *
+ * Never a resolution and never a claim. Candidates are reached by alias as well as by label, and 37
+ * aliases in this corpus equal a *different* node's label, so an offer is something to show and never
+ * something to act on automatically.
+ *
+ * **`total` and `shown` are not always equal, and `candidates.length` is not the count.** At or under
+ * the cap of 25 every candidate is listed. Above it `candidates` is empty, `shown` is 0, and `total`
+ * still states the truth: `{ term: "metal", candidates: [], total: 34, shown: 0 }` means "34 of them,
+ * say more of the name". Read `total`.
+ */
+export interface OfferFrame {
+  type: "offer";
+  term: string;
+  candidates: OfferCandidate[];
+  total: number;
+  shown: number;
+}
+
+export interface OfferCandidate {
+  node_id: string;
+  label: string;
+  kind: string;
+  /** Why this candidate is here: matched on its own label, or on one of its aliases. */
+  via: "label" | "alias";
+  /** The alias text as the source wrote it when `via` is `"alias"`; `null` otherwise. */
+  alias: string | null;
+}
+
 export interface TokenFrame {
   type: "token";
   text: string;
@@ -232,6 +262,7 @@ export interface DoneFrame {
 
 export type Frame =
   | ContestedFrame
+  | OfferFrame
   | PlanFrame
   | ToolFrame
   | ClaimFrame

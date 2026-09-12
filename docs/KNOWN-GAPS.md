@@ -34,7 +34,17 @@
 > N/A. `RESOLUTION_CHANGES` still empty. **STEP 3 IS DONE TOO — 2026-09-12.** `ToolResult.offers`,
 > `ResolveNode` on both refusal paths, a generic harvest in the loop, and the `offer` event emitted
 > before `Refused` at both refusal sites. `make check` green at **1,746 Python / 448 frontend**.
-> **NEXT IS STEP 4**, the wire contract. Three things §3.0 records that a cold session would
+> **STEP 4 IS DONE TOO — 2026-09-12.** `SPEC.md` §6 documents the `offer` frame, `OfferFrame` is
+> declared in `web/src/types.ts`, and **two** free `LocalLLM` fixtures were captured
+> (`mozart-offer.sse` and `metal-offer-over-cap.sse`) because the frame has two wire shapes.
+> `make check` green at **1,746 Python / 452 frontend**. **NEXT IS STEP 5**, the frontend.
+> **The contract hazard worth knowing before step 5: `candidates.length` is NOT the count.** Over the
+> cap of 25 the array is empty and `total` still says 34, so a client reading the array length reports
+> zero where the answer is thirty-four. Asserted on the real capture. Also: adding the type to the
+> `Frame` union failed `tsc` on a **second** exhaustive switch nobody had mentioned,
+> `web/src/graph/timeline.ts:dwell` — the compile-error-not-silent-drop property paying off, and the
+> reason the type belongs in step 4 rather than step 5. **A separate finding, recorded not fixed:** the
+> `contested` frame has shipped since 6.5 step 4 and `SPEC.md` §6 has never documented it. Three things §3.0 records that a cold session would
 > otherwise rediscover: `graph.memory.Offer` **is** the loop event (no second dataclass, and `asdict`
 > gives D8's payload exactly); `alias_index()` is on the `GraphStore` protocol following
 > `node_by_resource`'s precedent, with the store owning the index and a free function owning the

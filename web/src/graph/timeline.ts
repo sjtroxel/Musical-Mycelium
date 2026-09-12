@@ -74,6 +74,11 @@ function dwell(frame: Frame): number {
     case "tool":
     case "rejected":
     case "contested":
+    // Phase 7.7 step 4. Grouped with `contested` because it is the same kind of cue: a panel a reader
+    // takes in beside the answer rather than a beat the camera moves for. Unreachable in the shipped
+    // tour, whose recording is a successful path query, and present because the switch is exhaustive
+    // over `Frame` -- which is how adding the frame type surfaced this function at all.
+    case "offer":
     case "refused":
       return STEP_MS;
     // `done` is the end. Nothing waits on it, and giving it a dwell would pad the tour's tail with a
