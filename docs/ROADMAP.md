@@ -153,10 +153,17 @@ Three latent bugs were fixed to make the draw honest, and they are the phase's f
 draw cited `P737` for every edge including teaching ones, the sealed-set validator read influence edges for
 every shape, and the refusal stratum admitted nodes that `get_teachers` can answer about. §0.1 has each.
 
-**Still owed, and deferred on purpose:** `README.md:99-102` says the sealed held-out set "was run once ...
-10 of 10", which now describes the retired set. It is public recruiter-facing prose, so **he writes that
-correction**. Steps 1 through 6 of this phase are free; step 7 is the one live re-baseline (~$2.94) and
-step 8 the one deploy.
+**That correction is DONE — 2026-09-12, on three surfaces rather than one.** ~~Still owed, and deferred on
+purpose: `README.md:99-102` says the sealed held-out set "was run once ... 10 of 10", which now describes
+the retired set. It is public recruiter-facing prose, so **he writes that correction**.~~ The same claim
+was also in `docs/eval-suite-explained.md` and in the **generated** report page, where the cause was a
+generator that never compared a result's `dataset_version` with the sealed manifest. Two other README
+claims fell out of the same pass: it said the corpus holds "two kinds of edge" while listing tiers
+summing to 6,807 of 9,276 (the teaching tier was computed nowhere, so no marker could catch it), and it
+said the live site serves this tree's build when the deployed page measures at artifact **0.7.1**. Full
+record: `KNOWN-GAPS.md`, 2026-09-12. Steps 1 through 6 of this phase are free; step 7 is the one live
+re-baseline (~$2.94) and step 8 the one deploy, which is when the public URL stops showing the retired
+set's result.
 
 *(The block below is dated 2026-09-11 and describes the state at the phase 7.6 close.)*
 

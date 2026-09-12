@@ -108,10 +108,38 @@ def test_the_held_out_section_states_its_run_count() -> None:
             },
         )
     ]
-    section = report_page.heldout_section(runs, "0.7.1")
+    section = report_page.heldout_section(runs, [], "0.7.1")
     assert "run 1 time in total" in section
     assert "The corpus is now 0.7.1" in section
     assert "moves refusal accuracy by 50 points" in section
+
+
+def test_a_retired_sets_run_is_never_published_as_the_sealed_sets_score() -> None:
+    """Phase 7.7, 2026-09-12. This page published "10 of 10 correct, run 1 time in total" for three
+    weeks after the set that scored it was retired, because the section took the newest
+    ``*-heldout.json`` and never asked which dataset it belonged to. The test above did not catch it:
+    it hand-built a run with no ``dataset_version`` and asserted the sentence, not the attribution.
+    """
+    retired = [
+        (
+            "20260824T120956Z",
+            {
+                "dataset_version": "heldout_v1",
+                "cases_correct": 10,
+                "cases_run": 10,
+                "artifact_version": "0.5.0",
+                "per_case": [{"expected_refusal": True}, {"expected_refusal": True}],
+            },
+        )
+    ]
+    section = report_page.heldout_section([], retired, "0.10.0")
+    assert "Run count 0" in section
+    assert "untested rather than passed" in section
+    # Disclosed, and disclosed as somebody else's number.
+    assert "An earlier set, heldout_v1, was run once" in section
+    assert "scored 10 of 10" in section
+    assert "not a result for the set above" in section
+    assert "run 1 time in total" not in section
 
 
 def test_text_from_a_result_file_is_escaped() -> None:

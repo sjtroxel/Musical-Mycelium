@@ -31,18 +31,25 @@ influenced then answers.
 Every answer streams in as structured claims first and prose second. Each claim links to the source it
 came from and states how strongly that source was checked.
 
-## Status, 2026-09-11
+## Status, 2026-09-12
 
-**v1.0 is deployed.** The live site serves this repository's build: artifact
-v<!-- n:artifact -->0.10.0<!-- /n -->, the contested-source disclosure, the animated corpus backdrop, the guided tour, and the
-evaluation report. It sits behind a free Vercel proxy so the address survives a full
+**v1.0 is deployed, and this repository is currently a phase ahead of it.** The live site serves
+artifact 0.7.1: the agent, the contested-source disclosure, the animated corpus backdrop, the guided
+tour and the evaluation report. It sits behind a free Vercel proxy so the address survives a full
 `terraform destroy` and `terraform apply`, and that round-trip has been run for real, not assumed.
 
-Phases 0 through 7 are complete. Phase 7.5 (the release) is in progress: the report, the trend view, the
-deploy, the round-trip and this README are done, and the writeup and a final definition-of-done audit
-remain. Phase 8, which lets the agent narrate artist-to-genre membership as well as influence, is scoped
-for v1.1 and not started. Every open item is listed in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md), newest
-first.
+This tree holds artifact 0.10.0, whose teaching layer landed on 2026-09-11 with phase 7.6. It is not on
+the public URL yet on purpose: phase 7.7 spends one live evaluation re-baseline and one deploy at its
+close, and shipping 7.6 by itself would spend a second of each to learn nothing new. So the teaching
+edges described under [The corpus](#the-corpus) are in the artifact and under test, and they are not yet
+in the deployed answers.
+
+Phases 0 through 7 are complete. Phase 7.5 (the release) is suspended at its writeup step. Phase 7.6
+(classical lineage) is complete: a label bug that had been dropping Mozart is fixed, and Wikidata's
+`student of` is ingested as teaching. Phase 7.7 (name resolution) is under way, so that a partial name
+like "mozart" is offered as a one-click choice rather than silently resolved to a guess. Phase 8, which
+lets the agent narrate artist-to-genre membership as well as influence, is scoped for v1.1 and not
+started. Every open item is listed in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md), newest first.
 
 The version spine is in [`docs/ROADMAP.md`](docs/ROADMAP.md), the contracts in
 [`docs/SPEC.md`](docs/SPEC.md), and the pre-build planning, which is closed, in
@@ -97,9 +104,14 @@ date.
   disagrees with itself: the same 30 items scored 14, then 12, then 11 across three runs. Both facts sit
   next to every judged number.
 - **A sealed held-out set** of ten cases, drawn from the corpus by a seed only the author holds and
-  stored encrypted, was run once, on 2026-08-24, and came back 10 of 10. That is one observation, not a
-  rate. It was measured at artifact 0.5.0, before the corpus roughly tripled, and re-running it would
-  spend the property it exists to have.
+  stored encrypted, **has not been run.** It was drawn fresh on 2026-09-12 against artifact 0.10.0,
+  because the previous set had been drawn at 0.5.0 and the corpus roughly tripled underneath it. Its ten
+  cases match their manifest, and a check that decrypts in memory and prints only case numbers reports
+  nothing diverging from the corpus they were drawn against. The run count is 0, so generalization on
+  this corpus is untested rather than passed, and the set is opened once, at a freeze. The earlier set
+  was run once, on 2026-08-24, and came back 10 of 10 at artifact 0.5.0; that measurement is kept and
+  still auditable, but it belongs to a set no longer in this repository and it is not evidence about the
+  set described here.
 
 ## What it does not do
 
@@ -124,11 +136,13 @@ date.
 
 ## The corpus
 
-**Artifact v<!-- n:artifact -->0.10.0<!-- /n -->: <!-- n:nodes -->3,628<!-- /n --> nodes and <!-- n:edges -->9,276<!-- /n --> edges** from two sources, Wikidata and DBpedia, across two
+**Artifact v<!-- n:artifact -->0.10.0<!-- /n -->: <!-- n:nodes -->3,628<!-- /n --> nodes and <!-- n:edges -->9,276<!-- /n --> edges** from two sources, Wikidata and DBpedia, across three
 kinds of edge that are never mixed. **<!-- n:influence_edges -->2,309<!-- /n --> influence edges** say one thing influenced another.
 **<!-- n:membership_edges -->4,498<!-- /n --> membership edges** say an artist plays a genre, and those are never narrated as
-derivation. The agent reads only this versioned, immutable artifact at runtime; it never queries
-Wikidata live.
+derivation. **<!-- n:teaching_edges -->2,469<!-- /n --> teaching edges** say a student studied with a teacher, which is a claim about
+study rather than about influence: a teaching edge never corroborates an influence edge, and the app
+narrates the two in different words. The agent reads only this versioned, immutable artifact at runtime;
+it never queries Wikidata live.
 
 Every edge records how strongly it was checked: **<!-- n:verified_hand -->22<!-- /n --> read by hand**, <!-- n:verified_prose -->111<!-- /n --> passed an automated
 Wikipedia prose check, <!-- n:verified_asserts -->784<!-- /n --> passed an influence-assertion filter, <!-- n:verified_infobox -->1,335<!-- /n --> came from a DBpedia infobox,
@@ -136,7 +150,14 @@ and <!-- n:verified_exposure -->57<!-- /n --> rest on documented exposure rather
 two membership tiers. The exposure filter was measured at 20% recall on held-out data on 2026-08-06, so
 that count is a floor on what the sources contain, never a count of it.
 
-The organism is connected, in one specific way. Counting both kinds of edge, <!-- n:backdrop_nodes -->3,490<!-- /n --> of the <!-- n:nodes -->3,628<!-- /n --> nodes
+The <!-- n:verified_teaching -->2,469<!-- /n --> teaching edges carry one tier of their own, and it claims less than its name might
+suggest: it means a Wikidata `student of` statement whose student's article names the teacher somewhere
+in body prose. Forty of those rows were read by hand before any of them were ingested, and none had the
+relation wrong or the direction inverted. But of the 30 that the automated prose check passed, 27 rested
+on a sentence that actually states study and 3 did not, so roughly one in ten is resting on a weaker
+sentence than the tier implies.
+
+The organism is connected, in one specific way. Counting all three kinds of edge, <!-- n:backdrop_nodes -->3,490<!-- /n --> of the <!-- n:nodes -->3,628<!-- /n --> nodes
 sit in one component, and that component, drawn with its <!-- n:backdrop_edges -->4,700<!-- /n --> lineage lines, is the backdrop drifting behind the
 app. Through influence edges alone the graph is far more fragmented. What actually ties genres together here is
 the musicians who play across them, not an unbroken chain of genre-to-genre influence, and nothing in

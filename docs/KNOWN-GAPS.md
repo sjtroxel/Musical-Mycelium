@@ -30,15 +30,22 @@
 > `b9072ee`); nothing was re-sealed or opened. **NEXT IS STEP 1**, the guard tests, then step 2's alias
 > index — both free. **He draws any future set from his own seed**; an agent may run `heldout-verify`, read
 > `heldout-check`'s codes, and nothing else.
-> **OWED AND NOT DONE: `README.md:99-102` is now false.** It says the sealed held-out set "was run once, on
-> 2026-08-24, and came back 10 of 10" — that describes the **retired** set, and the set in the repo today
-> has never been run. It is public, recruiter-facing prose, so **he writes the correction**, not an agent. Run count restarts at 0 and generalization is **untested** on
-> this corpus until it is drawn and run at a freeze. Then 7.7's own work: partial names and aliases
+> **THE OWED CORRECTION IS DONE — 2026-09-12, and it was on three surfaces, not one.** ~~OWED AND NOT
+> DONE: `README.md:99-102` is now false. It says the sealed held-out set "was run once, on 2026-08-24,
+> and came back 10 of 10" — that describes the **retired** set. It is public, recruiter-facing prose, so
+> **he writes the correction**, not an agent.~~ *(Struck 2026-09-12. He read the finding and gave explicit
+> permission for the drafting, so the prose was written for him rather than by him; the standing default
+> is unchanged and is still that public prose is his.)* The same claim was also in
+> `docs/eval-suite-explained.md` and in the **generated** report page, whose generator was the real bug.
+> The section below has it. Run count is 0 and generalization is **untested** on
+> this corpus until it is run at a freeze. Then 7.7's own work: partial names and aliases
 > OFFERED, never resolved. **7.7's close carries the one live re-baseline and the one deploy for both
 > phases** ($2.61 and ~2.4 hours over five runs), because the live suite is ungated today: its bounds were
-> measured over 56 cases and the dataset is 63. Artifact **v0.10.0 is built
-> but NOT pinned** (step 9 moves the pin; `tests/test_artifact_versions.py:UNPINNED_CUTS` records it, and
-> `tests/test_teaching.py` is its only reader). Crawl data is local in `data/lineage/` (gitignored);
+> measured over 56 cases and the dataset is 63. **Artifact v0.10.0 IS PINNED — step 9 landed 2026-09-11.** ~~v0.10.0 is built
+> but NOT pinned (step 9 moves the pin; `tests/test_artifact_versions.py:UNPINNED_CUTS` records it, and
+> `tests/test_teaching.py` is its only reader).~~ *(Struck 2026-09-12: verified — `UNPINNED_CUTS` is
+> empty and `memory.PINNED_ARTIFACT_VERSION` is `"0.10.0"`. This block already said the pin was
+> v0.10.0 nine lines above, so it contradicted itself for a day.)* Crawl data is local in `data/lineage/` (gitignored);
 > `--build` is offline. Order from here: **7.6, then 7.7 `name-resolution` (v0.9.5, scope
 > doc written), then ONE live re-baseline and ONE deploy for both, then 7.5 resumes at step 5.** Typing
 > "mozart" into the site still refuses after 7.6 by design; 7.7 fixes it with one-click offers, never
@@ -130,6 +137,60 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## FINDING — the run-count claim was on THREE public surfaces, and one of them is generated, 2026-09-12
+
+**Pre-step-1 cleanup, before phase 7.7's guard tests.** The owed README correction turned out to be one
+of three copies of the same false claim, and the one that mattered most was **not prose at all**.
+
+- **`web/public/report/index.html` is generated, and its generator was the bug.**
+  `report_page.heldout_section` took the newest `*-heldout.json` and published it as *the* sealed set's
+  result, without ever comparing that file's `dataset_version` against the manifest's `dataset`. The
+  retired `heldout_v1` result is kept on purpose, so the page said **"10 of 10 correct, run 1 time in
+  total"** for a set whose run count is 0. `make check` passed throughout, because the committed page
+  agreed with the generator: **they were both wrong, in agreement.** Fixed with `sealed_dataset()` and
+  `heldout_runs()`, which split runs of the sealed set from runs of a retired one; the retired run is
+  still disclosed, as history, explicitly not as this set's score.
+- **`test_the_held_out_section_states_its_run_count` did not catch it, and it is worth knowing why.** It
+  hand-built a run with **no `dataset_version` at all** and asserted the sentence rather than the
+  attribution. A test can assert the exact words a page prints and still say nothing about whether the
+  page is entitled to print them.
+- **The README's corpus section had a bigger problem than the held-out bullet.** It said the artifact
+  holds "**two** kinds of edge" and then listed verification tiers summing to **6,807 of 9,276 edges**.
+  The missing 2,469 are `studied_with` at `TEACHING_PROSE_AUTO`, the **second-largest tier in the
+  corpus**, added at v0.10.0 three weeks earlier. Root cause: `published.py` computed no teaching figure,
+  so the marker system had nothing to compare and `test_published_numbers` could not fail. **A figure
+  that is never computed is a figure no marker can protect** — the marker arrangement covers the numbers
+  it knows about, which is a narrower guarantee than it looks. `teaching_edges` and `verified_teaching`
+  are now computed and marked.
+- **The README also claimed the live site serves this tree's build. It does not, and now says so.**
+  Measured against the deployed page, not inferred: `https://musical-mycelium.vercel.app/report/index.html`
+  serves **artifact 0.7.1**. The sentence had `<!-- n:artifact -->` inside it, so `make readme` was
+  actively writing the *repo's* version into a claim about the *deployment* on every run — the precise
+  hazard `phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md` §3.4 named when it ruled deploy facts
+  unmarkable, landing anyway because the marker sat in the wrong sentence. The status section now states
+  both versions and why they differ.
+- **Still open, and correctly open:** the live site stays a phase behind until phase 7.7 step 8 deploys
+  7.6 and 7.7 together. Fixing the generated page in this tree does **not** change the public URL, so
+  the live report still shows the retired set's 10 of 10 until that deploy. That is the cost of holding
+  one deploy for two phases, and it is his decision, recorded here so nobody reads a green `make check`
+  as a clean public site.
+- **New guards, both verified by deliberate breakage.**
+  `test_no_public_surface_claims_a_run_the_sealed_set_has_not_had` derives the sealed set's real run
+  count and fails if the README, `docs/eval-suite-explained.md` or the generated report names a score
+  without a nearby word handing it to the retired set; rewording one attribution to "It was run once"
+  fails it. `test_a_retired_sets_run_is_never_published_as_the_sealed_sets_score` covers the generator
+  directly. Its first version split sentences on `"."` and broke on "artifact 0.5.0", which is recorded
+  because the lesson is the usual one: the guard was right and the parsing was cheap.
+- **Also cleaned:** `Makefile` held-out usage strings said `heldout_v1.json` and now say `heldout_vN.json`,
+  so the string you copy at the next draw does not name a retired set. **Deliberately left alone:** the
+  kept `20260824T120956Z-heldout.json` result, the `heldout_v1` strings in `tests/test_transcripts.py`
+  (they test substring-versus-equality matching, where the retired name is the *correct* example), and
+  the synthetic ids in `tests/test_heldout_run.py`.
+- **`make check` after all of it: green, exit 0. 1,725 Python passed, 0 skipped** (14 deselected, the
+  money-spending ones), **448 frontend**, free gates **4 passed / 0 failed / 2 not applicable of six**.
+  `make heldout-verify` matches the manifest. **No case was opened, no set was re-sealed, nothing moved
+  the artifact pin, and nothing was deployed.**
 
 ## FINDING — the held-out set is being REPLACED, and the old one is retired, 2026-09-12
 

@@ -42,7 +42,12 @@ from musical_mycelium.agent.tools import default_registry
 from musical_mycelium.eval.live import live_cases
 from musical_mycelium.graph.backdrop import DRAWN_PREDICATES, largest_component
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE, Artifact
+from musical_mycelium.graph.schema import (
+    PREDICATE_INFLUENCED_BY,
+    PREDICATE_PLAYS_GENRE,
+    PREDICATE_STUDIED_WITH,
+    Artifact,
+)
 from musical_mycelium.graph.store import Direction
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -96,6 +101,10 @@ def corpus_figures(store: InMemoryGraphStore, artifact: Artifact) -> dict[str, i
         "edges": len(artifact.edges),
         "influence_edges": by_predicate[PREDICATE_INFLUENCED_BY],
         "membership_edges": by_predicate[PREDICATE_PLAYS_GENRE],
+        # The third predicate, from v0.10.0. Unmarked until 2026-09-12, which is how the README came to
+        # say "two kinds of edge" and to list tiers summing to 6,807 of 9,276 edges: a figure that is
+        # never computed is a figure no marker can catch.
+        "teaching_edges": by_predicate[PREDICATE_STUDIED_WITH],
         # How strongly ONE source was checked. Never read as corroboration, which is the next block.
         "verified_hand": tiers["HAND"],
         "verified_prose": tiers["PROSE_AUTO"],
@@ -103,6 +112,7 @@ def corpus_figures(store: InMemoryGraphStore, artifact: Artifact) -> dict[str, i
         "verified_infobox": tiers["INFOBOX_AUTO"],
         "verified_exposure": tiers["EXPOSURE_AUTO"],
         "verified_membership": tiers["MEMBERSHIP_BARE"] + tiers["MEMBERSHIP_CITED"],
+        "verified_teaching": tiers["TEACHING_PROSE_AUTO"],
         # Whether a SECOND source agrees. Reciprocal and contested ride together, never one alone.
         "corroborated": int(corroboration["corroborated"]),
         "single_source": int(corroboration["single_source"]),

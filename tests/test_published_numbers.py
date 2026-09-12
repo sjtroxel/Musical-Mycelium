@@ -14,6 +14,8 @@ Node. ``web/scripts/readme-count.mjs`` checks it inside ``npm run check``.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from musical_mycelium.eval.published import (
@@ -26,7 +28,18 @@ from musical_mycelium.eval.published import (
     render,
     stale,
 )
+from musical_mycelium.eval.report_page import (
+    PAGE as REPORT_PAGE,
+)
+from musical_mycelium.eval.report_page import (
+    heldout_runs,
+    results,
+    sealed_dataset,
+)
 from musical_mycelium.graph.memory import default_store
+
+#: The two prose surfaces the run-count claim went stale on beside the README. Phase 7.7, 2026-09-12.
+EVAL_EXPLAINER = README.parent / "docs" / "eval-suite-explained.md"
 
 
 @pytest.fixture(scope="module")
@@ -100,3 +113,55 @@ def test_an_unknown_marker_is_an_error_not_a_pass_through() -> None:
 def test_a_web_marker_survives_a_render_that_cannot_compute_it() -> None:
     text = "<!-- n:web_tests_floor -->400<!-- /n -->"
     assert render(text, {}) == text
+
+
+def test_no_public_surface_claims_a_run_the_sealed_set_has_not_had() -> None:
+    """The *claim* again, and the one that actually went wrong. Phase 7.7, 2026-09-12.
+
+    On 2026-09-12 the held-out set was replaced and ``heldout_v1`` retired, its ciphertext kept only in
+    git. Its one result file stayed in ``eval/results`` on purpose -- it records a measurement actually
+    taken -- and three public surfaces went on presenting that measurement as the *current* set's:
+    ``README.md``, ``docs/eval-suite-explained.md``, and the deployed evaluation report, whose generator
+    took the newest ``*-heldout.json`` without ever comparing its ``dataset_version`` to the manifest.
+
+    The run count is not a marked figure and cannot be one: it is not a fact about the corpus. So this
+    is a claim test. It derives the sealed set's real run count the way the report page now does, and
+    fails if prose a stranger reads says the set was run when no run of *that* set exists.
+    """
+    own, retired = heldout_runs(results("heldout"), sealed_dataset())
+    if own:
+        pytest.skip(
+            f"the sealed set has been run {len(own)} time(s); this guard covers run count 0"
+        )
+
+    assert retired, (
+        "no retired run to confuse the current set with; this guard has nothing to protect"
+    )
+    # The retired run may be DISCLOSED, but only as history: every mention of a score has to sit near a
+    # word that hands it to the old set. A 300-character window rather than a sentence, because
+    # sentence-splitting on "." breaks on "artifact 0.5.0" -- which is how this test first failed.
+    attributions = ("earlier", "retired", "no longer", "previous")
+    for path in (README, EVAL_EXPLAINER, REPORT_PAGE):
+        text = path.read_text(encoding="utf-8")
+        for claim in ("was run once", "has now been opened", "10 of 10", "10/10"):
+            for match in re.finditer(re.escape(claim), text):
+                window = text[max(0, match.start() - 300) : match.start()].lower()
+                assert any(word in window for word in attributions), (
+                    f"{path.name} says {claim!r} with nothing nearby marking it as the RETIRED set's "
+                    f"result, while the sealed set's own run count is 0"
+                )
+
+
+def test_the_sealed_sets_own_runs_never_include_a_retired_sets_run() -> None:
+    """``heldout_runs`` is the whole fix, so it gets a test that does not depend on today's files."""
+    runs = [
+        ("20260824T120956Z", {"dataset_version": "heldout_v1", "cases_correct": 10}),
+        ("20260913T000000Z", {"dataset_version": "heldout_v2", "cases_correct": 9}),
+        ("20260914T000000Z", {}),
+    ]
+    own, retired = heldout_runs(runs, "heldout_v2")
+    assert [stamp for stamp, _ in own] == ["20260913T000000Z"]
+    assert [stamp for stamp, _ in retired] == ["20260824T120956Z", "20260914T000000Z"]
+    assert sealed_dataset() == "heldout_v2", (
+        "the manifest names a different set than the code expects"
+    )

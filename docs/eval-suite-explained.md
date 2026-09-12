@@ -87,18 +87,26 @@ afterwards is quietly tuned toward that set, with no way to detect it later. A f
 does not stop that. Encryption does.
 
 It is still checkable while sealed. A tool decrypts it in memory and reports problems as case numbers and
-problem codes - `heldout_v1_007: claims-diverged` - which says everything you need in order to act and
-discloses nothing. A case number is not content.
+problem codes, in the form `<case id>: claims-diverged`, which says everything you need in order to act
+and discloses nothing. A case number is not content.
 
-**It has now been opened, once, on 2026-08-24, and it came back 10 of 10** with every metric matching the
-development set. That is a real negative on the overfitting question, and it is one observation rather
-than a rate: with two refusal cases and no error bar, one flip moves that metric fifty points. The rule
-written afterwards is that the set may only be run again at a future freeze, and only if nothing was
-tuned in response to what it said - because a set re-run after a change made because of its own result
-has stopped measuring generalization and started measuring how many attempts it took. Two things it
-cannot tell us at all: nothing was planted in it, so injection resistance has no held-out evidence; and
-nine of its ten subjects carry no date and no stated region, so it cannot answer whether the system holds
-up on older or non-Western material. That question is open, not passed.
+**The set in the repository today has not been opened at all.** It was drawn on 2026-09-12 against
+artifact 0.10.0, sealed, and then checked without being read: ten cases, two of them refusals, matching
+their manifest, with nothing diverging from the corpus they were drawn against. Its run count is 0.
+Generalization on this corpus is therefore untested rather than passed, and the set is opened once, at a
+freeze, and only if nothing was tuned in response to what it says - because a set re-run after a change
+made because of its own result has stopped measuring generalization and started measuring how many
+attempts it took.
+
+An earlier set was opened once, on 2026-08-24, and came back 10 of 10 at artifact 0.5.0 with every metric
+matching the development set. That was a real negative on the overfitting question, and one observation
+rather than a rate: with two refusal cases and no error bar, one flip moves that metric fifty points. It
+was retired on 2026-09-12 rather than re-run, because the corpus had roughly tripled beneath it and two
+of its cases no longer matched the graph they had been drawn against. That measurement is kept and stays
+auditable, but it is not evidence about the set that replaced it.
+
+One thing no drawn set here can tell us: nothing is planted in it, so injection resistance has no
+held-out evidence at all. That question is open, not passed.
 
 ## Why a score with no noise floor is not a score
 

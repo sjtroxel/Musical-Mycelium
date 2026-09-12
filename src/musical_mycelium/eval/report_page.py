@@ -37,6 +37,7 @@ from pathlib import Path
 from typing import Any
 
 from musical_mycelium.eval import noise, trend
+from musical_mycelium.eval.heldout import MANIFEST_PATH
 from musical_mycelium.eval.live import gate_record
 from musical_mycelium.eval.published import corpus_figures
 from musical_mycelium.eval.slices import SPARSE_SLICE
@@ -109,6 +110,11 @@ COPY: dict[str, str] = {
     "heldout": (
         "Ten cases drawn from the corpus by a seed only the author holds, sealed, and never read during "
         "development."
+    ),
+    "heldout_unrun": (
+        "It has not been run. Run count 0, so generalization on this corpus is untested rather than "
+        "passed. It is opened once, at a freeze, and a set re-run after a change made because of what "
+        "it said has stopped measuring generalization and started measuring how many attempts it took."
     ),
     "heldout_caveat": (
         "One run of ten cases, {refusals} of them refusals, so one flip moves refusal accuracy by "
@@ -382,10 +388,47 @@ def judged_section(tier2: tuple[str, Json], judges: Sequence[tuple[str, Json]]) 
     )
 
 
-def heldout_section(runs: Sequence[tuple[str, Json]], current_artifact: str) -> str:
+def sealed_dataset(path: Path = MANIFEST_PATH) -> str:
+    """The dataset name of the set sealed in the repo today, read from its public manifest.
+
+    Read rather than hardcoded because a result file records the dataset it was run against, and the
+    retired ``heldout_v1`` result is deliberately kept (``docs/KNOWN-GAPS.md``, 2026-09-12): it records a
+    measurement actually taken. Matching the two names is the only thing standing between that kept
+    result and a page that publishes it as the current set's run count, which is what this page did
+    until 2026-09-12.
+    """
+    return str(_load(path)["dataset"])
+
+
+def heldout_runs(
+    runs: Sequence[tuple[str, Json]], dataset: str
+) -> tuple[list[tuple[str, Json]], list[tuple[str, Json]]]:
+    """``(runs of the sealed set, runs of a retired set)``, oldest first in both."""
+    own = [entry for entry in runs if entry[1].get("dataset_version") == dataset]
+    return own, [entry for entry in runs if entry[1].get("dataset_version") != dataset]
+
+
+def retired_note(runs: Sequence[tuple[str, Json]]) -> str:
+    """Disclose a run of a set that is no longer sealed here, as history and never as a score."""
+    if not runs:
+        return ""
+    stamp, run = runs[-1]
+    return _p(
+        f"An earlier set, {run.get('dataset_version', 'unknown')}, was run once on "
+        f"{_when(stamp)} at artifact {run['artifact_version']} and scored "
+        f"{run['cases_correct']} of {run['cases_run']}. It was retired when the corpus moved and a "
+        f"fresh set was drawn, so that number belongs to a set no longer in this repository. It is "
+        f"kept because it records a measurement actually taken, and it is not a result for the set "
+        f"above."
+    )
+
+
+def heldout_section(
+    runs: Sequence[tuple[str, Json]], retired: Sequence[tuple[str, Json]], current_artifact: str
+) -> str:
     out = '<h2 id="heldout">The sealed held-out set</h2>' + _p(COPY["heldout"])
     if not runs:
-        return out + _p("It has not been run.")
+        return out + _p(COPY["heldout_unrun"]) + retired_note(retired)
     stamp, run = runs[-1]
     refusals = sum(1 for case in run.get("per_case", []) if case.get("expected_refusal"))
     out += (
@@ -449,7 +492,14 @@ def did_not_work_section(
             )
         )
     )
-    if heldout and heldout[-1][1].get("artifact_version") != current_artifact:
+    if not heldout:
+        items.append(
+            _e(
+                "The sealed held-out set has never been run. Generalization on this corpus is "
+                "untested, not passed, and no number on this page speaks to it."
+            )
+        )
+    elif heldout[-1][1].get("artifact_version") != current_artifact:
         items.append(
             _e(
                 f"The held-out set was run at artifact {heldout[-1][1]['artifact_version']}. The "
@@ -610,7 +660,7 @@ def render() -> str:
     scripted = gate_record(outcome)["gates"]
 
     tier2 = results("tier2")
-    heldout = results("heldout")
+    heldout, retired = heldout_runs(results("heldout"), sealed_dataset())
     sections = [
         "<h1>How Musical Mycelium is evaluated</h1>",
         _p(COPY["intro"], "lede"),
@@ -623,7 +673,7 @@ def render() -> str:
         trend_section(results("bedrock"), floor),
         slices_section(run),
         judged_section(tier2[-1], results("judge")) if tier2 else "",
-        heldout_section(heldout, current),
+        heldout_section(heldout, retired, current),
         did_not_work_section(floor, live, scripted, figures, heldout, current),
     ]
     return (
