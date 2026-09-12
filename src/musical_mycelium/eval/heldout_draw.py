@@ -26,11 +26,26 @@ never consult them. Citation *support* is a Tier 2 judged metric measured agains
 
 Usage, and the plaintext never needs to reach a terminal that is being watched::
 
-    make heldout-draw SEED='something only you know' OUT=~/heldout_v1.json
-    make heldout-seal PLAINTEXT=~/heldout_v1.json
-    shred -u ~/heldout_v1.json     # or just delete it
+    make heldout-draw SEED='something only you know' OUT=~/heldout_v2.json
+    make heldout-seal PLAINTEXT=~/heldout_v2.json
+    shred -u ~/heldout_v2.json     # or just delete it
 
 The draw prints **counts only** — never a case, never a node id.
+
+**Teaching, added 2026-09-12 for the v0.10.0 draw (phase 7.7 step 0).** Every ``neighbors`` call here
+defaulted to ``INFLUENCE_ONLY``, so a draw on a corpus holding 2,469 ``studied_with`` edges would have
+tested none of them and left the whole phase 7.6 capability's generalisation unmeasured. The draw now
+carries a ``teaching`` stratum, sized to mirror the gold set's share (5 of 43 cases).
+
+Two things that had to change with it, and both were latent bugs rather than new requirements:
+
+- ``_claim`` hardcoded ``P737`` in ``wikidata_statement``. On a teaching edge that is a **false citation
+  string** written into a sealed set — the gold set records ``Q254 P1066 Q106641``. The property is now
+  derived from the predicate.
+- **The refusal stratum was unsafe.** It selected a node with no influence *parents*, but since phase 7.6
+  an influence question also asks ``get_teachers`` (decision D5), so a node with a teacher is answerable
+  and ``expected_refusal`` would be wrong for it. The refusal pool now excludes any node carrying a
+  teaching edge in **either** direction. Measured cost on v0.10.0: 17 of 614 candidates.
 """
 
 from __future__ import annotations
@@ -42,19 +57,42 @@ from pathlib import Path
 from typing import Any
 
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import Artifact
+from musical_mycelium.graph.schema import (
+    PREDICATE_INFLUENCED_BY,
+    PREDICATE_STUDIED_WITH,
+    Artifact,
+)
 from musical_mycelium.graph.store import Direction
+
+#: Teaching only, for the ``teaching`` stratum and the refusal stratum's exclusion. Named here rather
+#: than imported because ``schema`` publishes ``INFLUENCE_ONLY`` and no teaching counterpart.
+TEACHING_ONLY = frozenset({PREDICATE_STUDIED_WITH})
+
+#: The Wikidata property each predicate's claim cites. ``_claim`` wrote ``P737`` for everything until
+#: 2026-09-12, which would have sealed a false citation string into a teaching case.
+STATEMENT_PROPERTY: dict[str, str] = {
+    PREDICATE_INFLUENCED_BY: "P737",
+    PREDICATE_STUDIED_WITH: "P1066",
+}
 
 #: The strata and how many cases each contributes. Mirrors the gold set's shape spread rather than the
 #: corpus's, because the held-out set has to be comparable to the thing it is checking for overfitting:
 #: if the gold set is 40% origins and the held-out set is 90% origins, a score gap between them measures
 #: the composition difference and not the generalisation gap. Sums to 10.
+#: *(Amended 2026-09-12, phase 7.7 step 0: ``teaching`` added, taken out of ``origins`` rather than
+#: added on top, because the set size is 10 and the rules name that number. Gold gives teaching 5 of 43
+#: cases, so 1 of 10 mirrors it.)*
 STRATA: dict[str, int] = {
-    "origins": 4,
+    "origins": 3,
     "descendants": 2,
     "path": 2,
     "refusal": 2,
+    "teaching": 1,
 }
+
+#: A teaching case needs enough teachers to be a traversal rather than a resolution test, for the same
+#: reason ``MIN_EDGES`` exists. 545 nodes clear this on v0.10.0.
+MIN_TEACHERS = 2
 
 #: A path case shorter than this is barely a traversal; longer than this and the corpus runs out of
 #: candidates (only 6 chains reach 6 hops, all of them artists).
@@ -79,14 +117,23 @@ def _drawable(store: InMemoryGraphStore, artifact: Artifact) -> dict[str, list[s
     for node in artifact.nodes:
         parents = store.neighbors(node.id, Direction.INFLUENCED_BY)
         children = store.neighbors(node.id, Direction.INFLUENCED)
+        teachers = store.neighbors(node.id, Direction.INFLUENCED_BY, predicates=TEACHING_ONLY)
+        students = store.neighbors(node.id, Direction.INFLUENCED, predicates=TEACHING_ONLY)
 
         if len(parents) >= MIN_EDGES:
             buckets["origins"].append(node.id)
         if len(children) >= MIN_EDGES:
             buckets["descendants"].append(node.id)
+        if len(teachers) >= MIN_TEACHERS:
+            buckets["teaching"].append(node.id)
         # The strong refusal: the node resolves and is cited by others, but has no sourced origin of
         # its own. The weak kind (an unknown string) is not drawn — it tests the resolver, not the gate.
-        if not parents and children:
+        #
+        # **Teaching edges disqualify it, in either direction, since 2026-09-12.** An influence question
+        # also asks `get_teachers` (phase 7.6 D5), so a node with a teacher is answerable and its
+        # `expected_refusal` would be a lie; a node with students is excluded on the same conservative
+        # reasoning rather than on a measured need. 597 of 614 candidates survive, so the caution is free.
+        if not parents and children and not teachers and not students:
             buckets["refusal"].append(node.id)
         if parents:
             buckets["path"].append(node.id)
@@ -139,6 +186,9 @@ def _path_case(
 
 def _claim(store: InMemoryGraphStore, edge: Any) -> dict[str, Any]:
     subject, obj = store.get_node(edge.subject_id), store.get_node(edge.object_id)
+    # The property is read from the predicate, never assumed. This line said `P737` for every edge
+    # until 2026-09-12, which on a `studied_with` edge is a false citation string in a sealed set.
+    prop = STATEMENT_PROPERTY[edge.predicate]
     return {
         "subject_id": edge.subject_id,
         "predicate": edge.predicate,
@@ -146,7 +196,7 @@ def _claim(store: InMemoryGraphStore, edge: Any) -> dict[str, Any]:
         "subject_label": subject.label if subject else "",
         "object_label": obj.label if obj else "",
         "verification": edge.verification,
-        "wikidata_statement": f"{edge.subject_id} P737 {edge.object_id}",
+        "wikidata_statement": f"{edge.subject_id} {prop} {edge.object_id}",
         "independent_citations": [],
         "citation_status": {
             "state": "not_sought",
@@ -164,6 +214,25 @@ def _simple_case(store: InMemoryGraphStore, node_id: str, shape: str) -> dict[st
     node = store.get_node(node_id)
     if node is None:
         return None
+
+    if shape == "teaching":
+        # Emitted as `teachers`, which is the gold set's vocabulary (`gold.SHAPE_TOOL`), so the two sets
+        # stay comparable and `check_against_corpus` can read the right direction and predicate. The
+        # stratum is named `teaching` and the shape is named `teachers` on purpose: one is a slot in this
+        # draw, the other is a contract shared with another dataset.
+        edges = store.neighbors(node_id, Direction.INFLUENCED_BY, predicates=TEACHING_ONLY)
+        others = [e.object_id for e in edges]
+        # "Who did X study with" and never "who influenced X": a claim states what its source asserts,
+        # and P1066 asserts study. The wording is the same rule the tools and the prose follow.
+        query = f"Who did {node.label} study with?"
+        return {
+            "shape": "teachers",
+            "query": query,
+            "expected_resolution": {"name": node.label, "node_id": node.id},
+            "expected_refusal": False,
+            "expected_path": [node.id, *others],
+            "expected_claims": [_claim(store, e) for e in edges],
+        }
 
     if shape == "descendants":
         edges = store.neighbors(node_id, Direction.INFLUENCED)
@@ -220,7 +289,7 @@ def draw(seed: str, store: InMemoryGraphStore, artifact: Artifact) -> dict[str, 
             hits = store.search(case["expected_resolution"]["name"])
             if not hits or hits[0].id != case["expected_resolution"]["node_id"]:
                 continue
-            case["case_id"] = f"heldout_v1_{len(cases) + 1:03d}"
+            case["case_id"] = f"heldout_v2_{len(cases) + 1:03d}"
             cases.append(case)
             used.add(node_id)
             taken += 1
@@ -230,7 +299,7 @@ def draw(seed: str, store: InMemoryGraphStore, artifact: Artifact) -> dict[str, 
             )
 
     return {
-        "dataset": "heldout_v1",
+        "dataset": "heldout_v2",
         "authored_by": "stratified draw",
         "artifact_version_pin": store.artifact_version,
         "method": (

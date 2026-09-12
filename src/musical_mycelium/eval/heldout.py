@@ -17,7 +17,7 @@ reads the author's plaintext, and it prints the manifest rather than the content
 **2. Failures are reported as case ids and problem codes, never as case content.** This is what makes the
 set *checkable while sealed*. The held-out cases pin to an artifact version, and phase 6 will move the
 corpus — a case whose neighbours shift silently stops matching, and you cannot normally discover that
-without opening the set, which destroys it. ``heldout_v1_007: claims-diverged`` says everything needed to
+without opening the set, which destroys it. ``heldout_v2_007: claims-diverged`` says everything needed to
 act and discloses nothing. A case id is not content.
 
 **3. The manifest is public and deliberately thin.** It carries hashes, a count, and the shape
@@ -42,12 +42,19 @@ from pathlib import Path
 from typing import Any
 
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.schema import PREDICATE_STUDIED_WITH
 from musical_mycelium.graph.store import Direction
+
+#: Teaching only, for the ``teachers`` shape in :func:`_corpus_edges`. Defined locally rather than
+#: shared, which is this repo's existing convention for it (``agent/tools.py:43`` and
+#: ``eval/slices.py:210`` each do the same): the validator must not import the authoring tool, and
+#: ``schema`` publishes only ``INFLUENCE_ONLY``.
+TEACHING_ONLY = frozenset({PREDICATE_STUDIED_WITH})
 
 #: Where the sealed set and its public manifest live. Committed; the key is not.
 DATASETS_DIR = Path(__file__).resolve().parent / "datasets"
-SEALED_PATH = DATASETS_DIR / "heldout_v1.json.enc"
-MANIFEST_PATH = DATASETS_DIR / "heldout_v1.manifest.json"
+SEALED_PATH = DATASETS_DIR / "heldout_v2.json.enc"
+MANIFEST_PATH = DATASETS_DIR / "heldout_v2.manifest.json"
 
 #: Outside the repository on purpose. ``.gitignore`` also covers ``*.key`` as a second line of defence.
 DEFAULT_KEY_PATH = Path.home() / ".config" / "musical-mycelium" / "heldout.key"
@@ -81,7 +88,7 @@ class SealError(RuntimeError):
 class Finding:
     """A problem with one held-out case, expressed so that reporting it discloses nothing.
 
-    ``case_id`` is an ordinal (``heldout_v1_007``) and ``code`` is drawn from a fixed vocabulary. Neither
+    ``case_id`` is an ordinal (``heldout_v2_007``) and ``code`` is drawn from a fixed vocabulary. Neither
     is content, which is the whole reason the sealed set can be validated in the first place.
     """
 
@@ -178,7 +185,7 @@ def summarise(data: dict[str, Any], ciphertext: bytes, plaintext: bytes) -> dict
         shapes[shape] = shapes.get(shape, 0) + 1
 
     return {
-        "dataset": str(data.get("dataset", "heldout_v1")),
+        "dataset": str(data.get("dataset", "heldout_v2")),
         "sealed_at": datetime.now(UTC).strftime("%Y-%m-%d"),
         "cipher": CIPHER,
         "artifact_version_pin": str(data.get("artifact_version_pin", "")),
@@ -261,6 +268,17 @@ def _corpus_edges(
     ``claims-diverged`` finding — an id and a code — instead of a traceback that would print the case.
     """
     shape = str(case.get("shape", "origins"))
+    if shape == "teachers":
+        # **Predicate-aware since 2026-09-12, phase 7.7 step 0, and it was not before.** This function
+        # read every direction with the default `INFLUENCE_ONLY`, so a teaching case would have been
+        # compared against the node's *influences* and reported `claims-diverged` and `refusal-flipped`
+        # while being entirely correct. That is the identical defect the shape-awareness note below
+        # records from 2026-08-14, one layer deeper: there, the direction was assumed; here, the
+        # predicate was. A false alarm on a sealed set is undebuggable without opening it.
+        return {
+            (e.subject_id, e.object_id)
+            for e in store.neighbors(node_id, Direction.INFLUENCED_BY, predicates=TEACHING_ONLY)
+        }
     if shape == "descendants":
         return {(e.subject_id, e.object_id) for e in store.neighbors(node_id, Direction.INFLUENCED)}
     if shape == "path":

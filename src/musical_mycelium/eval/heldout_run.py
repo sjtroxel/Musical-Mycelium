@@ -118,7 +118,7 @@ HELDOUT_RESULT_KEYS = frozenset(
 #:
 #: Every key here is a count, a boolean, a score, or the case id. **A case id is not content** -- that is
 #: the same judgement `heldout.Finding` already rests on, and it is what makes a sealed set debuggable at
-#: all: `heldout_v1_007: claims-diverged` says everything needed to act and discloses nothing.
+#: all: `heldout_v2_007: claims-diverged` says everything needed to act and discloses nothing.
 HELDOUT_PER_CASE_KEYS = frozenset(
     {
         "case_id",
@@ -360,7 +360,7 @@ def run_heldout(
         store=graph,
         llm_for=llm_for,
         dataset=DATASET,
-        dataset_version="heldout_v1",
+        dataset_version="heldout_v2",
         artifact_pin=artifact_pin,
         provider=provider,
         budget=budget,

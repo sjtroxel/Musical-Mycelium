@@ -57,7 +57,7 @@ so both columns are labeled. Reading one as the other is the confusion this head
 | **6.5** `debt-and-disagreement` **COMPLETE 2026-09-07** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6, delivered: `contested` reaches an answer, three honest refusal states, `ResolveSource` verifies DBpedia, 9 gold + 2 adversarial cases, a sixth gate, and a live suite gated on a measured floor | Agent package, which phase 6 DoD #6 forbade |
 | **7** `cinematic-surface` **COMPLETE 2026-09-09** | **v0.8** | **v0.7.1** (pinned, unchanged) | The guided tour, the signature moment on one timeline, and the design half: full-page backdrop, motion system, asset budget | Frontend, plus one tool behind the existing tool contract |
 | **7.6** `classical-lineage` **COMPLETE 2026-09-11** | **v0.9** | **v0.10.0** (decided 2026-09-11; why the jump, see below the table) | Pre-1900 lineage: the `mul` label fix, a `studied_with` predicate from P1066, artist birth years, and the gate opened to a second predicate on purpose | Ingestion + artifact schema, plus `agent/claims.py:ALLOWED_PREDICATES` |
-| **7.7** `name-resolution` **SCOPED 2026-09-11, after 7.6, before 7.5 resumes** | **v0.9.5** | **v0.10.0** (no cut of its own; uses 7.6's stored aliases) | Partial names and Wikidata aliases are OFFERED as one-click choices, never resolved by the system; the one live re-baseline and the one deploy for 7.6 and 7.7 together | `graph/memory.py` resolution, the SSE contract, the frontend |
+| **7.7** `name-resolution` **UNDER WAY 2026-09-12, step 0 done; after 7.6, before 7.5 resumes** | **v0.9.5** | **v0.10.0** (no cut of its own; uses 7.6's stored aliases) | Partial names and Wikidata aliases are OFFERED as one-click choices, never resolved by the system; the one live re-baseline and the one deploy for 7.6 and 7.7 together | `graph/memory.py` resolution, the SSE contract, the frontend |
 | **7.5** `portfolio-and-writeup` **SUSPENDED 2026-09-11 at step 5** | **v1.0** | ~~v0.7.1 (pinned, unchanged)~~ **v0.10.0, inherited from 7.6** | The published eval report, the trend view, the writeup, the README and the recruiter path; the Terraform round-trip and a verified bill | No architecture change |
 | **8** `membership-tour` **SCOPED 2026-09-09, not started** | **v1.1** | **v0.7.1** (pinned, unchanged) | The tour crosses axes: genre to artist to genre, so the corpus's one connected component becomes something the product can walk rather than a number in a structure report | `agent/claims.py:ALLOWED_PREDICATES`, a one-way door opened on purpose |
 
@@ -123,8 +123,8 @@ for the workflow. Scope docs are written up front; IMPLEMENTATION docs are writt
 | 6 | written 2026-07-31, after the validation | written 2026-09-02; **steps 0-7 built 09-02 to 09-04; step 8 next** |
 | 7 | written 2026-07-30; **amended 2026-08-24 (§0), and 2026-09-08 (§0) at phase start when the phase split** | **written 2026-09-08 at phase start; awaiting the build** |
 | 7.5 | **written 2026-09-08**, at the moment the phase was conceived; **amended 2026-09-11** (writeup is the LinkedIn post; pin moves in 7.6) | written 2026-09-09; **steps 0-4 done; SUSPENDED 2026-09-11 at step 5 until 7.6 closes** |
-| 7.6 | **written and approved 2026-09-11**, at the moment the phase was conceived; **amended the same day** (aliases stored; re-baseline and deploy moved to 7.7's close) | **written and APPROVED 2026-09-11; building** |
-| 7.7 | **written 2026-09-11**, at the moment the phase was conceived | not yet — written after 7.6 closes |
+| 7.6 | **written and approved 2026-09-11**, at the moment the phase was conceived; **amended the same day** (aliases stored; re-baseline and deploy moved to 7.7's close) | **written and APPROVED 2026-09-11; all 11 steps built, phase complete 2026-09-11** |
+| 7.7 | **written 2026-09-11**, at the moment the phase was conceived; **two corrections recorded 2026-09-12** in the IMPLEMENTATION doc §1.2 ("roy orbison" resolves rather than refuses; aliases are on two nodes in three, not all) | **written and APPROVED 2026-09-12; building — step 0 done** |
 
 Phase 6's scope doc was deliberately last. It is density and coverage, the phase most directly exposed to what
 the P279 taxonomy can actually carry, and hand-validating the edges first meant it could be written against
@@ -134,6 +134,31 @@ be built on. See `docs/graph-semantics.md`.
 **v0.1 definition of done:** a public URL that streams a grounded, cited, two-sentence answer about one
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
+
+### Where the build actually is — 2026-09-12
+
+**PHASE 7.7 `name-resolution` (v0.9.5) IS UNDER WAY. Its IMPLEMENTATION doc was APPROVED 2026-09-12 and
+STEP 0 IS DONE.** As-built:
+`docs/phases/phase-7.7-name-resolution-IMPLEMENTATION.md` §0.1; **read that rather than restating it here.**
+
+**The held-out set was replaced and the old one retired.** `heldout_v2`, drawn by him from his own seed,
+sealed 2026-09-12, artifact pin **0.10.0**, 10 cases, 2 refusals, shapes descendants 2 / origins 5 / path 2
+/ teachers 1. `make heldout-verify` matches its manifest; `make heldout-check` reports **zero findings**.
+**Run count 0 — generalisation on this corpus is untested, not passed**, until it runs once at this phase's
+freeze. `heldout_v1` is deleted from the tree, with its ciphertext preserved in git at `b9072ee`.
+`make check` measured after the seal: **1,722 Python passed, 0 skipped**, 448 frontend, free gates **4
+passed / 0 failed / 2 N/A of six**. **Nothing moved the artifact pin and nothing was deployed.**
+
+Three latent bugs were fixed to make the draw honest, and they are the phase's first real findings: the
+draw cited `P737` for every edge including teaching ones, the sealed-set validator read influence edges for
+every shape, and the refusal stratum admitted nodes that `get_teachers` can answer about. §0.1 has each.
+
+**Still owed, and deferred on purpose:** `README.md:99-102` says the sealed held-out set "was run once ...
+10 of 10", which now describes the retired set. It is public recruiter-facing prose, so **he writes that
+correction**. Steps 1 through 6 of this phase are free; step 7 is the one live re-baseline (~$2.94) and
+step 8 the one deploy.
+
+*(The block below is dated 2026-09-11 and describes the state at the phase 7.6 close.)*
 
 ### Where the build actually is — 2026-09-11
 
@@ -645,6 +670,14 @@ instead.
   timeline driving both text and view (`planning/06` §5.1).~~ **Left the backlog 2026-09-08 — it is phase 7,
   steps 6 and 5.**
 - Time as a real spatial axis in the layout rather than force-directed placement.
+- **Artist reach: a well-known artist nothing in the crawl points at never becomes a candidate.** Found
+  2026-09-12 by him, typing "olivia newton-john" into the live site. She is absent from artifact v0.10.0
+  **and** from `data/artist_screening.json` and the lineage crawl, so she is not an exclusion with a
+  recorded reason — she was never reached. The corpus is built genre-first and artists arrive only through
+  membership, influence or teaching links. **The refusal he got was correct behaviour**, and no deploy or
+  resolver change addresses it; widening artist reach is corpus work and is explicitly out of phase 7.7's
+  scope. Worth a decision about how far reach should extend before v1.1, because the same gap is invisible
+  until someone types a name.
 - ~~A plain-English write-up per phase, accumulating into the project writeup.~~ **Left the backlog
   2026-09-08 — it is phase 7.5, and its per-phase halves are already written as each phase was built.**
   *(Corrected 2026-09-11: only two exist, `eval-suite-explained.md` for phase 4 and `spa-explained.md`

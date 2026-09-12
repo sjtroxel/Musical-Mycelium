@@ -18,7 +18,8 @@ import pytest
 
 from musical_mycelium.eval import heldout, heldout_draw
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
-from musical_mycelium.graph.schema import Artifact
+from musical_mycelium.graph.schema import PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH, Artifact
+from musical_mycelium.graph.store import Direction
 
 #: Published on purpose. See the module docstring: a committed seed is the opposite of held out.
 TEST_SEEDS = ("published-test-seed-a", "published-test-seed-b", "published-test-seed-c")
@@ -67,7 +68,8 @@ def test_a_drawn_set_has_the_composition_the_strata_declare(
     assert (
         sum(1 for c in cases if c["shape"] == "descendants") == heldout_draw.STRATA["descendants"]
     )
-    assert {c["case_id"] for c in cases} == {f"heldout_v1_{i:03d}" for i in range(1, 11)}
+    assert sum(1 for c in cases if c["shape"] == "teachers") == heldout_draw.STRATA["teaching"]
+    assert {c["case_id"] for c in cases} == {f"heldout_v2_{i:03d}" for i in range(1, 11)}
 
 
 def test_different_seeds_draw_different_sets(store: InMemoryGraphStore, artifact: Artifact) -> None:
@@ -128,4 +130,56 @@ def test_every_drawn_refusal_is_the_strong_kind(
         node_id = case["expected_resolution"]["node_id"]
         assert store.get_node(node_id) is not None
         assert not store.neighbors(node_id)
-        assert store.neighbors(node_id, heldout_draw.Direction.INFLUENCED)
+        assert store.neighbors(node_id, Direction.INFLUENCED)
+        # **And no teaching edge in either direction, since 2026-09-12.** An influence question also
+        # asks `get_teachers` (phase 7.6 D5), so a drawn "refusal" with a teacher is answerable and the
+        # case would assert a refusal the system is right not to make. The influence check above cannot
+        # see that.
+        assert not store.neighbors(
+            node_id, Direction.INFLUENCED_BY, predicates=heldout_draw.TEACHING_ONLY
+        )
+        assert not store.neighbors(
+            node_id, Direction.INFLUENCED, predicates=heldout_draw.TEACHING_ONLY
+        )
+
+
+@pytest.mark.parametrize("seed", TEST_SEEDS)
+def test_every_drawn_claim_cites_the_property_its_predicate_actually_uses(
+    seed: str, store: InMemoryGraphStore, artifact: Artifact
+) -> None:
+    """P737 for influence, P1066 for teaching, and never the wrong one.
+
+    `_claim` hardcoded `P737` for every edge until 2026-09-12. On a `studied_with` edge that is a false
+    citation string — and sealed into a set nobody may open, a false citation is permanent. The gold set
+    records teaching as `Q254 P1066 Q106641`; this asserts the draw agrees with it.
+    """
+    data = heldout_draw.draw(seed, store, artifact)
+    seen = set()
+    for case in data["cases"]:
+        for claim in case["expected_claims"]:
+            predicate = claim["predicate"]
+            expected = {PREDICATE_INFLUENCED_BY: "P737", PREDICATE_STUDIED_WITH: "P1066"}[predicate]
+            subject, obj = claim["subject_id"], claim["object_id"]
+            assert claim["wikidata_statement"] == f"{subject} {expected} {obj}"
+            seen.add(predicate)
+    # The teaching stratum guarantees the P1066 branch is exercised rather than merely defined.
+    assert PREDICATE_STUDIED_WITH in seen
+
+
+@pytest.mark.parametrize("seed", TEST_SEEDS)
+def test_a_teaching_case_asks_about_study_and_claims_only_teaching(
+    seed: str, store: InMemoryGraphStore, artifact: Artifact
+) -> None:
+    """A claim states what its source asserts, and P1066 asserts study.
+
+    The wording matters as much as the predicate: a teaching case that asked "who influenced X" would
+    seal the exact conflation `graph-semantics.md` §8 and the whole of phase 7.6 exist to prevent.
+    """
+    data = heldout_draw.draw(seed, store, artifact)
+    teaching = [c for c in data["cases"] if c["shape"] == "teachers"]
+    assert teaching, "the teaching stratum drew nothing"
+    for case in teaching:
+        assert "study with" in case["query"]
+        assert "influence" not in case["query"].lower()
+        assert case["expected_claims"]
+        assert all(c["predicate"] == PREDICATE_STUDIED_WITH for c in case["expected_claims"])

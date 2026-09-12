@@ -79,8 +79,8 @@ def dataset(store: InMemoryGraphStore) -> dict[str, Any]:
 def sealed_here(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Point the module's committed paths at tmp_path. Without this, sealing in a test would overwrite
     the real held-out set — which, once it exists, is unrecoverable."""
-    monkeypatch.setattr(heldout, "SEALED_PATH", tmp_path / "heldout_v1.json.enc")
-    monkeypatch.setattr(heldout, "MANIFEST_PATH", tmp_path / "heldout_v1.manifest.json")
+    monkeypatch.setattr(heldout, "SEALED_PATH", tmp_path / "heldout_v2.json.enc")
+    monkeypatch.setattr(heldout, "MANIFEST_PATH", tmp_path / "heldout_v2.manifest.json")
     return tmp_path
 
 
@@ -268,8 +268,8 @@ def test_sealing_leaves_no_plaintext_beside_the_ciphertext(
     assert written == {
         "authored.json",
         "throwaway.key",
-        "heldout_v1.json.enc",
-        "heldout_v1.manifest.json",
+        "heldout_v2.json.enc",
+        "heldout_v2.manifest.json",
     }
 
 

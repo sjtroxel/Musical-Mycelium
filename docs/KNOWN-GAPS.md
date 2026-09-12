@@ -1,6 +1,6 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-11
+> ## START HERE — where things stand, 2026-09-12
 >
 > **PHASE 7.5 STEP 4 IS DONE — 2026-09-11.** README rewritten against the deployed site; the app footer
 > carries his standard copyright line with the GitHub mark and the report links to the repo. Deployed
@@ -19,11 +19,20 @@
 > `docs/phases/phase-7.6-classical-lineage-IMPLEMENTATION.md`; the plain-English version is
 > `docs/classical-lineage-explained.md`.
 >
-> **NEXT IS PHASE 7.7 `name-resolution`, AND ITS FIRST TASK IS A NEW HELD-OUT SET — his decision
-> 2026-09-11.** The sealed ten were drawn on v0.5.0 and `make heldout-check` now reports
-> `artifact-pin-moved` plus `claims-diverged` on `heldout_v1_004` and `heldout_v1_005`. Nothing was
-> re-sealed or opened. **He draws the new one from his own seed**; an agent may run `heldout-verify`, read
-> `heldout-check`'s codes, and nothing else. Run count restarts at 0 and generalization is **untested** on
+> **PHASE 7.7 `name-resolution` IS UNDER WAY — IMPLEMENTATION doc APPROVED 2026-09-12, and STEP 0 IS
+> DONE.** ~~NEXT IS PHASE 7.7, AND ITS FIRST TASK IS A NEW HELD-OUT SET — his decision 2026-09-11. The
+> sealed ten were drawn on v0.5.0 and `make heldout-check` now reports `artifact-pin-moved` plus
+> `claims-diverged` on `heldout_v1_004` and `heldout_v1_005`.~~ *(Struck 2026-09-12: an instruction that
+> outlived its task, kept per this file's own rule.)* **The new set exists: `heldout_v2`, pinned 0.10.0,
+> 10 cases, 2 refusals, shapes descendants 2 / origins 5 / path 2 / teachers 1, `heldout-verify` matching
+> and `heldout-check` reporting zero findings. Run count 0 — it is run once at the 7.7 freeze, after the
+> live re-baseline.** `heldout_v1` is **retired and deleted from the tree** (ciphertext still in git at
+> `b9072ee`); nothing was re-sealed or opened. **NEXT IS STEP 1**, the guard tests, then step 2's alias
+> index — both free. **He draws any future set from his own seed**; an agent may run `heldout-verify`, read
+> `heldout-check`'s codes, and nothing else.
+> **OWED AND NOT DONE: `README.md:99-102` is now false.** It says the sealed held-out set "was run once, on
+> 2026-08-24, and came back 10 of 10" — that describes the **retired** set, and the set in the repo today
+> has never been run. It is public, recruiter-facing prose, so **he writes the correction**, not an agent. Run count restarts at 0 and generalization is **untested** on
 > this corpus until it is drawn and run at a freeze. Then 7.7's own work: partial names and aliases
 > OFFERED, never resolved. **7.7's close carries the one live re-baseline and the one deploy for both
 > phases** ($2.61 and ~2.4 hours over five runs), because the live suite is ungated today: its bounds were
@@ -121,6 +130,41 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## FINDING — the held-out set is being REPLACED, and the old one is retired, 2026-09-12
+
+**Phase 7.7 step 0, his decisions 2026-09-11 (a new draw) and 2026-09-12 (retire rather than keep two).**
+Phase 7.7's IMPLEMENTATION doc is **APPROVED 2026-09-12**; the code half of step 0 is built and
+`make check` is green. **STEP 0 IS COMPLETE — he drew, sealed, shredded, verified and checked the new set
+on 2026-09-12.** `heldout_v2`, pin **0.10.0**, 10 cases, 2 refusals, shapes descendants 2 / origins 5 /
+path 2 / **teachers 1**; `heldout-verify` matches its manifest and `heldout-check` reports **zero
+findings**. **Run count 0** — it is run once at this phase's freeze, after the live re-baseline (his
+decision 9/12), and generalisation stays **untested** until then. `make check`: **1,722 Python passed, 0
+skipped**, 448 frontend, free gates 4 passed / 0 failed / 2 N/A of six;
+`test_the_committed_sealed_set_matches_its_manifest` now **runs rather than skips**.
+
+- **`heldout_v1` is retired, not kept beside the new set.** Two sealed sets in one directory is a standing
+  confusion surface — an agent checks the wrong one, a report cites the wrong run count — and the v1 set
+  has no job left once a set drawn on the live pin exists. `heldout_v1.json.enc` and
+  `heldout_v1.manifest.json` are deleted from the working tree.
+- **Nothing was destroyed and nothing was opened.** **Git keeps the retired ciphertext permanently**, at
+  `b9072ee` and every earlier commit, so the 2026-08-24 result stays auditable by anyone who needs it.
+  What its manifest said: dataset `heldout_v1`, sealed 2026-08-14, artifact pin **0.5.0**, 10 cases,
+  2 refusals, shapes origins 6 / descendants 2 / path 2, run count **1**. Its result file
+  `eval/results/20260824T120956Z-heldout.json` is **kept** — it records a measurement actually taken.
+- **The old run count does not carry over. `heldout_v2` starts at 0**, and until it is drawn, sealed and
+  run at a freeze, **generalisation is UNTESTED on this corpus — not passed, untested.** Any report
+  saying otherwise is wrong. A skipped `test_the_committed_sealed_set_matches_its_manifest` is that
+  outstanding state, not a passing one.
+- **He draws it from his own seed.** An agent may run `make heldout-verify`, read `make heldout-check`'s
+  case ids and problem codes, and nothing else. `.claude/rules/heldout-set.md` governs.
+- **Three latent bugs were fixed to make the draw honest**, all recorded in
+  `docs/phases/phase-7.7-name-resolution-IMPLEMENTATION.md` §0.1: `heldout_draw._claim` wrote `P737` for
+  every edge, which on a `studied_with` edge is a false citation string sealed permanently;
+  `heldout.check_against_corpus` read influence edges for **every** shape, so a teaching case would have
+  been reported `claims-diverged` while being entirely correct; and the refusal stratum excluded nothing
+  about teaching, which at v0.10.0 makes a drawn refusal answerable through `get_teachers` and its
+  `expected_refusal` false. The draw now carries a teaching stratum (1 of 10, mirroring gold's 5 of 43).
 
 ## FINDING — Mozart is missing because of Wikidata's `mul` labels, 2026-09-11
 
