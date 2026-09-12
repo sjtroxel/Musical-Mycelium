@@ -280,7 +280,10 @@ teaching_path 2, students 1, of 43; 6 refusals. Teaching is **5 of 43** cases, a
   **$2.94 and 2.7 hours**. That is arithmetic on a measured number, not a measurement, and 7.6 changed
   the corpus under it — a larger corpus means longer traversals, so the real figure may come in above
   it. The circuit breaker, not the estimate, is what bounds it.
-- **U3. Whether any held-out case's resolution drifts when the resolver widens.** It should not — nothing
+- **U3 is CLOSED — 2026-09-12, step 6, and it resolves NEGATIVE: nothing drifted.**
+  `make heldout-check` reports "sealed set still agrees with artifact 0.10.0" with no case ids and no
+  problem codes. Nothing was opened and nothing was re-sealed. ~~U3. Whether any held-out case's
+  resolution drifts when the resolver widens.~~ It should not — nothing
   that resolves today resolves differently — but the held-out names are invisible to the stability test
   by design, so the claim is only checkable through `make heldout-check`'s codes at step 6. If it fires,
   that is a finding to report and his decision to rule on, not something to fix by re-drawing.
@@ -757,7 +760,7 @@ it is a demo-quality defect rather than a correctness one.
    `reason` string the frame carries, so it could be softened without touching `refusal_accuracy`.
    Public-facing copy, so his to write if he wants it changed.
 
-### Step 6 — Evals, free tier only, and the held-out check
+### Step 6 — Evals, free tier only, and the held-out check — [done]
 
 The free suite, the new tracked `offer` property, proof that the refusal metrics and all six gate
 definitions are untouched, and then `make heldout-verify` and `make heldout-check` on the **new** set
@@ -765,6 +768,61 @@ after the resolver change (trap 9, U3).
 
 **Done when:** free gates read 4 passed / 0 failed / 2 N/A of six; `heldout-check` is clean or its codes
 are reported to him as a finding.
+
+#### 6.0 As built — what the plan did not know
+
+**Status: done. `make check` green — 1,751 Python passed, 0 skipped, 463 frontend, free gates
+4 passed / 0 FAILED / 2 not applicable of six.** `metrics.OfferedChoices` and `offered_choices`, carried
+through `CaseRun` → `CaseOutcome` → both `SuiteResult` and `Baseline`, printed by `report.py`, and
+asserted by 5 new tests.
+
+**U3 RESOLVES NEGATIVE — nothing drifted.** `make heldout-verify` matches the manifest (10 cases,
+descendants 2 / origins 5 / path 2 / teachers 1) and `make heldout-check` reports
+**"sealed set still agrees with artifact 0.10.0"** — no case ids, no problem codes, nothing to report as
+a finding. Which is what the alias index being off the resolution path predicts, and the only way to
+check it, since the held-out names are invisible to `test_resolution_stability.py` by design.
+**The run count is still 0: a check is not a run.** No case was read.
+
+**THE RUNNER DROPPED THE FRAME FOR ONE WHOLE STEP, AND IT IS THE THIRD TIME.** `runner.py`'s event
+consumer is a `match` with **no catch-all**, so the `Offer` events the loop had been emitting since step
+3 reached the person and never reached the measurement. `CaseRun.announced_contested` records the same
+sentence about `Contested` at phase 6.5 step 4, and `tool_calls` at phase 3 step 3. Three times, same
+file, same mechanism: **a new event type needs an arm in that `match`, and nothing fails when it is
+missing.** Recorded in the new field's own docstring rather than only here.
+
+**FINDING — a gold run cannot produce an offer, so `make eval`'s headline line is all zeros.** Every one
+of the 43 gold case names exact-resolves (§2 measured that), so the free gold suite reports
+`offer: 0 offered over 6 refusals`. Correct, and a metric with no coverage — the shape of
+"N/A counted as a pass" this project refuses elsewhere. **The real free coverage is the adversarial
+harness**, which runs scripted and free on every commit through `tests/test_harness.py`:
+`adv_008` ("metal", 34 candidates, over the cap), `adv_009` ("black", 9) and `adv_020`
+("big band", 2) — **exactly the three cases §2 predicted would be touched, and no others.** A new test
+asserts that set by name, so the coverage disappearing is a failure rather than a quieter suite.
+
+**THE STEP-3 D3 GAP IS NARROWED, NOT CLOSED, AND THE DIFFERENCE MATTERS.** §3.0 recorded that breaking
+D3 — an offer replacing a refusal — was caught by three loop and API tests and by **nothing** in the
+eval suite. It is now caught by **three eval tests as well**: re-breaking it fails
+`test_no_offer_ever_replaced_a_refusal_on_this_run` with `offers_without_refusal=3`,
+`test_every_case_reaches_its_expected_refusal_verdict` (refusals drop 15 → 12, which is the metric
+genuinely moving), and `test_the_committed_baseline_still_matches_a_fresh_run`. **It is still not a
+gate**, because D3 says tracked and this step's own done-when fixes the count at six.
+`test_the_offer_property_did_not_become_a_seventh_gate` asserts `GATE_NAMES` as a literal tuple —
+`.claude/rules/evals.md` forbids writing a gate count in prose because that sentence has been wrong
+once, so the tuple is asserted rather than counted. **Whether `offers_without_refusal` should become a
+seventh gate at step 7 is his call, and it is the one correctness-shaped property here sitting outside
+the gates.**
+
+**The frozen baseline was regenerated, and the diff was proved additive before it was accepted.**
+`test_the_committed_baseline_still_matches_a_fresh_run`'s own guidance is to find out why a number moved
+*before* regenerating. Nothing moved: the sorted diff of
+`datasets/baseline_v0_3_0_local.json` is exactly one new `offer` block and no other line, which is the
+evidence that the regeneration was a field arriving rather than a historical number being rewritten.
+
+**Residual visibility gap, small and recorded:** the offer numbers that are actually interesting live in
+the baseline JSON and in the test, while the line `make eval` prints is the gold run's zeros. That is
+the reverse of the defect `report.py` records about `contested_disclosure` and it is milder — a failing
+test is louder than an unprinted number — but a terminal reader sees zeros and no note that the
+coverage is elsewhere. The report line says so in a comment; it does not say so on screen.
 
 ### Step 7 — The ONE live re-baseline. SPENDS MONEY
 

@@ -318,3 +318,48 @@ def test_the_absent_genre_cases_have_no_subject_and_that_is_data() -> None:
 
     unresolved = [case for case in eval_cases() if case.subject_id is None]
     assert unresolved, "no case has an unresolvable subject; the absent-genre group is missing"
+
+
+def test_the_offer_property_has_real_coverage_on_this_free_run(outcomes: tuple) -> None:
+    """Phase 7.7 step 6. **The adversarial harness is where the `offer` property is actually exercised.**
+
+    A gold run cannot produce an offer — every gold case name exact-resolves — so `make eval`'s gold
+    line reads all zeros. That is correct and it is also a metric with no coverage, which is the shape
+    of "N/A counted as a pass" this project already refuses elsewhere. These three cases are the
+    coverage, and they are exactly the three the phase's §2 predicted would be touched:
+    `adv_008` ("metal", 34 candidates, over the cap), `adv_009` ("black", 9) and `adv_020`
+    ("big band", ambiguous, 2).
+
+    If this drops to zero, either the resolver stopped offering or the cases stopped being unresolvable,
+    and both are findings rather than a quieter suite.
+    """
+    offering = {o.case.case_id: o.offered for o in outcomes if o.offered}
+    assert set(offering) == {"adv_008", "adv_009", "adv_020"}, (
+        "the offer property's only free coverage moved; check the resolver and these three cases"
+    )
+
+    terms = {cid: tuple(x.term for x in offers) for cid, offers in offering.items()}
+    assert terms == {"adv_008": ("metal",), "adv_009": ("black",), "adv_020": ("big band",)}
+
+    over_cap = [x for offers in offering.values() for x in offers if x.total > x.shown]
+    assert len(over_cap) == 1 and over_cap[0].term == "metal", (
+        "D4's all-or-nothing state, exercised"
+    )
+    assert over_cap[0].candidates == () and over_cap[0].total == 34
+
+
+def test_no_offer_ever_replaced_a_refusal_on_this_run(outcomes: tuple) -> None:
+    """D3, measured rather than asserted, on a free run that happens every commit.
+
+    This is the closest thing the suite has to a guard on D3, and it is **not** a gate — `offer` is
+    tracked by decision D3 and `GATE_NAMES` is unchanged. Step 3's as-built records that breaking D3 is
+    caught by three loop and API tests and was caught by nothing in the eval suite; this is that gap
+    narrowed from "nothing" to "a free measurement", not closed.
+    """
+    from musical_mycelium.eval.metrics import offered_choices
+
+    result = offered_choices((o.offered, o.refused) for o in outcomes)
+    assert result.offers_without_refusal == 0
+    assert result.holds
+    # The control: a run where nothing refused would make the above vacuous.
+    assert result.refusals > 0 and result.refusals_with_choices == 3

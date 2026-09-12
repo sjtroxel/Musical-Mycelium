@@ -44,7 +44,35 @@
 > `Frame` union failed `tsc` on a **second** exhaustive switch nobody had mentioned,
 > `web/src/graph/timeline.ts:dwell` — the compile-error-not-silent-drop property paying off, and the
 > reason the type belongs in step 4 rather than step 5. **A separate finding, recorded not fixed:** the
-> `contested` frame has shipped since 6.5 step 4 and `SPEC.md` §6 has never documented it. Three things §3.0 records that a cold session would
+> `contested` frame has shipped since 6.5 step 4 and `SPEC.md` §6 has never documented it.
+>
+> **STEPS 5 AND 6 ARE DONE TOO — 2026-09-12. NEXT IS STEP 7, THE ONE LIVE RE-BASELINE, WHICH SPENDS
+> ABOUT $2.94 AND TAKES ~2.7 HOURS.** `make check` green at **1,751 Python / 463 frontend**, free gates
+> **4 passed / 0 FAILED / 2 N/A of six**. Step 5's hand check ran in the real app over "mozart",
+> "dolly", "r&b", "bach" and "music" with D9's re-ask verified end to end; §5.0 has it.
+> **U3 IS CLOSED AND RESOLVES NEGATIVE:** `make heldout-verify` matches and `make heldout-check` says
+> "sealed set still agrees with artifact 0.10.0" — no case ids, no codes, nothing opened, **run count
+> still 0** (a check is not a run).
+>
+> **Three things a cold session should read in §5.0 and §6.0 rather than rediscover.**
+> **1. `runner.py` dropped the `Offer` frame for a whole step, and it is the THIRD time that file has
+> done this** — its event consumer is a `match` with **no catch-all**, so a new event type is silently
+> unmeasured (`tool_calls` at phase 3 step 3, `Contested` at 6.5 step 4, `Offer` at 7.7 step 6).
+> **2. A gold run cannot produce an offer**, so `make eval`'s `offer` line is all zeros; the property's
+> only free coverage is the adversarial harness on `adv_008`/`adv_009`/`adv_020`, asserted by name in
+> `tests/test_harness.py`. **3. The D3 gap is NARROWED, NOT CLOSED** — breaking "an offer replaces a
+> refusal" now fails three eval tests as well as three loop/API tests, but `offer` is still **not** a
+> gate (D3 says tracked, and `GATE_NAMES` is asserted as a literal six-tuple).
+> **HIS CALL, AND THE ONE WORTH TAKING BEFORE STEP 7:** whether `offers_without_refusal` should become a
+> seventh gate. It is the only correctness-shaped property in this phase sitting outside the gates.
+> **Also open from step 5, both his:** the `bach` offer block is 800px tall and the D4 cap of 25 would
+> make it ~1,400px (layout, not ranking); and the refusal wording "it is not in this graph" now sits
+> directly above "This graph has 5 names like "mozart"", which is `refusal_text`'s prose rather than the
+> frame's `reason`, so it can be softened without touching `refusal_accuracy`. **A pre-existing bug
+> found by the hand check and NOT fixed:** the local stub renders an artist-subject influence answer
+> with **no subject** — " came out of Johann Sebastian Bach." — because it pattern-matches a `"Genre: "`
+> marker (`agent/llm.py:600`) that `ORIGINS_SYNTHESIS_TEMPLATE` does not emit. Reproduced on a direct
+> query with no offer involved; stub-only as far as is verified, and verifying the real path costs money. Three things §3.0 records that a cold session would
 > otherwise rediscover: `graph.memory.Offer` **is** the loop event (no second dataclass, and `asdict`
 > gives D8's payload exactly); `alias_index()` is on the `GraphStore` protocol following
 > `node_by_resource`'s precedent, with the store owning the index and a free function owning the

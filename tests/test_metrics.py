@@ -22,13 +22,20 @@ from musical_mycelium.eval.metrics import (
     citation_resolution,
     edge_groundedness,
     injection_resistance,
+    offered_choices,
     plan_adherence,
     refusal_accuracy,
     traversal_precision,
     traversal_recall,
     verification_mix,
 )
-from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.eval.thresholds import GATE_NAMES
+from musical_mycelium.graph.memory import (
+    Candidate,
+    InMemoryGraphStore,
+    Offer,
+    artifact_directory,
+)
 from musical_mycelium.graph.schema import (
     NODE_KIND_GENRE,
     VERIFICATION_HAND,
@@ -518,3 +525,65 @@ def test_an_empty_gold_path_contributes_nothing_to_a_micro_average() -> None:
     them 100% would have been just as wrong in the other direction."""
     undefined = traversal_precision(["Q1", "Q2"], [])
     assert (undefined.numerator, undefined.denominator) == (0, 0)
+
+
+# --- offered choices (phase 7.7 step 6) -------------------------------------------------------------
+
+
+def _offer(term: str, shown: int, total: int) -> Offer:
+    return Offer(
+        term=term,
+        candidates=tuple(
+            Candidate(f"Q{i}", f"label {i}", "artist", via="label") for i in range(shown)
+        ),
+        total=total,
+        shown=shown,
+    )
+
+
+def test_offered_choices_counts_what_was_offered_and_what_was_capped() -> None:
+    listed = _offer("mozart", shown=5, total=5)
+    capped = _offer("metal", shown=0, total=34)
+    result = offered_choices(
+        [((listed,), True), ((capped,), True), ((), True), ((), False)],
+    )
+    assert result.runs_with_offers == 2
+    assert result.offers == 2
+    assert result.candidates_shown == 5, "a capped offer shows nothing and contributes nothing"
+    assert result.over_cap == 1
+    assert result.refusals == 3
+    assert result.refusals_with_choices == 2
+    assert result.offers_without_refusal == 0
+    assert result.holds
+
+
+def test_an_offer_on_a_run_that_did_not_refuse_is_reported_not_hidden() -> None:
+    """D3's invariant, as a number. An offer accompanies a refusal and never replaces one.
+
+    ``eval.runner`` sets ``refused`` off the ``Refused`` event and ``refusal_accuracy`` was baselined on
+    it, so an offer that suppressed a refusal would silently change what the headline metric measures.
+    This metric makes that visible; it is deliberately **not** gated, per D3.
+    """
+    result = offered_choices([((_offer("mozart", shown=5, total=5),), False)])
+    assert result.offers_without_refusal == 1
+    assert not result.holds
+    assert result.refusals == 0
+
+
+def test_the_offer_property_did_not_become_a_seventh_gate() -> None:
+    """Step 6's other half: the gate definitions are untouched.
+
+    ``GATE_NAMES`` is the authority on what blocks a release — ``.claude/rules/evals.md`` forbids
+    writing a gate count in prose precisely because that sentence has been wrong once already. So this
+    asserts the tuple itself, and that ``offer`` is absent from it.
+    """
+    assert GATE_NAMES == (
+        "edge_groundedness",
+        "citation_resolution",
+        "refusal_accuracy",
+        "injection_resistance",
+        "contested_disclosure",
+        "traversal_recall",
+    )
+    assert "offer" not in GATE_NAMES
+    assert not any("offer" in name for name in GATE_NAMES)

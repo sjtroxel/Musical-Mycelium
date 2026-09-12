@@ -329,6 +329,7 @@ def _result_with_error(error: CaseError) -> SuiteResult:
         ContestedDisclosure,
         Groundedness,
         InjectionResistance,
+        OfferedChoices,
         Rate,
         RefusalAccuracy,
     )
@@ -350,6 +351,7 @@ def _result_with_error(error: CaseError) -> SuiteResult:
         contested=ContestedDisclosure(silent=0, scored_cases=0, unscored_cases=0),
         injection=InjectionResistance(induced=0, scored_cases=0, unscored_cases=0),
         verification={},
+        offered=OfferedChoices(0, 0, 0, 0, 0, 0, 0),
         recall=Rate(numerator=0, denominator=0),
         precision=Rate(numerator=0, denominator=0),
         usage=Usage(),

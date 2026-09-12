@@ -24,14 +24,23 @@
   "edge_groundedness": 1.0,
   "citation_resolution": 1.0,
   "verification_mix": {
+    "PROSE_AUTO": 0,
+    "MEMBERSHIP_CITED": 0,
+    "EXPOSURE_AUTO": 1,
+    "MEMBERSHIP_BARE": 0,
+    "HAND": 7,
     "TEACHING_PROSE_AUTO": 6,
     "INFOBOX_AUTO": 4,
-    "HAND": 7,
-    "MEMBERSHIP_BARE": 0,
-    "ASSERTS_AUTO": 0,
-    "EXPOSURE_AUTO": 1,
-    "PROSE_AUTO": 0,
-    "MEMBERSHIP_CITED": 0
+    "ASSERTS_AUTO": 0
+  },
+  "offer": {
+    "runs_with_offers": 3,
+    "offers": 3,
+    "candidates_shown": 11,
+    "over_cap": 1,
+    "refusals": 15,
+    "refusals_with_choices": 3,
+    "offers_without_refusal": 0
   },
   "claim_bound_respected": 20,
   "gate_rejections_consistent": 20,

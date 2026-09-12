@@ -21,7 +21,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from musical_mycelium.agent.claims import ALLOWED_PREDICATES, Claim
-from musical_mycelium.agent.loop import Done
+from musical_mycelium.agent.loop import Done, Offer
 from musical_mycelium.graph.schema import (
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
@@ -483,6 +483,79 @@ def verification_mix(claims: Iterable[Claim]) -> Mapping[str, int]:
     for claim in claims:
         counts[claim.verification] += 1
     return counts
+
+
+# --- offered choices -------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class OfferedChoices:
+    """What the runs offered a person when a typed name resolved to nothing. Phase 7.7 step 6, D3.
+
+    **Tracked, never gated, and the name deliberately does not echo ``ContestedDisclosure``.** That one
+    asks the same *shape* of question — did the system tell the person what it knew — and it blocks a
+    release. This one does not, by D3, because an offer is a convenience on top of a refusal rather than
+    a correctness property of the answer. The scope doc's "how are offers scored" question is answered
+    by not scoring them.
+
+    **``offers_without_refusal`` is the exception and it must read zero.** D3 says an offer accompanies
+    a refusal and never replaces one, and that is not cosmetic: ``eval.runner`` sets ``refused`` off the
+    ``Refused`` event and ``refusal_accuracy`` was baselined on it, so an offer that suppressed a
+    refusal would silently change what the headline metric measures. It is **reported here and not
+    gated**, which is a real gap rather than an oversight — see this metric's entry in
+    ``docs/KNOWN-GAPS.md``. Until a live run gates it, the guarantee rests on unit tests in
+    ``tests/test_agent_loop.py`` and ``tests/test_api.py``.
+
+    ``over_cap`` counts offers that stated a total and listed nothing, which is D4 working rather than
+    failing: over 25 candidates the honest answer is a count and a request for more of the name.
+    ``refusals_with_choices`` over ``refusals`` is the only number here anyone should read as coverage,
+    and it is a property of the corpus and the queries, never a target — a refusal with no near miss
+    at all is *supposed* to offer nothing.
+    """
+
+    runs_with_offers: int
+    offers: int
+    candidates_shown: int
+    over_cap: int
+    refusals: int
+    refusals_with_choices: int
+    offers_without_refusal: int
+
+    @property
+    def holds(self) -> bool:
+        """D3's invariant. Reported, not gated."""
+        return self.offers_without_refusal == 0
+
+
+def offered_choices(runs: Iterable[tuple[Sequence[Offer], bool]]) -> OfferedChoices:
+    """``(the run's offers, whether it refused)`` per run, the shape ``refusal_accuracy`` uses."""
+    runs_with_offers = offers = shown = over_cap = 0
+    refusals = with_choices = without_refusal = 0
+
+    for offered, refused in runs:
+        if refused:
+            refusals += 1
+        if offered:
+            runs_with_offers += 1
+            if refused:
+                with_choices += 1
+            else:
+                without_refusal += 1
+        for offer in offered:
+            offers += 1
+            shown += offer.shown
+            if offer.total > offer.shown:
+                over_cap += 1
+
+    return OfferedChoices(
+        runs_with_offers=runs_with_offers,
+        offers=offers,
+        candidates_shown=shown,
+        over_cap=over_cap,
+        refusals=refusals,
+        refusals_with_choices=with_choices,
+        offers_without_refusal=without_refusal,
+    )
 
 
 # --- plan adherence --------------------------------------------------------------------------------

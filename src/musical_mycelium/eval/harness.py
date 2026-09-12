@@ -38,16 +38,18 @@ from typing import Any
 
 from musical_mycelium.agent.claims import Claim, Rejection
 from musical_mycelium.agent.llm import LLMResponse, ScriptedLLM, ToolUse, Usage
-from musical_mycelium.agent.loop import Done
+from musical_mycelium.agent.loop import Done, Offer
 from musical_mycelium.agent.plan import Plan
 from musical_mycelium.agent.tools import ToolRegistry
 from musical_mycelium.eval import runner
 from musical_mycelium.eval.metrics import (
     InjectionResistance,
+    OfferedChoices,
     RefusalAccuracy,
     citation_resolution,
     edge_groundedness,
     injection_resistance,
+    offered_choices,
     refusal_accuracy,
     verification_mix,
 )
@@ -354,6 +356,10 @@ class CaseOutcome:
     plan: Plan
     done: Done
     visited: tuple[str, ...]
+    #: Choices this run put in front of a person. Phase 7.7 step 6, and carried here for the same
+    #: reason ``announced_contested`` is carried in ``CaseRun``: a metric cannot exist over a frame the
+    #: record drops.
+    offered: tuple[Offer, ...]
     prose: str
     #: The node the case is about, when it resolved. ``None`` is a real answer: it is what the
     #: absent-genre cases are *for*, and the node-shaped slices report it as ``unknown`` rather than
@@ -450,6 +456,7 @@ def run_case(
         plan=case_run.plan,
         done=case_run.done,
         visited=case_run.visited,
+        offered=case_run.offered,
         prose=case_run.prose,
         subject=subject,
         premise_attempted=attack.premise is not None,
@@ -498,6 +505,9 @@ class Baseline:
     verification: Mapping[str, int]
     claim_bound_respected: int
     gate_rejections_consistent: int
+    #: What the runs offered when a name resolved to nothing. **Tracked, never gated** (D3).
+    #: Phase 7.7 step 6.
+    offered: OfferedChoices
     plan_divergence: Mapping[str, int]
     slices: Sequence[SliceReport] = field(default_factory=tuple)
 
@@ -533,6 +543,15 @@ class Baseline:
             "edge_groundedness": self.groundedness_score,
             "citation_resolution": self.citation_score,
             "verification_mix": dict(self.verification),
+            "offer": {
+                "runs_with_offers": self.offered.runs_with_offers,
+                "offers": self.offered.offers,
+                "candidates_shown": self.offered.candidates_shown,
+                "over_cap": self.offered.over_cap,
+                "refusals": self.offered.refusals,
+                "refusals_with_choices": self.offered.refusals_with_choices,
+                "offers_without_refusal": self.offered.offers_without_refusal,
+            },
             "claim_bound_respected": self.claim_bound_respected,
             "gate_rejections_consistent": self.gate_rejections_consistent,
             "plan_divergence": dict(self.plan_divergence),
@@ -568,6 +587,7 @@ def measure(outcomes: Sequence[CaseOutcome], store: GraphStore) -> Baseline:
         groundedness_score=edge_groundedness(all_claims, store).score,
         citation_score=citation_resolution(all_claims, store).score,
         verification=verification_mix(all_claims),
+        offered=offered_choices((o.offered, o.refused) for o in outcomes),
         claim_bound_respected=sum(1 for o in outcomes if o.within_claim_bound),
         gate_rejections_consistent=sum(1 for o in outcomes if o.gate_rejections_seen),
         plan_divergence=divergence,

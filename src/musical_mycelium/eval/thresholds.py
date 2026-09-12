@@ -305,6 +305,24 @@ def _refusal_gate(result: SuiteResult, bounds: Mapping[str, Any]) -> GateResult:
     **The case is still in the dataset and still scored.** It runs, it counts in ``cases_correct``, it
     appears in every slice, and its failure stays visible in the report. What it loses is a vote on
     whether the build goes red.
+
+    **WHAT THIS GATE DEPENDS ON AND CANNOT SEE — phase 7.7 step 6, his decision 2026-09-12.**
+    ``refused`` is set by ``eval.runner`` off the loop's ``Refused`` event and nothing else. So anything
+    that stops that event being emitted does not fail this gate — it silently changes what this gate
+    *measures*, which is worse, because the number stays plausible. The live case is D3: an ``offer``
+    accompanies a refusal and never replaces one. If an offer ever suppressed a ``Refused``, the
+    suppressed cases would read as answers, ``expected_refusals`` would stop matching, and the gate
+    would report a refusal regression that is really a reporting change.
+
+    **The measurement for that lives in the tracked ``offer`` property**
+    (``metrics.OfferedChoices.offers_without_refusal``, which must read 0), and it is **deliberately
+    not a seventh gate.** Two reasons, and the second is the real one: the free run scores zero offers
+    because every gold name exact-resolves, so a gate there would be a third ``N/A``; and the property
+    cannot vary by run at all — offers are emitted structurally, immediately before ``Refused``, so only
+    a code change can break it and a code change is a unit test's job
+    (``tests/test_agent_loop.py``, ``tests/test_harness.py``). A gate measures what a model might do.
+    **If offers ever become something the model chooses rather than something the loop emits, that
+    reasoning expires and this becomes gate-shaped.**
     """
     name = "refusal_accuracy"
     bound = bounds.get(name)

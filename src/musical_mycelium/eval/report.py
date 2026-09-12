@@ -189,6 +189,21 @@ def _metric_lines(result: SuiteResult) -> list[str]:
             marked,
         )
     )
+    # Phase 7.7 step 6, and printed for the reason the comment above gives about
+    # `contested_disclosure`: a metric in the JSON and invisible in the terminal is a metric nobody
+    # checks. **On a gold run this reads all zeros and that is correct rather than broken** -- every
+    # gold case name exact-resolves, so no gold run can produce an offer. The property's real coverage
+    # is the adversarial harness (adv_008, adv_009, adv_020), where `tests/test_harness.py` asserts it.
+    lines.append(
+        _line(
+            "offer",
+            f"{result.offered.offers} offered over {result.offered.refusals} refusals, "
+            f"{result.offered.over_cap} over the cap, "
+            f"{result.offered.offers_without_refusal} replaced a refusal (must be 0; NOT gated)",
+            result,
+            marked,
+        )
+    )
     lines.append(
         _line(
             "verification_mix",

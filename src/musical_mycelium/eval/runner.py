@@ -33,6 +33,7 @@ from musical_mycelium.agent.loop import (
     ClaimRejected,
     Contested,
     Done,
+    Offer,
     PathWalked,
     Planned,
     Refused,
@@ -80,6 +81,14 @@ class CaseRun:
     #: ``tool_calls`` until step 3. **Announced, not crossed:** whether a pair was crossed is a
     #: property of the approved claims and is derived in ``graph/``; this is what the run actually said.
     announced_contested: tuple[Contested, ...]
+    #: Choices this run put in front of a person, in the order the loop announced them. Recorded
+    #: 2026-09-12, phase 7.7 step 6, and **this record dropped them for one step**: the loop emitted
+    #: ``Offer`` from step 3 and the ``match`` above had no arm for it, so the frames went to the
+    #: person and never to the measurement. That is the third time in this file's history -- the same
+    #: sentence appears above about ``Contested`` at step 4 and about ``tool_calls`` at step 3. **A new
+    #: event type needs an arm here, and the pattern is a `match` with no catch-all, so nothing fails
+    #: when it is missing.**
+    offered: tuple[Offer, ...]
     refused: bool
     #: Why, when it refused. Empty otherwise. Refusal is correct behaviour, not an error state.
     refusal_reason: str
@@ -146,6 +155,7 @@ def run_case(
     refused = False
     refusal_reason = ""
     announced: list[Contested] = []
+    offered: list[Offer] = []
     prose_parts: list[str] = []
     done: Done | None = None
 
@@ -173,6 +183,8 @@ def run_case(
                 visited = event.node_ids
             case Contested():
                 announced.append(event)
+            case Offer():
+                offered.append(event)
             case Token():
                 prose_parts.append(event.text)
             case Refused():
@@ -192,6 +204,7 @@ def run_case(
         approved=tuple(approved),
         rejections=tuple(rejections),
         visited=visited,
+        offered=tuple(offered),
         refused=refused,
         refusal_reason=refusal_reason,
         announced_contested=tuple(announced),
