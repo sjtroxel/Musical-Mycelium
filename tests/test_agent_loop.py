@@ -49,6 +49,7 @@ from musical_mycelium.agent.loop import (
     ClaimRejected,
     Contested,
     Done,
+    Offer,
     PathWalked,
     Planned,
     Refused,
@@ -74,7 +75,7 @@ from musical_mycelium.agent.tools import (
     TraceLineage,
     default_registry,
 )
-from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+from musical_mycelium.graph.memory import Candidate, InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
@@ -2444,3 +2445,149 @@ def test_an_unaligned_dbpedia_uri_still_resolves_to_nothing(store: InMemoryGraph
     assert result.content["resolvable"] is False
     assert result.content["license"] == "CC BY-SA 3.0 (DBpedia)"
     assert "entity_id" not in result.content
+
+
+# --- offers (phase 7.7 step 3) ----------------------------------------------------------------------
+
+
+def test_an_offer_run_refuses_and_offers_and_approves_nothing(store: InMemoryGraphStore) -> None:
+    """Step 3's "done when", end to end through the real registry.
+
+    "mozart" reaches three Mozarts by label and two more by alias, and exact-matches none of them. So
+    the run refuses — with the reason it would have carried before offers existed — and hands the
+    person five choices. D3: beside the refusal, never instead of it.
+    """
+    events = list(
+        run(
+            "Where did mozart come from?",
+            store=store,
+            llm=build_llm("local"),
+            registry=default_registry(store),
+        )
+    )
+    offers = [e for e in events if isinstance(e, Offer)]
+    assert len(offers) == 1
+    assert offers[0].term == "mozart"
+    assert offers[0].total == offers[0].shown == 5
+    assert {c.label for c in offers[0].candidates} >= {"Wolfgang Amadeus Mozart", "Timbaland"}
+
+    refusal = next(e for e in events if isinstance(e, Refused))
+    assert refusal.reason == REASON_NOT_IN_GRAPH, "the refusal reason must not move"
+    assert not [e for e in events if isinstance(e, ClaimApproved)], "an offer is not a claim"
+
+    names = [type(e).__name__ for e in events]
+    assert names.index("Offer") < names.index("Refused"), (
+        "a client that commits its refusal at frame time must already hold the choices"
+    )
+    assert names.index("Offer") < names.index("Token"), "offers precede the first prose token"
+
+
+def test_an_unknown_name_still_refuses_with_no_offer_frame(store: InMemoryGraphStore) -> None:
+    """The no-noise case. Nothing was found, so there is nothing to choose between, so no frame."""
+    events = list(
+        run(
+            "Where did zzzznotarealgenre come from?",
+            store=store,
+            llm=build_llm("local"),
+            registry=default_registry(store),
+        )
+    )
+    assert not [e for e in events if isinstance(e, Offer)]
+    assert next(e for e in events if isinstance(e, Refused)).reason == REASON_NOT_IN_GRAPH
+
+
+def test_an_over_cap_offer_states_its_total_and_shows_nothing(store: InMemoryGraphStore) -> None:
+    """D4 reaching the wire. 34 genres contain the word "metal"; none are listed and the count is."""
+    events = list(
+        run(
+            "Where did metal come from?",
+            store=store,
+            llm=build_llm("local"),
+            registry=default_registry(store),
+        )
+    )
+    offer = next(e for e in events if isinstance(e, Offer))
+    assert offer.total == 34 and offer.shown == 0 and offer.candidates == ()
+
+
+def test_the_offer_harvest_is_generic_and_not_about_resolve_node(
+    store: InMemoryGraphStore,
+) -> None:
+    """Invariant 4, proved **behaviourally** rather than by grepping the loop for a tool name.
+
+    A grep would be the wrong test twice over: ``loop.py`` legitimately names ``resolve_node`` in a
+    comment about keeping tool names out of the system prompt, and a loop could name no tool while
+    still branching on one. So the proof is a tool the loop has never heard of, named nothing like
+    ``resolve_node``, whose offers reach the frame anyway — exactly as ``visited`` and ``chain`` do.
+    """
+
+    class Bewildered:
+        name = "bewildered"
+        description = "Resolves nothing and offers one choice."
+
+        def input_schema(self) -> dict[str, Any]:
+            return {"type": "object", "properties": {}}
+
+        def __call__(self, **kwargs: Any) -> ToolResult:
+            return ToolResult(
+                content={"node_id": None, "reason": "not in this graph"},
+                offers=(
+                    Offer(
+                        term="whatsit",
+                        candidates=(
+                            Candidate("Q1", "Whatsit", "genre", via="alias", alias="the whatsit"),
+                        ),
+                        total=1,
+                        shown=1,
+                    ),
+                ),
+            )
+
+    llm = ScriptedLLM(
+        [
+            plan_turn("lineage", "bewildered"),
+            LLMResponse(
+                tool_uses=(ToolUse(id="t1", name="bewildered", arguments={}),),
+                stop_reason="tool_use",
+            ),
+            LLMResponse(text="done"),
+        ]
+    )
+    events = list(run("anything", store=store, llm=llm, registry=ToolRegistry([Bewildered()])))
+
+    offer = next(e for e in events if isinstance(e, Offer))
+    assert offer.term == "whatsit"
+    assert offer.candidates[0].via == "alias" and offer.candidates[0].alias == "the whatsit"
+    assert isinstance(next(e for e in events if isinstance(e, Refused)), Refused)
+
+
+def test_the_same_term_offered_twice_is_announced_once(store: InMemoryGraphStore) -> None:
+    """Deduplicated the way ``Contested`` is: a path query that resolves one endpoint twice must not
+    tell a person about the same ambiguity twice, which would read as two different ambiguities."""
+
+    class Twice:
+        name = "twice"
+        description = "Offers the same term on every call."
+
+        def input_schema(self) -> dict[str, Any]:
+            return {"type": "object", "properties": {}}
+
+        def __call__(self, **kwargs: Any) -> ToolResult:
+            same = Offer(term="Mozart", candidates=(), total=7, shown=0)
+            other = Offer(term="  mozart  ", candidates=(), total=7, shown=0)
+            return ToolResult(content={}, offers=(same, other))
+
+    llm = ScriptedLLM(
+        [
+            plan_turn("lineage", "twice"),
+            LLMResponse(
+                tool_uses=(ToolUse(id="t1", name="twice", arguments={}),),
+                stop_reason="tool_use",
+            ),
+            LLMResponse(text="done"),
+        ]
+    )
+    events = list(run("anything", store=store, llm=llm, registry=ToolRegistry([Twice()])))
+    offers = [e for e in events if isinstance(e, Offer)]
+    assert len(offers) == 1, "case and surrounding space are the same question"
+    assert offers[0].term == "Mozart", "the first spelling the run asked about is the one shown"

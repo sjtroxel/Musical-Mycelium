@@ -13,6 +13,7 @@ direction rather than hard-coding the one direction v0.1 walks.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
@@ -180,6 +181,21 @@ class GraphStore(Protocol):
         **This is not ``verification`` and must never be collapsed into it.** ``verification`` says how
         strongly ONE source was checked; this says whether a second source contradicts it. A
         corroborated ``PROSE_AUTO`` edge is not thereby a ``HAND`` edge.
+        """
+        ...
+
+    def alias_index(self) -> Mapping[str, list[tuple[Node, str]]]:
+        """Normalised alias text -> the nodes holding it, with each alias as its source wrote it.
+
+        *(Added 2026-09-12, phase 7.7 step 2.)* On the protocol for the same reason
+        ``node_by_resource`` is: answering it needs an index the store owns, and a caller that scanned
+        every node per query would walk 3,628 of them to offer one choice.
+
+        **Nothing on the resolution path may consult this.** ``search`` and ``exact_matches`` see
+        labels only, and that is what makes "an alias can never resolve anything" a property of the
+        code's shape rather than of a prompt — 37 aliases in this corpus equal a *different* node's
+        label and 27 alias keys are claimed by two or more nodes. ``graph.memory.offer_candidates`` is
+        the only intended reader, and what it produces is a choice for a person, never a resolution.
         """
         ...
 

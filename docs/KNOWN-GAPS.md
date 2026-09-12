@@ -31,7 +31,19 @@
 > ~~NEXT IS STEP 1, the guard tests, then step 2's alias index — both free.~~ Step 1: five guards plus
 > `tests/candidate_baseline_v0_10_0.json`, written once. Step 2: the alias index, `offer_candidates`,
 > the D4 cap, D5 and D7. `make check` green at **1,737 Python / 448 frontend**, free gates 4 / 0 / 2
-> N/A. `RESOLUTION_CHANGES` still empty. **NEXT IS STEP 3**, `ToolResult.offers` and the loop.
+> N/A. `RESOLUTION_CHANGES` still empty. **STEP 3 IS DONE TOO — 2026-09-12.** `ToolResult.offers`,
+> `ResolveNode` on both refusal paths, a generic harvest in the loop, and the `offer` event emitted
+> before `Refused` at both refusal sites. `make check` green at **1,746 Python / 448 frontend**.
+> **NEXT IS STEP 4**, the wire contract. Three things §3.0 records that a cold session would
+> otherwise rediscover: `graph.memory.Offer` **is** the loop event (no second dataclass, and `asdict`
+> gives D8's payload exactly); `alias_index()` is on the `GraphStore` protocol following
+> `node_by_resource`'s precedent, with the store owning the index and a free function owning the
+> policy; and **one line of step 4 landed early on purpose** — `render` raises `KeyError` on an
+> unnamed event, so the `EVENT_NAMES` entry shipped with the event rather than leaving a window where
+> "mozart" returned a 500. **A REAL GAP, recorded rather than closed:** breaking D3 so an offer
+> replaces a refusal is caught by three loop and API tests and **not** by the eval suite or the
+> adversarial dataset test — the free run is gold-only and scripted, and the dataset test only
+> re-reads resolver content. Do not assume the gate protects D3 before step 7's live re-baseline.
 > Two things a cold session should read in `phase-7.7-name-resolution-IMPLEMENTATION.md` rather than
 > rediscover: **§1.0** — §2's "54 aliases contain non-Latin characters" does **not** reproduce (measured:
 > 28 non-Latin script, 518 non-ASCII, 47 keeping a non-alphanumeric through `normalise`), and the

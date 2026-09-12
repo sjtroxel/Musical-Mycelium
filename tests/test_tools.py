@@ -21,6 +21,7 @@ from musical_mycelium.agent.tools import (
     CorpusCoverage,
     DescribeNode,
     GetDescendants,
+    ResolveNode,
     ResolveSource,
     default_registry,
 )
@@ -332,3 +333,72 @@ def test_default_registry_still_takes_only_a_store() -> None:
 
     parameters = list(inspect.signature(default_registry).parameters)
     assert parameters == ["store"]
+
+
+# --- resolve_node's offers (phase 7.7 step 3) -------------------------------------------------------
+
+
+def test_resolve_node_offers_on_both_refusal_paths_and_neither_success_path(
+    store: InMemoryGraphStore,
+) -> None:
+    """An unresolved name comes back with choices for a person; a resolved one comes back with none.
+
+    The two refusal paths are different facts and both need a way forward: "mozart" has candidates but
+    no exact label match, and "Mozart Timadeas" is nobody's label at all — it is Timbaland's alias, so
+    ``search`` finds nothing while the alias index finds him.
+    """
+    no_exact = ResolveNode(store)(name="mozart")
+    assert no_exact.content["node_id"] is None
+    assert len(no_exact.offers) == 1
+    assert no_exact.offers[0].term == "mozart"
+    assert no_exact.offers[0].total == 5
+
+    not_in_graph = ResolveNode(store)(name="Mozart Timadeas")
+    assert not_in_graph.content == {"node_id": None, "reason": "not in this graph"}
+    assert len(not_in_graph.offers) == 1
+    assert {c.label for c in not_in_graph.offers[0].candidates} == {"Timbaland"}
+
+    resolved = ResolveNode(store)(name="Roy Orbison")
+    assert resolved.content["node_id"] is not None
+    assert resolved.offers == (), "a resolved name has nothing to choose between"
+
+
+def test_the_three_refusal_reasons_are_byte_identical_with_offers_attached(
+    store: InMemoryGraphStore,
+) -> None:
+    """Step 3's "done when": the reasons are unchanged.
+
+    The model's view of a refusal must not move, because ``eval.runner`` reads ``refused`` off the
+    loop's event and ``refusal_accuracy`` was baselined on these strings. An offer is addressed to the
+    person on the machinery field; the ``content`` dictionary is exactly what it was before.
+    ``test_adversarial_set.py`` re-reads the same strings for all 22 adversarial cases.
+    """
+    assert ResolveNode(store)(name="zzzznotarealgenre").content == {
+        "node_id": None,
+        "reason": "not in this graph",
+    }
+    no_exact = ResolveNode(store)(name="mozart").content
+    assert no_exact["reason"] == "no exact match"
+    assert no_exact["did_you_mean"] == [
+        "Leopold Mozart",
+        "Wolfgang Amadeus Mozart",
+        "Franz Xaver Wolfgang Mozart",
+    ]
+    ambiguous = ResolveNode(store)(name="big band").content
+    assert ambiguous["reason"] == "ambiguous"
+    assert ambiguous["did_you_mean"] == ["big band", "big band music"]
+
+
+def test_an_empty_offer_is_not_attached_at_all(store: InMemoryGraphStore) -> None:
+    """No candidates means no frame. An empty offer beside a refusal is noise to read and dismiss.
+
+    The over-cap case is the deliberate opposite: no candidates are shown and the offer is still
+    attached, because "34 genres contain the word metal, say more" answers what was asked.
+    """
+    assert ResolveNode(store)(name="zzzznotarealgenre").offers == ()
+    assert ResolveNode(store)(name="x").offers == (), "D5 rejects it, so there is nothing to offer"
+
+    over_cap = ResolveNode(store)(name="metal").offers
+    assert len(over_cap) == 1
+    assert over_cap[0].total == 34 and over_cap[0].shown == 0
+    assert over_cap[0].candidates == ()

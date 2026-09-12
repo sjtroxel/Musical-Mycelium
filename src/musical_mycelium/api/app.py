@@ -35,6 +35,7 @@ from musical_mycelium.agent.loop import (
     Contested,
     Done,
     Event,
+    Offer,
     PathWalked,
     Planned,
     Refused,
@@ -72,6 +73,12 @@ EVENT_NAMES: dict[type, str] = {
     # generic over `asdict`, which walks the nested `ContestedPair` and its two `Edge`s unaided. A frame
     # needing a handler here would mean `api` had grown logic.
     Contested: "contested",
+    # Phase 7.7 step 3, and the same one line for the same reason: `asdict` walks the nested
+    # `Candidate` tuple unaided. Present from step 3 rather than step 4 because `render` raises
+    # `KeyError` on an event type it has no name for -- leaving it out would mean a visitor typing
+    # "mozart" got a 500 instead of a choice, in the window between the two steps. Step 4 owns the
+    # CONTRACT: the payload's shape in `SPEC.md`, and the frontend types.
+    Offer: "offer",
     Token: "token",
     Refused: "refused",
     Done: "done",

@@ -552,7 +552,7 @@ candidates for any term, including terms that resolve cleanly (`roy orbison` ret
 an offer accompanies a refusal and never replaces one — is the loop's to enforce, and putting it here
 would be a second copy of a decision that belongs in one place.
 
-### Step 3 — `ToolResult.offers`, the tool, and the loop
+### Step 3 — `ToolResult.offers`, the tool, and the loop — [done]
 
 `agent/tools.py`: `ResolveNode` populates `offers` when nothing resolved. `agent/loop.py`: a generic
 harvest and an `Offer` event emitted beside `Refused`, per D3. No tool-specific branch, no read of the
@@ -563,6 +563,73 @@ proved **behaviourally** by a fake tool in the test registry that is not `resolv
 still reach the frame (a grep for the tool name would be the wrong test — `loop.py:122` legitimately names
 it in a comment about keeping tool names out of the system prompt); the three refusal reasons are
 unchanged.
+
+#### 3.0 As built — what the plan did not know
+
+**Status: done. `make check` green — 1,746 Python passed, 0 skipped, 448 frontend, free gates 4 / 0 /
+2 N/A of six.** Nine new tests across `test_tools.py`, `test_agent_loop.py` and `test_api.py`.
+All three "done when" clauses hold: `Where did mozart come from?` emits `offer` (term `mozart`, total 5,
+shown 5) then `refused` (`REASON_NOT_IN_GRAPH`) and approves zero claims; two fake tools named
+`bewildered` and `twice` prove the harvest behaviourally; and the three `ResolveNode` refusal reasons
+plus their `did_you_mean` lists are byte-identical, which `test_adversarial_set.py` independently
+re-reads for all 22 adversarial cases.
+
+**`graph.memory.Offer` IS the loop event — no second dataclass.** Adding an `Offered` event with the
+same four fields would have duplicated the shape, and this codebase's standing objection to a second
+copy applies to shapes as much as to rules. `asdict(offer)` is then D8's payload exactly
+(`{term, candidates, total, shown}`, each candidate `{node_id, label, kind, via, alias}`) with no
+flattening anywhere. Precedent: `Contested` already carries `ContestedPair` from `graph/`, so graph
+types crossing into the event vocabulary is established.
+
+**`alias_index()` went on the `GraphStore` protocol, following `node_by_resource`'s precedent.**
+`offer_candidates` now takes `GraphStore` rather than the concrete store, because `ResolveNode.store`
+is typed as the protocol. The split is deliberate and mirrors one that already exists: the store owns
+the **index** (`alias_index`, like `search`) and a free function owns the **policy**
+(`offer_candidates`, like `exact_matches`). Putting `offer_candidates` on the protocol instead would
+make every future backend reimplement D4, D5 and D7 — a second copy of the rule, in the seam.
+`InMemoryGraphStore` is still the only implementation, and `test_graph_store.py`'s
+`isinstance(store, GraphStore)` still passes.
+
+**Offers are emitted BEFORE `Refused`, at BOTH refusal sites.** Before, for the reason the `Contested`
+emission gives: a client that commits its refusal at frame time must already hold the choices. Both
+sites, because a run that resolved one endpoint, failed the other and approved claims forming no single
+lineage is exactly a run where naming the unresolved term helps — and gating on which refusal a person
+happened to hit would be behaviour nobody could predict.
+
+**`_offer_for` emits when any candidate was found, and that is two different rules in one line.**
+`total == 0` attaches nothing: a genuinely unknown name and a D5-rejected single character both produce
+an empty offer, and an empty offer beside a refusal is noise a person reads and dismisses. `total` over
+the D4 cap attaches with **no candidates and the true count**, because "34 genres contain the word
+metal, say more" answers what was asked and silence would not. Both are tested.
+
+**The dedup is keyed on the stripped, case-folded term, NOT on `normalise`.** Borrowing the resolver's
+fold here would quietly make "R&B" and "rb" the same *question* when what they are is the same answer,
+and the resolution rule has one home. Same reasoning as the `Contested` pair dedup, which exists
+because a model may resolve one name on two turns.
+
+**SCOPE BLEED, declared: one line of step 4 landed in step 3.** `render` does `EVENT_NAMES[type(event)]`
+and raises `KeyError` on an unnamed event, so shipping the event without the `EVENT_NAMES` entry would
+have left a window where a visitor typing "mozart" got a 500 instead of a choice. The entry and a guard
+test (`test_an_offer_frame_renders_without_a_handler`) are here; **step 4 still owns the contract** —
+`SPEC.md` §6, the payload's documented shape, and the frontend types. Trap 12 held exactly: one line,
+no handler, `asdict` walked the nested `Candidate` tuple unaided.
+
+**Verified by deliberate breakage, and one result is a gap worth knowing.**
+- *Invariant 4* — making the loop branch on `use.name == "resolve_node"` fails the two fake-tool tests.
+  A grep would not have caught it, and these do, which is what the done-when asked for.
+- *D3* — making the offer replace the refusal fails three tests.
+- **`test_adversarial_set.py` and the eval suite do NOT catch the D3 break, and nobody should assume
+  they would.** Trap 7 is right that three adversarial cases would flip if an offer replaced a refusal,
+  but the *free* run is gold-only and scripted and the adversarial dataset test only re-reads resolver
+  content, so neither exercises a refusing run on an offer-producing name. **D3 rests on the three loop
+  and API tests above until step 7's live re-baseline.** Step 6 should size the `offer` tracked
+  property with that in mind.
+
+**One test-authoring slip, corrected from measurement:** the `big band` `did_you_mean` order was
+written as `["big band music", "big band"]` from recollection of earlier output and is
+`["big band", "big band music"]`. Caught immediately by the test itself. Recorded because the whole
+argument for step 1 was that counts and orders get remembered wrongly, and this is the same failure at
+the smallest possible scale.
 
 ### Step 4 — The wire contract
 

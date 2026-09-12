@@ -268,3 +268,25 @@ def test_api_module_does_not_import_ingest_or_reimplement_the_loop() -> None:
 
     for forbidden in ("musical_mycelium.ingest", "gate(", ".neighbors(", "Claim("):
         assert forbidden not in source, f"api/app.py contains logic it should delegate: {forbidden}"
+
+
+def test_an_offer_frame_renders_without_a_handler(client: TestClient) -> None:
+    """Phase 7.7 step 3. ``render`` raises ``KeyError`` on an event type it has no name for, so the
+    ``EVENT_NAMES`` entry landed with the event rather than with step 4's contract — without it a
+    visitor typing "mozart" would have received a 500 instead of a choice.
+
+    Step 4 owns the payload's *contract*: its shape in ``SPEC.md`` and the frontend types. What this
+    asserts is only that the frame reaches the wire at all, and that ``asdict`` walked the nested
+    ``Candidate`` tuple unaided, the way it already walks ``Plan`` and ``ContestedPair``.
+    """
+    events = frames(client.get("/lineage", params={"q": "Where did mozart come from?"}).text)
+    names = [name for name, _ in events]
+    assert "offer" in names
+    assert names.index("offer") < names.index("refused")
+
+    payload = next(body for name, body in events if name == "offer")
+    assert payload["term"] == "mozart"
+    assert payload["total"] == 5 and payload["shown"] == 5
+    assert {c["label"] for c in payload["candidates"]} >= {"Wolfgang Amadeus Mozart", "Timbaland"}
+    noise = next(c for c in payload["candidates"] if c["label"] == "Timbaland")
+    assert noise["via"] == "alias" and noise["alias"] == "Mozart Timadeas"

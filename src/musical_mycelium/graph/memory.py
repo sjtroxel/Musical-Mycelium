@@ -152,7 +152,7 @@ class Offer:
         return self.total > OFFER_CAP
 
 
-def offer_candidates(store: InMemoryGraphStore, name: str) -> Offer:
+def offer_candidates(store: GraphStore, name: str) -> Offer:
     """Every node a typed name could plausibly mean, as choices for a person — never a resolution.
 
     Three ways in, and all three are whole-word (``_contains_words``, D10 — one whole-word rule in the

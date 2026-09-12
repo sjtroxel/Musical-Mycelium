@@ -70,7 +70,7 @@ from musical_mycelium.agent.llm import (
 from musical_mycelium.agent.plan import Plan, parse_plan, planning_prompt
 from musical_mycelium.agent.tools import ToolRegistry
 from musical_mycelium.graph.corroboration import ContestedPair
-from musical_mycelium.graph.memory import resolve_exact
+from musical_mycelium.graph.memory import Offer, resolve_exact
 from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
@@ -405,6 +405,7 @@ Event = (
     | ClaimRejected
     | PathWalked
     | Contested
+    | Offer
     | Token
     | Refused
     | Done
@@ -981,6 +982,26 @@ REASON_RUN_FOUND_NONE = (
 REASON_NO_SINGLE_LINEAGE = "the sourced relationships it found describe no single lineage"
 
 
+def _announce_offers(offers: Iterable[Offer]) -> Iterator[Offer]:
+    """Each distinct term once, in the order the run first asked about it. *(Phase 7.7 step 3.)*
+
+    Deduplicated for the reason the ``Contested`` announcement is deduplicated: a model may resolve the
+    same name on two turns — a path query that retries one endpoint does exactly that — and telling a
+    person twice that "mozart" is ambiguous reads as two different ambiguities.
+
+    Keyed on the stripped, case-folded term rather than on ``normalise``. Deliberately: this is a
+    presentation dedup, and borrowing the resolver's fold here would quietly make "R&B" and "rb" the
+    same *question* when what they are is the same answer. The resolution rule has one home.
+    """
+    seen: set[str] = set()
+    for offer in offers:
+        key = offer.term.strip().casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        yield offer
+
+
 def _graph_holds_lineage(store: GraphStore, node_ids: Iterable[str]) -> bool:
     """Whether the corpus holds ANY sourced influence or teaching edge touching any node this run
     visited.
@@ -1053,6 +1074,7 @@ def run(
     proposals: list[ClaimProposal] = []
     visited: list[str] = []
     chain: tuple[str, ...] = ()
+    offers: list[Offer] = []
     executed = 0
 
     # Its own call, with its own system prompt and **no tool config**: the planning turn is asked for
@@ -1098,6 +1120,11 @@ def run(
             yield ToolCalled(name=use.name, arguments=use.arguments, is_error=result.is_error)
 
             proposals.extend(result.proposals)
+            # Harvested exactly as ``proposals`` is, and for the same reason: the loop must not learn
+            # which tool produces offers (invariant 4). Collected here and emitted below rather than
+            # yielded inline, because an offer belongs beside the refusal it accompanies rather than
+            # in the middle of a traversal that may still succeed on a later turn.
+            offers.extend(result.offers)
             # The longest chain any single tool asserted. Read generically off ``ToolResult`` — the loop
             # does not know which tool sets it, which is what keeps invariant 4 intact while the answer
             # gains an ordering. It is a *candidate* only: nothing is narrated as a chain until the gate
@@ -1176,6 +1203,11 @@ def run(
         else:
             reason, graph_is_empty = REASON_NO_LINEAGE, True
         text = refusal_text(query, reason, graph_is_empty=graph_is_empty)
+        # **D3: beside the refusal, never instead of it.** ``Refused`` is still emitted, with the same
+        # reason it would have carried before offers existed, so ``eval.runner`` still sets ``refused``
+        # and ``refusal_accuracy`` still measures the quantity it was baselined on. Before rather than
+        # after, so a client that commits its refusal at frame time already holds the choices.
+        yield from _announce_offers(offers)
         yield Refused(reason=reason, query=query)
         yield Token(text)
     else:
@@ -1206,6 +1238,11 @@ def run(
             # itself and asserted an emptiness contradicted two lines up by `decision.approved`.
             reason = REASON_NO_SINGLE_LINEAGE
             text = refusal_text(query, reason, graph_is_empty=False)
+            # The second refusal path gets the offers too. A run that resolved one endpoint, failed the
+            # other and approved claims that form no single lineage is precisely a run where naming the
+            # unresolved term helps, and withholding it here would make the behaviour depend on which
+            # refusal a person happened to hit.
+            yield from _announce_offers(offers)
             yield Refused(reason=reason, query=query)
             yield Token(text)
         else:

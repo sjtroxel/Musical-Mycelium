@@ -29,7 +29,7 @@ from musical_mycelium.graph.coverage import (
     PRECISION_YEAR,
     era_of,
 )
-from musical_mycelium.graph.memory import exact_matches
+from musical_mycelium.graph.memory import Offer, exact_matches, offer_candidates
 from musical_mycelium.graph.schema import (
     DBPEDIA_RESOURCE_PREFIX,
     NODE_KIND_ARTIST,
@@ -85,6 +85,17 @@ class ToolResult:
     #: never learns which tool produced it (invariant 4). Empty when a result is a set rather than a
     #: sequence — ``get_influences`` returns a fan-out, not a chain, and must leave this alone.
     chain: tuple[str, ...] = ()
+    #: Choices to put in front of a **person** when this call resolved nothing. *(Phase 7.7 step 3,
+    #: D2.)* Generic exactly as ``visited`` and ``chain`` are generic: the loop harvests this field
+    #: without learning which tool sets it, which is what keeps invariant 4 intact while a refusal
+    #: gains a way forward. A loop that special-cased ``resolve_node`` would have broken the seam this
+    #: project is built on.
+    #:
+    #: **An offer is never a resolution and never a claim.** It carries no ``ClaimProposal``, it goes
+    #: nowhere near the gate, and nothing in it can be narrated: ``offer_candidates`` reaches nodes by
+    #: alias, and 37 aliases in this corpus equal a *different* node's label. The person chooses, and
+    #: the choice is re-asked as an ordinary query that resolves by exact label like any other.
+    offers: tuple[Offer, ...] = ()
     is_error: bool = False
 
 
@@ -178,6 +189,22 @@ class ToolRegistry:
             )
 
 
+def _offer_for(store: GraphStore, name: str) -> tuple[Offer, ...]:
+    """The offer for an unresolved name, or nothing when there is nothing honest to offer.
+
+    One place rather than two, because both refusal paths in ``ResolveNode`` need the same rule and a
+    second copy is how they start disagreeing. The rule: emit when **any** candidate was found.
+
+    ``total == 0`` covers a genuinely unknown name and a query D5 rejected as a single character, and
+    an empty offer beside a refusal is noise a person has to read and dismiss. ``total`` over the D4
+    cap is the opposite — it emits, with no candidates and the true count, because "34 genres contain
+    the word metal, say more" is a real answer to what the person asked, and silence there would be a
+    worse one.
+    """
+    offer = offer_candidates(store, name)
+    return (offer,) if offer.total else ()
+
+
 @dataclass(frozen=True, slots=True)
 class ResolveNode:
     """Name to node id, or ``None``.
@@ -212,8 +239,16 @@ class ResolveNode:
     def __call__(self, **kwargs: Any) -> ToolResult:
         name = kwargs["name"]
         candidates = self.store.search(name)
+        # Offers are computed on both refusal paths and on neither success path, and the ``content``
+        # the model sees is **byte-identical** to what it saw before this existed. The model must not
+        # be able to spend a turn "choosing" a candidate — that is the guess this phase exists to
+        # prevent — so the offer rides on the machinery field, addressed to the person, and the three
+        # refusal reasons below are untouched.
         if not candidates:
-            return ToolResult(content={"node_id": None, "reason": "not in this graph"})
+            return ToolResult(
+                content={"node_id": None, "reason": "not in this graph"},
+                offers=_offer_for(self.store, name),
+            )
 
         # Exactly one match resolves. Zero is a near miss and **two is ambiguity**, which is also a
         # refusal: "heavy metal" may skip Wikidata's trailing "music" (``label_key``), but if that fold
@@ -227,7 +262,8 @@ class ResolveNode:
                     "node_id": None,
                     "reason": "no exact match" if not matches else "ambiguous",
                     "did_you_mean": [n.label for n in (matches or candidates)[:5]],
-                }
+                },
+                offers=_offer_for(self.store, name),
             )
 
         best = matches[0]
