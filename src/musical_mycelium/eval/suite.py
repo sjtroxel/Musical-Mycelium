@@ -37,13 +37,14 @@ measures the machinery. The model's traversal is step 4 and it costs money.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from musical_mycelium.agent.claims import Claim
-from musical_mycelium.agent.llm import LLM, Usage
+from musical_mycelium.agent.llm import LLM, Usage, is_transient_provider_error
 from musical_mycelium.api.telemetry import load_prices
 from musical_mycelium.eval import runner
 from musical_mycelium.eval.budget import BudgetExceeded, EvalBudget
@@ -158,6 +159,49 @@ class CaseResult:
 #: run and tight enough that a broken configuration is not paid for forty times.
 MAX_CASE_ERRORS = 5
 
+#: How many more times a case is run after the provider refused to answer it. Added 2026-09-12, phase
+#: 7.7 step 7 — see ``CaseRetry``. Two, not more: botocore has already retried eight times inside each
+#: attempt, so a case that fails three suite-level attempts is an outage, and ``MAX_CASE_ERRORS`` is the
+#: guard for that.
+CASE_RETRIES = 2
+
+#: The wait before a retry, multiplied by the attempt number: 60s, then 120s. Long on purpose. Botocore's
+#: own backoff is measured in seconds and had already run out, so a capacity shortfall that outlasted it
+#: needs minutes, not another quick knock.
+CASE_RETRY_WAIT_SECONDS = 60.0
+
+
+@dataclass(frozen=True, slots=True)
+class CaseRetry:
+    """One case the provider refused to answer, run again from the start.
+
+    **Added 2026-09-12, phase 7.7 step 7.** Two live runs that afternoon were lost to intermittent
+    ``ServiceUnavailableException``: one stopped at case 22, the other finished 62 of 63 and was still
+    unpoolable, because a noise floor compares identical case sets and a missing case changes every
+    denominator it touches.
+
+    **The line this draws, and it is the whole of what makes a retry honest.** A retry happens only when
+    the case produced *no answer at all* and the error is one ``is_transient_provider_error`` names. A case
+    that answered — correctly, wrongly, by refusing — is never run again, so this cannot become running a
+    case until it passes. The attempt that raised has no result to discard.
+
+    **What it costs, stated rather than hidden.** Tokens spent by turns that succeeded before the refusal,
+    inside an attempt that then raised, were never counted in ``usage`` or charged to the budget, and that
+    was already true before retries. A retry makes it possible up to ``CASE_RETRIES`` more times per case.
+
+    Recorded, never swallowed: every retry rides in the result file as ``retried_cases``. A retried case
+    that then answers leaves the run ``complete``; one that fails every attempt becomes a ``CaseError``
+    exactly as before, and counts once toward ``MAX_CASE_ERRORS``.
+    """
+
+    case_id: str
+    #: 1 for the first retry. The attempt that raised is ``attempt - 1``, counting the original as 0.
+    attempt: int
+    error_type: str
+
+    def to_json(self) -> dict[str, Any]:
+        return {"case_id": self.case_id, "attempt": self.attempt, "error_type": self.error_type}
+
 
 @dataclass(frozen=True, slots=True)
 class CaseError:
@@ -229,6 +273,9 @@ class SuiteResult:
     script_determined: tuple[str, ...] = ()
     #: Cases that raised and were stepped over. Non-empty means ``complete`` is ``False``.
     errors: tuple[CaseError, ...] = ()
+    #: Cases the provider refused to answer and that were run again. Does NOT by itself make a run
+    #: incomplete: a retried case that then answered is a scored case. See ``CaseRetry``.
+    retries: tuple[CaseRetry, ...] = ()
 
     @property
     def artifact_matches_pin(self) -> bool:
@@ -272,6 +319,7 @@ class SuiteResult:
             "complete": self.complete,
             "aborted_reason": self.aborted_reason,
             "errored_cases": [error.to_json() for error in self.errors],
+            "retried_cases": [retry.to_json() for retry in self.retries],
             "script_determined": list(self.script_determined),
             "cases_run": self.cases_run,
             "cases_correct": self.cases_correct,
@@ -375,6 +423,8 @@ def run_suite(
     provider: str = PROVIDER_SCRIPTED,
     budget: EvalBudget | None = None,
     synthesis_llm_for: Callable[[EvalCase], LLM] | None = None,
+    max_case_errors: int = MAX_CASE_ERRORS,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> SuiteResult:
     """Drive every case, score it, and aggregate. Returns a result even when it aborts.
 
@@ -414,22 +464,32 @@ def run_suite(
     **``MAX_CASE_ERRORS`` is the guard against the other failure.** A systemic fault — expired
     credentials, a provider outage — would otherwise record the same error once per remaining case.
     After five, the run stops and says so.
+
+    **Amended 2026-09-12, phase 7.7 step 7, in two ways.** A case the provider refused to answer is run
+    again, up to ``CASE_RETRIES`` times, before it counts as an error — see ``CaseRetry`` for exactly
+    which failures qualify and why that cannot become re-rolling a wrong answer. And ``max_case_errors``
+    is now a parameter: a full live baseline run passes **1**, because a run missing even one case
+    cannot join a noise floor, so every case after the first unrecovered failure is paid for and
+    unusable. The step-over behaviour above is unchanged for every caller that keeps the default.
+    ``sleep`` is injectable so tests of the retry do not wait for it.
     """
     results: list[CaseResult] = []
     errors: list[CaseError] = []
+    retries: list[CaseRetry] = []
     usage = Usage()
     complete = True
     aborted_reason = ""
 
     for position, case in enumerate(cases, start=1):
         try:
-            if budget is not None:
-                budget.check()
-            run = runner.run_case(
-                case.query,
+            run = _run_with_retries(
+                case,
                 store=store,
-                llm=llm_for(case),
-                synthesis_llm=synthesis_llm_for(case) if synthesis_llm_for else None,
+                llm_for=llm_for,
+                synthesis_llm_for=synthesis_llm_for,
+                budget=budget,
+                retries=retries,
+                sleep=sleep,
             )
         except BudgetExceeded as exceeded:
             complete = False
@@ -447,13 +507,21 @@ def run_suite(
                     message=str(failure),
                 )
             )
-            if len(errors) >= MAX_CASE_ERRORS:
-                aborted_reason = (
-                    f"stopped after {len(errors)} failing cases (last: {type(failure).__name__} on "
-                    f"{case.case_id}, case {position} of {len(cases)}). That many failures is a "
-                    "systemic fault rather than a case-local bug, and the rest of the run would only "
-                    "record it again."
-                )
+            if len(errors) >= max_case_errors:
+                if max_case_errors == 1:
+                    aborted_reason = (
+                        f"stopped at the first failing case ({type(failure).__name__} on "
+                        f"{case.case_id}, case {position} of {len(cases)}). This run was set to stop "
+                        "there because a run missing a case cannot join a noise floor, so the cases "
+                        "after it would be paid for and unusable."
+                    )
+                else:
+                    aborted_reason = (
+                        f"stopped after {len(errors)} failing cases (last: {type(failure).__name__} "
+                        f"on {case.case_id}, case {position} of {len(cases)}). That many failures is "
+                        "a systemic fault rather than a case-local bug, and the rest of the run would "
+                        "only record it again."
+                    )
                 break
             continue
 
@@ -474,7 +542,47 @@ def run_suite(
         complete=complete,
         aborted_reason=aborted_reason,
         errors=tuple(errors),
+        retries=tuple(retries),
     )
+
+
+def _run_with_retries(
+    case: EvalCase,
+    *,
+    store: GraphStore,
+    llm_for: Callable[[EvalCase], LLM],
+    synthesis_llm_for: Callable[[EvalCase], LLM] | None,
+    budget: EvalBudget | None,
+    retries: list[CaseRetry],
+    sleep: Callable[[float], None],
+) -> runner.CaseRun:
+    """Run one case, running it again from the start only if the provider refused to answer.
+
+    Each attempt asks ``llm_for`` again, because a scripted provider is consumed as it runs and a second
+    attempt on a spent script would fail for a reason that has nothing to do with the case. Anything that
+    is not a transient provider error — ``BudgetExceeded`` included — propagates on the first raise.
+    """
+    attempt = 0
+    while True:
+        try:
+            if budget is not None:
+                budget.check()
+            return runner.run_case(
+                case.query,
+                store=store,
+                llm=llm_for(case),
+                synthesis_llm=synthesis_llm_for(case) if synthesis_llm_for else None,
+            )
+        except BudgetExceeded:
+            raise
+        except Exception as failure:
+            if attempt >= CASE_RETRIES or not is_transient_provider_error(failure):
+                raise
+            attempt += 1
+            retries.append(
+                CaseRetry(case_id=case.case_id, attempt=attempt, error_type=type(failure).__name__)
+            )
+            sleep(CASE_RETRY_WAIT_SECONDS * attempt)
 
 
 def _aggregate(
@@ -489,6 +597,7 @@ def _aggregate(
     complete: bool,
     aborted_reason: str,
     errors: tuple[CaseError, ...] = (),
+    retries: tuple[CaseRetry, ...] = (),
 ) -> SuiteResult:
     """Roll per-case results into the catalog.
 
@@ -533,6 +642,7 @@ def _aggregate(
         aborted_reason=aborted_reason,
         script_determined=SCRIPT_DETERMINED if provider == PROVIDER_SCRIPTED else (),
         errors=errors,
+        retries=retries,
     )
 
 

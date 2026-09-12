@@ -886,6 +886,27 @@ must still read 0; if it does not, D3 has broken and the run is a finding rather
 artifact 0.10.0", nothing drifted, nothing opened, **run count still 0**. U4 **CLOSED, yes** — the
 held-out set is run once at this freeze, after the re-baseline.
 
+**TWO LIVE ATTEMPTS LOST TO BEDROCK 503s, AND THE HARNESS FIX — 2026-09-12, before any counted run.**
+Attempt 1 (`20260912T200642Z`) stopped at case 22 of 63 after five `ServiceUnavailableException` cases.
+Attempt 2 (`20260912T205301Z`) finished 62 of 63 and was **unpoolable** because `gold_v0_1_015` got a 503
+after botocore's eight adaptive retries. Neither was caused by the machine sleeping: both are HTTP 503s
+from Bedrock, and attempt 1 ended at ~16 minutes. Attempt 2's 62 cases were healthy — `offer` 0 replaced a
+refusal, and its only three wrong cases were `gold_v0_1_020`, `gold_v0_1_035` and `adv_018`, all known.
+Both result files are kept and committed; `noise.py` refuses them as incomplete.
+
+**The fix, made while no complete run existed at `2730919`, so the new revision cost nothing:**
+1. `agent/llm.py:is_transient_provider_error` names **only** `ServiceUnavailableException`, by botocore
+   code, case-insensitively. Throttling is deliberately excluded.
+2. `suite.py` runs a case again from the start after that error, `CASE_RETRIES = 2`, waiting 60s then
+   120s. **Only a case that produced no answer is retried** — a wrong answer or a case-local raise never
+   is. Every retry is recorded as `retried_cases` and printed; a retried case that answers leaves the run
+   complete.
+3. **His request: a full `make eval-live` stops at the first case that fails every retry**
+   (`live.py:case_error_limit`), because a run missing a case cannot be pooled. Subsets keep stepping over.
+4. `retried_cases` joined the held-out allowlist as a decision: case id, attempt, class name, no message.
+Breakage-verified: forcing the predicate to `False` failed four tests, and forcing the limit back to five
+failed the full-run test. **The five counted runs start on the revision this lands in.**
+
 **One known bug that is NOT a blocker:** the local stub renders an artist-subject influence answer with
 no subject (" came out of Johann Sebastian Bach."), because it pattern-matches a `"Genre: "` marker
 `ORIGINS_SYNTHESIS_TEMPLATE` does not emit (`agent/llm.py:600`). Stub-only as far as is verified; the

@@ -22,6 +22,7 @@ from musical_mycelium.eval.live import (
     ThrottledLLM,
     UnknownCase,
     budget_for,
+    case_error_limit,
     estimate_for,
     live_cases,
     run_live,
@@ -244,6 +245,52 @@ def test_a_run_reports_the_requests_it_actually_issued(store: InMemoryGraphStore
     )
     assert any("requests issued:" in line for line in lines)
     assert any(case.case_id in line for line in lines)
+
+
+def test_a_full_run_stops_at_the_first_failure_and_a_subset_does_not() -> None:
+    """2026-09-12, phase 7.7 step 7: a full run exists to be pooled and a run missing a case cannot be,
+    so it stops at once. A subset is never pooled, and its other cases are the evidence asked for."""
+    from musical_mycelium.eval.suite import MAX_CASE_ERRORS
+
+    assert case_error_limit([]) == 1
+    assert case_error_limit(["--cases", "1"]) == MAX_CASE_ERRORS
+    assert case_error_limit(["--case-ids", "gold_v0_1_015"]) == MAX_CASE_ERRORS
+
+
+def test_a_retried_case_does_not_advance_the_progress_counter(
+    store: InMemoryGraphStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`llm_for` is called once per attempt, so a naive counter would print "[2/1]" for a retry and tell
+    the person watching the run it is further along than it is."""
+    case = gold.load_cases()[0]
+    lines: list[str] = []
+    attempts = 0
+
+    class ServiceUnavailableException(Exception):
+        pass
+
+    class RefusesOnce(ScriptedLLM):
+        def converse(self, *args: Any, **kwargs: Any) -> LLMResponse:
+            nonlocal attempts
+            if attempts == 0:
+                attempts += 1
+                raise ServiceUnavailableException("Bedrock is unable to process your request.")
+            return super().converse(*args, **kwargs)
+
+    monkeypatch.setattr("musical_mycelium.eval.suite.CASE_RETRY_WAIT_SECONDS", 0.0)
+    result = run_live(
+        store=store,
+        cases=[case.as_eval_case()],
+        provider="scripted",
+        llm_factory=lambda: RefusesOnce(gold.build_script(case)),
+        progress=lines.append,
+    )
+
+    assert result.complete
+    assert [line for line in lines if line.startswith("[")] == [
+        f"[1/1] {case.case_id}: {case.query[:60]}"
+    ]
+    assert any("retrying" in line and case.case_id in line for line in lines)
 
 
 def test_progress_names_each_case_as_it_starts(store: InMemoryGraphStore) -> None:

@@ -88,6 +88,10 @@ HELDOUT_RESULT_KEYS = frozenset(
         "complete",
         "aborted_reason",
         "errored_cases",
+        # Added 2026-09-12, phase 7.7 step 7, as a decision. Each row is a case id, an attempt number and
+        # an exception CLASS name -- `CaseRetry` has no message field at all, so there is nothing for
+        # `sanitise` to strip, and a case id is not content.
+        "retried_cases",
         "script_determined",
         "cases_run",
         "cases_correct",

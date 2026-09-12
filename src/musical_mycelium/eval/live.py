@@ -49,7 +49,7 @@ from musical_mycelium.eval.safety import (
     UnattendedSpend,
     confirm_spend,
 )
-from musical_mycelium.eval.suite import EvalCase, SuiteResult, run_suite
+from musical_mycelium.eval.suite import MAX_CASE_ERRORS, EvalCase, SuiteResult, run_suite
 from musical_mycelium.eval.thresholds import GateOutcome, gate
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.store import GraphStore
@@ -243,6 +243,7 @@ def run_live(
     llm_factory: Callable[[], LLM] | None = None,
     limiter: RateLimiter | None = None,
     progress: Callable[[str], None] | None = None,
+    max_case_errors: int = MAX_CASE_ERRORS,
 ) -> SuiteResult:
     """Drive the real model. **Assumes `confirm_spend` has already passed** — see `main`.
 
@@ -262,12 +263,17 @@ def run_live(
     estimate = estimate_for(selected, throttled.model_id, "live run")
     budget = budget_for(estimate)
 
-    done = 0
+    started: list[str] = []
 
     def llm_for(case: EvalCase) -> LLM:
-        nonlocal done
-        done += 1
-        say(f"[{done}/{len(selected)}] {case.case_id}: {case.query[:60]}")
+        # Called once per ATTEMPT since 2026-09-12, so a retried case must not advance the counter —
+        # "[23/63]" printed for a second try at case 22 would tell the person watching it is further
+        # along than it is.
+        if started and started[-1] == case.case_id:
+            say(f"      retrying {case.case_id}: the provider refused to answer")
+        else:
+            started.append(case.case_id)
+            say(f"[{len(started)}/{len(selected)}] {case.case_id}: {case.query[:60]}")
         return throttled
 
     result = run_suite(
@@ -279,9 +285,23 @@ def run_live(
         artifact_pin=pin,
         provider=provider,
         budget=budget,
+        max_case_errors=max_case_errors,
     )
     say(f"requests issued: {throttled.requests}; tokens: {result.usage.total_tokens}")
     return result
+
+
+def case_error_limit(args: Sequence[str]) -> int:
+    """How many cases may fail every retry before this invocation stops. Pure, so it is testable free.
+
+    **A FULL run stops at the first one — 2026-09-12, phase 7.7 step 7.** A full run exists to be pooled
+    into a noise floor, and a run missing one case cannot be: the second live attempt that afternoon lost
+    ``gold_v0_1_015`` to a provider refusal and then paid for 48 more cases that could never be used. A
+    subset (``--cases``, ``--case-ids``) is never pooled, so it keeps stepping over failures, because
+    there the other cases are still the evidence being asked for.
+    """
+    subset = "--cases" in args or "--case-ids" in args
+    return MAX_CASE_ERRORS if subset else 1
 
 
 class UnknownCase(ValueError):
@@ -372,7 +392,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     # same artifact the run scored against. A second `from_directory` call would load the same pin
     # today and would stop doing so the moment anything reads a version from the environment.
     graph = InMemoryGraphStore.from_directory(artifact_directory())
-    result = run_live(cases=selected, store=graph, progress=lambda line: print(line, flush=True))
+    result = run_live(
+        cases=selected,
+        store=graph,
+        progress=lambda line: print(line, flush=True),
+        max_case_errors=case_error_limit(args),
+    )
 
     # Gated BEFORE the write so the verdict travels in the file (phase 7.5 step 1). `gate` is pure and
     # reads only the result and the committed thresholds, so moving it earlier cannot cost the scores.

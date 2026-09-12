@@ -644,6 +644,149 @@ def test_an_incomplete_run_still_refuses_to_gate(
     assert "finish ()" not in text, "an empty reason was interpolated into the message"
 
 
+# --- a provider refusal is retried; a wrong answer never is ------------------------------------------
+#
+# Added 2026-09-12, phase 7.7 step 7, after two live runs in one afternoon were lost to intermittent
+# ServiceUnavailableException. See `suite.CaseRetry`.
+
+
+class ServiceUnavailableException(Exception):
+    """Named like the class botocore generates at runtime, so the name fallback is exercised too."""
+
+
+def _botocore_error(code: str) -> Exception:
+    from botocore.exceptions import ClientError
+
+    error: Exception = ClientError(
+        {"Error": {"Code": code, "Message": "Bedrock is unable to process"}}, "Converse"
+    )
+    return error
+
+
+def _refusing(
+    store: InMemoryGraphStore,
+    cases: tuple[gold.GoldCase, ...],
+    *,
+    refusals: dict[str, int],
+    error: Callable[[], Exception] = lambda: _botocore_error("ServiceUnavailableException"),
+    max_case_errors: int = suite_module.MAX_CASE_ERRORS,
+) -> tuple[SuiteResult, list[float]]:
+    """Drive the first four gold cases, with the named cases refused by the provider N times each."""
+    remaining = dict(refusals)
+    waits: list[float] = []
+    by_id = {case.case_id: case for case in cases}
+
+    def llm_for(case: EvalCase) -> LLM:
+        if remaining.get(case.case_id, 0) > 0:
+            remaining[case.case_id] -= 1
+            raise error()
+        return ScriptedLLM(gold.build_script(by_id[case.case_id]))
+
+    result = run_suite(
+        gold.eval_cases(cases[:4]),
+        store=store,
+        llm_for=llm_for,
+        dataset="live",
+        dataset_version="gold",
+        artifact_pin=gold.dataset_version()[1],
+        provider="bedrock",
+        max_case_errors=max_case_errors,
+        sleep=waits.append,
+    )
+    return result, waits
+
+
+def test_the_transient_predicate_names_only_a_provider_refusal() -> None:
+    from musical_mycelium.agent.llm import is_transient_provider_error
+
+    assert is_transient_provider_error(_botocore_error("ServiceUnavailableException"))
+    # A streamed call reports the same fault in camel case.
+    assert is_transient_provider_error(_botocore_error("serviceUnavailableException"))
+    assert is_transient_provider_error(ServiceUnavailableException("no code, name only"))
+    # Throttling surviving eight adaptive retries means the run is over this account's RPM, which a
+    # slower suite-level retry would hide rather than fix.
+    assert not is_transient_provider_error(_botocore_error("ThrottlingException"))
+    assert not is_transient_provider_error(_botocore_error("ValidationException"))
+    assert not is_transient_provider_error(ValueError("no shape to narrate"))
+
+
+def test_a_case_the_provider_refused_once_is_retried_and_the_run_stays_complete(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    """**The regression test for the 2026-09-12 afternoon.** One 503 on one case made a 62-of-63 run
+    unpoolable. A case that produced no answer and then answered is a scored case."""
+    target = cases[1].case_id
+    result, waits = _refusing(store, cases, refusals={target: 1})
+
+    assert result.complete
+    assert result.cases_run == 4
+    assert not result.errors
+    assert [(r.case_id, r.attempt) for r in result.retries] == [(target, 1)]
+    assert waits == [suite_module.CASE_RETRY_WAIT_SECONDS]
+    assert result.to_json()["retried_cases"] == [
+        {"case_id": target, "attempt": 1, "error_type": "ClientError"}
+    ]
+
+
+def test_a_case_refused_on_every_attempt_becomes_one_error_not_three(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    target = cases[1].case_id
+    result, waits = _refusing(store, cases, refusals={target: 99})
+
+    assert not result.complete
+    assert [error.case_id for error in result.errors] == [target]
+    assert len(result.retries) == suite_module.CASE_RETRIES
+    assert waits == [
+        suite_module.CASE_RETRY_WAIT_SECONDS * attempt
+        for attempt in range(1, suite_module.CASE_RETRIES + 1)
+    ]
+    assert result.cases_run == 3
+
+
+def test_a_case_local_bug_is_never_retried(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    """The line that keeps a retry honest. Only a provider that declined to answer is asked again; a
+    raise out of the case itself is a finding, and running it again would bury it."""
+    target = cases[1].case_id
+    result, waits = _refusing(
+        store, cases, refusals={target: 1}, error=lambda: ValueError("no shape to narrate")
+    )
+
+    assert [error.case_id for error in result.errors] == [target]
+    assert not result.retries
+    assert not waits
+
+
+def test_a_retry_is_printed_even_on_a_complete_run(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    from musical_mycelium.eval.report import render
+
+    target = cases[1].case_id
+    result, _ = _refusing(store, cases, refusals={target: 1})
+    text = render(result)
+
+    assert "RETRY" in text
+    assert target in text
+    assert "INCOMPLETE" not in text
+
+
+def test_a_run_set_to_stop_at_the_first_failure_does(
+    store: InMemoryGraphStore, cases: tuple[gold.GoldCase, ...]
+) -> None:
+    """A full live run passes 1: a run missing a case cannot join a noise floor, so the cases after the
+    first unrecovered failure would be paid for and unusable."""
+    target = cases[1].case_id
+    result, _ = _refusing(store, cases, refusals={target: 99}, max_case_errors=1)
+
+    assert not result.complete
+    assert result.cases_run == 1, "the cases after the failure must not have run"
+    assert "first failing case" in result.aborted_reason
+    assert target in result.aborted_reason
+
+
 # --- the dollar figure a billable run records -------------------------------------------------------
 #
 # Phase 6.5 DoD #8: "every billable run records a dollar figure." Added 2026-09-07 at step 8, because

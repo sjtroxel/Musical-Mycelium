@@ -75,6 +75,18 @@ def render(result: SuiteResult, gates: GateOutcome | None = None) -> str:
         lines.extend(
             f"    {error.case_id}: {error.error_type}: {error.message}" for error in result.errors
         )
+    if result.retries:
+        # A retry is not a failure and does not make the run incomplete, but it is printed anyway: a
+        # case that needed three attempts is worth seeing, and a result that hides its retries is one
+        # whose reader cannot tell a quiet afternoon from a struggling provider.
+        lines.append(
+            f"  {len(result.retries)} RETRY(IES) after the provider refused to answer "
+            "(the case produced no answer, so nothing was discarded):"
+        )
+        lines.extend(
+            f"    {retry.case_id}: retry {retry.attempt} after {retry.error_type}"
+            for retry in result.retries
+        )
     if not result.complete:
         if result.aborted_reason:
             lines.append(f"  INCOMPLETE: {result.aborted_reason}")

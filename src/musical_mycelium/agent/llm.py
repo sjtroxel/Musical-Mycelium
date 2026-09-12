@@ -72,6 +72,37 @@ JUDGE_TEMPERATURE = 0.0
 DEFAULT_REGION = "us-east-1"
 DEFAULT_MAX_TOKENS = 1024
 
+#: Provider errors that say the provider declined to answer, and say nothing about the question.
+#:
+#: **Added 2026-09-12, phase 7.7 step 7, after two live runs in one afternoon were lost to it.** The first
+#: stopped at case 22 of 63 after five ``ServiceUnavailableException`` cases; the second finished 62 of 63
+#: and was still unpoolable because one case got a 503 after botocore's eight adaptive retries. A
+#: noise floor needs every case in every run, so an intermittent capacity refusal was costing whole runs.
+#:
+#: **Deliberately one name long.** ``ThrottlingException`` is not here: adaptive retries already absorb it,
+#: and one that survives eight of them means the run is exceeding this account's RPM, which a slower
+#: retry at the suite level would only hide. Compared case-insensitively because a streamed call reports
+#: the same fault as ``serviceUnavailableException``.
+TRANSIENT_PROVIDER_ERRORS = frozenset({"serviceunavailableexception"})
+
+
+def is_transient_provider_error(error: BaseException) -> bool:
+    """Whether ``error`` is a provider refusing to answer rather than anything about the case.
+
+    Reads botocore's error code when the exception carries one and falls back to the class name, so this
+    module still imports nothing from botocore — the exception classes botocore raises are generated at
+    runtime and are named after the code anyway.
+    """
+    response = getattr(error, "response", None)
+    code = None
+    if isinstance(response, dict):
+        details = response.get("Error")
+        if isinstance(details, dict):
+            code = details.get("Code")
+    name = code if isinstance(code, str) and code else type(error).__name__
+    return name.lower() in TRANSIENT_PROVIDER_ERRORS
+
+
 #: A marker the planning system prompt embeds so ``LocalLLM`` can tell a planning turn from a tool turn.
 #:
 #: It lives here, in the seam, rather than in ``agent/plan.py`` where the prompt is written, for one

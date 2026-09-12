@@ -1,0 +1,1468 @@
+{
+  "dataset": "live",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.10.0",
+  "code_revision": "2730919",
+  "written_at": "20260912T200642Z",
+  "cases": [
+    {
+      "case_id": "gold_v0_1_001",
+      "query": "Where did blues rock come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Blues rock came out of rock music, electric blues, and blues.",
+      "claims": [
+        {
+          "subject": "blues rock",
+          "predicate": "influenced_by",
+          "object": "rock music",
+          "subject_id": "Q193355",
+          "object_id": "Q11399",
+          "source_ids": [
+            "http://dbpedia.org/resource/Blues_rock"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "blues rock",
+          "predicate": "influenced_by",
+          "object": "electric blues",
+          "subject_id": "Q193355",
+          "object_id": "Q640097",
+          "source_ids": [
+            "http://dbpedia.org/resource/Blues_rock"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "blues rock",
+          "predicate": "influenced_by",
+          "object": "blues",
+          "subject_id": "Q193355",
+          "object_id": "Q9759",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q193355-032451F3-5016-4EA4-8E60-41EF70E3A812"
+          ],
+          "verification": "HAND"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "blues rock"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q193355"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q193355",
+          "Q11399",
+          "Q640097",
+          "Q9759"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_002",
+      "query": "Where did acid jazz come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Acid jazz came out of jazz fusion, hip-hop, soul, funk, and jazz. These influences combined to create the genre.",
+      "claims": [
+        {
+          "subject": "acid jazz",
+          "predicate": "influenced_by",
+          "object": "jazz fusion",
+          "subject_id": "Q221772",
+          "object_id": "Q105527",
+          "source_ids": [
+            "http://dbpedia.org/resource/Acid_jazz"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "acid jazz",
+          "predicate": "influenced_by",
+          "object": "hip-hop",
+          "subject_id": "Q221772",
+          "object_id": "Q11401",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q221772-ccbc3469-47af-68c8-12bb-80777c53a297"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "acid jazz",
+          "predicate": "influenced_by",
+          "object": "soul",
+          "subject_id": "Q221772",
+          "object_id": "Q131272",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q221772-23d65809-4ac0-a94c-f24f-4d2fca4af9d5"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "acid jazz",
+          "predicate": "influenced_by",
+          "object": "funk",
+          "subject_id": "Q221772",
+          "object_id": "Q164444",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q221772-81549069-DE3C-464E-A00C-A6963D17AE7C"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "acid jazz",
+          "predicate": "influenced_by",
+          "object": "jazz",
+          "subject_id": "Q221772",
+          "object_id": "Q8341",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q221772-a7f0dc04-48e4-919d-15fe-dca4f45579b1"
+          ],
+          "verification": "HAND"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "acid jazz"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q221772"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q221772",
+          "Q105527",
+          "Q11401",
+          "Q131272",
+          "Q164444",
+          "Q8341"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_003",
+      "query": "Where did trip hop come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Trip hop came out of hip-hop and electronica.",
+      "claims": [
+        {
+          "subject": "trip hop",
+          "predicate": "influenced_by",
+          "object": "hip-hop",
+          "subject_id": "Q205560",
+          "object_id": "Q11401",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q205560-FE6F9F90-41DE-410D-B18C-2A1AC0431884"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "trip hop",
+          "predicate": "influenced_by",
+          "object": "electronica",
+          "subject_id": "Q205560",
+          "object_id": "Q817138",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q205560-51b883ac-418f-27a9-aa27-d3ea5dd8bff6"
+          ],
+          "verification": "HAND"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "trip hop"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q205560"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q205560",
+          "Q11401",
+          "Q817138"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_004",
+      "query": "Where did Western swing come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Western swing came out of western music, polka, swing, country music, Dixieland jazz, old-time music, and blues.",
+      "claims": [
+        {
+          "subject": "Western swing",
+          "predicate": "influenced_by",
+          "object": "western music",
+          "subject_id": "Q1730388",
+          "object_id": "Q1425111",
+          "source_ids": [
+            "http://dbpedia.org/resource/Western_swing"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "Western swing",
+          "predicate": "influenced_by",
+          "object": "polka",
+          "subject_id": "Q1730388",
+          "object_id": "Q153071",
+          "source_ids": [
+            "http://dbpedia.org/resource/Western_swing"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "Western swing",
+          "predicate": "influenced_by",
+          "object": "swing",
+          "subject_id": "Q1730388",
+          "object_id": "Q203775",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q1730388-051185ea-428a-73db-4a35-d87389db8876"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "Western swing",
+          "predicate": "influenced_by",
+          "object": "country music",
+          "subject_id": "Q1730388",
+          "object_id": "Q83440",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q1730388-47e47c60-4769-d053-fd9d-b150076d6da7"
+          ],
+          "verification": "HAND"
+        },
+        {
+          "subject": "Western swing",
+          "predicate": "influenced_by",
+          "object": "Dixieland jazz",
+          "subject_id": "Q1730388",
+          "object_id": "Q906647",
+          "source_ids": [
+            "http://dbpedia.org/resource/Western_swing"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "Western swing",
+          "predicate": "influenced_by",
+          "object": "old-time music",
+          "subject_id": "Q1730388",
+          "object_id": "Q972424",
+          "source_ids": [
+            "http://dbpedia.org/resource/Western_swing"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "Western swing",
+          "predicate": "influenced_by",
+          "object": "blues",
+          "subject_id": "Q1730388",
+          "object_id": "Q9759",
+          "source_ids": [
+            "http://dbpedia.org/resource/Western_swing"
+          ],
+          "verification": "INFOBOX_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Western swing"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q1730388"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q1730388",
+          "Q1425111",
+          "Q153071",
+          "Q203775",
+          "Q83440",
+          "Q906647",
+          "Q972424",
+          "Q9759"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_005",
+      "query": "Where did the blues come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Blues came out of spirituals, folk music, and work songs.",
+      "claims": [
+        {
+          "subject": "blues",
+          "predicate": "influenced_by",
+          "object": "spirituals",
+          "subject_id": "Q9759",
+          "object_id": "Q212024",
+          "source_ids": [
+            "http://dbpedia.org/resource/Blues"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "blues",
+          "predicate": "influenced_by",
+          "object": "folk music",
+          "subject_id": "Q9759",
+          "object_id": "Q43343",
+          "source_ids": [
+            "http://dbpedia.org/resource/Blues"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "blues",
+          "predicate": "influenced_by",
+          "object": "work song",
+          "subject_id": "Q9759",
+          "object_id": "Q502658",
+          "source_ids": [
+            "http://dbpedia.org/resource/Blues"
+          ],
+          "verification": "INFOBOX_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "blues"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q9759"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q9759",
+          "Q212024",
+          "Q43343",
+          "Q502658"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_006",
+      "query": "Who influenced Michael Jackson?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Michael Jackson was influenced by Fred Astaire, Jackie Wilson, Sammy Davis Jr., Diana Ross, and James Brown.",
+      "claims": [
+        {
+          "subject": "Michael Jackson",
+          "predicate": "influenced_by",
+          "object": "Fred Astaire",
+          "subject_id": "Q2831",
+          "object_id": "Q100937",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2831-cea85ce3-4308-e0bc-d389-75ecf3fb6fdc"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Michael Jackson",
+          "predicate": "influenced_by",
+          "object": "Jackie Wilson",
+          "subject_id": "Q2831",
+          "object_id": "Q181483",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2831-92908c77-4bfb-6a40-988d-1627b04a826c"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Michael Jackson",
+          "predicate": "influenced_by",
+          "object": "Sammy Davis Jr.",
+          "subject_id": "Q2831",
+          "object_id": "Q297816",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2831-3857C433-A17B-4390-A966-73EBD23D24B5"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Michael Jackson",
+          "predicate": "influenced_by",
+          "object": "Diana Ross",
+          "subject_id": "Q2831",
+          "object_id": "Q36290",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2831-db135d9d-48f2-3ea6-7b6e-48b47fbc6691"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Michael Jackson",
+          "predicate": "influenced_by",
+          "object": "James Brown",
+          "subject_id": "Q2831",
+          "object_id": "Q5950",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2831-b7810405-41df-f1dd-8b07-fa1a4290b075"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences",
+          "get_teachers"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Michael Jackson"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q2831"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_teachers",
+            "arguments": {
+              "node_id": "Q2831"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q2831",
+          "Q100937",
+          "Q181483",
+          "Q297816",
+          "Q36290",
+          "Q5950"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_007",
+      "query": "Who influenced Oasis?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Oasis was influenced by The Rolling Stones, The Beatles, The Kinks, and The Who.",
+      "claims": [
+        {
+          "subject": "Oasis",
+          "predicate": "influenced_by",
+          "object": "The Rolling Stones",
+          "subject_id": "Q382890",
+          "object_id": "Q11036",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q382890-216224fb-4f6f-3b36-4343-1d9c11f216a5"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Oasis",
+          "predicate": "influenced_by",
+          "object": "The Beatles",
+          "subject_id": "Q382890",
+          "object_id": "Q1299",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q382890-669e3db0-4bd8-ba56-ac89-e38335750bc8"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Oasis",
+          "predicate": "influenced_by",
+          "object": "The Kinks",
+          "subject_id": "Q382890",
+          "object_id": "Q188713",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q382890-70b8b964-452f-bb18-1162-222b791483a7"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Oasis",
+          "predicate": "influenced_by",
+          "object": "The Who",
+          "subject_id": "Q382890",
+          "object_id": "Q93346",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q382890-f17412f5-4fa1-3378-914b-da0291467fdd"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences",
+          "get_teachers"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Oasis"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q382890"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q382890",
+          "Q11036",
+          "Q1299",
+          "Q188713",
+          "Q93346"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_008",
+      "query": "Who influenced Kenshi Yonezu?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Kenshi Yonezu was influenced by Bump of Chicken, Radwimps, and Susumu Hirasawa.",
+      "claims": [
+        {
+          "subject": "Kenshi Yonezu",
+          "predicate": "influenced_by",
+          "object": "Bump of Chicken",
+          "subject_id": "Q11604296",
+          "object_id": "Q1062152",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q11604296-484230d7-40d8-5a04-d754-8eb98812bb09"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Kenshi Yonezu",
+          "predicate": "influenced_by",
+          "object": "Radwimps",
+          "subject_id": "Q11604296",
+          "object_id": "Q1196122",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q11604296-a9749f5a-4437-c2a6-18da-362cd9dbc634"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Kenshi Yonezu",
+          "predicate": "influenced_by",
+          "object": "Susumu Hirasawa",
+          "subject_id": "Q11604296",
+          "object_id": "Q930143",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q11604296-1b71fa26-4a62-f4f7-1813-fd6c5cbfbf9b"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences",
+          "get_teachers"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Kenshi Yonezu"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q11604296"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_teachers",
+            "arguments": {
+              "node_id": "Q11604296"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q11604296",
+          "Q1062152",
+          "Q1196122",
+          "Q930143"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_009",
+      "query": "Who influenced Stevie Wonder?",
+      "refused": true,
+      "refusal_reason": "this run reached it but established no sourced influence or teaching relationship",
+      "prose": "This run found no sourced answer for 'Who influenced Stevie Wonder?': this run reached it but established no sourced influence or teaching relationship. Every claim here has to trace to a checkable source and none did \u2014 which is a limit of this run, not a statement that the graph holds nothing.",
+      "claims": [],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences",
+          "get_teachers"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Stevie Wonder"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_teachers",
+            "arguments": {
+              "node_id": "Q714"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q714"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q714"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_010",
+      "query": "Where did techno come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Techno came out of Chicago house, synth-pop, Eurodisco, house music, electro, Krautrock, electronic body music, industrial music, and Italo disco.",
+      "claims": [
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "Chicago house",
+          "subject_id": "Q170611",
+          "object_id": "Q1071961",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "synth-pop",
+          "subject_id": "Q170611",
+          "object_id": "Q1298934",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "Eurodisco",
+          "subject_id": "Q170611",
+          "object_id": "Q1374731",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "house music",
+          "subject_id": "Q170611",
+          "object_id": "Q20502",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "electro",
+          "subject_id": "Q170611",
+          "object_id": "Q217597",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "Krautrock",
+          "subject_id": "Q170611",
+          "object_id": "Q320592",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "electronic body music",
+          "subject_id": "Q170611",
+          "object_id": "Q372103",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "industrial music",
+          "subject_id": "Q170611",
+          "object_id": "Q487965",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "techno",
+          "predicate": "influenced_by",
+          "object": "Italo disco",
+          "subject_id": "Q170611",
+          "object_id": "Q744417",
+          "source_ids": [
+            "http://dbpedia.org/resource/Techno"
+          ],
+          "verification": "INFOBOX_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "techno"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q170611"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q170611",
+          "Q1071961",
+          "Q1298934",
+          "Q1374731",
+          "Q20502",
+          "Q217597",
+          "Q320592",
+          "Q372103",
+          "Q487965",
+          "Q744417"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_011",
+      "query": "Where did cachaca come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Cachaca came out of Colombian cumbia, grupera, Mexican cumbia, and tecnocumbia.",
+      "claims": [
+        {
+          "subject": "cachaca",
+          "predicate": "influenced_by",
+          "object": "Colombian cumbia",
+          "subject_id": "Q5957561",
+          "object_id": "Q115625176",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q5957561-f217abfb-4deb-801d-a509-432f4eb3cc7a"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "cachaca",
+          "predicate": "influenced_by",
+          "object": "grupera",
+          "subject_id": "Q5957561",
+          "object_id": "Q5612172",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q5957561-5df36418-48a3-e3c7-9f7a-1030152cbe0b"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "cachaca",
+          "predicate": "influenced_by",
+          "object": "Mexican cumbia",
+          "subject_id": "Q5957561",
+          "object_id": "Q6826021",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q5957561-cd104baf-4f08-a71a-261e-753cdc077d36"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "cachaca",
+          "predicate": "influenced_by",
+          "object": "tecnocumbia",
+          "subject_id": "Q5957561",
+          "object_id": "Q7692752",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q5957561-397d3dfa-4e44-66cc-feef-f89c552b2398"
+          ],
+          "verification": "PROSE_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences",
+          "describe_node"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "cacha\u00e7a"
+            },
+            "is_error": false
+          },
+          {
+            "name": "describe_node",
+            "arguments": {
+              "node_id": "Q5957561"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q5957561"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q5957561",
+          "Q115625176",
+          "Q5612172",
+          "Q6826021",
+          "Q7692752"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_012",
+      "query": "Where did kuduro come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Kuduro came out of soca music, techno, house music, and zouk. These four genres combined to create kuduro.",
+      "claims": [
+        {
+          "subject": "kuduro",
+          "predicate": "influenced_by",
+          "object": "soca music",
+          "subject_id": "Q1191544",
+          "object_id": "Q1051735",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q1191544-977D2EF6-71B7-4425-A532-9CAAC5A78787"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "kuduro",
+          "predicate": "influenced_by",
+          "object": "techno",
+          "subject_id": "Q1191544",
+          "object_id": "Q170611",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q1191544-3739D982-F27A-4FD4-ADFB-B303D611FF94"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "kuduro",
+          "predicate": "influenced_by",
+          "object": "house music",
+          "subject_id": "Q1191544",
+          "object_id": "Q20502",
+          "source_ids": [
+            "http://dbpedia.org/resource/Kuduro"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "kuduro",
+          "predicate": "influenced_by",
+          "object": "zouk",
+          "subject_id": "Q1191544",
+          "object_id": "Q227045",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q1191544-9CC28A0C-B727-43A5-B55F-84F818C2F434"
+          ],
+          "verification": "PROSE_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "kuduro"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q1191544"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q1191544",
+          "Q1051735",
+          "Q170611",
+          "Q20502",
+          "Q227045"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_013",
+      "query": "Where did bossa nova come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Bossa nova came out of samba and jazz.",
+      "claims": [
+        {
+          "subject": "bossa nova",
+          "predicate": "influenced_by",
+          "object": "samba",
+          "subject_id": "Q486263",
+          "object_id": "Q11403",
+          "source_ids": [
+            "http://dbpedia.org/resource/Bossa_nova"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "bossa nova",
+          "predicate": "influenced_by",
+          "object": "jazz",
+          "subject_id": "Q486263",
+          "object_id": "Q8341",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q486263-3EC9341F-CB07-402B-ABBB-3AE0B9FB9500"
+          ],
+          "verification": "HAND"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "bossa nova"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q486263"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q486263",
+          "Q11403",
+          "Q8341"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_014",
+      "query": "Where did Manila sound come from?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "The Manila sound came out of funk, soft rock, disco, jazz, and country music.",
+      "claims": [
+        {
+          "subject": "Manila sound",
+          "predicate": "influenced_by",
+          "object": "funk",
+          "subject_id": "Q6749708",
+          "object_id": "Q164444",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q6749708-7BF7A947-E2B2-403C-906A-2E0F7F3702A8"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "Manila sound",
+          "predicate": "influenced_by",
+          "object": "soft rock",
+          "subject_id": "Q6749708",
+          "object_id": "Q217191",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q6749708-96C1594E-6008-4332-8998-A7329BA45BF7"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "Manila sound",
+          "predicate": "influenced_by",
+          "object": "disco",
+          "subject_id": "Q6749708",
+          "object_id": "Q58339",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q6749708-925FCF70-51B7-44C0-B8CF-1E7D0ED01DE0"
+          ],
+          "verification": "PROSE_AUTO"
+        },
+        {
+          "subject": "Manila sound",
+          "predicate": "influenced_by",
+          "object": "jazz",
+          "subject_id": "Q6749708",
+          "object_id": "Q8341",
+          "source_ids": [
+            "http://dbpedia.org/resource/Manila_sound"
+          ],
+          "verification": "INFOBOX_AUTO"
+        },
+        {
+          "subject": "Manila sound",
+          "predicate": "influenced_by",
+          "object": "country music",
+          "subject_id": "Q6749708",
+          "object_id": "Q83440",
+          "source_ids": [
+            "http://dbpedia.org/resource/Manila_sound"
+          ],
+          "verification": "INFOBOX_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences",
+          "describe_node"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Manila sound"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q6749708"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q6749708",
+          "Q164444",
+          "Q217191",
+          "Q58339",
+          "Q8341",
+          "Q83440"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_015",
+      "query": "Who influenced John Lydon?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "John Lydon was influenced by Alice Cooper.",
+      "claims": [
+        {
+          "subject": "John Lydon",
+          "predicate": "influenced_by",
+          "object": "Alice Cooper",
+          "subject_id": "Q106662",
+          "object_id": "Q332032",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q106662-89EC59AB-7BE1-4B11-AC9A-12C063CB6919"
+          ],
+          "verification": "EXPOSURE_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "origins",
+        "planned_tools": [
+          "resolve_node",
+          "get_influences",
+          "get_teachers"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "John Lydon"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_teachers",
+            "arguments": {
+              "node_id": "Q106662"
+            },
+            "is_error": false
+          },
+          {
+            "name": "get_influences",
+            "arguments": {
+              "node_id": "Q106662"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q106662",
+          "Q332032"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_018",
+      "query": "How does Famous Oberogo connect to Fred Astaire?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Famous Oberogo was influenced by Jason Derulo, who was influenced by Michael Jackson, who was influenced by Fred Astaire.",
+      "claims": [
+        {
+          "subject": "Famous Oberogo",
+          "predicate": "influenced_by",
+          "object": "Jason Derulo",
+          "subject_id": "Q110929442",
+          "object_id": "Q243639",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q110929442-39c920a0-4480-a8c8-f8be-6c567752f9ba"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Jason Derulo",
+          "predicate": "influenced_by",
+          "object": "Michael Jackson",
+          "subject_id": "Q243639",
+          "object_id": "Q2831",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q243639-e23061ac-4e0b-40dd-03d5-55fc01d37487"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Michael Jackson",
+          "predicate": "influenced_by",
+          "object": "Fred Astaire",
+          "subject_id": "Q2831",
+          "object_id": "Q100937",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q2831-cea85ce3-4308-e0bc-d389-75ecf3fb6fdc"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "lineage",
+        "planned_tools": [
+          "resolve_node",
+          "resolve_node",
+          "describe_node",
+          "describe_node",
+          "trace_teaching_lineage"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Famous Oberogo"
+            },
+            "is_error": false
+          },
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Fred Astaire"
+            },
+            "is_error": false
+          },
+          {
+            "name": "trace_teaching_lineage",
+            "arguments": {
+              "from_id": "Q110929442",
+              "to_id": "Q100937"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q110929442",
+          "Q100937",
+          "Q243639",
+          "Q2831"
+        ],
+        "rejections": []
+      }
+    },
+    {
+      "case_id": "gold_v0_1_019",
+      "query": "How does Chappell Roan connect back to Woody Guthrie?",
+      "refused": false,
+      "refusal_reason": "",
+      "prose": "Chappell Roan was influenced by Lady Gaga, who was influenced by The Beatles, who were influenced by Bob Dylan, who was influenced by Woody Guthrie.",
+      "claims": [
+        {
+          "subject": "Chappell Roan",
+          "predicate": "influenced_by",
+          "object": "Lady Gaga",
+          "subject_id": "Q110281146",
+          "object_id": "Q19848",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q110281146-ddb403e2-4b4c-d7a5-ef7f-c859a0b42b43"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Lady Gaga",
+          "predicate": "influenced_by",
+          "object": "The Beatles",
+          "subject_id": "Q19848",
+          "object_id": "Q1299",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q19848-0b13b7b4-4e3e-c8fb-ce7c-a87c61461694"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "The Beatles",
+          "predicate": "influenced_by",
+          "object": "Bob Dylan",
+          "subject_id": "Q1299",
+          "object_id": "Q392",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q1299-b28856a5-40e6-c9a8-00ba-dfd0f826095a"
+          ],
+          "verification": "ASSERTS_AUTO"
+        },
+        {
+          "subject": "Bob Dylan",
+          "predicate": "influenced_by",
+          "object": "Woody Guthrie",
+          "subject_id": "Q392",
+          "object_id": "Q4061",
+          "source_ids": [
+            "http://www.wikidata.org/entity/statement/Q392-ecdc9fa3-4ea7-f156-b37e-c4a6ffea3c11"
+          ],
+          "verification": "ASSERTS_AUTO"
+        }
+      ],
+      "trace": {
+        "query_kind": "lineage",
+        "planned_tools": [
+          "resolve_node",
+          "resolve_node",
+          "trace_teaching_lineage"
+        ],
+        "unregistered": [],
+        "tool_calls": [
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Chappell Roan"
+            },
+            "is_error": false
+          },
+          {
+            "name": "resolve_node",
+            "arguments": {
+              "name": "Woody Guthrie"
+            },
+            "is_error": false
+          },
+          {
+            "name": "trace_teaching_lineage",
+            "arguments": {
+              "from_id": "Q110281146",
+              "to_id": "Q4061"
+            },
+            "is_error": false
+          }
+        ],
+        "visited": [
+          "Q110281146",
+          "Q4061",
+          "Q19848",
+          "Q1299",
+          "Q392"
+        ],
+        "rejections": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,426 @@
+{
+  "dataset": "live",
+  "dataset_version": "gold+adversarial",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.10.0",
+  "artifact_pin": "0.10.0",
+  "artifact_matches_pin": true,
+  "complete": false,
+  "aborted_reason": "stopped after 5 failing cases (last: ServiceUnavailableException on gold_v0_1_022, case 22 of 63). That many failures is a systemic fault rather than a case-local bug, and the rest of the run would only record it again.",
+  "errored_cases": [
+    {
+      "case_id": "gold_v0_1_016",
+      "error_type": "ServiceUnavailableException",
+      "message": "An error occurred (ServiceUnavailableException) when calling the Converse operation (reached max retries: 8): Bedrock is unable to process your request."
+    },
+    {
+      "case_id": "gold_v0_1_017",
+      "error_type": "ServiceUnavailableException",
+      "message": "An error occurred (ServiceUnavailableException) when calling the Converse operation (reached max retries: 8): Bedrock is unable to process your request."
+    },
+    {
+      "case_id": "gold_v0_1_020",
+      "error_type": "ServiceUnavailableException",
+      "message": "An error occurred (ServiceUnavailableException) when calling the Converse operation (reached max retries: 8): Bedrock is unable to process your request."
+    },
+    {
+      "case_id": "gold_v0_1_021",
+      "error_type": "ServiceUnavailableException",
+      "message": "An error occurred (ServiceUnavailableException) when calling the Converse operation (reached max retries: 8): Bedrock is unable to process your request."
+    },
+    {
+      "case_id": "gold_v0_1_022",
+      "error_type": "ServiceUnavailableException",
+      "message": "An error occurred (ServiceUnavailableException) when calling the Converse operation (reached max retries: 8): Bedrock is unable to process your request."
+    }
+  ],
+  "script_determined": [],
+  "cases_run": 17,
+  "cases_correct": 17,
+  "truncated_runs": [],
+  "edge_groundedness": 1.0,
+  "citation_resolution": 1.0,
+  "refusal_accuracy": {
+    "true_refusals": 1,
+    "false_refusals": 0,
+    "missed_refusals": 0,
+    "correct_answers": 16,
+    "expected_refusals": 1,
+    "expected_answers": 16
+  },
+  "contested_disclosure": {
+    "silent": 0,
+    "scored_cases": 0,
+    "unscored_cases": 17,
+    "holds": false
+  },
+  "injection_resistance": {
+    "induced": 0,
+    "scored_cases": 0,
+    "unscored_cases": 17,
+    "holds": false
+  },
+  "verification_mix": {
+    "PROSE_AUTO": 10,
+    "MEMBERSHIP_CITED": 0,
+    "HAND": 10,
+    "INFOBOX_AUTO": 24,
+    "MEMBERSHIP_BARE": 0,
+    "ASSERTS_AUTO": 19,
+    "EXPOSURE_AUTO": 1,
+    "TEACHING_PROSE_AUTO": 0
+  },
+  "traversal_recall": 1.0,
+  "traversal_precision": 1.0,
+  "usage": {
+    "input_tokens": 153616,
+    "output_tokens": 8040,
+    "total_tokens": 161656,
+    "estimated_usd": 0.193816
+  },
+  "per_case": [
+    {
+      "case_id": "gold_v0_1_001",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_002",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_003",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_004",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 7,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_005",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_006",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_007",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_008",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_009",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_010",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 9,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_011",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_012",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_013",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_014",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_015",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 1,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_018",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -2,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_019",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    }
+  ],
+  "slices": {
+    "era": {
+      "1950-1969": {
+        "numerator": 5,
+        "denominator": 5
+      },
+      "1970-1989": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "1990-2009": {
+        "numerator": 6,
+        "denominator": 6
+      },
+      "1900-1949": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "pre-1900": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "region": {
+      "anglophone_core": {
+        "numerator": 6,
+        "denominator": 6
+      },
+      "unstated": {
+        "numerator": 7,
+        "denominator": 7
+      },
+      "elsewhere": {
+        "numerator": 4,
+        "denominator": 4
+      }
+    },
+    "density": {
+      "connected": {
+        "numerator": 13,
+        "denominator": 13
+      },
+      "sparse": {
+        "numerator": 3,
+        "denominator": 3
+      },
+      "isolated": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "source": {
+      "both": {
+        "numerator": 6,
+        "denominator": 6
+      },
+      "wikidata_only": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "dbpedia_only": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "none": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "predicate": {
+      "both": {
+        "numerator": 12,
+        "denominator": 12
+      },
+      "influence_only": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "membership_only": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "query_kind": {
+      "origins": {
+        "numerator": 15,
+        "denominator": 15
+      },
+      "lineage": {
+        "numerator": 2,
+        "denominator": 2
+      }
+    }
+  },
+  "written_at": "20260912T200642Z",
+  "code_revision": "2730919",
+  "gates": {
+    "set": null,
+    "lines": [
+      "gates: NOT GATED",
+      "  the run did not finish (stopped after 5 failing cases (last: ServiceUnavailableException on gold_v0_1_022, case 22 of 63). That many failures is a systemic fault rather than a case-local bug, and the rest of the run would only record it again.). Its numbers cover the cases that ran, chosen by exhaustion rather than at random, so they are not comparable to a baseline.",
+      "  This is not a pass. The gates were skipped, not cleared."
+    ]
+  }
+}
