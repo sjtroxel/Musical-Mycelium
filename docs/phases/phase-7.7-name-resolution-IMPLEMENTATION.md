@@ -753,7 +753,7 @@ it is a demo-quality defect rather than a correctness one.
    The cap was chosen for honesty — showing a subset would be ranking — and that reasoning is intact;
    the question is only whether a 25-row column wants a two-column grid, which is layout and not
    ranking. Left alone because D4 is his decision and 14 rows is the worst case the corpus actually
-   produced in this check.
+   produced in this check. **Resolved 2026-09-12, before step 7: 274px at desktop width — §7.0.**
 2. **The refusal wording now reads slightly against the offer.** "…it is not in this graph" sits
    directly above "This graph has 5 names like "mozart"". Both are true — no node is *labelled*
    "mozart" — but a reader can hear a contradiction. This is `refusal_text`'s prose, **not** the
@@ -834,6 +834,62 @@ this project already), then the held-out run if he takes U4.
 
 **Done when:** the six gates hold on a live run that no longer prints `NOT GATED`, and the exclusions are
 still exactly `gold_v0_1_020` and nothing else.
+
+#### 7.0 Before the money is spent — the pre-flight, settled 2026-09-12
+
+Steps 0-6 are `[done]` and committed (`b973a9d`), tree clean, pushed. `make check` green: **1,751
+Python, 0 skipped, 463 frontend, free gates 4 passed / 0 FAILED / 2 N/A of six.**
+
+**STILL SIX GATES. His decision, 2026-09-12: `offer` stays tracked and does NOT become a seventh.**
+The reasoning is in `eval/thresholds.py`, inside the `refusal_accuracy` gate's docstring, because that
+is the gate a D3 violation would silently corrupt. The short form: the free run scores zero offers, and
+the property cannot vary by run — offers are emitted structurally, so only a code change breaks it and
+that is a unit test's job. **It carries an expiry condition:** if offers ever become something the model
+chooses rather than something the loop emits, that argument dies and it becomes gate-shaped. So step 7
+writes bounds for **six** gates and `GATE_NAMES` is untouched;
+`test_the_offer_property_did_not_become_a_seventh_gate` asserts the tuple literally.
+
+~~**SETTLE THE TWO OPEN COSMETIC ITEMS FIRST, OR DECIDE TO LEAVE THEM.** `live.py` stamps
+`code_revision` at the **start** of the run, so any edit mid-run makes the result `-dirty`.~~ *(Struck
+2026-09-12, same day, after he asked what a style change had to do with eval integrity. **Nothing**, and
+the stated mechanism was backwards. `live.py:352` snapshots `revision = code_revision()` once, before the
+first billable call, and passes it to `write_result` — that is the 2026-08-17 fix, and it exists so a
+mid-run edit **cannot** change the stamp. Kept rather than deleted because it is an instruction, and a
+wrong instruction in a pre-flight is the one a cold session obeys.)*
+
+**The real pre-flight: the tree must be clean WHEN THE RUN STARTS.** The stamp reads `git status` at
+that moment, and `provenance.py:EXEMPT_PREFIXES` exempts only `eval/results/` and `eval/transcripts/`.
+A doc edit dirties it exactly as a code edit does, and a `-dirty` revision is not pinnable. **Commit
+everything, check `git status --porcelain` is empty, then start.**
+
+The two cosmetic items were never run-blocking, because the live suite drives the Python loop and never
+renders a component or reads the refusal sentence as a score:
+1. **the `bach` offer block — DONE 2026-09-12, his call ("800px is already too tall").** `.offer__list`
+   wraps name-sized choices instead of stacking full-width rows. Measured in the real app, headless
+   Chrome against the local stub: `bach` **800px → 274px** at 1280 wide, 588px at 400 wide (long Bach
+   names mostly do not pair at phone width); `mozart` 192px, `r&b` 213px, `dolly` 65px; no horizontal
+   page scroll at either width. **Still layout, not ranking** — every candidate is on screen in API
+   order, no scroll box, no "show more".
+2. the refusal wording "it is not in this graph" directly above "This graph has 5 names like "mozart""
+   (`refusal_text` in `agent/loop.py`) — **left alone.** Public prose, his to write; it is not the
+   frame's `reason`, so it can change later without touching `refusal_accuracy`. The only cost of
+   changing it after the baseline is that the run's transcripts keep the old sentence.
+
+**What to expect from the new `offer` property on a LIVE run, and why it is not zero this time.** The
+live set is 63 cases (43 gold + 20 adversarial), so unlike the free gold-only run it includes
+`adv_008`, `adv_009` and `adv_020`, which are the only three cases that produce offers. Scripted, they
+gave `offers=3, over_cap=1, offers_without_refusal=0, refusals_with_choices=3`. **A live run may differ,
+and that is the point** — a real model may resolve or fail to resolve differently. `offers_without_refusal`
+must still read 0; if it does not, D3 has broken and the run is a finding rather than a baseline.
+
+**U-items on entry:** U3 **CLOSED, negative** — `heldout-check` says "sealed set still agrees with
+artifact 0.10.0", nothing drifted, nothing opened, **run count still 0**. U4 **CLOSED, yes** — the
+held-out set is run once at this freeze, after the re-baseline.
+
+**One known bug that is NOT a blocker:** the local stub renders an artist-subject influence answer with
+no subject (" came out of Johann Sebastian Bach."), because it pattern-matches a `"Genre: "` marker
+`ORIGINS_SYNTHESIS_TEMPLATE` does not emit (`agent/llm.py:600`). Stub-only as far as is verified; the
+live path reads the prompt as prose. §5.0 has the detail. **Do not fix it during the run.**
 
 ### Step 8 — The ONE deploy, the writeup, and the close
 

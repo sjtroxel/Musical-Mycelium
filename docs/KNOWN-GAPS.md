@@ -72,7 +72,15 @@
 > found by the hand check and NOT fixed:** the local stub renders an artist-subject influence answer
 > with **no subject** — " came out of Johann Sebastian Bach." — because it pattern-matches a `"Genre: "`
 > marker (`agent/llm.py:600`) that `ORIGINS_SYNTHESIS_TEMPLATE` does not emit. Reproduced on a direct
-> query with no offer involved; stub-only as far as is verified, and verifying the real path costs money. Three things §3.0 records that a cold session would
+> query with no offer involved; stub-only as far as is verified, and verifying the real path costs money.
+>
+> **STEP 7 HAS A WRITTEN PRE-FLIGHT: `phase-7.7-name-resolution-IMPLEMENTATION.md` §7.0. READ IT BEFORE
+> SPENDING ANYTHING.** It carries his 2026-09-12 decision that **the gate count stays at SIX** (`offer`
+> tracked, reasoning inside `thresholds.py`'s `refusal_accuracy` docstring, with an expiry condition),
+> **the real pre-flight — a clean tree when the run starts, because the stamp is read then and doc edits
+> dirty it too** (an earlier draft said mid-run edits dirty it; they cannot, `live.py:352`), the `bach`
+> block fixed (800px → 274px) and the refusal wording left as his, what the `offer` property should read on a live
+> 63-case run, and the one known stub-only bug that is not a blocker. Three things §3.0 records that a cold session would
 > otherwise rediscover: `graph.memory.Offer` **is** the loop event (no second dataclass, and `asdict`
 > gives D8's payload exactly); `alias_index()` is on the `GraphStore` protocol following
 > `node_by_resource`'s precedent, with the store owning the index and a free function owning the
