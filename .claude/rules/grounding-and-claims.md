@@ -36,12 +36,15 @@ Canonical detail: `docs/planning/07-EVAL-SPEC.md` §2 (as amended) and `08-REVIE
     do not make it reachable to satisfy a metric.
   - **`verification` and `corroboration` are different fields and must never be collapsed.**
     `verification` — `HAND`, `PROSE_AUTO`, `ASSERTS_AUTO`, `EXPOSURE_AUTO`, `INFOBOX_AUTO`, the two
-    `MEMBERSHIP_*` — says **how strongly ONE source was checked**. `Edge.corroboration` says **whether a
+    `MEMBERSHIP_*`, and `TEACHING_PROSE_AUTO` since v0.10.0 — says **how strongly ONE source was
+    checked**. `graph/schema.py:TIERS_BY_PREDICATE` makes each tier's predicate a constructor rule, so a
+    teaching edge cannot wear an influence tier or the reverse. `Edge.corroboration` says **whether a
     second source agrees**. A corroborated `PROSE_AUTO` edge is **not** thereby a `HAND` edge; a
     corroboration must never promote a tier; a UI must never show one number where there are two. This
     project has already corrected three files once for blurring these, from the other direction.
-  - **Still true and still the constraint:** 2,202 of 2,284 influence edges are single-source, so the
-    corpus detects disagreement only where DBpedia has an opinion at all. "This system surfaces
+  - **Still true and still the constraint:** 2,227 of 2,309 influence edges are single-source at
+    v0.10.0 (2,202 of 2,284 at v0.7.1), so the corpus detects disagreement only where DBpedia has an
+    opinion at all. The teaching layer added no second source: every `studied_with` edge is Wikidata. "This system surfaces
     disagreement between two sources on the 82 edges where both speak" is honest; "this system knows
     which influence claims are disputed" is not.
 - **Refusal is correct behavior.** An unsourced influence edge must be refused rather than narrated.

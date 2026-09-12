@@ -39,6 +39,21 @@ choosing for them.**
 
 ## 2. Delivers
 
+- **A NEW HELD-OUT SET, DRAWN ON v0.10.0, AND IT IS THIS PHASE'S FIRST TASK — his decision
+  2026-09-11.** The sealed ten were drawn on artifact v0.5.0. At the phase 7.6 re-pin
+  `make heldout-check` reported `artifact-pin-moved` **and `claims-diverged` on `heldout_v1_004` and
+  `heldout_v1_005`**: two of its cases no longer match the corpus. Nothing was re-sealed or opened, per
+  `.claude/rules/heldout-set.md`, and the stale set cannot measure generalization on a corpus three times
+  larger than the one it was drawn from.
+  **He draws it, not an agent.** `eval/heldout_draw.py` samples the pinned artifact to the gold set's
+  shape distribution from a seed only he holds; an agent may not choose subjects, draft cases, or ask
+  which he chose. What an agent may do is run `make heldout-verify`, read `make heldout-check`'s ids and
+  problem codes, and confirm the key was not overwritten (`make heldout-key` refuses an existing key, and
+  that refusal is not to be worked around).
+  **The new set's run count starts at 0, and the old set's single run does not carry over.** Until the
+  draw exists, every report says generalization is **untested** on this corpus rather than passed. It is
+  run once, at a freeze, and only if nothing was tuned in response to it.
+
 - **Alias matching**, from Wikidata's own `en` and `mul` aliases, stored on nodes by phase 7.6.
   Wikidata lists "Mozart", "Beethoven", "Bach", "Chopin" and "Brahms", but not "Liszt" or "Schumann",
   checked 2026-09-11. Sourced, and uneven, and the unevenness is the source's.

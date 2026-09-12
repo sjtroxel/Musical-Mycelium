@@ -31,6 +31,14 @@ the one dataset in this project that an agent must actively refuse to read. Hard
   justification traces back to a held-out number, that is the moment the set dies — say so and let him
   decide, rather than making the change and re-running.
 
+- **IT IS STALE AGAINST v0.10.0, AND HE DECIDED TO RE-DRAW IT — 2026-09-11, phase 7.6 step 10.**
+  `make heldout-check` reports three problems on the new pin: `artifact-pin-moved`, plus
+  `claims-diverged` on `heldout_v1_004` and `heldout_v1_005`. Nothing was re-sealed, regenerated or
+  opened. **A fresh draw is the FIRST task of phase 7.7**, and the rules above are unchanged by it: he
+  runs the draw from his own seed, an agent does not choose subjects, and the new set's run count starts
+  at 0. Until it exists, **generalization is untested on this corpus** — not passed, untested — and any
+  report saying otherwise is wrong.
+
 - **Never regenerate or re-seal the set to make a check pass.** The manifest exists precisely so that a
   set rewritten after seeing results is detectable. If the corpus moved under it, say so and let the user
   decide; re-sealing silently is how a benchmark stops measuring anything.

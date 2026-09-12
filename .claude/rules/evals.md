@@ -14,8 +14,8 @@ marketing word. Hard rules:
   step 6: `contested_disclosure` IS in this catalog and IS gated**, on both the free run and the live
   one, by an explicit decision with its threshold recorded.
   **The denominator warning was right and is why the metric is a PROPERTY rather than a rate.** A
-  contested *rate* over all edges would measure DBpedia's coverage far more than disagreement — 2,202
-  of 2,284 influence edges are single-source. `ContestedDisclosure` computes no rate: its denominator is
+  contested *rate* over all edges would measure DBpedia's coverage far more than disagreement — 2,227
+  of 2,309 influence edges are single-source at v0.10.0 (2,202 of 2,284 at v0.7.1). `ContestedDisclosure` computes no rate: its denominator is
   *runs that crossed a contested pair*, and it blocks on **zero silent crossings**, the same shape as
   injection resistance. **It is thin and must be reported as thin** — exactly two contested pairs exist,
   so `minimum_scored_cases` doubles as a coverage lock and losing one FAILS rather than narrowing
@@ -84,7 +84,10 @@ marketing word. Hard rules:
   including a planted prompt injection, and a held-out set of 10 that is **never looked at** during
   development.
 - **As built, 2026-08-24 — two corrections to the line above.** The gold set is **25 cases / 67 claims**
-  and the adversarial set **18 cases**, both hand-authored. **The held-out 10 was DRAWN, not hand-built**:
+  and the adversarial set **18 cases**, both hand-authored. *(Counts as of 2026-09-11, phase 7.6 step 9:
+  gold **43 cases**, adversarial **22** — both over the 20-30 and 15-20 bands, each widening recorded
+  where it was made. The gold set's `teaching_lineage` slot and the adversarial `teaching_not_influence`
+  group are the phase 7.6 additions.)* **The held-out 10 was DRAWN, not hand-built**:
   `eval/heldout_draw.py` samples the pinned artifact to the gold set's shape distribution from a seed only
   he holds, because a curated held-out set inherits the same blind spots the gold set already has, and a
   drawn one removes the hallucination surface entirely. **It has now been run once — 2026-08-24, 10/10.**

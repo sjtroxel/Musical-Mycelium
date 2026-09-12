@@ -6,18 +6,28 @@
 > carries his standard copyright line with the GitHub mark and the report links to the repo. Deployed
 > (run `34608268096`, commit `2b1eb02`) and verified by hand.
 >
-> **PHASE 7.5 IS SUSPENDED AT STEP 5 AND PHASE 7.6 `classical-lineage` (v0.9) IS NEXT — 2026-09-11, his
-> decision.** Scope doc: `docs/phases/phase-7.6-classical-lineage.md`, **approved 2026-09-11**; its
+> **PHASE 7.5 IS STILL SUSPENDED AT STEP 5. PHASE 7.6 IS DONE (2026-09-11) AND PHASE 7.7
+> `name-resolution` IS NEXT.** ~~PHASE 7.6 `classical-lineage` (v0.9) IS NEXT — 2026-09-11, his
+> decision.~~ *(That sentence was an instruction to start 7.6 and it outlived its own task by one day;
+> struck rather than deleted, because the order 7.6 -> 7.7 -> 7.5 is still the plan.)* Scope doc: `docs/phases/phase-7.6-classical-lineage.md`, **approved 2026-09-11**; its
 > IMPLEMENTATION doc `phase-7.6-classical-lineage-IMPLEMENTATION.md` is **APPROVED 2026-09-11 and the
 > build has started**; its `[done]` markers and as-built subsections are the authority on progress.
-> **HANDOFF, 2026-09-11: STEPS 0-9 ARE DONE. NEXT IS STEP 10** (copy truth and the close). **The pin is
-> v0.10.0 everywhere**, `make check` is green (1,716 Python, 448 frontend), and the free gates read
-> **4 passed / 0 failed / 2 N/A**. Step 8's running-app check is done on the local stub, and the five
-> `.sse` fixtures were re-captured on v0.10.0 — three free stub captures plus one live tour capture at
-> about a cent, which walked the canonical route. **ONE FINDING STILL OPEN FOR HIM: `make heldout-check`
-> reports `artifact-pin-moved` AND `claims-diverged` on `heldout_v1_004` and `heldout_v1_005`.** Nothing
-> was re-sealed or opened; the set is sealed, stale against v0.10.0, and his call at 7.7 — leave it, or
-> re-draw from his seed. See step 9's as-built. Artifact **v0.10.0 is built
+> **PHASE 7.6 IS COMPLETE — 2026-09-11, steps 0 through 10.** **The pin is v0.10.0 everywhere**,
+> `make check` is green (1,716 Python, 448 frontend), and the free gates read **4 passed / 0 failed /
+> 2 N/A**. Teaching is narrated in its own words on every surface, and a test checks that over all 8,373
+> teaching answers the corpus can produce. As-built:
+> `docs/phases/phase-7.6-classical-lineage-IMPLEMENTATION.md`; the plain-English version is
+> `docs/classical-lineage-explained.md`.
+>
+> **NEXT IS PHASE 7.7 `name-resolution`, AND ITS FIRST TASK IS A NEW HELD-OUT SET — his decision
+> 2026-09-11.** The sealed ten were drawn on v0.5.0 and `make heldout-check` now reports
+> `artifact-pin-moved` plus `claims-diverged` on `heldout_v1_004` and `heldout_v1_005`. Nothing was
+> re-sealed or opened. **He draws the new one from his own seed**; an agent may run `heldout-verify`, read
+> `heldout-check`'s codes, and nothing else. Run count restarts at 0 and generalization is **untested** on
+> this corpus until it is drawn and run at a freeze. Then 7.7's own work: partial names and aliases
+> OFFERED, never resolved. **7.7's close carries the one live re-baseline and the one deploy for both
+> phases** ($2.61 and ~2.4 hours over five runs), because the live suite is ungated today: its bounds were
+> measured over 56 cases and the dataset is 63. Artifact **v0.10.0 is built
 > but NOT pinned** (step 9 moves the pin; `tests/test_artifact_versions.py:UNPINNED_CUTS` records it, and
 > `tests/test_teaching.py` is its only reader). Crawl data is local in `data/lineage/` (gitignored);
 > `--build` is offline. Order from here: **7.6, then 7.7 `name-resolution` (v0.9.5, scope

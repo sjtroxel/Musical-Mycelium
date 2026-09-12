@@ -565,3 +565,38 @@ disqualifying, which is why the phase 7.6 plan hand-reads every such edge rather
 automatically.
 
 **Reviewed by sjtroxel on 2026-09-11**, every row not judged formal study (the 14 in other categories plus the flagged younger-teacher row): he agreed with all fifteen verdicts and changed none.
+
+## 9. What the teaching layer actually ingested — the bound, measured 2026-09-11
+
+Phase 7.6 step 3 chose the population **before** crawling it, and step 5 crawled it. The bound is
+**composer students born before 1900, composer teachers, both with an English Wikipedia article,
+deprecated statements excluded** — "bound A" in the phase plan. Wikidata's query service returned
+**3,449 distinct statements over 2,584 people**, in eight birth-year windows because the service timed
+out on four.
+
+**What survived, and what that says about the tier.** 2,035 student articles were read at one request
+per second, about 40 minutes. **2,487 rows passed the prose check — 72%**, against 30 of 40 in the hand
+check; 861 came back `ORPHAN` (the student's article never names the teacher) and 101 `MISLINKED`. The
+influence axis passed **1,320 of 4,432** candidates, about 30%, so **teaching passes at more than twice
+the rate of influence**. That is the expected direction and the reason is in §8: "studied with X" is
+exactly what a biography says, while an influence is something a writer has to choose to assert.
+
+**Then 18 edges were removed by hand**, after review, leaving **2,469**:
+- **43 of 53 "younger teacher" edges were kept.** A teacher recorded as younger than the student is
+  suspicious rather than disqualifying (§8 ends on a real one), so every such row was read.
+  **Two were inverted outright** and are the clearest catch of the pass: Ondříček's article names
+  Kubelík as *his* pupil, and Benoist's names Adolphe Adam as *his* student. Ten were excluded.
+- **All 9 succession-only edges were excluded.** §8 saw the shape twice in 40 rows and asked step 5 to
+  measure it: a *maestro di cappella* who succeeded another, recorded as that person's pupil. Across the
+  whole population it is 9 rows, and the detector first missed three real teaching lines by looking only
+  for "succeeded" — "professor", "his master" and "learn" were added, which is why the final count is 9
+  rather than 12.
+
+The excluded rows live in `ingest/lineage.py:TEACHING_REJECTED`, each with its reason, and the full
+review is `docs/p1066-build-review.md`.
+
+**Bound B was never measured and is not ingested.** "Any musical occupation" rather than composer timed
+the query service out twice on 2026-09-11. Widening to it is a corpus decision for a later phase, and
+the cost of the narrower bound is stated rather than hidden: a performer who taught but is not recorded
+as a composer is absent. Five of Liszt's recorded teachers all carry the composer occupation, so the
+chains the product demonstrates survive the bound.

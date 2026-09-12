@@ -20,11 +20,17 @@ form and no other: the organism is connected through the people who play across 
 membership, not an unbroken chain of genre-to-genre influence. That is the better claim anyway, because
 what actually connects genres in history is musicians who move between them.
 
-**The corpus has moved, and this paragraph moved with it — 2026-09-06, phase 6 step 10.** ~~Until phase 6
-step 2 lands, present-tense copy must still say 169 disjoint components.~~ Step 2 landed 2026-09-02 and
-steps 4 through 6 went further: artifact **v0.7.1 holds 7 components, with 1,465 of its 1,479 nodes in the
-largest**. **Never write 169 again**, and note that the stale sentence was an *instruction* rather than a
-fact, which is why it outlived the number it protected. What has **not** changed is the prohibition: copy
+**The corpus has moved, and this paragraph moved with it — 2026-09-06, phase 6 step 10; again 2026-09-11,
+phase 7.6 step 10.** ~~Until phase 6 step 2 lands, present-tense copy must still say 169 disjoint
+components.~~ ~~Artifact v0.7.1 holds 7 components, with 1,465 of its 1,479 nodes in the largest.~~
+Artifact **v0.10.0 holds 61 components, with 3,490 of its 3,628 nodes in the largest**. **Never write 169
+or 7 again**, and note that the stale sentence was an *instruction* rather than a fact, which is why it
+outlived the number it protected.
+
+**Components went UP at v0.10.0 and that is connection, not fragmentation.** The teaching layer brought in
+2,066 artists whose only edge is `studied_with`, and 54 of their lineages hang together without touching
+the main body: more nodes in the largest component *and* more small islands beside it. Read the pair of
+numbers together or the count alone says the opposite of what happened. What has **not** changed is the prohibition: copy
 implying one continuous chain of sourced influence is false both before and after this phase, and so is
 any wording that lets membership read as derivation. `docs/graph-semantics.md` §5.2 is the record.
 
@@ -167,9 +173,11 @@ definition overcounts by 3x. It is a property of a **pair**, derived in `graph/c
 stamped on a row and never proposed by the model.
 
 **Two fields, two different guarantees, never collapsed.** `verification` — `HAND`, `PROSE_AUTO`,
-`ASSERTS_AUTO`, `EXPOSURE_AUTO`, `INFOBOX_AUTO`, two `MEMBERSHIP_*` — says **how strongly ONE source was
-checked**. `Edge.corroboration` says **whether a second source agrees** (82 edges). A corroborated
-`PROSE_AUTO` edge is not thereby a `HAND` edge, and reading a verification tier as corroboration is still
-reading the opposite of the truth. **2,202 of 2,284 influence edges remain single-source**, so the corpus
-surfaces disagreement only where DBpedia has an opinion at all — say that, not "it knows what is
-disputed." `SPEC.md` §7 and `phase-3-agent-loop.md` A1.1 carry the detail.
+`ASSERTS_AUTO`, `EXPOSURE_AUTO`, `INFOBOX_AUTO`, two `MEMBERSHIP_*`, and `TEACHING_PROSE_AUTO` since
+v0.10.0 — says **how strongly ONE source was checked**. `Edge.corroboration` says **whether a second
+source agrees** (82 edges). A corroborated `PROSE_AUTO` edge is not thereby a `HAND` edge, and reading a
+verification tier as corroboration is still reading the opposite of the truth. **2,227 of 2,309 influence
+edges remain single-source** (2,202 of 2,284 at v0.7.1), so the corpus surfaces disagreement only where
+DBpedia has an opinion at all — say that, not "it knows what is disputed." **The teaching layer added no
+source that can disagree**: all 2,469 `studied_with` edges are Wikidata, and the contested count is still
+2. `SPEC.md` §7 and `phase-3-agent-loop.md` A1.1 carry the detail.

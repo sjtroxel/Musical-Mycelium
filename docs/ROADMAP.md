@@ -56,7 +56,7 @@ so both columns are labeled. Reading one as the other is the confusion this head
 | **6** `density-and-coverage` **DONE 2026-09-06, `v0.6.0` deployed** | **v0.6** | **v0.7.1** | Density: **second sources**, geography, time; coverage displayed | Ingestion + artifact schema, additive fields |
 | **6.5** `debt-and-disagreement` **COMPLETE 2026-09-07** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6, delivered: `contested` reaches an answer, three honest refusal states, `ResolveSource` verifies DBpedia, 9 gold + 2 adversarial cases, a sixth gate, and a live suite gated on a measured floor | Agent package, which phase 6 DoD #6 forbade |
 | **7** `cinematic-surface` **COMPLETE 2026-09-09** | **v0.8** | **v0.7.1** (pinned, unchanged) | The guided tour, the signature moment on one timeline, and the design half: full-page backdrop, motion system, asset budget | Frontend, plus one tool behind the existing tool contract |
-| **7.6** `classical-lineage` **SCOPED 2026-09-11, inserted before 7.5 closes** | **v0.9** | **v0.10.0** (decided 2026-09-11; why the jump, see below the table) | Pre-1900 lineage: the `mul` label fix, a `studied_with` predicate from P1066, artist birth years, and the gate opened to a second predicate on purpose | Ingestion + artifact schema, plus `agent/claims.py:ALLOWED_PREDICATES` |
+| **7.6** `classical-lineage` **COMPLETE 2026-09-11** | **v0.9** | **v0.10.0** (decided 2026-09-11; why the jump, see below the table) | Pre-1900 lineage: the `mul` label fix, a `studied_with` predicate from P1066, artist birth years, and the gate opened to a second predicate on purpose | Ingestion + artifact schema, plus `agent/claims.py:ALLOWED_PREDICATES` |
 | **7.7** `name-resolution` **SCOPED 2026-09-11, after 7.6, before 7.5 resumes** | **v0.9.5** | **v0.10.0** (no cut of its own; uses 7.6's stored aliases) | Partial names and Wikidata aliases are OFFERED as one-click choices, never resolved by the system; the one live re-baseline and the one deploy for 7.6 and 7.7 together | `graph/memory.py` resolution, the SSE contract, the frontend |
 | **7.5** `portfolio-and-writeup` **SUSPENDED 2026-09-11 at step 5** | **v1.0** | ~~v0.7.1 (pinned, unchanged)~~ **v0.10.0, inherited from 7.6** | The published eval report, the trend view, the writeup, the README and the recruiter path; the Terraform round-trip and a verified bill | No architecture change |
 | **8** `membership-tour` **SCOPED 2026-09-09, not started** | **v1.1** | **v0.7.1** (pinned, unchanged) | The tour crosses axes: genre to artist to genre, so the corpus's one connected component becomes something the product can walk rather than a number in a structure report | `agent/claims.py:ALLOWED_PREDICATES`, a one-way door opened on purpose |
@@ -134,6 +134,24 @@ be built on. See `docs/graph-semantics.md`.
 **v0.1 definition of done:** a public URL that streams a grounded, cited, two-sentence answer about one
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
+
+### Where the build actually is — 2026-09-11
+
+**PHASE 7.6 `classical-lineage` IS COMPLETE — steps 0 through 10, 2026-09-11.** Its as-built is
+`docs/phases/phase-7.6-classical-lineage-IMPLEMENTATION.md`; **read that rather than restating it here.**
+Artifact **v0.10.0 is cut and pinned everywhere**: 3,628 nodes and 9,276 edges (2,309 `influenced_by`,
+2,469 `studied_with`, 4,498 `plays_genre`), 61 components with 3,490 nodes in the largest, 2,889 artists
+of whom 2,111 were born before 1900. The gate admits **two** predicates on purpose, and teaching is
+narrated in its own words on every surface. `make check` is green: 1,716 Python tests, 448 frontend tests,
+free gates **4 passed / 0 failed / 2 N/A of six**.
+
+**What is deliberately NOT done in 7.6, and is phase 7.7's:** no deploy, and no live re-baseline. The live
+threshold set is still the 2026-09-07 one over 56 cases against a dataset of 63, so a live run reports
+`NOT GATED` — by design, and the step 0 pin guard refuses it independently. **The held-out set is stale**:
+`make heldout-check` reports `artifact-pin-moved` plus `claims-diverged` on two cases, nothing was
+re-sealed, and **his decision on 2026-09-11 is to draw a new set as phase 7.7's first task**.
+
+*(The block below is dated 2026-09-10 and describes the state before 7.6.)*
 
 ### Where the build actually is — 2026-09-10
 

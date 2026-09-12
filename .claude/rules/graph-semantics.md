@@ -12,6 +12,15 @@ disagree on licensing, **`04`'s stricter rule governs**. Hard rules:
   edges carried a historical claim — so **P279 is not ingested at all**, and `graph/schema.py` plus
   `agent/claims.py:36` are two independent locks on that. Amended 2026-08-02: P737 is not uniformly
   historical either; some P737 edges encode taxonomy, and the prose check structurally cannot catch it.
+- **P1066 `student of` IS ingested, hand-checked first, at v0.10.0 — the opposite verdict from P279.**
+  40 rows read before a single edge was written (`docs/graph-semantics.md` §8, full record in
+  `docs/p1066-handcheck.md`): **zero** wrong relations and **zero** inversions, against P279's 47 of 47
+  category errors. It is stored *student* `studied_with` *teacher*, it is artist-to-artist, and **it is
+  teaching rather than influence** — a claim states what its source asserts, and P1066 asserts study.
+  Its tier is `TEACHING_PROSE_AUTO` and it means only that the student's article names the teacher in
+  body prose: 27 of the 30 rows the check passed rested on a sentence about study, so roughly one in ten
+  does not. A `studied_with` edge never corroborates an `influenced_by` edge.
+
 - **P279 chains climb out of the genre domain** — vertically (genre → "art form" → … → `oscillation`) and
   **laterally at depth 1** (`blues` → `music of North America`), which the planning docs did not predict.
   Since P279 is not ingested, this is contained rather than solved: the only question asked of the

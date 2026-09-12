@@ -41,7 +41,15 @@ license of any given value is determined by which field it sits in, not by inspe
 **Article prose itself is still not stored in the artifact** — `graph.json` holds identifiers, labels,
 dates and countries, and no sentences.
 
-It is stored in one place: `artifacts/*/exclusions.json` quotes a short excerpt of the subject article's
+**It is stored in TWO places as of 2026-09-11 (phase 7.6 step 9), not one.** The second is
+`eval/datasets/gold_v0_1.json`: each hand-verified gold claim carries a `supporting_prose` sentence
+quoted from the article named in its `supporting_prose_source`, alongside the published work Wikipedia
+cites for it. The five teaching cases added that day quote English, Italian and German articles. These are
+single sentences, quoted to make a claim checkable rather than to reproduce an article, each attributed to
+its source article by URL and date of reading, and they live in an eval dataset rather than in the
+product's output. The same CC BY-SA 4.0 terms and the same reasoning as the excerpts below apply to them.
+
+The first place is `artifacts/*/exclusions.json`, which quotes a short excerpt of the subject article's
 infobox `stylistic_origins` field in the `reason` of an `INFOBOX_ONLY` row, so a rejection can be
 checked rather than taken on trust. 32 such rows at v0.2.0, a line or two each. **Wikipedia text is
 CC BY-SA 4.0**, the excerpts are brief and factual, and the row names the subject article they came

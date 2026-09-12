@@ -27,7 +27,9 @@ sentence.** The row read *"Take me from delta blues to Detroit techno"* from 202
 at artifact v0.7.1: **there is no path between them in either direction**, and no undirected connection
 either. `Delta blues` sits in a two-node influence component with `Chicago blues` and has no sourced parents
 at all; `Detroit techno` sits in the 534-node one. Over `influenced_by` alone the corpus holds **138
-components, largest 534** — the familiar "7 components, 1,465 in the largest" counts `plays_genre` as well,
+components, largest 534** — the familiar "7 components, 1,465 in the largest" (v0.7.1; **61 and 3,490 of
+3,628 at v0.10.0**, where 54 of the new components are teaching lineages standing apart) counts
+`plays_genre` as well,
 which is exactly `CLAUDE.md`'s point that the organism is connected through the people who play across it,
 and is not a set of routes an influence walk can take.
 
@@ -358,7 +360,10 @@ rather than presenting one undifferentiated edge count.
 
 This is the connectivity half of the same honesty, and it is the half a visitor cannot infer. An edge
 count alone implies one connected graph, and for most of this project's life the corpus was not one:
-**169 disconnected islands at v0.5.0, 7 at v0.7.1, with 1,465 of 1,479 nodes now in the largest.**
+**169 disconnected islands at v0.5.0, 7 at v0.7.1, and 61 at v0.10.0 with 3,490 of 3,628 nodes in the
+largest** — the count rose because the teaching layer brought in 2,066 artists whose only edge is
+`studied_with`, 54 of whose lineages do not touch the main body, so the largest component and the island
+count grew together.
 Relating two genres is still a capability *within* a component, and two nodes in different components
 still have no sourced path at all — the constraint did not disappear, it stopped being the dominant
 fact. `max_path_hops` is the deepest chain `path()` can return anywhere in the corpus. Publishing both
@@ -504,12 +509,13 @@ so the model may not supply it and cannot inflate it. It says **how strongly thi
 checked. It is not a count of agreeing sources and not a disputed flag.**
 
 > **Amended 2026-09-06.** This paragraph ended *"every edge in this corpus has exactly one source, always
-> Wikidata, so there is nothing here that could corroborate anything"*. False since v0.7.0: **82 of 2,284
-> influence edges carry a second source** and `Edge.corroboration` records it. What has **not** changed is
+> Wikidata, so there is nothing here that could corroborate anything"*. False since v0.7.0: **82 of 2,309
+> influence edges carry a second source** (82 of 2,284 at v0.7.1) and `Edge.corroboration` records it. What has **not** changed is
 > the sentence that matters — `verification` and `corroboration` are **different fields**, one says how
 > hard a single source was checked and the other whether a second agrees, a corroboration never promotes
-> a tier, and reading these tiers as agreement is still reading the opposite of the truth. **2,202 of
-> 2,284 edges remain single-source**, so that reading is wrong about 96% of the corpus by construction.
+> a tier, and reading these tiers as agreement is still reading the opposite of the truth. **2,227 of
+> 2,309 edges remain single-source** at v0.10.0 (2,202 of 2,284 at v0.7.1), so that reading is wrong about
+> 96% of the corpus by construction. The 2,469 teaching edges are all Wikidata and add no second source.
 
 What it buys: a user reading a five-claim answer can see that four rest on an automated assertion filter
 and one rests on documented exposure at 20% recall. That is a **per-claim** honesty guarantee, where
