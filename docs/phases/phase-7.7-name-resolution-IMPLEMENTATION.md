@@ -420,7 +420,7 @@ Given to him at approval, and repeated here because it is the part that is easy 
 6. `make heldout-check`
 7. `git add -A && git status` then the commit he runs himself.
 
-### Step 1 — Guards before anything moves
+### Step 1 — Guards before anything moves — [done]
 
 The locks that make the rest of the phase safe to build, written before the behaviour changes.
 
@@ -433,7 +433,55 @@ The locks that make the rest of the phase safe to build, written before the beha
 **Done when:** the new tests pass against unchanged behaviour. A guard that passes only after the
 feature lands was never a guard.
 
-### Step 2 — The alias index and candidate generation
+#### 1.0 As built — what the plan did not know
+
+**Status: done. `tests/test_name_resolution.py` (5 tests) plus `tests/candidate_baseline_v0_10_0.json`,
+written once and not to be regenerated, on the `resolution_snapshot_v0_7_1.json` pattern.
+`make check` green: 1,730 Python passed, 0 skipped, 448 frontend, free gates 4 / 0 / 2 N/A of six.**
+
+**Every candidate count in §2's table reproduces exactly** — all 16 rows, plus `mozart` reaching the
+three Mozarts with Timbaland ("Mozart Timadeas") and Samuel Wesley ("English Mozart"), plus `x` reaching
+four nodes through tokenised initials. So does `37`, and so does `19`. The table is trustworthy.
+
+**One §2 figure does NOT reproduce: "54 aliases contain non-Latin characters".** Measured on the pinned
+artifact: **28** aliases have a letter outside the Latin script, **518** are non-ASCII, **47** keep a
+non-alphanumeric character through `normalise`, 16 *nodes* hold a non-Latin alias. Eight readings were
+tried and none gives 54. The baseline records the measured values and the discrepancy; **D5 is
+unaffected**, because the one-character rule rests on `two_chars_or_fewer`, which is 19 as stated.
+Step 1's stated purpose was to make these counts asserted rather than remembered, and it caught one on
+first use, which is the argument for the step.
+
+**The collision count is normaliser-dependent, and §2's 27 is the `normalise` answer.** Under
+`label_key` it is **32**. The two differ by the optional trailing "music" fold, and this matters because
+`search` matches on `normalise` while `exact_matches` filters on `label_key`: **an alias index has to
+state which one it means.** The baseline records both, labelled.
+
+**Of the 37 collisions, 35 have exactly one label owner and 2 do not.** `big band` and `big band music`
+are two labels folding to one `label_key`, so that query is ambiguous today and refuses — which §2's
+table already shows as `2 | 2 | ambiguous, refuses`, and which is correct behaviour owing nothing to
+aliases. The guard therefore asserts the weaker true claim, "never the alias holder", with each of the
+37 resolutions pinned individually.
+
+**The breakage test changed the design of a guard, which is the second argument for writing guards
+first.** Rewriting `exact_matches` to compare aliases was expected to fail all three locks. It failed
+two. The collision guard skipped, because comparing aliases makes those queries **ambiguous** rather
+than wrongly resolved — two matches, not one — and the guard's `if resolved is None: continue` swallowed
+it. A guard with a None escape hatch passes the break it exists to catch, which is the shape of
+"a system that refuses everything scores perfectly" from `.claude/rules/grounding-and-claims.md`. Fixed
+by pinning all 37 resolutions in the baseline, four of them as `null`. Re-broken afterwards: all three
+fail, and all three pass on restore.
+
+**A finding for step 2, not fixed here: the `label_key` "music" fold is installed at the filter and not
+at the index.** `label_key("electro music")` is `electro`, and a node is labelled `electro`, but
+`store.search("electro music")` returns **nothing** — `_contains_words` needs the query's words inside a
+label, and "electro" does not contain "electro music". So the query refuses even though the fold says
+the two names are the same. **3,500 of 3,628 nodes cannot be reached by `<label> music`** for the same
+reason, and `jerk music` is a live instance among the 37 collisions. This is pre-existing, unrelated to
+aliases, and it is the *opposite* direction from this phase's purpose: a complete, correctly folded name
+refuses. Step 2 builds an index over this exact seam, so **it wants a decision rather than a silent
+fix** — widening `search` to fold changes what resolves, which is a one-way door and his call.
+
+### Step 2 — The alias index and candidate generation — [done]
 
 `graph/memory.py`: a second index, alias-normalised to nodes, kept out of `_by_name` (trap 10). A new
 `offer_candidates(store, name)` returning ordered candidates with their `via`/`alias` provenance, the
@@ -442,6 +490,67 @@ D4 cap, and the D5 one-character rule. `search` gains alias candidates; `exact_m
 **Done when:** the measured table in §2 is reproduced by tests, `test_resolution_stability.py` is green
 against the v0.7.1 snapshot with `RESOLUTION_CHANGES` still empty, and the updated
 `tests/test_graph_store.py` expectations each carry their reason.
+
+#### 2.0 As built — what the plan did not know
+
+**Status: done. `make check` green — 1,737 Python passed, 0 skipped, 448 frontend, free gates 4 / 0 /
+2 N/A of six.** `graph/memory.py` gains `_by_alias` (a second dict, per trap 10), `alias_index()`,
+`OFFER_CAP = 25`, frozen `Candidate` and `Offer` dataclasses, and `offer_candidates`. Seven new tests in
+`tests/test_name_resolution.py`, twelve in that file overall. `RESOLUTION_CHANGES` is still empty.
+
+**All 16 rows of §2's table reproduce, from two independent implementations.** `offer_candidates` and
+the baseline's own `candidates_with_aliases` walk the corpus differently and agree on every count, so
+the table is now asserted by code rather than by a measurement somebody took once.
+
+**DEVIATION, and the most important thing on this page: `search` was NOT widened to aliases.** The step
+said "`search` gains alias candidates". It does not, and the alias reach lives entirely in
+`offer_candidates`. Three reasons, in rising order:
+
+1. **Measured breakage.** Widening `search` adds Black Sabbath, `alternative R&B` and
+   `contemporary R&B` to `search("blues")`, which fails
+   `test_exact_match_outranks_a_longer_containing_genre`'s "every runner-up genuinely contains the
+   query". That is trap 8 arriving exactly where trap 8 said it would.
+2. **It would put aliases on the resolution path.** With aliases in `search`, the *only* thing standing
+   between 5,561 alias strings and a silent resolution is `exact_matches`' label filter — one line, one
+   layer. Keeping them out of `search` makes "an alias can never resolve anything" true of the index
+   *and* the filter. Trap 10 says keep the alias index out of `_by_name`; this is the same argument one
+   layer up, and the phase's whole purpose is served better by the stricter reading.
+3. **It costs nothing.** Step 3 calls `offer_candidates` from `ResolveNode` for the offer and `search`
+   for the resolution. Nothing needed alias candidates in `search` itself.
+
+Consequences, all good: **`tests/test_graph_store.py` needed zero changes**, so the "each carry their
+reason" clause is satisfied by there being nothing to explain; the baseline's `search_today` and
+`exact_today` columns stay *live assertions* rather than history, and
+`test_search_and_exact_matches_never_see_an_alias` checks all 32 of them every commit. This is a
+two-way door — widening `search` later is a few lines — and it is recorded here rather than done
+quietly.
+
+**HIS DECISION, 2026-09-12: the `label_key` "music" fold OFFERS, and does not resolve.** The finding is
+in §1.0. Options put to him were leave it, offer-only, or fold at the index; he took offer-only.
+`electro music` and `jerk music` now offer `electro` and `jerk` as choices, `resolve_exact` still
+returns `None` for both, and `store.search` still returns `[]` for them — the fold deliberately does not
+reach the resolution path. The rejected full fold would have made `big band music` ambiguous against
+`big band` and cost it its resolution, for one node's benefit, through a one-way door;
+`test_the_music_fold_offers_a_choice_and_resolves_nothing` asserts that node still resolves.
+
+**D5 is implemented as "every token is one character", not "drop one-character tokens".** Dropping them
+would turn `f x mozart` into `mozart` and offer five Mozarts instead of the one real alias hit
+("F. X. Mozart"). The narrow rule kills `x` — which genuinely reaches four nodes through tokenised
+initials, asserted alongside so the rule is visibly doing work — and leaves every legitimate query
+alone. `r&b` survives because `normalise` makes it `rb`, two characters; that was checked before the
+rule was written, since D5 phrased as "one character" over a *token* list would otherwise have deleted
+the six R&B offers D6 exists to produce.
+
+**Verified by deliberate breakage.** Merging `_by_alias` into `_by_name` — the trap 10 violation —
+fails **eight tests across three files**, including `test_resolution_stability.py` and
+`test_graph_store.py`. Both the offer arithmetic and the resolution snapshot catch it, which is the
+redundancy worth having: the baseline notices the counts moving and the snapshot notices names
+resolving differently.
+
+**Left for step 3, deliberately:** nothing here decides *when* to offer. `offer_candidates` reports
+candidates for any term, including terms that resolve cleanly (`roy orbison` returns one). D3's rule —
+an offer accompanies a refusal and never replaces one — is the loop's to enforce, and putting it here
+would be a second copy of a decision that belongs in one place.
 
 ### Step 3 — `ToolResult.offers`, the tool, and the loop
 

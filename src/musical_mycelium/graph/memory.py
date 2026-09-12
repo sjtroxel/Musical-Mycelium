@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import unicodedata
 from collections import defaultdict, deque
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from pathlib import Path
 
@@ -106,6 +107,111 @@ def exact_matches(candidates: Iterable[Node], name: str) -> list[Node]:
     return [node for node in candidates if label_key(node.label) == key]
 
 
+#: D4: 25 candidates shown, **all or nothing**. At or under the cap every candidate is shown; over it,
+#: none are, and the count is stated with a request for more of the name. Truncating a longer list by
+#: label length is ranking under another name, and the scope doc forbids ranking; an honest count plus
+#: an ask is not ranking. Measured effect on this corpus: `bach` shows all 14, `black` 9, `r&b` 6,
+#: `mozart` 5; `metal` (34), `john` (42) and `music` (235) show a count and an ask.
+OFFER_CAP = 25
+
+
+@dataclass(frozen=True, slots=True)
+class Candidate:
+    """One offered choice, carrying why it was offered. D7.
+
+    ``via`` is ``"label"`` or ``"alias"``, and ``alias`` holds the alias text exactly as the source
+    wrote it when ``via == "alias"``. Timbaland appearing under "mozart" is then legible — it is there
+    because Wikidata lists "Mozart Timadeas" — rather than mysterious, which is the honest way to
+    present a noisy source.
+    """
+
+    node_id: str
+    label: str
+    kind: str
+    via: str
+    alias: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Offer:
+    """The candidates for one typed term, plus the arithmetic a person needs to trust the list.
+
+    ``total`` is always the true count of candidates found. ``shown`` is how many are in
+    ``candidates`` — equal to ``total`` at or under :data:`OFFER_CAP`, and ``0`` above it. Both are
+    stated because a truncated list that does not say it was truncated is a quiet lie about how
+    ambiguous the query was.
+    """
+
+    term: str
+    candidates: tuple[Candidate, ...]
+    total: int
+    shown: int
+
+    @property
+    def over_cap(self) -> bool:
+        return self.total > OFFER_CAP
+
+
+def offer_candidates(store: InMemoryGraphStore, name: str) -> Offer:
+    """Every node a typed name could plausibly mean, as choices for a person — never a resolution.
+
+    Three ways in, and all three are whole-word (``_contains_words``, D10 — one whole-word rule in the
+    codebase, never a second copy):
+
+    1. **Label**, reusing ``search`` so the offer list and the resolver agree about what a label match
+       even is, and so exact matches keep leading the list.
+    2. **Alias**, through ``alias_index``. This is the new reach, and it is the reason this function
+       returns offers rather than resolutions.
+    3. **The ``label_key`` "music" fold** — his decision, 2026-09-12. ``label_key("electro music")`` is
+       ``electro`` and a node is labelled ``electro``, but ``search`` finds nothing for it, because
+       ``_contains_words`` needs the query's words inside a label and "electro" does not contain
+       "electro music". So the fold was installed at the ``exact_matches`` filter and never at the
+       index, and a complete, correctly folded name refused. **3,500 of 3,628 nodes are unreachable by
+       ``"<label> music"`` for that reason.** Offering the fold's target fixes the dead end without
+       widening what resolves: resolution still needs one exact label match, and this path produces a
+       choice. The alternative, folding at the index, would have made ``big band music`` ambiguous
+       against ``big band`` and was rejected as a one-way door for one node's benefit.
+
+    **D5, and it is the first thing this does:** a query whose every token is a single character
+    matches nothing. That kills the ``x`` path — "x" reaches "F. X. Mozart", DMX, NOFX and "X Tina"
+    through tokenised initials — and it costs nothing real, because no musician or genre in this corpus
+    is found by one letter. ``r&b`` survives it: ``normalise`` makes that ``rb``, two characters.
+    """
+    tokens = normalise(name).split()
+    if not tokens or all(len(token) <= 1 for token in tokens):
+        return Offer(term=name, candidates=(), total=0, shown=0)
+
+    found: dict[str, Candidate] = {}
+    for node in store.search(name):
+        found[node.id] = Candidate(node.id, node.label, node.kind, via="label")
+
+    key = label_key(name)
+    if key != normalise(name):
+        for node in store.search(key):
+            if node.id not in found and label_key(node.label) == key:
+                found[node.id] = Candidate(node.id, node.label, node.kind, via="label")
+
+    query = normalise(name)
+    aliased: list[Candidate] = [
+        Candidate(node.id, node.label, node.kind, via="alias", alias=alias)
+        for alias_key, holders in store.alias_index().items()
+        if _contains_words(alias_key, query)
+        for node, alias in holders
+        if node.id not in found
+    ]
+    # Deterministic and not a ranking: label order only, so two runs never disagree. The label bucket
+    # keeps ``search``'s order ahead of it, which is what preserves "exact match first".
+    aliased.sort(key=lambda candidate: (len(candidate.label), candidate.label, candidate.node_id))
+    for candidate in aliased:
+        found.setdefault(candidate.node_id, candidate)
+
+    candidates = tuple(found.values())
+    total = len(candidates)
+    if total > OFFER_CAP:
+        return Offer(term=name, candidates=(), total=total, shown=0)
+    return Offer(term=name, candidates=candidates, total=total, shown=total)
+
+
 def resolve_exact(store: GraphStore, name: str) -> Node | None:
     """The one node ``name`` resolves to, or ``None`` for both no match and an ambiguous one.
 
@@ -136,6 +242,22 @@ class InMemoryGraphStore:
         self._by_name: dict[str, list[Node]] = defaultdict(list)
         for node in artifact.nodes:
             self._by_name[normalise(node.label)].append(node)
+
+        # **A SECOND dict, deliberately not merged into ``_by_name``** — phase 7.7 step 2, trap 10.
+        # ``_by_name`` feeds ``search``'s exact bucket, and ``exact_matches`` counts zero/one/two off
+        # that list to decide resolve-versus-ambiguous. Merging aliases in would change that arithmetic
+        # and turn 2,469 alias strings into silent resolutions, which is the opposite of this phase.
+        #
+        # 37 aliases in this corpus equal a *different* node's label (``heavy metal`` is an alias of
+        # ``traditional heavy metal``) and 27 alias keys are claimed by two or more nodes, so an alias
+        # may only ever produce an **offer** a person chooses. Keyed on ``normalise`` rather than
+        # ``label_key``, matching ``_by_name``: the two answer the same question differently (27 versus
+        # 32 collisions), and an index that mixes them is an index nobody can reason about.
+        by_alias: dict[str, list[tuple[Node, str]]] = defaultdict(list)
+        for node in artifact.nodes:
+            for alias in node.aliases:
+                by_alias[normalise(alias)].append((node, alias))
+        self._by_alias = dict(by_alias)
 
         # DBpedia resource -> node, for `node_by_resource`. Built here rather than scanned per call:
         # a resolve_source tool call would otherwise walk 1,479 nodes to answer one citation.
@@ -321,6 +443,15 @@ class InMemoryGraphStore:
     def contested_between(self, a_id: str, b_id: str) -> ContestedPair | None:
         """See ``GraphStore.contested_between``. Order-independent, and derived, never stamped."""
         return self._contested_index.get((a_id, b_id) if a_id < b_id else (b_id, a_id))
+
+    def alias_index(self) -> Mapping[str, list[tuple[Node, str]]]:
+        """Normalised alias -> the nodes holding it, with the alias text as written.
+
+        Read-only by contract and read by ``offer_candidates`` alone. Nothing on the resolution path
+        may consult this: ``search`` and ``exact_matches`` see labels only, which is what makes "an
+        alias can never resolve anything" a property of the code's shape rather than of a prompt.
+        """
+        return self._by_alias
 
     def node_by_resource(self, resource: str) -> Node | None:
         """See ``GraphStore.node_by_resource``. Index built at load; ambiguity resolves to ``None``."""

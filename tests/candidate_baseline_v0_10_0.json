@@ -1,0 +1,178 @@
+{
+  "_comment": [
+    "GENERATED ONCE on 2026-09-12 and NOT regenerated. Phase 7.7 step 1.",
+    "The 'before' half of a comparison: regenerating it on a later corpus would compare that",
+    "corpus with itself, which is the mistake resolution_snapshot_v0_7_1.json exists to avoid.",
+    "",
+    "search_today            -- whole-word matching over LABELS only, what search() returns now.",
+    "exact_today             -- of those, how many pass exact_matches; 1 resolves, 0 and 2 refuse.",
+    "candidates_with_aliases -- what whole-word matching over labels AND aliases would reach,",
+    "                           which is what step 2 opens up and step 3 turns into offers.",
+    "",
+    "The alias block records the facts step 2's rules are sized against. Note that the same",
+    "collision question gives 27 under normalise and 32 under label_key: search uses the first",
+    "and exact_matches the second, so an alias index must state which it means.",
+    "",
+    "non_latin_script counts aliases with a letter outside the Latin script (28). The phase",
+    "IMPLEMENTATION doc's section 2 says 54 'contain non-Latin characters'; that figure does not",
+    "reproduce under any reading tried on 2026-09-12 -- non-ASCII is 518, non-Latin script 28,",
+    "non-alphanumerics surviving normalise 47. The measured values are recorded here and the",
+    "doc's as-built section records the discrepancy. D5's one-character rule is unaffected:",
+    "two_chars_or_fewer is 19, which the doc states and which does reproduce.",
+    "",
+    "collision_resolutions pins what each of the 37 colliding aliases resolves to TODAY, including",
+    "the four that resolve to nothing. Pinned per alias because 'resolved is None' must not be an",
+    "escape hatch: breaking exact_matches to compare aliases makes most of these ambiguous rather",
+    "than wrong, and a guard that skips None passes that break."
+  ],
+  "artifact": "0.10.0",
+  "measured_at": "2026-09-12",
+  "queries": {
+    "mozart": {
+      "search_today": 3,
+      "exact_today": 0,
+      "candidates_with_aliases": 5
+    },
+    "dolly": {
+      "search_today": 1,
+      "exact_today": 0,
+      "candidates_with_aliases": 1
+    },
+    "beethoven": {
+      "search_today": 1,
+      "exact_today": 0,
+      "candidates_with_aliases": 1
+    },
+    "chopin": {
+      "search_today": 1,
+      "exact_today": 0,
+      "candidates_with_aliases": 1
+    },
+    "brahms": {
+      "search_today": 1,
+      "exact_today": 0,
+      "candidates_with_aliases": 1
+    },
+    "schumann": {
+      "search_today": 2,
+      "exact_today": 0,
+      "candidates_with_aliases": 2
+    },
+    "liszt": {
+      "search_today": 2,
+      "exact_today": 0,
+      "candidates_with_aliases": 3
+    },
+    "bach": {
+      "search_today": 14,
+      "exact_today": 0,
+      "candidates_with_aliases": 14
+    },
+    "r&b": {
+      "search_today": 2,
+      "exact_today": 0,
+      "candidates_with_aliases": 6
+    },
+    "black": {
+      "search_today": 5,
+      "exact_today": 0,
+      "candidates_with_aliases": 9
+    },
+    "metal": {
+      "search_today": 28,
+      "exact_today": 0,
+      "candidates_with_aliases": 34
+    },
+    "john": {
+      "search_today": 28,
+      "exact_today": 0,
+      "candidates_with_aliases": 42
+    },
+    "music": {
+      "search_today": 141,
+      "exact_today": 0,
+      "candidates_with_aliases": 235
+    },
+    "big band": {
+      "search_today": 2,
+      "exact_today": 2,
+      "candidates_with_aliases": 2
+    },
+    "roy orbison": {
+      "search_today": 1,
+      "exact_today": 1,
+      "candidates_with_aliases": 1
+    },
+    "james brown": {
+      "search_today": 1,
+      "exact_today": 1,
+      "candidates_with_aliases": 1
+    }
+  },
+  "aliases": {
+    "total": 5561,
+    "nodes_with_aliases": 2423,
+    "equal_to_another_nodes_label": 37,
+    "collisions_with_one_label_owner": 35,
+    "collisions_ambiguous_by_label": 2,
+    "keys_claimed_by_multiple_nodes_normalise": 27,
+    "keys_claimed_by_multiple_nodes_label_key": 32,
+    "non_latin_script": 28,
+    "non_ascii": 518,
+    "two_chars_or_fewer": 19
+  },
+  "flagship": {
+    "mozart": [
+      "Franz Xaver Wolfgang Mozart",
+      "Leopold Mozart",
+      "Samuel Wesley",
+      "Timbaland",
+      "Wolfgang Amadeus Mozart"
+    ],
+    "x": [
+      "Christina Aguilera",
+      "DMX",
+      "Franz Xaver Wolfgang Mozart",
+      "NOFX"
+    ]
+  },
+  "collision_resolutions": {
+    "Americana": "Americana",
+    "Big Band": null,
+    "California sound": "California Sound",
+    "Classical music": "classical music",
+    "James Morrison": "James Morrison",
+    "acid rock": "acid rock",
+    "aleatoric music": "aleatoric music",
+    "background music": "background music",
+    "big band": null,
+    "classical music": "classical music",
+    "conjunto": "conjunto",
+    "crossover": "crossover",
+    "cumbia": "Cumbia",
+    "dance": "dance music",
+    "dance music": "dance music",
+    "dirty south": "dirty south",
+    "electro music": null,
+    "folk music": "folk music",
+    "funk": "funk",
+    "hardcore": "hardcore",
+    "heavy metal": "heavy metal music",
+    "hip hop": "hip-hop",
+    "incidental music": "incidental music",
+    "jazz-rock": "jazz rock",
+    "jerk": "jerk",
+    "jerk music": null,
+    "kosmische Musik": "Kosmische Musik",
+    "musical comedy": "musical comedy",
+    "pop": "pop music",
+    "pop metal": "pop metal",
+    "pop music": "pop music",
+    "post-disco": "post-disco",
+    "progressive pop": "progressive pop",
+    "psychedelic hip-hop": "psychedelic hip-hop",
+    "rumba": "rumba",
+    "slowcore": "slowcore",
+    "stoner metal": "stoner metal"
+  }
+}

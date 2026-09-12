@@ -27,8 +27,20 @@
 > 10 cases, 2 refusals, shapes descendants 2 / origins 5 / path 2 / teachers 1, `heldout-verify` matching
 > and `heldout-check` reporting zero findings. Run count 0 — it is run once at the 7.7 freeze, after the
 > live re-baseline.** `heldout_v1` is **retired and deleted from the tree** (ciphertext still in git at
-> `b9072ee`); nothing was re-sealed or opened. **NEXT IS STEP 1**, the guard tests, then step 2's alias
-> index — both free. **He draws any future set from his own seed**; an agent may run `heldout-verify`, read
+> `b9072ee`); nothing was re-sealed or opened. **STEPS 1 AND 2 ARE DONE — 2026-09-12, both free.**
+> ~~NEXT IS STEP 1, the guard tests, then step 2's alias index — both free.~~ Step 1: five guards plus
+> `tests/candidate_baseline_v0_10_0.json`, written once. Step 2: the alias index, `offer_candidates`,
+> the D4 cap, D5 and D7. `make check` green at **1,737 Python / 448 frontend**, free gates 4 / 0 / 2
+> N/A. `RESOLUTION_CHANGES` still empty. **NEXT IS STEP 3**, `ToolResult.offers` and the loop.
+> Two things a cold session should read in `phase-7.7-name-resolution-IMPLEMENTATION.md` rather than
+> rediscover: **§1.0** — §2's "54 aliases contain non-Latin characters" does **not** reproduce (measured:
+> 28 non-Latin script, 518 non-ASCII, 47 keeping a non-alphanumeric through `normalise`), and the
+> collision count is normaliser-dependent (27 under `normalise`, 32 under `label_key`). **§2.0** — the
+> plan said "`search` gains alias candidates" and **it deliberately does not**: aliases live only in
+> `offer_candidates`, which keeps them off the resolution path entirely and left `test_graph_store.py`
+> untouched. **His decision 2026-09-12:** the half-installed `label_key` "music" fold now **offers** a
+> choice (`electro music` -> `electro`) and still resolves nothing; the full index fold was rejected
+> because it would have cost `big band music` its resolution through a one-way door. **He draws any future set from his own seed**; an agent may run `heldout-verify`, read
 > `heldout-check`'s codes, and nothing else.
 > **THE OWED CORRECTION IS DONE — 2026-09-12, and it was on three surfaces, not one.** ~~OWED AND NOT
 > DONE: `README.md:99-102` is now false. It says the sealed held-out set "was run once, on 2026-08-24,
