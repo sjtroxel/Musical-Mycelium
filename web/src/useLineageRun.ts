@@ -7,6 +7,7 @@ import type {
   CorpusSummary,
   DoneFrame,
   Frame,
+  OfferFrame,
   PathFrame,
   RefusedFrame,
 } from "./types";
@@ -47,6 +48,14 @@ export interface StepState {
    * an opinion at all.
    */
   contested: ContestedFrame[];
+  /**
+   * Choices to put in front of the person when a typed name resolved to nothing. Phase 7.7 step 5.
+   *
+   * A list because one query can fail to resolve more than one name — a path question has two
+   * endpoints. **These are not results and not claims**: candidates are reached by alias as well as by
+   * label, so the only thing that may act on one is a person clicking it.
+   */
+  offers: OfferFrame[];
   done: DoneFrame | null;
   error: string | null;
 }
@@ -74,6 +83,7 @@ export function emptyStep(query: string): StepState {
     toolNodeIds: [],
     refusal: null,
     contested: [],
+    offers: [],
     done: null,
     error: null,
   };
@@ -118,12 +128,10 @@ export function applyFrame(step: StepState, frame: Frame): StepState {
     // `plan` is consumed but not stored.
     case "plan":
       return step;
-    // Phase 7.7 step 4 declares the frame; **step 5 owns rendering it.** Ignored here on purpose, the
-    // way `plan` is: an offer is presentation state for the refusal panel, not a mutation of the
-    // claim/path state this reducer folds. Present so the switch stays exhaustive over `Frame`, which
-    // is what makes a new frame type a compile error rather than a silent drop.
+    // Accumulated rather than replaced, for the reason `contested` is: a path query can fail to
+    // resolve both endpoints, and the second offer must not erase the first.
     case "offer":
-      return step;
+      return { ...step, offers: [...step.offers, frame] };
   }
 }
 

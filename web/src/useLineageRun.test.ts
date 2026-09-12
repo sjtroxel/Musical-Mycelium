@@ -27,6 +27,7 @@ function blank(): StepState {
     toolNodeIds: [],
     refusal: null,
     contested: [],
+    offers: [],
     done: null,
     error: null,
   };

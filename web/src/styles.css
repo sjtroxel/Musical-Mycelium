@@ -786,6 +786,89 @@ code {
   color: var(--ink-soft);
 }
 
+/* --- offers (phase 7.7 step 5) ---
+ *
+ * **Not one new colour, and that is the rule rather than a preference.** `StepPanel`'s docstring says a
+ * refusal is styled by a modifier that changes the heading wording only: no warning hue, no icon, no
+ * lighter weight, because a visitor reads "broken" before they read a word. So every token below is one
+ * already on the page, and `.offer__choice` is `.chip` with a different layout -- same `--card`, same
+ * `--rule`, same `--accent` on hover. The heading uses `--ink-faint` like `.claims__heading`, NOT
+ * `--contested`: a disagreement between sources and a name that did not resolve are different facts and
+ * must not share a signal colour. */
+
+.offer {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.offer__heading {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin: 0 0 0.6rem;
+  font-weight: 600;
+}
+
+.offer__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.offer__choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.offer__choice:hover:not([disabled]) {
+  border-color: var(--accent);
+}
+
+.offer__choice:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.offer__choice[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.offer__label {
+  font-weight: 600;
+}
+
+/* D7's "why" line. Quieter than the label because it is the reason rather than the choice -- but
+   present on every alias hit, because Timbaland under "mozart" has to be legible. */
+.offer__why {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* D4's other state: too many to list. Prose, not a list of nothing. */
+.offer__broad {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
 /* --- claims --- */
 
 .claims {

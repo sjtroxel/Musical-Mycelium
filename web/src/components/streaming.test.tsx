@@ -67,6 +67,7 @@ function step(overrides: Partial<StepState> = {}): StepState {
     toolNodeIds: ["Q221772"],
     refusal: null,
     contested: [],
+    offers: [],
     done: null,
     error: null,
     ...overrides,

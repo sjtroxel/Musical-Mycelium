@@ -687,7 +687,7 @@ a template to follow. Noted in §6 itself with a pointer to `agent/loop.py:Conte
 a different phase's frame is not this step's scope and doing it quietly would hide that it was missing
 for five days.
 
-### Step 5 — The frontend
+### Step 5 — The frontend — [done]
 
 Offer rendering as clickable choices in `StepPanel`, the D9 re-ask, the D7 "why" line, and the D4
 count-and-ask state for a query too broad to offer. Refusal styling stays a heading-wording modifier
@@ -695,6 +695,67 @@ count-and-ask state for a query too broad to offer. Refusal styling stays a head
 
 **Done when:** it works in the running app against the local stub for "mozart", "dolly", "r&b", "bach"
 and "music", with a hand check recorded here.
+
+#### 5.0 As built — the hand check, and two findings
+
+**Status: done. `make check` green — 1,746 Python passed, 0 skipped, 463 frontend (up 11), free gates
+4 / 0 / 2 N/A of six.** `web/src/components/OfferChoices.tsx` plus 11 tests, `StepState.offers`,
+`.offer*` styles, and `reAsk` exported and tested on its own because a wrong substitution would ask
+about the wrong thing while looking like it worked.
+
+**THE HAND CHECK — run in the real app, headless Chrome at `deviceScaleFactor: 2`, against
+`MYCELIUM_LLM_PROVIDER=local` on a Vite dev server. Measured, not eyeballed.**
+
+| query | offer state | measured |
+|---|---|---|
+| `mozart` | 5 listed, 2 with a "why" line | Timbaland *also known as "Mozart Timadeas"*, Samuel Wesley *"The English Mozart"* |
+| `dolly` | 1 listed | heading reads "one name like" from `total`, not from the row count |
+| `r&b` | 6 listed, 4 with a "why" line | `progressive R&B`, `R&B`, `urban R&B`, `New Orleans R&B` |
+| `bach` | 14 listed, 0 "why" lines | all label matches; block is **800px tall** |
+| `music` | none listed | "235 names in this graph contain "music" … try more of the name" |
+
+**D9 verified end to end, which is the part that could have been fake.** "Where did mozart come from?"
+→ click *Wolfgang Amadeus Mozart* → a **second** panel arrives titled "Where did Wolfgang Amadeus Mozart
+come from?" with 1 approved claim, and **the first panel keeps its refusal and its choices**. The
+refusal is not erased by the person acting on it, which is the behaviour the reuse of `annotate` buys.
+
+**"Not a new colour" was measured rather than asserted.** `.offer__heading` computes to
+`rgb(139, 129, 166)` — `--ink-faint`, the same token `.claims__heading` uses. Deliberately **not**
+`--contested`: a disagreement between sources and a name that did not resolve are different facts and
+sharing a signal colour would blur them.
+
+**`reAsk` extends D9 by one step, recorded rather than slipped in.** D9 says literal occurrence, then
+the bare label as fallback. There is now a **case-insensitive** attempt between the two, because `term`
+is what the model passed to `resolve_node` and need not be spelled the way the person typed it — a
+title-cased term would otherwise throw away the sentence and ask a bare name. D9's stated fallback is
+unchanged and still last.
+
+**FINDING 1 — a pre-existing prose bug, NOT caused by this step, and it is visible in the hand check.**
+The re-asked Mozart answer renders as *" came out of Johann Sebastian Bach."* with **no subject**.
+Reproduced on a direct query with no offer anywhere near it:
+`curl ".../lineage?q=Where did Wolfgang Amadeus Mozart come from?"` yields
+`{"text": " came out of Johann Sebastian Bach. "}`. Mechanism: the **local stub** names the subject by
+pattern-matching a `"Genre: "` marker out of the synthesis prompt (`agent/llm.py:600`), and
+`ORIGINS_SYNTHESIS_TEMPLATE` interpolates `{subject}` inline instead, so an **artist** subject with an
+influence claim finds nothing. "Acid jazz came out of …" is correct, so this is shape-specific rather
+than broken prose generally. **Same family as the bug `loop.py:173-176` already records** — `synthesize`
+once "fell through to the origins branch with a subject of `""`" and wrote "Hip-hop came out of hip-hop,
+hip-hop…". **Scope: the local stub only, as far as is verified.** The real model reads the prompt as
+prose rather than matching markers, and the deployed site runs Bedrock — but that half is *unverified*,
+because verifying it costs money. Not fixed here: it is neither this step's scope nor this phase's, and
+it is a demo-quality defect rather than a correctness one.
+
+**FINDING 2 — two things for him to weigh, both his calls and neither urgent.**
+1. **`bach` puts an 800px block on the screen, and the D4 cap of 25 would put roughly 1,400px there.**
+   The cap was chosen for honesty — showing a subset would be ranking — and that reasoning is intact;
+   the question is only whether a 25-row column wants a two-column grid, which is layout and not
+   ranking. Left alone because D4 is his decision and 14 rows is the worst case the corpus actually
+   produced in this check.
+2. **The refusal wording now reads slightly against the offer.** "…it is not in this graph" sits
+   directly above "This graph has 5 names like "mozart"". Both are true — no node is *labelled*
+   "mozart" — but a reader can hear a contradiction. This is `refusal_text`'s prose, **not** the
+   `reason` string the frame carries, so it could be softened without touching `refusal_accuracy`.
+   Public-facing copy, so his to write if he wants it changed.
 
 ### Step 6 — Evals, free tier only, and the held-out check
 

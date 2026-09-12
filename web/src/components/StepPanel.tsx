@@ -7,6 +7,7 @@ import type { StepState } from "../useLineageRun";
 import { ClaimList } from "./ClaimList";
 import { ContestedNotice } from "./ContestedNotice";
 import { NodeInspector } from "./NodeInspector";
+import { OfferChoices } from "./OfferChoices";
 
 /**
  * One query's panel — the answer *and* the refusal.
@@ -266,6 +267,16 @@ export function StepPanel({
           </p>
         </div>
       )}
+
+      {/* Phase 7.7 step 5. Above the contested notice and the claim list because on a refusal it is
+          the only actionable thing on the card, and below the prose because the refusal should be read
+          before the way out of it. Same card, same weight, no colour of its own. */}
+      <OfferChoices
+        offers={step.offers}
+        query={step.query}
+        busy={busy}
+        onAsk={onAnnotate ?? (() => {})}
+      />
 
       <ContestedNotice contested={step.contested} />
       <ClaimList claims={step.claims} labels={labels} />
