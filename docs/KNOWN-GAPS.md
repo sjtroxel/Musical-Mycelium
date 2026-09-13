@@ -2,6 +2,13 @@
 
 > ## START HERE — where things stand, 2026-09-13
 >
+> **2026-09-13, late morning: TWO GATED LIVE RUNS, ONE FAILED AND ONE PASSED, AND THE DEPLOY IS
+> CLEARED BY A RULE HE SET BEFORE THE SECOND RUN.** Both at `b5fcd24`, artifact 0.10.0, 63 cases, the
+> first full runs judged against the 2026-09-12 bounds. `20260913T150600Z` **FAILED `refusal_accuracy`**
+> (false 2/41, bound <= 1/41); `20260913T162609Z` **passed all six**. Detail, the rule, and the `adv_006`
+> direction-swap finding: the FINDING section of the same date below. **The report page lists both
+> runs**, not just the pass. The deploy has not been dispatched yet.
+>
 > **2026-09-13 morning: THE OWED PROSE IS DONE, and step 8 has not started.** Claude wrote it, with his
 > explicit permission for the README and the stale docs; the default that public prose is his is
 > unchanged. `README.md` (status, live suite, noise floor, a new exclusions bullet, the held-out run at
@@ -240,6 +247,47 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## FINDING — the first gated live run failed, the second passed, and the rule was set in between, 2026-09-13
+
+**Phase 7.7 step 8, before the deploy.** The five 2026-09-12 baseline runs stored no gate verdict,
+because the bounds were written after them, so one more full live run was spent to give the report a
+verdict against the current bounds. Both runs below are at `b5fcd24`; **no agent, graph, api, dataset,
+runner or suite code differs from the baseline revision `40d1b26`** (`git diff --stat` over those paths
+is empty), so any difference between them is the model's.
+
+- **Run 1, `20260913T150600Z`, $0.76: 5 passed, 1 FAILED.** `refusal_accuracy` read false 2/41 against
+  a bound of <= 1/41, excluding `gold_v0_1_020` and `adv_018`. The two were **`gold_v0_1_035` and
+  `adv_012`**, both on `noise_floor.json`'s unstable list, which false-refused in 2 of 5 and 1 of 5
+  baseline runs respectively and never in the same run. From the baseline's own per-case rates, two or
+  more of the three flaky answerable cases (`035`, `012`, `015`) coincide in roughly one run in five or
+  six. Rough: five observations per case. **The bound's `slack` reads "none beyond the measured
+  envelope", so this is that bound firing on known noise, not a regression.** 58/63 correct, inside the
+  58-60 baseline envelope; every other gate passed.
+- **THE RULE, set by him at 10:55 CDT, BEFORE run 2 started, recorded here afterwards by his choice:**
+  if all six gates pass, deploy today and publish run 1's failure beside the pass; if any gate fails, no
+  deploy today and no third run, and the next job is diagnosing `035` and `012`; a run cut short only by
+  provider errors does not count. **He asked, before deciding, whether a re-run would pass; the answer
+  given was roughly three in four**, with the warning that re-running until green turns a gate into a
+  coin, and that the rule plus publishing the failure is what keeps it from being that.
+- **Run 2, `20260913T162609Z`, $0.73: 6 passed, 0 failed.** True refusals 20/20, false 0/41, 62/63
+  correct (only `gold_v0_1_020`). **62 is not an improvement**: nothing changed, and it sits at the top of
+  the noise as run 1's 58 sat at the bottom. Also inside the noise and changing nothing: `adv_018`
+  refused this time, after answering in all six earlier runs.
+- **THE FINDING WORTH MORE THAN EITHER VERDICT: `adv_006` swapped the direction of the question.** Asked
+  "Where did house music come from?" (Q20502: 0 outgoing, 27 incoming), run 1 answered with **27
+  grounded, correctly cited claims about what came OUT of house music**, and prose that honestly said
+  "came out of house music". It refused in all five baseline runs and in run 2. This is the Joy/Roy
+  Orbison failure on the direction axis instead of the name axis: groundedness and citation resolution
+  are both 100%, the text is true, and it answers a different question. The adversarial case caught it
+  only because `max_approved_claims: 0`; a question whose premise is answerable in both directions would
+  not be caught by anything. **Not gated and not fixed.** It stayed inside `refusal_accuracy`'s true
+  bound (19/20 against >= 18). A structural check (an origins question whose approved claims all point
+  the other way) is plausible and is **owed as a decision, not built**.
+- **Report page:** `report_page.runs_judged_against_current_bounds` lists every verdict made against the
+  bounds on the page, oldest first, with failed gate names, so the pass never hides the failure. The table
+  still shows the newest verdict. Breakage-verified. The page's earlier "superseded bounds" label no longer
+  fires, because the newest verdict now matches.
 
 ## FINDING — the run-count claim was on THREE public surfaces, and one of them is generated, 2026-09-12
 

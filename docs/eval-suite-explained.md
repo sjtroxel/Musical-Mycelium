@@ -322,6 +322,25 @@ are deliberately left in the gates.
 Excluding a case that fails every run has a reason beyond tidiness: the day it is fixed, a bound that
 still counts it quietly gains a spare case of slack that nobody decided to grant.
 
+### The first gated run failed, and what happened next
+
+The five baseline runs could not store a pass or fail, because the thresholds were written after them.
+So on 2026-09-13 one more full run was made, the first to be judged against the new thresholds, and it
+**failed**. Two questions the system can answer were refused in the same run. Both were already on the
+list of cases that flip between identical runs, each had refused before, just never together, and no
+code had changed since the baseline. The threshold allowed one wrong refusal; the run had two.
+
+Running again until the gate goes green would turn the gate into a coin you keep flipping. So before a
+second run started, the rule was set: if it passes, deploy and publish the failure next to the pass; if
+it fails, stop, and work out why those two questions refuse. It passed all six, and the report shows both
+runs.
+
+The failed run also turned up something more interesting than either verdict. Asked **"Where did house
+music come from?"**, which the graph cannot source, the model answered a different question: what came
+*out of* house music, with 27 claims that were all real and all correctly cited. Every grounding check
+passed, because every sentence was true. It is the Orbison problem again, with the direction of the
+question swapped instead of the name, and it was caught only because that test expects no claims at all.
+
 ### The held-out set, run once
 
 With the thresholds committed, the sealed set was run for the first and only time at this freeze: 10 of

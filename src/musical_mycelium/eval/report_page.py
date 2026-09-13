@@ -85,6 +85,10 @@ COPY: dict[str, str] = {
         "required column is the earlier one. No full live run has been judged against the current "
         "bounds yet."
     ),
+    "live_gates_history": (
+        "Every run judged against these bounds is listed, not only the newest, so a failure is never "
+        "hidden by the pass that followed it:"
+    ),
     "live_gates_missing": (
         "No stored live run records its gate verdicts yet: runs began recording them on 2026-09-10. "
         "This section fills in from the next full live run."
@@ -311,7 +315,42 @@ def agreement_line(metric: Mapping[str, Any]) -> str:
 # --- sections ---------------------------------------------------------------------------------------
 
 
-def live_gates_section(live: Json, gated: tuple[str, Json] | None) -> str:
+def runs_judged_against_current_bounds(
+    live: Json, runs: Sequence[tuple[str, Json]]
+) -> list[tuple[str, Json]]:
+    """Every stored verdict made against the bounds on the page, oldest first. Phase 7.7 step 8.
+
+    The table shows the newest verdict only, which is right for a table and wrong for a record: on
+    2026-09-13 the first run gated against the 63-case bounds FAILED ``refusal_accuracy`` by one case and
+    the second, under a rule he set before it started, passed all six. Showing only the pass would be
+    the page quietly re-running a suite until it went green.
+    """
+    return [
+        (stamp, run)
+        for stamp, run in runs
+        if isinstance(run.get("gates"), dict)
+        and run["gates"].get("set") == live["name"]
+        and judged_against_current_bounds(live, run)
+    ]
+
+
+def history_line(history: Sequence[tuple[str, Json]]) -> str:
+    items = []
+    for stamp, run in history:
+        gates = run["gates"]["gates"]
+        failed = [g["name"] for g in gates if g["verdict"] == FAIL]
+        text = f"{_when(stamp)}, revision {run.get('code_revision', '?')}: {tally(gates)}"
+        if failed:
+            text += f" (failed: {', '.join(failed)})"
+        items.append(f"<li>{_e(text)}</li>")
+    return _p(COPY["live_gates_history"]) + "<ul>" + "".join(items) + "</ul>"
+
+
+def live_gates_section(
+    live: Json,
+    gated: tuple[str, Json] | None,
+    history: Sequence[tuple[str, Json]] = (),
+) -> str:
     derived = live["derived_from"]
     out = '<h2 id="live-gates">Correctness gates: a real model</h2>' + _p(COPY["live_gates"])
     out += _p(
@@ -330,7 +369,10 @@ def live_gates_section(live: Json, gated: tuple[str, Json] | None) -> str:
     )
     if not judged_against_current_bounds(live, run):
         out += _p(COPY["live_gates_superseded"], "note")
-    return out + _table(["gate", "verdict", "observed", "required"], gate_rows(gates))
+    out += _table(["gate", "verdict", "observed", "required"], gate_rows(gates))
+    if len(history) > 1:
+        out += history_line(history)
+    return out
 
 
 def scripted_gates_section(gates: Sequence[Mapping[str, str]]) -> str:
@@ -691,7 +733,9 @@ def render() -> str:
         _p(COPY["grounded"]),
         f'<p><a href="/">Back to the app</a> · <a href="{REPO_URL}">The code</a> · '
         f"artifact {_e(current)}</p>",
-        live_gates_section(live, gated),
+        live_gates_section(
+            live, gated, runs_judged_against_current_bounds(live, results("bedrock"))
+        ),
         scripted_gates_section(scripted),
         metrics_section(label, run, floor),
         trend_section(results("bedrock"), floor),

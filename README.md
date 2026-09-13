@@ -96,7 +96,10 @@ date.
   correctness properties, among them 100% edge groundedness, 100% citation resolution, zero successful
   prompt injections and zero contested pairs crossed silently. Its bounds were re-measured on
   2026-09-12 from five identical runs of the whole set at artifact 0.10.0, and all five runs clear
-  every bound. A full run costs about 75 cents.
+  every bound. The first full run judged against those bounds, on 2026-09-13, **failed** one of them:
+  two answerable questions that were already known to refuse now and then did so in the same run. No
+  code had changed. A second run was allowed under a rule set before it started, pass and deploy or
+  fail and stop, and it passed all six. The report lists both. A full run costs about 75 cents.
 - **The noise floor changed what counted as a result.** Five of the cases changed verdict between
   identical runs on 2026-09-12. At the baseline before that, one case failed three runs in a row and
   passed the next two, so stopping at three runs would have recorded a coin flip as a permanent defect.

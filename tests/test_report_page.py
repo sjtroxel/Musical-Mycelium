@@ -99,6 +99,38 @@ def test_a_verdict_made_against_replaced_bounds_is_labelled_as_such() -> None:
     assert superseded not in report_page.live_gates_section(live, ("20260913T000000Z", current))
 
 
+def test_a_failed_run_is_still_listed_after_a_later_run_passes() -> None:
+    """The newest verdict fills the table; every verdict against the same bounds stays on the page."""
+    live = {
+        "name": "s",
+        "case_count": 63,
+        "derived_from": {
+            "run_count": 5,
+            "artifact_version": "0.10.0",
+            "decided": "2026-09-12",
+            "model_id": "m",
+        },
+    }
+
+    def run(verdict: str) -> dict[str, Any]:
+        gates = [{"name": "refusal_accuracy", "verdict": verdict, "observed": "", "expected": ""}]
+        return {
+            "cases_run": 63,
+            "artifact_version": "0.10.0",
+            "gates": {"set": "s", "gates": gates},
+        }
+
+    runs = [
+        ("20260910T164141Z", {"cases_run": 56, "artifact_version": "0.7.1", "gates": {"set": "s"}}),
+        ("20260913T150600Z", run("FAIL")),
+        ("20260913T162609Z", run("PASS")),
+    ]
+    history = report_page.runs_judged_against_current_bounds(live, runs)
+    assert [stamp for stamp, _ in history] == ["20260913T150600Z", "20260913T162609Z"]
+    page = report_page.live_gates_section(live, runs[-1], history)
+    assert "failed: refusal_accuracy" in page
+
+
 def test_a_live_result_file_carries_the_verdict_the_gate_made(tmp_path: Path) -> None:
     """The page trusts stored verdicts, so the writer must store exactly what the gate returned."""
     result = run_gold_suite(default_store())
