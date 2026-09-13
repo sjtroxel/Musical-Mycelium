@@ -2,14 +2,23 @@
 
 > ## START HERE — where things stand, 2026-09-13
 >
+> **2026-09-13 afternoon: PHASE 7.7 IS CLOSED AND DEPLOYED, with DoD 1 PARTIAL.** Deploy run
+> `34769854201`, green. Verified by hand on the live site: `/health` artifact 0.10.0 (3,628 nodes,
+> 9,276 edges, 61 components); report byte-identical to the committed page; CORS header for the Vercel
+> origin and none for a foreign one; in the browser, `mozart` offers five with the two "also known as"
+> lines, `dolly` offers Dolly Parton, "Who influenced Roy Orbison?" refuses with no Joy Orbison, and
+> "Who did Wolfgang Amadeus Mozart study with?" answers with 3 teaching claims narrated as study.
+> **NEXT: diagnose the self-contradicting origins answer** (FINDING below, same date). Then phase 7.5
+> resumes at step 5, and the README glow-up comes before the post.
+>
 > **2026-09-13, late morning: TWO GATED LIVE RUNS, ONE FAILED AND ONE PASSED, AND THE DEPLOY IS
 > CLEARED BY A RULE HE SET BEFORE THE SECOND RUN.** Both at `b5fcd24`, artifact 0.10.0, 63 cases, the
 > first full runs judged against the 2026-09-12 bounds. `20260913T150600Z` **FAILED `refusal_accuracy`**
 > (false 2/41, bound <= 1/41); `20260913T162609Z` **passed all six**. Detail, the rule, and the `adv_006`
 > direction-swap finding: the FINDING section of the same date below. **The report page lists both
-> runs**, not just the pass. The deploy has not been dispatched yet.
+> runs**, not just the pass. ~~The deploy has not been dispatched yet.~~ *(Dispatched and verified the same day; see the block above.)*
 >
-> **2026-09-13 morning: THE OWED PROSE IS DONE, and step 8 has not started.** Claude wrote it, with his
+> **2026-09-13 morning: THE OWED PROSE IS DONE, and step 8 has not started.** *(True that morning; step 8 closed the same afternoon.)* Claude wrote it, with his
 > explicit permission for the README and the stale docs; the default that public prose is his is
 > unchanged. `README.md` (status, live suite, noise floor, a new exclusions bullet, the held-out run at
 > its size, and how 7.7's offers differ from the rejected near-miss suggester) and
@@ -24,8 +33,8 @@
 > run-count-1 direction on public prose. `make check` green, 1,759 Python, 1 skipped (the run-count-0
 > guard, correctly), 463 frontend.
 >
-> **PHASE 7.7 STEP 7 IS DONE — 2026-09-12 evening. NEXT IS STEP 8, the one deploy, the writeup and the
-> close.** The held-out
+> **PHASE 7.7 STEP 7 IS DONE — 2026-09-12 evening.** ~~NEXT IS STEP 8, the one deploy, the writeup and the
+> close.~~ *(Step 8 done 2026-09-13.)* The held-out
 > set `heldout_v2` **was run once at the freeze: 10 of 10, run count 1** — one run, ten cases, two
 > refusals, and no non-Western case in the draw, so report it at that size (§7.2). ~~**Owed before step 8
 > deploys:** `README.md:107-111` and `docs/eval-suite-explained.md:95-96` still say the set has not been
@@ -247,6 +256,30 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## FINDING — an origins answer about Mozart approves 9 claims and then says none traced, 2026-09-13
+
+**Found by hand on the live site after the phase 7.7 deploy, NOT diagnosed, by his decision (token
+budget).** "Where did mozart come from?" -> click *Wolfgang Amadeus Mozart* -> the re-asked
+"Where did Wolfgang Amadeus Mozart come from?" returned:
+
+- **9 approved, cited `studied_with` claims, and a refusal paragraph above them:** "This run found no
+  sourced answer ... the sourced relationships it found describe no single lineage. Every claim here has
+  to trace to a checkable source and none did." **The last clause is false about its own answer.** A
+  refusal sentence that contradicts approved claims on the same panel is a claims-first presentation bug
+  and belongs near the top of the list.
+- **The claims mix directions.** 3 are his teachers (Leopold Mozart, Johann Christian Bach, Giovanni
+  Battista Martini) and **6 are his students** (Hummel, Attwood, Süssmayr, Eberl, Seyfried, Ployer). For
+  an origins question the students are the answer to the reverse question: **the `adv_006` direction swap
+  of the same morning, on the teaching predicate.** Every claim grounded; the question not answered.
+- **Probably phase 7.6, not 7.7, and UNVERIFIED.** The offer and re-ask worked exactly as built; the
+  re-asked query resolves by exact label, so typing it directly should reproduce it. Check that first.
+- **Where to look first, hypotheses only:** the refusal reason "describe no single lineage" and how an
+  origins synthesis treats teaching claims pointing both ways; whether approved claims can coexist with a
+  `Refused` event on one run, and which component picks the "none did" wording when they do.
+- **Also seen, minor, not a bug to fix today:** "Who influenced Roy Orbison?" refuses with the "limit of
+  this run" wording, while `adv_019` records Roy Orbison has zero `influenced_by` edges, so the "graph
+  holds nothing" wording would be the more accurate of the three.
 
 ## FINDING — the first gated live run failed, the second passed, and the rule was set in between, 2026-09-13
 

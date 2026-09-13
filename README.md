@@ -33,23 +33,22 @@ came from and states how strongly that source was checked.
 
 ## Status, 2026-09-13
 
-**v1.0 is deployed, and this repository is two phases ahead of it.** The live site serves artifact
-0.7.1: the agent, the contested-source disclosure, the animated corpus backdrop, the guided tour and the
+**v1.0 is deployed, and so are phases 7.6 and 7.7, on 2026-09-13.** The live site serves artifact
+0.10.0: the agent, the contested-source disclosure, the animated corpus backdrop, the guided tour and the
 evaluation report. It sits behind a free Vercel proxy so the address survives a full
 `terraform destroy` and `terraform apply`, and that round-trip has been run for real, not assumed.
 
-This tree holds artifact 0.10.0 and the work of phases 7.6 and 7.7, both built, tested and measured
-against a real model, and neither deployed yet. That is deliberate: the two phases share one live
-evaluation re-baseline and one deploy, so shipping 7.6 on its own would have spent a second of each to
-learn nothing new. The re-baseline and the held-out run happened on 2026-09-12; the deploy is the next
-step. Until it lands, the teaching edges described under [The corpus](#the-corpus) and the name
-offers described below are in this repository and not in the deployed answers, and the public
-evaluation report still shows the measurements from before either phase.
+The two phases shipped together on purpose: they shared one live evaluation re-baseline and one deploy,
+so shipping 7.6 on its own would have spent a second of each to learn nothing new. One problem was found
+by hand on the live site right after the deploy and is not fixed yet: asked where Wolfgang Amadeus
+Mozart came from, an answer can list real, cited teaching claims, several of them about his students
+rather than his teachers, under a refusal sentence saying none of them traced. It is the first item in
+[`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md).
 
 Phases 0 through 7 are complete. Phase 7.5 (the release) is suspended at its writeup step and resumes
-after the deploy. Phase 7.6 (classical lineage) is complete: a label bug that had been dropping Mozart is
-fixed, and Wikidata's `student of` is ingested as teaching. Phase 7.7 (name resolution) is built and
-measured, with only its deploy and writeup left: a partial name like "mozart" is still refused, but the
+next. Phase 7.6 (classical lineage) is complete: a label bug that had been dropping Mozart is
+fixed, and Wikidata's `student of` is ingested as teaching. Phase 7.7 (name resolution) is complete
+and deployed: a partial name like "mozart" is still refused, but the
 refusal now carries the matching names in the graph as one-click choices that ask the question again.
 The system never picks one of them on its own. Phase 8, which lets the agent narrate artist-to-genre membership as well as influence, is scoped
 for v1.1 and not started. Every open item is listed in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md), newest

@@ -24,7 +24,7 @@
 >    measuring the same thing it measured before this phase, and it is why no adversarial case has to
 >    be re-authored. See D3.
 > 4. **This phase carries the ONE live re-baseline and the ONE deploy for phases 7.6 and 7.7 together**
->    (his decision, 2026-09-11). The public site is on v0.7.1 until step 8 of this doc lands.
+>    (his decision, 2026-09-11). The public site is on v0.7.1 until step 8 of this doc lands. *(It landed 2026-09-13, run `34769854201`; the site serves 0.10.0.)*
 
 ## 1. What this phase delivers, in one sentence
 
@@ -982,7 +982,7 @@ no subject (" came out of Johann Sebastian Bach."), because it pattern-matches a
 `ORIGINS_SYNTHESIS_TEMPLATE` does not emit (`agent/llm.py:600`). Stub-only as far as is verified; the
 live path reads the prompt as prose. §5.0 has the detail. **Do not fix it during the run.**
 
-### Step 8 — The ONE deploy, the writeup, and the close
+### Step 8 — The ONE deploy, the writeup, and the close — [done]
 
 Deploy 7.6 + 7.7 together, verify by hand on the public URL, write
 `docs/name-resolution-explained.md` in plain English, update `KNOWN-GAPS.md`, `ROADMAP.md`, the memory
@@ -990,6 +990,34 @@ router and this doc's DoD verdicts.
 
 **Done when:** the site answers "mozart" with offers, `make check` is green, the budgets hold, and every
 DoD item in §1.1 has a verdict written next to it.
+
+#### 8.0 As built — 2026-09-13
+
+**Status: done. Deployed in run `34769854201` at the commit after `b5fcd24`, and verified by hand.**
+Before it: the owed README and `eval-suite-explained.md` prose (his permission), the report page's
+superseded-bounds label and run history, `docs/name-resolution-explained.md`, the scope-doc Roy Orbison
+amendment, and two gated live runs, the first FAILED and the second passed under a rule he set before it
+(`KNOWN-GAPS.md`, 2026-09-13). `make check` green: 1,761 Python, 1 skipped (the run-count-0 guard), 463
+frontend; every page budget holds, report at 95% of its cap.
+
+**Verified on the public site:** `/health` 0.10.0; report byte-identical; CORS for the Vercel origin
+only; `mozart`, `dolly`, Roy Orbison and a teaching question checked in his browser. **One finding:**
+the re-asked Mozart origins answer approves 9 claims, mixes teachers with students, and carries a
+refusal sentence saying none traced (`KNOWN-GAPS.md`, 2026-09-13). Not diagnosed, by his decision.
+
+**DoD verdicts (§1.1):**
+1. **PARTIAL.** `mozart` offers the three Mozarts (plus Timbaland and Samuel Wesley, each with its
+   reason), and choosing Wolfgang Amadeus Mozart returns gated, cited claims about him, **but the
+   answer text is a refusal that contradicts them and half the claims answer the reverse question.**
+2. **MET.** `dolly` offers Dolly Parton live; `roy orbison` resolves and reaches no Joy Orbison,
+   asserted both ways by `test_nothing_this_phase_adds_lets_roy_orbison_reach_joy_orbison`.
+3. **MET.** `test_resolution_stability.py`, `RESOLUTION_CHANGES` empty.
+4. **MET.** `exact_matches` compares labels only (`test_exact_matches_compares_labels_and_never_aliases`);
+   an offer carries no claims and never replaced a refusal in any live run (0 in 5 baseline + 2 gated).
+5. **MET.** `heldout_v2` drawn by him, sealed, `heldout_v1` retired, run once: 10 of 10, run count 1.
+6. **MET, with the record.** Five-run re-baseline at v0.10.0 over 63 cases; all five baseline files clear
+   every bound; the first gated run failed `refusal_accuracy` by one case, the second passed all six.
+7. **MET.** v0.10.0 and both phases deployed together; `make check` green; budgets hold.
 
 ## 8. Testing, and which eval metrics apply
 

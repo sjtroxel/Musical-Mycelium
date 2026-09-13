@@ -108,10 +108,12 @@ audit the model.
 
 ## Where it is
 
-Built, tested and measured on 2026-09-12, alongside phase 7.6. As of the morning of 2026-09-13 neither
-phase is on the public site yet: both ship together in one deploy at phase 7.7's close, and this section
-is updated when that deploy has been checked by hand. `make check` and the free evaluation gates were
-green throughout.
+Built and measured on 2026-09-12 and deployed with phase 7.6 on 2026-09-13, then checked by hand on
+the public site. The offers, the "also known as" reasons and the re-ask all behaved as described here.
+One thing did not: choosing Wolfgang Amadeus Mozart for "Where did mozart come from?" returned real,
+cited claims, several about his students rather than his teachers, under a refusal sentence saying none
+traced. The choice worked; the answer to the re-asked question did not, and that problem most likely
+predates this phase. It is recorded in `docs/KNOWN-GAPS.md` and is the next thing to fix.
 
 ## The one-sentence version
 

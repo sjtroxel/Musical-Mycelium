@@ -57,7 +57,7 @@ so both columns are labeled. Reading one as the other is the confusion this head
 | **6.5** `debt-and-disagreement` **COMPLETE 2026-09-07** | **v0.6.5** | **v0.7.1** (pinned, unchanged) | The behavioral half of phase 6, delivered: `contested` reaches an answer, three honest refusal states, `ResolveSource` verifies DBpedia, 9 gold + 2 adversarial cases, a sixth gate, and a live suite gated on a measured floor | Agent package, which phase 6 DoD #6 forbade |
 | **7** `cinematic-surface` **COMPLETE 2026-09-09** | **v0.8** | **v0.7.1** (pinned, unchanged) | The guided tour, the signature moment on one timeline, and the design half: full-page backdrop, motion system, asset budget | Frontend, plus one tool behind the existing tool contract |
 | **7.6** `classical-lineage` **COMPLETE 2026-09-11** | **v0.9** | **v0.10.0** (decided 2026-09-11; why the jump, see below the table) | Pre-1900 lineage: the `mul` label fix, a `studied_with` predicate from P1066, artist birth years, and the gate opened to a second predicate on purpose | Ingestion + artifact schema, plus `agent/claims.py:ALLOWED_PREDICATES` |
-| **7.7** `name-resolution` **UNDER WAY 2026-09-12, step 0 done; after 7.6, before 7.5 resumes** | **v0.9.5** | **v0.10.0** (no cut of its own; uses 7.6's stored aliases) | Partial names and Wikidata aliases are OFFERED as one-click choices, never resolved by the system; the one live re-baseline and the one deploy for 7.6 and 7.7 together | `graph/memory.py` resolution, the SSE contract, the frontend |
+| **7.7** `name-resolution` **COMPLETE 2026-09-13, deployed, DoD 1 partial** | **v0.9.5** | **v0.10.0** (no cut of its own; uses 7.6's stored aliases) | Partial names and Wikidata aliases are OFFERED as one-click choices, never resolved by the system; the one live re-baseline and the one deploy for 7.6 and 7.7 together | `graph/memory.py` resolution, the SSE contract, the frontend |
 | **7.5** `portfolio-and-writeup` **SUSPENDED 2026-09-11 at step 5** | **v1.0** | ~~v0.7.1 (pinned, unchanged)~~ **v0.10.0, inherited from 7.6** | The published eval report, the trend view, the writeup, the README and the recruiter path; the Terraform round-trip and a verified bill | No architecture change |
 | **8** `membership-tour` **SCOPED 2026-09-09, not started** | **v1.1** | **v0.7.1** (pinned, unchanged) | The tour crosses axes: genre to artist to genre, so the corpus's one connected component becomes something the product can walk rather than a number in a structure report | `agent/claims.py:ALLOWED_PREDICATES`, a one-way door opened on purpose |
 
@@ -134,6 +134,16 @@ be built on. See `docs/graph-semantics.md`.
 **v0.1 definition of done:** a public URL that streams a grounded, cited, two-sentence answer about one
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
+
+### Where the build actually is — 2026-09-13
+
+**PHASE 7.7 IS CLOSED AND DEPLOYED, with DoD 1 partial.** Phases 7.6 and 7.7 went live together in run
+`34769854201`: the public site now serves artifact 0.10.0, the teaching layer and name offers. As-built
+and DoD verdicts: `docs/phases/phase-7.7-name-resolution-IMPLEMENTATION.md` §8.0. **Next:** diagnose the
+self-contradicting Mozart origins answer (`KNOWN-GAPS.md`, 2026-09-13), then phase 7.5 resumes at step 5.
+
+*(The block below is dated 2026-09-12 evening. Its "next is step 8" and "public site still on 0.7.1"
+were true then.)*
 
 ### Where the build actually is — 2026-09-12, evening
 
