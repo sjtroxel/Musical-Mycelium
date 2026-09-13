@@ -135,6 +135,20 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
+### Where the build actually is — 2026-09-12, evening
+
+**PHASE 7.7 STEPS 0 THROUGH 7 ARE DONE. NEXT IS STEP 8**, the one deploy of phases 7.6 and 7.7, the
+writeup and the close. As-built: `docs/phases/phase-7.7-name-resolution-IMPLEMENTATION.md` §7.0-§7.2.
+The live baseline was re-measured over five identical runs of the 63-case set at artifact 0.10.0, and the
+noise floor and thresholds rewritten from it; `refusal_accuracy` excludes `gold_v0_1_020` and `adv_018`.
+**`heldout_v2` was run once at the freeze: 10 of 10, run count 1**, at the size of ten cases with no
+non-Western case in the draw. `make check` measured after it: **1,758 Python passed, 1 skipped** (the
+run-count-0 guard, correctly), 463 frontend, free gates **4 passed / 0 failed / 2 N/A of six**.
+**Nothing was deployed; the public site is still on artifact 0.7.1.** Owed before the deploy: README and
+`docs/eval-suite-explained.md` wording, which is his (`KNOWN-GAPS.md` START HERE).
+
+*(The block below is dated 2026-09-12 morning. Its "run count 0" and "step 0 is done" were true then.)*
+
 ### Where the build actually is — 2026-09-12
 
 **PHASE 7.7 `name-resolution` (v0.9.5) IS UNDER WAY. Its IMPLEMENTATION doc was APPROVED 2026-09-12 and

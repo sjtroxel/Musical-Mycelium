@@ -25,16 +25,27 @@ the one dataset in this project that an agent must actively refuse to read. Hard
   the skip meant exactly what this bullet says it means. It runs now.)*
   That is a real outstanding item — it is a hard precondition on the first live model run, per
   `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §4.8 — not a passing state to report as fine.
-- **THE CURRENT SET HAS NEVER BEEN RUN. `heldout_v2`, run count 0 — 2026-09-12.** ~~THE SET HAS BEEN RUN.
+- **`heldout_v2` HAS BEEN RUN ONCE — 2026-09-12 evening, phase 7.7 step 7, at the freeze. RUN COUNT 1.**
+  10 of 10 correct, complete, no errors or retries, code `4ac1aec`, artifact 0.10.0, result in
+  `eval/results/20260913T002323Z-heldout.json`. **Report it with the run count beside it, and report it
+  as what it is: ONE run of TEN cases** — 2 refusals, every slice under n=5 except two, and **no case in
+  the `elsewhere` region**, so it says nothing about non-Western generalization. **The rule agreed BEFORE
+  the run, by him:** an incomplete run caused only by provider errors does not count and is re-run;
+  anything else counts whatever it says. It did not trigger. **Do not run it again**; the next run belongs
+  to the next freeze, and a re-run after any change made because of this number measures attempts, not
+  generalization.
+- ~~**THE CURRENT SET HAS NEVER BEEN RUN. `heldout_v2`, run count 0 — 2026-09-12.**~~ *(Struck 2026-09-12
+  evening: true for about eleven hours, then run once at the freeze above.)* ~~THE SET HAS BEEN RUN.
   Once, 2026-08-24, at the phase 4 freeze — 10/10, result in
   `eval/results/20260824T120956Z-heldout.json`.~~ *(Struck 2026-09-12, phase 7.7 step 0, and kept rather
   than deleted because it is the most dangerous kind of stale sentence this file can hold: it was true,
   it reads as a standing fact, and it describes **a set that no longer exists**.)* **That 10/10 belongs to
   the retired `heldout_v1`**, drawn on artifact 0.5.0 and deleted from the working tree on 2026-09-12; its
   ciphertext survives in git at `b9072ee` and its result file is kept, so the measurement stays auditable
-  and is **not** a property of the set in the repo today. **Generalisation on this corpus is UNTESTED, not
-  passed**, and any report, README line or interview answer saying otherwise is wrong. It is run once, at
-  the phase 7.7 freeze after the live re-baseline (his decision 2026-09-12), and every run must be
+  and is **not** a property of the set in the repo today. ~~**Generalisation on this corpus is UNTESTED, not
+  passed**~~ *(true until the run at the top of this list; now: passed once, 10 of 10, at the size stated
+  there, and never "passed" without the run count and the case count beside it)*. ~~It is run once, at
+  the phase 7.7 freeze after the live re-baseline (his decision 2026-09-12)~~ *(done)*, and every run must be
   reported with the run count beside it. A set re-run after a change made because of what it said has
   stopped measuring generalization and started measuring how many attempts it took. If you are about to
   propose a fix whose justification traces back to a held-out number, that is the moment the set dies —

@@ -1,0 +1,299 @@
+{
+  "dataset": "heldout",
+  "dataset_version": "heldout_v2",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.10.0",
+  "artifact_pin": "0.10.0",
+  "artifact_matches_pin": true,
+  "complete": true,
+  "aborted_reason": "",
+  "errored_cases": [],
+  "retried_cases": [],
+  "script_determined": [],
+  "cases_run": 10,
+  "cases_correct": 10,
+  "truncated_runs": [],
+  "edge_groundedness": 1.0,
+  "citation_resolution": 1.0,
+  "refusal_accuracy": {
+    "true_refusals": 2,
+    "false_refusals": 0,
+    "missed_refusals": 0,
+    "correct_answers": 8,
+    "expected_refusals": 2,
+    "expected_answers": 8
+  },
+  "contested_disclosure": {
+    "silent": 0,
+    "scored_cases": 0,
+    "unscored_cases": 10,
+    "holds": false
+  },
+  "injection_resistance": {
+    "induced": 0,
+    "scored_cases": 0,
+    "unscored_cases": 10,
+    "holds": false
+  },
+  "verification_mix": {
+    "TEACHING_PROSE_AUTO": 2,
+    "INFOBOX_AUTO": 16,
+    "PROSE_AUTO": 0,
+    "ASSERTS_AUTO": 7,
+    "MEMBERSHIP_BARE": 0,
+    "HAND": 4,
+    "EXPOSURE_AUTO": 0,
+    "MEMBERSHIP_CITED": 0
+  },
+  "traversal_recall": 1.0,
+  "traversal_precision": 1.0,
+  "usage": {
+    "input_tokens": 90105,
+    "output_tokens": 4540,
+    "total_tokens": 94645,
+    "estimated_usd": 0.112805
+  },
+  "per_case": [
+    {
+      "case_id": "heldout_v2_001",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_002",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_003",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_004",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 7,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_005",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_006",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_007",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_008",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_009",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "heldout_v2_010",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    }
+  ],
+  "slices": {
+    "era": {
+      "1990-2009": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "1970-1989": {
+        "numerator": 3,
+        "denominator": 3
+      },
+      "1950-1969": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "1900-1949": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "pre-1900": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "region": {
+      "unstated": {
+        "numerator": 5,
+        "denominator": 5
+      },
+      "anglophone_core": {
+        "numerator": 5,
+        "denominator": 5
+      }
+    },
+    "density": {
+      "connected": {
+        "numerator": 6,
+        "denominator": 6
+      },
+      "sparse": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "isolated": {
+        "numerator": 3,
+        "denominator": 3
+      }
+    },
+    "source": {
+      "wikidata_only": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "dbpedia_only": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "both": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "none": {
+        "numerator": 3,
+        "denominator": 3
+      }
+    },
+    "predicate": {
+      "both": {
+        "numerator": 5,
+        "denominator": 5
+      },
+      "influence_only": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "membership_only": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "teaching": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    "query_kind": {
+      "origins": {
+        "numerator": 6,
+        "denominator": 6
+      },
+      "descendants": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "lineage": {
+        "numerator": 2,
+        "denominator": 2
+      }
+    }
+  },
+  "written_at": "20260913T002323Z",
+  "code_revision": "4ac1aec"
+}

@@ -13,7 +13,8 @@
 > disagreed with this plan. The doc is allowed to be wrong. It is not allowed to be silently wrong.
 >
 > **Four things a cold session must not get wrong, before anything else:**
-> 1. **Step 0 is a new held-out set, and HE draws it.** An agent may run `make heldout-verify`, read
+> 1. ~~**Step 0 is a new held-out set, and HE draws it.**~~ *(Done 2026-09-12: drawn by him, sealed, and
+>    run once at step 7 — 10 of 10, run count 1, §7.2. The prohibitions below are permanent.)* An agent may run `make heldout-verify`, read
 >    `make heldout-check`'s case ids and problem codes, and nothing else. Never decrypt, never read a
 >    decrypted copy, never ask for the key, never suggest subjects. `.claude/rules/heldout-set.md`
 >    governs and outranks this doc.
@@ -824,7 +825,7 @@ the reverse of the defect `report.py` records about `contested_disclosure` and i
 test is louder than an unprinted number — but a terminal reader sees zeros and no note that the
 coverage is elsewhere. The report line says so in a comment; it does not say so on screen.
 
-### Step 7 — The ONE live re-baseline. SPENDS MONEY
+### Step 7 — The ONE live re-baseline. SPENDS MONEY — [done]
 
 Five identical runs of the 63-case live set behind `confirm_spend`, about $2.94 and 2.7 hours (U2).
 Re-measure `eval/noise_floor.json`, rewrite `eval/thresholds.json` with `case_count: 63` and every bound
@@ -879,6 +880,31 @@ free gates 4 / 0 / 2 N/A.
 **Two harness findings from the same afternoon, recorded in §7.0:** Bedrock 503s cost two attempts, and
 full runs now retry a refused case twice and stop at the first unrecovered one.
 
+#### 7.2 As built — the held-out run, once, 2026-09-12 evening
+
+**Status: step 7 is DONE.** The baseline in §7.1 was committed (`4ac1aec`), then `make eval-heldout` ran
+`heldout_v2` **once**. **Run count 1.**
+
+**The rule for a provider failure was agreed BEFORE the run, by him:** an incomplete run caused only by
+provider errors does not count and is re-run; anything else counts, whatever it says. **It did not
+trigger** — complete, no errors, no retries.
+
+**Result, aggregates only** (`eval/results/20260913T002323Z-heldout.json`): **10 of 10 correct**;
+groundedness and citation 29/29; refusal true 2/2, false 0/8; traversal recall and precision 39/39;
+plan adherence 9/10 exact; `offer` 0 over 2 refusals, 0 replaced a refusal; 94,645 tokens. Not gated, by
+design — no threshold set covers the held-out dataset.
+
+**What it does and does not show, stated at the size it is.** One run of ten cases passing is evidence
+that the system generalizes to questions nobody tuned on **at this scale**; it is not a rate with a
+confidence worth quoting. Two refusal cases is a thin denominator, and every slice but two is under n=5.
+**The draw contains no `elsewhere`-region case** (5 `anglophone_core`, 5 `unstated`), so this run says
+**nothing** about non-Western material, which is exactly where the corpus is weakest.
+
+**Owed, found by `make check` rather than by reading prose:** `test_no_public_surface_claims_a_run_the_
+sealed_set_has_not_had` now **skips**, correctly, because it guards run count 0. Its opposite has no
+guard: `README.md:107-111` and `docs/eval-suite-explained.md:95-96` still say the set "has not been
+run" / "run count is 0", which is now false in the understating direction. Public prose, so his to
+write; the generated report page was regenerated and reads from the result file.
 #### 7.0 Before the money is spent — the pre-flight, settled 2026-09-12
 
 Steps 0-6 are `[done]` and committed (`b973a9d`), tree clean, pushed. `make check` green: **1,751

@@ -2,8 +2,15 @@
 
 > ## START HERE — where things stand, 2026-09-12
 >
-> **PHASE 7.7 STEP 7: THE LIVE RE-BASELINE IS MEASURED AND THE BOUNDS ARE WRITTEN — 2026-09-12 evening.
-> THE HELD-OUT RUN IS THE LAST PART OF STEP 7 AND HAS NOT HAPPENED.** Five complete runs at `40d1b26`,
+> **PHASE 7.7 STEP 7 IS DONE — 2026-09-12 evening. NEXT IS STEP 8, the one deploy, the writeup and the
+> close.** The held-out set `heldout_v2` **was run once at the freeze: 10 of 10, run count 1** — one run,
+> ten cases, two refusals, and no non-Western case in the draw, so report it at that size (§7.2). **Owed
+> before step 8 deploys:** `README.md:107-111` and `docs/eval-suite-explained.md:95-96` still say the set
+> has not been run; that prose is his, and no test guards that direction yet. **The same README section
+> (`README.md:94-96`) is stale a second way:** it dates the noise floor "2026-09-07" and says "Four of 56
+> cases changed verdict"; the floor was re-measured 2026-09-12 and five of 63 did.
+> ~~**PHASE 7.7 STEP 7: THE LIVE RE-BASELINE IS MEASURED AND THE BOUNDS ARE WRITTEN — 2026-09-12 evening.
+> THE HELD-OUT RUN IS THE LAST PART OF STEP 7 AND HAS NOT HAPPENED.**~~ Five complete runs at `40d1b26`,
 > noise floor and thresholds rewritten for 63 cases at v0.10.0. As-built:
 > `phase-7.7-name-resolution-IMPLEMENTATION.md` §7.1. **New and open:** `adv_018` is excluded from
 > `refusal_accuracy` (his decision) because DBpedia made its premise false, and **re-authoring it is
@@ -16,7 +23,8 @@
 > (run `34608268096`, commit `2b1eb02`) and verified by hand.
 >
 > **PHASE 7.5 IS STILL SUSPENDED AT STEP 5. PHASE 7.6 IS DONE (2026-09-11) AND PHASE 7.7
-> `name-resolution` IS NEXT.** ~~PHASE 7.6 `classical-lineage` (v0.9) IS NEXT — 2026-09-11, his
+> `name-resolution` IS ~~NEXT~~ AT STEP 8** *(annotated 2026-09-12 evening; steps 0-7 are done, see the
+> top of this block)*. ~~PHASE 7.6 `classical-lineage` (v0.9) IS NEXT — 2026-09-11, his
 > decision.~~ *(That sentence was an instruction to start 7.6 and it outlived its own task by one day;
 > struck rather than deleted, because the order 7.6 -> 7.7 -> 7.5 is still the plan.)* Scope doc: `docs/phases/phase-7.6-classical-lineage.md`, **approved 2026-09-11**; its
 > IMPLEMENTATION doc `phase-7.6-classical-lineage-IMPLEMENTATION.md` is **APPROVED 2026-09-11 and the
@@ -46,7 +54,7 @@
 > **STEP 4 IS DONE TOO — 2026-09-12.** `SPEC.md` §6 documents the `offer` frame, `OfferFrame` is
 > declared in `web/src/types.ts`, and **two** free `LocalLLM` fixtures were captured
 > (`mozart-offer.sse` and `metal-offer-over-cap.sse`) because the frame has two wire shapes.
-> `make check` green at **1,746 Python / 452 frontend**. **NEXT IS STEP 5**, the frontend.
+> `make check` green at **1,746 Python / 452 frontend**. ~~**NEXT IS STEP 5**, the frontend.~~ *(Steps 5-7 done since.)*
 > **The contract hazard worth knowing before step 5: `candidates.length` is NOT the count.** Over the
 > cap of 25 the array is empty and `total` still says 34, so a client reading the array length reports
 > zero where the answer is thirty-four. Asserted on the real capture. Also: adding the type to the
