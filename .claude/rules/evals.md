@@ -42,15 +42,20 @@ marketing word. Hard rules:
   not write a gate count in prose anywhere, including this line: `eval/thresholds.py:GATE_NAMES` is the
   authority, and this sentence has now been wrong once for exactly that reason.
 
-  **The paid live suite gates all six as of 2026-09-07**, against bounds measured over five identical
-  runs of the 56-case set ($2.61, ~2.4 hours). `refusal_accuracy` and `traversal_recall` both exclude
-  `gold_v0_1_020` — a diagnosed, reproducible failure — and **nothing else**. Excluding a case for
-  being *noisy* is a different act from excluding one that is *understood*, and it is how a gate stops
-  measuring what is broken.
+  **The paid live suite gates all six**, against bounds **re-measured 2026-09-12 at artifact v0.10.0
+  over five identical runs of the 63-case set** (first measured 2026-09-07 over 56 cases at v0.7.1).
+  ~~`refusal_accuracy` and `traversal_recall` both exclude `gold_v0_1_020` and **nothing else**.~~
+  *(Struck 2026-09-12.)* **Both exclude `gold_v0_1_020`, and `refusal_accuracy` also excludes
+  `adv_018`** — his decision, after it answered in 5 of 5 runs and was diagnosed from the transcripts:
+  DBpedia made its premise false the day after it was authored. Each is a diagnosed, reproducible
+  failure, and that is the only kind of exclusion allowed. `gold_v0_1_015` is absent from the traversal
+  list by the list's own every-run rule, which is not an exclusion. Excluding a case for being *noisy*
+  is a different act from excluding one that is *understood*, and it is how a gate stops measuring what
+  is broken.
 - ~~**Do not invent thresholds before a baseline exists.**~~ **The baseline exists — do not re-invent
   them either.** *(Amended 2026-08-24.)* The noise floor was measured over five identical runs and lives
-  in `eval/noise_floor.json` — **re-measured 2026-09-07 at artifact v0.7.1 over the 56-case set; the
-  v0.5.0 floor it replaced is gone** — and the gates live in `eval/thresholds.json`, each carrying its measured values
+  in `eval/noise_floor.json` — **re-measured 2026-09-12 at artifact v0.10.0 over the 63-case set; the
+  v0.7.1 floor of 2026-09-07 it replaced is gone** — and the gates live in `eval/thresholds.json`, each carrying its measured values
   and its reasoning next to the number. A missing thresholds file prints a `NOT GATED` banner and exits
   0 rather than silently passing. **The trap worth naming: `traversal_recall` measured a 0.0pp spread,
   which read as a rock-solid metric and was one case failing identically every run.** A zero-variance

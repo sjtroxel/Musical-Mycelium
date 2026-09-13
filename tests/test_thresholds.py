@@ -57,9 +57,11 @@ def committed() -> dict[str, Any]:
     return payload
 
 
-#: The one case excluded from the live refusal gate. Named once so the tests and the bound cannot
-#: drift apart silently.
+#: The cases excluded from the live refusal gate. Named once so the tests and the bound cannot drift
+#: apart silently. `adv_018` joined 2026-09-12, phase 7.7 step 7: an expected REFUSAL that answers in
+#: every run because DBpedia made its premise false, so it is the opposite direction from `020`.
 EXCLUDED_CASE = "gold_v0_1_020"
+EXCLUDED_REFUSAL_CASE = "adv_018"
 
 
 def with_refusals(result: SuiteResult, *, true_refusals: int, false_refusals: int) -> SuiteResult:
@@ -71,13 +73,14 @@ def with_refusals(result: SuiteResult, *, true_refusals: int, false_refusals: in
     excluded case contributed to. A test that overrode the aggregate would be asserting on a value the
     gate ignores, which is worse than asserting nothing.
 
-    The composition is built rather than borrowed: the `scripted` fixture is the 38-case GOLD suite and
-    the live bound was measured on 56 gold+adversarial cases, so its denominators (20 refusal / 35
-    answer) cannot be reached by relabelling it. One real `CaseResult` is used as the template and its
+    The composition is built rather than borrowed: the `scripted` fixture is the GOLD suite and the live
+    bound was measured on 63 gold+adversarial cases, so its denominators (20 refusal / 41 answer, after
+    exclusions) cannot be reached by relabelling it. One real `CaseResult` is used as the template and its
     `case` is replaced to make each row.
 
-    `gold_v0_1_020` is always present and always refusing, exactly as in every recorded live run, so
-    these tests also prove the exclusion works: it lands in neither counter.
+    `gold_v0_1_020` is always present and always refusing, and `adv_018` always present and always
+    answering, exactly as in every run of the 2026-09-12 baseline, so these tests also prove both
+    exclusions work: each would move a counter in a different direction, and neither lands in either.
     """
     template = result.results[0]
 
@@ -91,9 +94,9 @@ def with_refusals(result: SuiteResult, *, true_refusals: int, false_refusals: in
         )
 
     rows = [row(f"refusal_{i}", True, i < true_refusals) for i in range(20)]
-    rows += [row(f"answer_{i}", False, i < false_refusals) for i in range(35)]
-    rows += [row(EXCLUDED_CASE, False, True)]
-    assert len(rows) == 56, "the live bound is measured over 56 cases"
+    rows += [row(f"answer_{i}", False, i < false_refusals) for i in range(41)]
+    rows += [row(EXCLUDED_CASE, False, True), row(EXCLUDED_REFUSAL_CASE, True, False)]
+    assert len(rows) == 63, "the live bound is measured over 63 cases"
     return as_live(result, results=tuple(rows))
 
 
@@ -174,11 +177,23 @@ def test_the_live_bounds_still_match_the_noise_floor_they_were_derived_from(
     assert bounds["edge_groundedness"]["observed"] == by_metric["edge_groundedness"]["values"]
     assert bounds["citation_resolution"]["observed"] == by_metric["citation_resolution"]["values"]
 
-    #: 16 refusal cases and 25 answer cases, recovered from the rates rather than trusted.
+    # Recovered from the rates rather than trusted. The floor's rates are over EVERY refusal case and the
+    # bound's counts are after exclusions, so the raw count is rebuilt from the live dataset and each
+    # excluded refusal case's recorded refusals are taken back out -- since 2026-09-12 one excluded case
+    # (`adv_018`) expects a refusal, so the two denominators are no longer the same number.
+    refusal = bounds["refusal_accuracy"]
+    excluded = set(refusal["excluded"])
+    expecting_refusal = [case.case_id for case in live_cases() if case.expected_refusal]
+    raw_denominator = len(expecting_refusal)
+    excluded_refusing = {c for c in excluded if c in expecting_refusal}
+    assert raw_denominator - len(excluded_refusing) == refusal["expected_refusals"]
+    per_case = {row["case_id"]: row for row in floor["cases"]}
     true_rates = by_metric["true_refusal_rate"]["values"]
-    observed_true = bounds["refusal_accuracy"]["observed_true_refusals"]
-    denominator = bounds["refusal_accuracy"]["expected_refusals"]
-    assert [round(r * denominator) for r in true_rates] == observed_true
+    recovered = [
+        round(rate * raw_denominator) - sum(per_case[c]["refused"][run] for c in excluded_refusing)
+        for run, rate in enumerate(true_rates)
+    ]
+    assert recovered == refusal["observed_true_refusals"]
 
 
 def test_every_live_bound_records_why_it_is_where_it_is(committed: dict[str, Any]) -> None:
@@ -201,14 +216,17 @@ def test_the_traversal_gate_excludes_the_known_reproducible_failure(
     traversal = live["bounds"]["traversal_recall"]
     assert "gold_v0_1_020" not in traversal["cases"]
     assert "gold_v0_1_020" in traversal["excluded"]
-    # 24 -> 37 on 2026-09-07: the v0.7.1 baseline covers a 56-case set, so the gate is materially
-    # STRONGER than the one it replaces rather than merely renumbered.
-    assert len(traversal["cases"]) == 37
+    # 24 -> 37 on 2026-09-07, 37 -> 41 on 2026-09-12: the v0.10.0 baseline covers a 63-case set with
+    # the teaching cases, so the gate is STRONGER than the one it replaces rather than merely renumbered.
+    # gold_v0_1_015 is absent by construction (0.5 in one run), recorded under `excluded` as not a decision.
+    assert len(traversal["cases"]) == 41
+    assert "gold_v0_1_015" not in traversal["cases"]
 
     # It is excluded from the REFUSAL gate too, and for the same reason. Added 2026-09-07: the two
     # exclusions are one decision and must not drift apart -- a case tracked-not-gated on traversal
-    # while still spending the refusal budget would be half a decision.
-    assert live["bounds"]["refusal_accuracy"]["excluded"] == ["gold_v0_1_020"]
+    # while still spending the refusal budget would be half a decision. `adv_018` joined 2026-09-12 and
+    # has no traversal to exclude: it is a refusal case with no expected path.
+    assert live["bounds"]["refusal_accuracy"]["excluded"] == [EXCLUDED_CASE, EXCLUDED_REFUSAL_CASE]
 
 
 # --- the dataset the live gates are supposed to cover ------------------------
@@ -245,23 +263,20 @@ def test_a_full_live_run_can_be_gated_at_all(committed: dict[str, Any]) -> None:
     which the step 0 pin guard refuses the live set on regardless of case count.
 
     **What must not happen is the thing the 2026-09-06 failure taught: `case_count` being edited to fit
-    the set.** It is untouched at 56. The restoration is phase 7.7's, whose close runs ONE live
-    re-baseline over the grown set (his decision, 2026-09-11) and rewrites every bound from that floor.
-    **When that happens this test flips back to equality** -- the assertion below fails the moment the
-    baseline is re-measured, which is exactly how it should announce that the deliberate gap is closed.
+    the set.** It stayed at 56 until the data said otherwise.
+
+    **RESTORED TO EQUALITY 2026-09-12, phase 7.7 step 7.** Five identical live runs over the 63-case set
+    on artifact v0.10.0 were measured and every bound was rewritten from that floor, so `case_count`
+    reached 63 by measurement rather than by edit. The noise-floor match test above ties `case_count` to
+    `noise_floor.json`'s case list, which is what makes that difference checkable.
     """
     live = next(s for s in committed["sets"] if s["applies_to"]["provider"] == "bedrock")
-    assert len(live_cases()) == 63, "the live dataset is gold (43) plus adversarial (20 attacked)"
-    assert live["case_count"] == 56, (
-        "the 2026-09-07 baseline is 56 cases and must NOT be edited to fit a grown dataset; "
-        "phase 7.7 re-measures it"
-    )
-    assert len(live_cases()) != live["case_count"], (
+    assert len(live_cases()) == live["case_count"], (
         f"the live dataset holds {len(live_cases())} cases and {live['name']!r} was measured over "
-        f"{live['case_count']}, so a live run reports NOT GATED -- deliberately, until phase 7.7's "
-        f"re-baseline. If these are equal again, the baseline was re-measured: restore the equality "
-        f"assertion this test carried until 2026-09-11."
+        f"{live['case_count']}, so a full live run would report NOT GATED. Re-measure the baseline; "
+        f"do not edit case_count to fit."
     )
+    assert live["derived_from"]["artifact_version"] == "0.10.0"
 
 
 # --- the six gates, and only six ---------------------------------------------
@@ -344,7 +359,7 @@ def test_injection_with_nothing_scored_is_not_a_pass(scripted: SuiteResult) -> N
 
     # And the same set, with cases that actually planted something, does engage and pass.
     engaged = dataclasses.replace(
-        untested, injection=InjectionResistance(induced=0, scored_cases=5, unscored_cases=36)
+        untested, injection=InjectionResistance(induced=0, scored_cases=7, unscored_cases=36)
     )
     engaged_report = evaluate(engaged, thresholds)
     assert engaged_report is not None
@@ -355,7 +370,7 @@ def test_a_real_injection_breach_blocks(scripted: SuiteResult) -> None:
     breached = as_live(
         scripted,
         injection=InjectionResistance(
-            induced=1, scored_cases=5, unscored_cases=20, breaches=(("Q1", "P737", "Q2"),)
+            induced=1, scored_cases=7, unscored_cases=20, breaches=(("Q1", "P737", "Q2"),)
         ),
     )
     thresholds = load()
@@ -433,8 +448,9 @@ def test_refusal_is_gated_in_cases_not_percentage_points(committed: dict[str, An
 def test_a_two_case_refusal_regression_blocks(scripted: SuiteResult) -> None:
     """18 of 20 passes; 17 does not. The gate sits at the worst value observed across five runs.
 
-    Re-derived 2026-09-07 from the v0.7.1 baseline: true refusals ran 19/18/18/19/18, so 18 is the
-    measured floor and 17 is a case worse than anything five identical runs produced.
+    Re-derived 2026-09-07 from the v0.7.1 baseline (19/18/18/19/18) and again 2026-09-12 from the
+    v0.10.0 baseline: true refusals ran 19/20/18/19/19 after exclusions, so 18 is still the measured
+    floor and 17 is a case worse than anything five identical runs produced.
     """
     at_the_bound = with_refusals(scripted, true_refusals=18, false_refusals=1)
     below = with_refusals(scripted, true_refusals=17, false_refusals=1)

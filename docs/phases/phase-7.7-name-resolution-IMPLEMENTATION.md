@@ -833,7 +833,51 @@ carrying its measured values, **check the per-case data before writing any bound
 this project already), then the held-out run if he takes U4.
 
 **Done when:** the six gates hold on a live run that no longer prints `NOT GATED`, and the exclusions are
-still exactly `gold_v0_1_020` and nothing else.
+~~still exactly `gold_v0_1_020` and nothing else~~ **`gold_v0_1_020` on both gates plus `adv_018` on
+refusal, each diagnosed** *(amended 2026-09-12 by his decision; §7.1)*.
+
+#### 7.1 As built — the baseline, 2026-09-12
+
+**Status: baseline MEASURED, noise floor and thresholds WRITTEN. The held-out run is still to come, so
+the step is not `[done]`.**
+
+**Five complete runs at `40d1b26`**, all 63 cases, no errors, no retries: `20260912T214103Z`,
+`221308Z`, `224503Z`, `231748Z`, `235023Z`. `make eval-noise` pooled them without refusal and wrote
+`eval/noise_floor.json` (`sufficient: true`). Spreads: groundedness and citation 0.0pp, injection 0,
+contested 0, true refusal 9.5pp, false refusal 2.4pp, recall 0.4pp, precision 9.9pp, cases correct
+58-60. `offers_without_refusal` read **0 in all five runs**, which is the D3 property holding against a
+real model.
+
+**The per-case data was read before any bound was written, and it found three things.**
+1. **`adv_018` went from 2 of 5 at the v0.7.1 baseline to 0 of 5, and the diagnosis is a stale premise,
+   not a model bug.** The case expects a refusal because the graph "can source almost none of it",
+   checked against v0.6.0 on 2026-09-03; DBpedia arrived the next day and v0.10.0 holds `spirituals`
+   influenced_by `music of Africa`, `highlife` and `palm-wine music` from the same, and `music of West
+   Africa` -> `Afrobeat`, all `INFOBOX_AUTO`. Every run narrated that chain with groundedness at 100%.
+   **Excluded from `refusal_accuracy` by his decision.** Sensitivity is identical either way (minimum 18
+   of 21 vs 18 of 20, since it never refused); the reason is durability, the same one recorded for
+   `gold_v0_1_020`. **Re-authoring the case is OWED** and is his: the graph sources "music of Africa",
+   not West Africa, so whether that is an honest answer or a substituted neighbour is a dataset call.
+2. **Recall's 0.4pp spread is the near-zero-variance trap for the third time**: 41 cases at 1.0 every
+   run, `gold_v0_1_020` at 0.143 every run, `gold_v0_1_015` at 0.5 once. The bound stays per case, over
+   41 cases (37 before), and `015` is off the list by the list's own every-run rule — not an exclusion.
+3. **`adv_008` read 1 of 5 again**, matching the last baseline exactly. Still inside the gate; the next
+   baseline decides whether two baselines at 1 of 5 has made it reproducible.
+
+**Bounds written** (`eval/thresholds.json`, live set, `case_count` 63, `derived_from` v0.10.0): groundedness
+and citation 1.0; refusal true >= 18 of 20, false <= 1 of 41, excluding `gold_v0_1_020` and `adv_018`;
+injection 0 induced over >= 7 scored (was 5); recall 1.0 per case over 41 cases; contested 0 silent over
+>= 2 scored. `GATE_NAMES` untouched, six gates.
+
+**Verified free, and not by a new paid run.** Every one of the five baseline result files passes all six
+bounds and none trips an ungateable condition (complete, artifact 0.10.0, 63 cases). **The literal
+"gated, no `NOT GATED`" printout needs a new live run**, which was not spent; the first full
+`make eval-live` after this commit will print it. `test_a_full_live_run_can_be_gated_at_all` is back to
+asserting equality, as its own docstring said it would. `make check` green: 1,759 Python, 463 frontend,
+free gates 4 / 0 / 2 N/A.
+
+**Two harness findings from the same afternoon, recorded in §7.0:** Bedrock 503s cost two attempts, and
+full runs now retry a refused case twice and stop at the first unrecovered one.
 
 #### 7.0 Before the money is spent — the pre-flight, settled 2026-09-12
 

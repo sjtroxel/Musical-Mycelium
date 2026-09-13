@@ -2,6 +2,15 @@
 
 > ## START HERE — where things stand, 2026-09-12
 >
+> **PHASE 7.7 STEP 7: THE LIVE RE-BASELINE IS MEASURED AND THE BOUNDS ARE WRITTEN — 2026-09-12 evening.
+> THE HELD-OUT RUN IS THE LAST PART OF STEP 7 AND HAS NOT HAPPENED.** Five complete runs at `40d1b26`,
+> noise floor and thresholds rewritten for 63 cases at v0.10.0. As-built:
+> `phase-7.7-name-resolution-IMPLEMENTATION.md` §7.1. **New and open:** `adv_018` is excluded from
+> `refusal_accuracy` (his decision) because DBpedia made its premise false, and **re-authoring it is
+> owed** — his call, since the graph sources "music of Africa" rather than West Africa. `adv_008` read
+> 1 of 5 at two baselines in a row. **The first full `make eval-live` after this commit is the first one
+> that can print gate verdicts rather than `NOT GATED`.**
+>
 > **PHASE 7.5 STEP 4 IS DONE — 2026-09-11.** README rewritten against the deployed site; the app footer
 > carries his standard copyright line with the GitHub mark and the report links to the repo. Deployed
 > (run `34608268096`, commit `2b1eb02`) and verified by hand.
