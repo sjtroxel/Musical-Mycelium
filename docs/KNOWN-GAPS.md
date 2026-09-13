@@ -1,14 +1,30 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-12
+> ## START HERE — where things stand, 2026-09-13
+>
+> **2026-09-13 morning: THE OWED PROSE IS DONE, and step 8 has not started.** Claude wrote it, with his
+> explicit permission for the README and the stale docs; the default that public prose is his is
+> unchanged. `README.md` (status, live suite, noise floor, a new exclusions bullet, the held-out run at
+> its size, and how 7.7's offers differ from the rejected near-miss suggester) and
+> `docs/eval-suite-explained.md` (held-out paragraph, phase 4 counts marked as phase 4's, and a new
+> dated phase 7.7 section) now describe run count 1 and the 63-case baseline. **One finding on the way:
+> the generated report page printed the 2026-09-10 run's verdicts (56 cases, artifact 0.7.1, the OLD
+> bounds) directly under the NEW 63-case bounds**, because `gated_live_run` matches a set by name and a
+> re-baseline keeps the name. `report_page.judged_against_current_bounds` now labels such a verdict
+> as made against replaced bounds; breakage-verified. **The page still has no verdict against the
+> current bounds**: none of the five baseline runs stored one, since the bounds were written after
+> them, so only a new full live run can fill that table. Also still true: no test guards the
+> run-count-1 direction on public prose. `make check` green, 1,759 Python, 1 skipped (the run-count-0
+> guard, correctly), 463 frontend.
 >
 > **PHASE 7.7 STEP 7 IS DONE — 2026-09-12 evening. NEXT IS STEP 8, the one deploy, the writeup and the
-> close.** The held-out set `heldout_v2` **was run once at the freeze: 10 of 10, run count 1** — one run,
-> ten cases, two refusals, and no non-Western case in the draw, so report it at that size (§7.2). **Owed
-> before step 8 deploys:** `README.md:107-111` and `docs/eval-suite-explained.md:95-96` still say the set
-> has not been run; that prose is his, and no test guards that direction yet. **The same README section
+> close.** The held-out
+> set `heldout_v2` **was run once at the freeze: 10 of 10, run count 1** — one run, ten cases, two
+> refusals, and no non-Western case in the draw, so report it at that size (§7.2). ~~**Owed before step 8
+> deploys:** `README.md:107-111` and `docs/eval-suite-explained.md:95-96` still say the set has not been
+> run; that prose is his, and no test guards that direction yet. **The same README section
 > (`README.md:94-96`) is stale a second way:** it dates the noise floor "2026-09-07" and says "Four of 56
-> cases changed verdict"; the floor was re-measured 2026-09-12 and five of 63 did.
+> cases changed verdict"; the floor was re-measured 2026-09-12 and five of 63 did.~~ *(Done 2026-09-13.)*
 > ~~**PHASE 7.7 STEP 7: THE LIVE RE-BASELINE IS MEASURED AND THE BOUNDS ARE WRITTEN — 2026-09-12 evening.
 > THE HELD-OUT RUN IS THE LAST PART OF STEP 7 AND HAS NOT HAPPENED.**~~ Five complete runs at `40d1b26`,
 > noise floor and thresholds rewritten for 63 cases at v0.10.0. As-built:

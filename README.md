@@ -31,25 +31,29 @@ influenced then answers.
 Every answer streams in as structured claims first and prose second. Each claim links to the source it
 came from and states how strongly that source was checked.
 
-## Status, 2026-09-12
+## Status, 2026-09-13
 
-**v1.0 is deployed, and this repository is currently a phase ahead of it.** The live site serves
-artifact 0.7.1: the agent, the contested-source disclosure, the animated corpus backdrop, the guided
-tour and the evaluation report. It sits behind a free Vercel proxy so the address survives a full
+**v1.0 is deployed, and this repository is two phases ahead of it.** The live site serves artifact
+0.7.1: the agent, the contested-source disclosure, the animated corpus backdrop, the guided tour and the
+evaluation report. It sits behind a free Vercel proxy so the address survives a full
 `terraform destroy` and `terraform apply`, and that round-trip has been run for real, not assumed.
 
-This tree holds artifact 0.10.0, whose teaching layer landed on 2026-09-11 with phase 7.6. It is not on
-the public URL yet on purpose: phase 7.7 spends one live evaluation re-baseline and one deploy at its
-close, and shipping 7.6 by itself would spend a second of each to learn nothing new. So the teaching
-edges described under [The corpus](#the-corpus) are in the artifact and under test, and they are not yet
-in the deployed answers.
+This tree holds artifact 0.10.0 and the work of phases 7.6 and 7.7, both built, tested and measured
+against a real model, and neither deployed yet. That is deliberate: the two phases share one live
+evaluation re-baseline and one deploy, so shipping 7.6 on its own would have spent a second of each to
+learn nothing new. The re-baseline and the held-out run happened on 2026-09-12; the deploy is the next
+step. Until it lands, the teaching edges described under [The corpus](#the-corpus) and the name
+offers described below are in this repository and not in the deployed answers, and the public
+evaluation report still shows the measurements from before either phase.
 
-Phases 0 through 7 are complete. Phase 7.5 (the release) is suspended at its writeup step. Phase 7.6
-(classical lineage) is complete: a label bug that had been dropping Mozart is fixed, and Wikidata's
-`student of` is ingested as teaching. Phase 7.7 (name resolution) is under way, so that a partial name
-like "mozart" is offered as a one-click choice rather than silently resolved to a guess. Phase 8, which
-lets the agent narrate artist-to-genre membership as well as influence, is scoped for v1.1 and not
-started. Every open item is listed in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md), newest first.
+Phases 0 through 7 are complete. Phase 7.5 (the release) is suspended at its writeup step and resumes
+after the deploy. Phase 7.6 (classical lineage) is complete: a label bug that had been dropping Mozart is
+fixed, and Wikidata's `student of` is ingested as teaching. Phase 7.7 (name resolution) is built and
+measured, with only its deploy and writeup left: a partial name like "mozart" is still refused, but the
+refusal now carries the matching names in the graph as one-click choices that ask the question again.
+The system never picks one of them on its own. Phase 8, which lets the agent narrate artist-to-genre membership as well as influence, is scoped
+for v1.1 and not started. Every open item is listed in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md), newest
+first.
 
 The version spine is in [`docs/ROADMAP.md`](docs/ROADMAP.md), the contracts in
 [`docs/SPEC.md`](docs/SPEC.md), and the pre-build planning, which is closed, in
@@ -90,28 +94,43 @@ date.
   citation resolve. The free, scripted part runs on every commit.
 - **The live suite runs a real model** over <!-- n:live_cases -->63<!-- /n --> development cases and blocks a release on six
   correctness properties, among them 100% edge groundedness, 100% citation resolution, zero successful
-  prompt injections and zero contested pairs crossed silently. Its bounds were set only after measuring
-  the noise floor over five identical runs at the current corpus, on 2026-09-07. A full run costs about
-  half a dollar.
-- **The noise floor changed what counted as a result.** Four of 56 cases changed verdict between
-  identical runs. One case failed three runs in a row and passed the next two, so stopping at three runs
-  would have recorded a coin flip as a permanent defect. And one metric read an identical 97.1% in all
-  five runs, which looked like stability and was really 37 cases scoring perfectly every time and one
-  failing the same way every time. The report shows the per-case data under every aggregate for that reason.
+  prompt injections and zero contested pairs crossed silently. Its bounds were re-measured on
+  2026-09-12 from five identical runs of the whole set at artifact 0.10.0, and all five runs clear
+  every bound. A full run costs about 75 cents.
+- **The noise floor changed what counted as a result.** Five of the cases changed verdict between
+  identical runs on 2026-09-12. At the baseline before that, one case failed three runs in a row and
+  passed the next two, so stopping at three runs would have recorded a coin flip as a permanent defect.
+  Traversal recall has now shown the same trap at three baselines running: its aggregate barely moves,
+  which looks like stability, and underneath it one case fails the same way every run while almost every
+  other case scores perfectly every time. The report shows the per-case data under every aggregate for
+  that reason.
+- **Two cases are excluded from gates, and each exclusion has a diagnosis, not a noise excuse.** In one,
+  the question names the artist Femtanyl and the model looks up fentanyl, the drug, every run. The other
+  was written to expect a refusal about West African influence, and the corpus outgrew its premise the
+  day after it was authored: DBpedia added sourced edges from "music of Africa", and every run now
+  narrates that chain with every claim grounded. Whether a continent-level answer is honest there or a
+  substituted neighbor is a dataset decision, so the case is owed a rewrite rather than a pass. Both
+  still run and still count in the totals; they only lose their vote on whether a release is blocked.
+  Five other cases that flip between runs are not excluded, because being noisy is not a diagnosis.
 - **Quality is judged, and the judge's weakness is published.** Citation support and narrative quality
   are scored by a model from a different family (Amazon Nova Pro) on a sample, tracked and never gated.
   Its agreement with a human is moderate on citation support, Cohen's kappa 0.44 to 0.48, and it also
   disagrees with itself: the same 30 items scored 14, then 12, then 11 across three runs. Both facts sit
   next to every judged number.
 - **A sealed held-out set** of ten cases, drawn from the corpus by a seed only the author holds and
-  stored encrypted, **has not been run.** It was drawn fresh on 2026-09-12 against artifact 0.10.0,
-  because the previous set had been drawn at 0.5.0 and the corpus roughly tripled underneath it. Its ten
-  cases match their manifest, and a check that decrypts in memory and prints only case numbers reports
-  nothing diverging from the corpus they were drawn against. The run count is 0, so generalization on
-  this corpus is untested rather than passed, and the set is opened once, at a freeze. The earlier set
-  was run once, on 2026-08-24, and came back 10 of 10 at artifact 0.5.0; that measurement is kept and
-  still auditable, but it belongs to a set no longer in this repository and it is not evidence about the
-  set described here.
+  stored encrypted, **has been run once: 10 of 10, on 2026-09-12**, at the freeze after the re-baseline.
+  It was drawn fresh that morning against artifact 0.10.0, because the previous set had been drawn at
+  0.5.0 and the corpus roughly tripled underneath it, and it was checked without being read before the
+  run. The rule for a provider outage was agreed before the run, not after: a run cut short only by
+  provider errors would not count, and any other result would. It finished cleanly, so it counts.
+- **That result is reported at the size it is.** One run of ten cases is evidence that the system holds
+  up on questions nobody tuned against, not a success rate worth a confidence interval. Two of the ten
+  are refusals, which is a thin denominator, and the draw happened to contain no case placed outside
+  the US and UK: five are placed there and five record no region at all. So it says nothing about
+  non-Western material, which is exactly where the corpus is weakest. The set is not run again until the next freeze, because a set re-run after changes made in
+  response to it stops measuring generalization and starts measuring attempts. The earlier set was run
+  once, on 2026-08-24, and came back 10 of 10 at artifact 0.5.0; that measurement is kept and still
+  auditable, but it belongs to a set no longer in this repository.
 
 ## What it does not do
 
@@ -125,7 +144,10 @@ date.
   apart and both are in the corpus. A model that typed one for the other would get a fully grounded,
   correctly cited answer about the wrong person, and no metric here would notice. A near-miss name
   suggester was measured and rejected for the same reason: it trades an honest refusal for a confident
-  wrong answer.
+  wrong answer. The name offers from phase 7.7 are a different thing on purpose. They list only nodes
+  whose name or recorded alternate name contains every word you typed, as whole words, never names that
+  are merely spelled alike. They arrive with the refusal rather than replacing it, and a person
+  picks, not the model.
 - **It does not narrate membership.** An artist is recorded as playing a genre, and the map draws that,
   but membership is never presented as one thing coming out of another. That is phase 8's work, and
   the difference between the two statements is the reason it gets a phase of its own.

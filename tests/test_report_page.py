@@ -81,6 +81,24 @@ def test_only_a_run_the_gate_judged_against_the_live_set_counts_as_gated() -> No
     assert report_page.gated_live_run(name, runs[1:]) is None
 
 
+def test_a_verdict_made_against_replaced_bounds_is_labelled_as_such() -> None:
+    """A re-baseline keeps the set's name and moves its bounds, so a name match is not enough."""
+    live = {
+        "case_count": 63,
+        "derived_from": {
+            "run_count": 5,
+            "artifact_version": "0.10.0",
+            "decided": "2026-09-12",
+            "model_id": "m",
+        },
+    }
+    old = {"cases_run": 56, "artifact_version": "0.7.1", "gates": {"set": "s", "gates": []}}
+    current = {"cases_run": 63, "artifact_version": "0.10.0", "gates": {"set": "s", "gates": []}}
+    superseded = report_page.COPY["live_gates_superseded"]
+    assert superseded in report_page.live_gates_section(live, ("20260910T164141Z", old))
+    assert superseded not in report_page.live_gates_section(live, ("20260913T000000Z", current))
+
+
 def test_a_live_result_file_carries_the_verdict_the_gate_made(tmp_path: Path) -> None:
     """The page trusts stored verdicts, so the writer must store exactly what the gate returned."""
     result = run_gold_suite(default_store())

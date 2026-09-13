@@ -4,6 +4,9 @@ Phase 4's write-up. No jargon, or jargon explained the first time it appears. Th
 able to say all of this out loud, cold, without the page, is a different skill from having built it, and
 the second one does not automatically produce the first.
 
+*Counts in the phase 4 part are phase 4's, and they are kept because the reasoning around them still
+holds. The sections added at the end bring them forward; the newest is dated 2026-09-13.*
+
 ## The problem
 
 The agent answers questions about how music influenced other music. "Where did blues rock come from."
@@ -69,9 +72,9 @@ into how the project is described out loud.
 
 ## Three datasets, and why one of them is encrypted
 
-- **The gold set** - 25 questions, hand-built, every expected edge cited. Includes deliberately boring
+- **The gold set** - 25 questions at phase 4, 43 today, hand-built, every expected edge cited. Includes deliberately boring
   middles, because a set of only dramatic examples flatters a system that skips steps.
-- **The adversarial set** - 18 questions designed to break things, including a planted prompt injection.
+- **The adversarial set** - 18 questions at phase 4, 22 today, designed to break things, including a planted prompt injection.
 - **The held-out set** - 10 questions that are **never looked at** during development. This one was not
   hand-written: it was **drawn** from the graph by a seeded random sample matched to the gold set's mix of
   question shapes. That was deliberate. A held-out set someone curates inherits the same blind spots as
@@ -90,11 +93,18 @@ It is still checkable while sealed. A tool decrypts it in memory and reports pro
 problem codes, in the form `<case id>: claims-diverged`, which says everything you need in order to act
 and discloses nothing. A case number is not content.
 
-**The set in the repository today has not been opened at all.** It was drawn on 2026-09-12 against
-artifact 0.10.0, sealed, and then checked without being read: ten cases, two of them refusals, matching
-their manifest, with nothing diverging from the corpus they were drawn against. Its run count is 0.
-Generalization on this corpus is therefore untested rather than passed, and the set is opened once, at a
-freeze, and only if nothing was tuned in response to what it says - because a set re-run after a change
+**The set in the repository today has been run exactly once, and came back 10 of 10.** It was drawn on
+the morning of 2026-09-12 against artifact 0.10.0, sealed, and checked without being read: ten cases, two
+of them refusals, matching their manifest, with nothing diverging from the corpus they were drawn
+against. That evening, after the live suite had been re-measured and its thresholds rewritten, it was run
+once. The rule for a provider outage was agreed before the run: a run cut short only by provider errors
+would not count, and anything else would, whatever it said. It finished with no errors and no retries.
+
+That result is one run of ten cases, and it is reported at that size. It is evidence that the system
+holds up on questions nobody tuned against, not a rate worth a confidence interval. Two refusal cases is
+a thin denominator, and the draw happened to contain no case placed outside the US and UK - five are
+placed there and five record no region - so it says nothing about non-Western material, which is where
+the corpus is weakest. It is not run again until the next freeze, because a set re-run after a change
 made because of its own result has stopped measuring generalization and started measuring how many
 attempts it took.
 
@@ -155,7 +165,8 @@ scored against is fitting to the answer sheet.
 ## What it costs
 
 Everything deterministic is free and runs on every commit. The real-model runs cost roughly 36 cents for
-all 41 cases, measured rather than estimated. The judged runs are a few cents. Every operation that spends
+all 41 cases at phase 4, measured rather than estimated; the 63-case set of 2026-09-12 costs about 75
+cents a run. The judged runs are a few cents. Every operation that spends
 money sits behind a confirmation prompt that names the estimate first, and the estimate deliberately
 rounds *up*, because an estimate that understates spend is the one that causes harm.
 
@@ -264,3 +275,61 @@ exact trap has been caught in this project.
 The system can now tell you when its sources disagree, it stopped claiming the graph is empty when it
 isn't, and its pass/fail thresholds are set from measured noise rather than from hope — which cost $2.61
 and revealed that a fifth of what the suite reports moves on its own.
+
+---
+
+## What the phase 7.7 re-baseline added
+
+*Written 2026-09-13. Between phase 6.5 and phase 7.7 the corpus gained a teaching layer (artifact
+0.10.0) and the live set grew from 56 cases to 63, so the thresholds set on 2026-09-07 no longer
+described the thing they were gating. They were measured again from scratch rather than carried over.*
+
+### Five more identical runs, and two that did not count
+
+Five full runs of all 63 cases, on 2026-09-12, about 75 cents each. Two earlier attempts that afternoon
+were lost to Amazon's model service returning "unavailable" errors, and they are kept on file but never
+pooled, because a run missing a case measures a different set. The harness now retries a case that got
+no answer because the service was unavailable, up to twice, and a full run stops at the first case that still fails rather than
+producing a result nobody can use. A case that answered *wrongly* is never retried: that is the result.
+
+What the five runs showed:
+
+- **Five of 63 questions changed answer between identical runs.** The same kind of wobble as four of 56
+  at the previous baseline, on a set seven cases larger.
+- **Groundedness and citation resolution stayed at 100% in every run, and no planted injection worked.**
+- **The traversal trap turned up a third time.** The aggregate moved by less than half a point, which
+  looks like stability. Per case, 41 questions reached their full path every run, the femtanyl case
+  reached a seventh of it every run, and one other case dropped once. The bound is written per case for
+  that reason, and it now covers 41 questions rather than 37.
+
+### Two exclusions, each with a diagnosis
+
+A case can lose its vote on whether a release is blocked only when the reason it fails is understood,
+never because it is noisy. Two qualify.
+
+- **The femtanyl case**, excluded since 2026-09-07 and still failing the same way every run: the model
+  looks up the drug.
+- **A West African influence question**, excluded on 2026-09-12. It was written to expect a refusal,
+  because the graph could source almost none of that history when it was authored. The next day DBpedia
+  arrived with sourced edges from "music of Africa", and in all five runs the model found that chain and
+  narrated it with every claim grounded. The case's premise failed, not the model. Whether an answer at
+  the level of a continent is honest for a question about West Africa is a dataset decision, so the case
+  is owed a rewrite, not a pass.
+
+Both still run and still count in every total and every slice. The five cases that flip between runs
+are deliberately left in the gates.
+
+Excluding a case that fails every run has a reason beyond tidiness: the day it is fixed, a bound that
+still counts it quietly gains a spare case of slack that nobody decided to grant.
+
+### The held-out set, run once
+
+With the thresholds committed, the sealed set was run for the first and only time at this freeze: 10 of
+10, every claim grounded, both refusals correct. The section on the three datasets above states what that
+does and does not show, and the size it was measured at.
+
+### The one-sentence version
+
+The corpus and the question set both grew, so the noise was measured again instead of assumed, the two
+cases allowed out of the gates each have a written diagnosis, and the held-out set was spent exactly once
+at the end, reported at the size of ten questions rather than as a rate.

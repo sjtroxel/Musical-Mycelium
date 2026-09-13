@@ -80,6 +80,11 @@ COPY: dict[str, str] = {
         "Six correctness properties block a release. They are judged against a real model, with bounds "
         "measured over identical runs before any bound was set."
     ),
+    "live_gates_superseded": (
+        "These verdicts were made against the bounds this set replaced, not the bounds above, so the "
+        "required column is the earlier one. No full live run has been judged against the current "
+        "bounds yet."
+    ),
     "live_gates_missing": (
         "No stored live run records its gate verdicts yet: runs began recording them on 2026-09-10. "
         "This section fills in from the next full live run."
@@ -212,6 +217,22 @@ def gated_live_run(set_name: str, runs: Sequence[tuple[str, Json]]) -> tuple[str
     return None
 
 
+def judged_against_current_bounds(live: Json, run: Json) -> bool:
+    """Whether a stored verdict was made against the bounds the page prints above it. Phase 7.7 step 8.
+
+    ``gated_live_run`` matches on the set's *name*, and a re-baseline rewrites a set's bounds without
+    renaming it. On 2026-09-12 the bounds moved to 63 cases at artifact 0.10.0, the five baseline runs
+    stored no verdict because the bounds were written after them, and the newest verdict on file was a
+    56-case run at 0.7.1 -- which the page then printed directly under the new bounds with nothing to
+    say the two did not belong together. The verdict is still shown, never re-derived; it is labelled.
+    """
+    derived = live["derived_from"]
+    return bool(
+        run.get("cases_run") == live["case_count"]
+        and run.get("artifact_version") == derived["artifact_version"]
+    )
+
+
 # --- formatting -------------------------------------------------------------------------------------
 
 
@@ -304,8 +325,11 @@ def live_gates_section(live: Json, gated: tuple[str, Json] | None) -> str:
     gates = run["gates"]["gates"]
     out += (
         f"<p>Run of {_e(_when(stamp))}, revision <code>{_e(run.get('code_revision', '?'))}</code>, "
-        f"{run['cases_run']} cases: <strong>{_e(tally(gates))}</strong>.</p>"
+        f"{run['cases_run']} cases at artifact {_e(run.get('artifact_version', '?'))}: "
+        f"<strong>{_e(tally(gates))}</strong>.</p>"
     )
+    if not judged_against_current_bounds(live, run):
+        out += _p(COPY["live_gates_superseded"], "note")
     return out + _table(["gate", "verdict", "observed", "required"], gate_rows(gates))
 
 

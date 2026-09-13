@@ -397,3 +397,18 @@ def test_the_music_fold_offers_a_choice_and_resolves_nothing() -> None:
     assert kept is not None and kept.label == "big band music", (
         "the full index fold was rejected to keep this resolving; it has stopped resolving anyway"
     )
+
+
+def test_nothing_this_phase_adds_lets_roy_orbison_reach_joy_orbison() -> None:
+    """Definition of done 2, as amended 2026-09-12, stated literally. Phase 7.7 step 8.
+
+    The rejection that shaped this phase: Joy Orbison (``Q14159313``) and Roy Orbison (``Q188426``) are
+    one edit apart and both are in the corpus, so a substitution would be fully grounded and correctly
+    cited about the wrong person. Other tests hold the parts of this -- a resolved name carries no
+    offers, an alias never resolves -- and this one names the two people, in both directions.
+    """
+    store = default_store()
+    resolved = resolve_exact(store, "roy orbison")
+    assert resolved is not None and resolved.id == "Q188426"
+    assert "Q14159313" not in {c.node_id for c in offer_candidates(store, "roy orbison").candidates}
+    assert "Q188426" not in {c.node_id for c in offer_candidates(store, "joy orbison").candidates}

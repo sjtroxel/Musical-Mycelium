@@ -92,7 +92,12 @@ choosing for them.**
 
 1. Typing "mozart" into the site offers Wolfgang Amadeus Mozart (and Leopold Mozart, if 7.6 ingested
    him), and choosing one returns a gated, cited answer about the person chosen.
-2. Typing "dolly" offers Dolly Parton; typing "roy orbison" still refuses.
+2. Typing "dolly" offers Dolly Parton; ~~typing "roy orbison" still refuses~~ **nothing offered for
+   "roy orbison" is Joy Orbison.** *(Amended 2026-09-13, the amendment
+   `phase-7.7-name-resolution-IMPLEMENTATION.md` §1.2 proposed on 2026-09-12. The struck clause was
+   never true: "roy orbison" has exactly one exact label match, Roy Orbison, so it resolved before this
+   phase and still does. The intent was always that it must not reach Joy Orbison, and
+   `test_nothing_this_phase_adds_lets_roy_orbison_reach_joy_orbison` asserts that directly.)*
 3. No query that resolves by exact label today resolves differently, proved by a test over every name in
    the gold, adversarial, tour and live sets, the chips and the README.
 4. Nothing resolves without either an exact label match or a human choice. A test asserts it.
