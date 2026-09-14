@@ -1,6 +1,15 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-13
+> ## START HERE — where things stand, 2026-09-14
+>
+> **2026-09-14: THE MOZART ORIGINS ANSWER IS DIAGNOSED AND FIXED IN CODE, NOT DEPLOYED, NOT LIVE-MEASURED.**
+> Two bugs, detail in the FINDING of the same date below: the no-single-lineage refusal borrowed the
+> "none did" sentence, and a set holding both a node's teachers and its students had no shape. **Fixed
+> by a fourth synthesis shape, the hub (his decision), and a third refusal opening.** `make check`
+> green, 1,766 Python, 1 skipped (the run-count-0 guard, correctly), 463 frontend. **Owed: the hub
+> changes which live cases refuse**, including the two false refusals that failed the first gated run
+> on 2026-09-13, and no live run has measured that. **NEXT, unchanged: phase 7.5 step 5**, after he
+> decides when the live suite re-runs against this change.
 >
 > **2026-09-13 afternoon: PHASE 7.7 IS CLOSED AND DEPLOYED, with DoD 1 PARTIAL.** Deploy run
 > `34769854201`, green. Verified by hand on the live site: `/health` artifact 0.10.0 (3,628 nodes,
@@ -257,7 +266,43 @@
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
 
+## FINDING — the Mozart answer, diagnosed: two bugs, both fixed in code, live effect unmeasured, 2026-09-14
+
+**Bug 1, the sentence (confirmed, deterministic).** The refusal for approved claims that form no single
+lineage (`loop.py`, the `not claim_set.narratable` branch) called `refusal_text(graph_is_empty=False)`,
+whose second sentence is "none did". That wording was written for runs with no approved claims. The
+existing loop test asserted the refusal *reason* and never the text a person reads, so it passed.
+Now `refusal_text(..., claims_approved=True)` has its own opening, and the test asserts the text.
+
+**Bug 2, the shape (confirmed by construction; the live trace is unrecoverable).** Mozart was the
+subject of 3 claims and the object of 6: no single subject, no single object, no chain, so
+`narratable` was False and the run refused. Six one-hop "X studied with Mozart" claims can only come
+from `get_students`, so the model called it on an origins question. **Not recoverable from
+production:** telemetry logs token cost only, no tool names. **One live re-ask on 2026-09-14**
+(about 1.4 cents, code as of `3aa2535`) called only `get_teachers` and answered correctly with 3
+claims, so the student call is intermittent, not deterministic.
+
+**The fix, his decision: `ApprovedClaimSet.hub_id`, a fourth shape.** One node that every claim
+touches, subject of some and object of the rest, narrated as two directed lists (what it came from,
+then what came after), each heading's direction stated in the prompt. It never takes a set from the
+three older shapes, and a reciprocal pair has two candidate centres and still refuses, because picking
+one would pick a winner. Disjoint edges still refuse. The corpus-wide teaching narration test now
+covers **524 teaching hubs** with zero misnarrations, and its checker reads direction per heading and
+was breakage-tested with a student listed as a teacher.
+
+**OWED, AND THE REASON THIS IS NOT JUST A BUG FIX: it changes live refusal behaviour on gated cases.**
+Refused-with-approved-claims can only be this branch, and the recent live results show who hits it:
+`gold_v0_1_035` (4 of 9 runs at 0.10.0) and `adv_012` (2 runs) are **false refusals** through it,
+and they are the pair that failed `refusal_accuracy` on `20260913T150600Z`. `adv_008` (2 runs) and
+`adv_018` (1 run, already excluded) are **true refusals only because their sets were unnarratable**.
+Which of those sets are hubs is decided by the model's tool calls and **is not knowable offline**, so
+the hub may repair the first pair, flip `adv_008` to a false answer, both, or neither. The noise floor
+and bounds were measured on the old code. **The `adv_006` direction swap is untouched**: it is a plain
+fan-in, already narratable, and the structural check it asks for is still owed as a decision.
+
 ## FINDING — an origins answer about Mozart approves 9 claims and then says none traced, 2026-09-13
+
+*(Diagnosed and fixed in code 2026-09-14; see the section above. "NOT diagnosed" below was true on 9/13.)*
 
 **Found by hand on the live site after the phase 7.7 deploy, NOT diagnosed, by his decision (token
 budget).** "Where did mozart come from?" -> click *Wolfgang Amadeus Mozart* -> the re-asked

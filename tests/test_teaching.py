@@ -91,6 +91,9 @@ BLUES = "Q9759"
 STUDIED, INFLUENCED = PREDICATE_STUDIED_WITH, PREDICATE_INFLUENCED_BY
 
 BEETHOVENS_TEACHERS = {CLEMENTI, NEEFE, SALIERI, HAYDN}
+#: Read off artifact v0.10.0 on 2026-09-14, from a live ``get_teachers`` call.
+MOZART = "Q254"
+MOZARTS_TEACHERS = {"Q106641", "Q156280", "Q283651"}  # J. C. Bach, Leopold Mozart, Martini
 
 
 @pytest.fixture(scope="module")
@@ -556,24 +559,35 @@ def misnarrations(prompt: str, claim_set: ApprovedClaimSet) -> list[str]:
         elif only == (INFLUENCED,) and "chain of influence" not in head:
             problems.append("an influence chain lost its wording")
     else:
-        origins = claim_set.subject_id is not None
-        headings = ORIGINS_HEADINGS if origins else FAN_IN_HEADINGS
-        listed: dict[str, list[str]] = defaultdict(list)
+        # Keyed by (predicate, direction): "before" names are objects of the asked-about node, "after"
+        # names are subjects. The hub shape carries both kinds of heading, so direction is read off
+        # each heading rather than off the shape. *(2026-09-14.)*
+        hub = claim_set.hub_id
+        centre = claim_set.subject_id or claim_set.object_id or hub
+        allowed: dict[str, tuple[str, str]] = {}
+        if claim_set.subject_id is not None or hub is not None:
+            allowed |= {h: (p, "before") for h, p in ORIGINS_HEADINGS.items()}
+        if claim_set.object_id is not None or hub is not None:
+            allowed |= {h: (p, "after") for h, p in FAN_IN_HEADINGS.items()}
+        listed: dict[tuple[str, str], list[str]] = defaultdict(list)
         for line in body.split("\n")[1:]:
             heading, _, names = line.partition(": ")
-            if heading not in headings:
+            if heading not in allowed:
                 problems.append(f"heading {heading!r} is not one this shape may use")
                 continue
-            listed[headings[heading]].extend(json.loads(names))
-        for predicate in predicates | set(listed):
-            expected_names = sorted(
-                label(claim.object_id if origins else claim.subject_id)
-                for claim in claim_set.claims
-                if claim.predicate == predicate
-            )
-            if sorted(listed[predicate]) != expected_names:
+            listed[allowed[heading]].extend(json.loads(names))
+        approved_names: dict[tuple[str, str], list[str]] = defaultdict(list)
+        for claim in claim_set.claims:
+            if claim.subject_id == centre:
+                approved_names[(claim.predicate, "before")].append(label(claim.object_id))
+            else:
+                approved_names[(claim.predicate, "after")].append(label(claim.subject_id))
+        for key in set(approved_names) | set(listed):
+            if sorted(listed[key]) != sorted(approved_names[key]):
+                predicate, direction = key
                 problems.append(
-                    f"{predicate} lists {sorted(listed[predicate])}, approved {expected_names}"
+                    f"{predicate} ({direction}) lists {sorted(listed[key])}, "
+                    f"approved {sorted(approved_names[key])}"
                 )
     return problems
 
@@ -607,6 +621,9 @@ def _teaching_claim_sets(
             ("teachers+influences", (*teachers, *influences)),
             ("students", students),
             ("students+descendants", (*students, *descendants)),
+            # The live Mozart answer of 2026-09-13: an origins run that also fetched students.
+            # Only where both sides exist: one side alone is already the teachers or students shape.
+            ("teaching hub", (*teachers, *students) if teachers and students else ()),
         ):
             claims = gate(list(proposals), store).approved
             if claims:
@@ -659,6 +676,8 @@ def test_no_teaching_claim_is_ever_narrated_as_influence(
         "students": 800,
         "mixed teachers+influences": 10,
         "mixed students+descendants": 10,
+        # Added 2026-09-14 with the hub shape: 524 that day.
+        "teaching hub": 500,
         "teaching chain": 1000,
         "mixed chain": 50,
     }
@@ -683,8 +702,69 @@ def test_the_checker_catches_a_teaching_claim_under_an_influence_heading(
     assert any("not told teaching is not influence" in p for p in problems)
     # The heading itself is a legal origins heading. What is wrong is who is under it: Haydn listed
     # as an influence, where the only approved claim is that Beethoven studied with him.
-    assert "influenced_by lists ['Joseph Haydn'], approved []" in problems
-    assert "studied_with lists [], approved ['Joseph Haydn']" in problems
+    assert "influenced_by (before) lists ['Joseph Haydn'], approved []" in problems
+    assert "studied_with (before) lists [], approved ['Joseph Haydn']" in problems
+
+
+def test_the_checker_catches_a_student_listed_as_a_teacher(store: InMemoryGraphStore) -> None:
+    """The hub shape's direction, broken on purpose: Czerny studied with Beethoven, so listing him
+    among Beethoven's teachers inverts the claim while every name stays on the page."""
+    claims = gate(
+        [ClaimProposal(BEETHOVEN, STUDIED, HAYDN), ClaimProposal(CZERNY, STUDIED, BEETHOVEN)], store
+    ).approved
+    claim_set = _claim_set(store, claims)
+    assert claim_set.hub_id == BEETHOVEN
+    assert misnarrations(_prompt(claim_set), claim_set) == []
+    inverted = (
+        f"Write one or two sentences about Ludwig van Beethoven. {TEACHING_CLAUSE}\n\n"
+        f"Artist: Ludwig van Beethoven\n"
+        f"Documented teachers: {dumps(['Joseph Haydn', 'Carl Czerny'])}"
+    )
+    problems = misnarrations(inverted, claim_set)
+    assert (
+        "studied_with (before) lists ['Carl Czerny', 'Joseph Haydn'], approved ['Joseph Haydn']"
+        in problems
+    )
+    assert "studied_with (after) lists [], approved ['Carl Czerny']" in problems
+
+
+def test_where_did_mozart_come_from_answers_with_teachers_and_students_apart(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """**The live answer of 2026-09-13, scripted.** An origins run that fetched Mozart's students as
+    well as his teachers approved every claim and then refused, under text saying none traced. It is
+    now narrated as two lists. Scripted, so the tool choice is authored: this shows the shape, not that
+    a real model calls ``get_students`` (one live re-ask on 2026-09-14 did not)."""
+    traversal = ScriptedLLM(
+        [
+            plan_turn("origins", "resolve_node", "get_teachers", "get_students"),
+            tool_turn(("resolve_node", {"name": "Wolfgang Amadeus Mozart"})),
+            tool_turn(
+                ("get_teachers", {"node_id": MOZART}),
+                ("get_students", {"node_id": MOZART}),
+            ),
+            END,
+        ]
+    )
+    synthesis = ScriptedLLM([LLMResponse(text="prose")])
+    events = list(
+        run(
+            "Where did Wolfgang Amadeus Mozart come from?",
+            store=store,
+            llm=traversal,
+            registry=registry,
+            synthesis_llm=synthesis,
+        )
+    )
+
+    approved = tuple(e.claim for e in events if isinstance(e, ClaimApproved))
+    assert {c.object_id for c in approved if c.subject_id == MOZART} == MOZARTS_TEACHERS
+    assert any(c.object_id == MOZART for c in approved), "the students are the point of this test"
+    assert not [e for e in events if isinstance(e, Refused)]
+    prompt = _sent(synthesis)
+    assert "Documented teachers: " in prompt
+    assert "Documented as having studied with them: " in prompt
+    assert misnarrations(prompt, _claim_set(store, approved)) == []
 
 
 def test_the_checker_catches_a_mixed_chain_told_with_one_verb(store: InMemoryGraphStore) -> None:

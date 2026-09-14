@@ -2069,12 +2069,61 @@ def test_two_disjoint_claims_are_not_narratable() -> None:
             ),
             id="chain",
         ),
+        pytest.param(
+            ApprovedClaimSet(
+                claims=(
+                    Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),
+                    Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/2",), HAND),
+                    Claim(ACID_JAZZ, INFLUENCED_BY, BLUES_ROCK, ("stmt/3",), HAND),
+                ),
+                labels={
+                    BLUES_ROCK: "blues rock",
+                    BLUES: "blues",
+                    HEAVY_METAL: "heavy metal",
+                    ACID_JAZZ: "acid jazz",
+                },
+            ),
+            id="hub",
+        ),
     ],
 )
-def test_the_three_real_shapes_stay_narratable(claim_set: ApprovedClaimSet) -> None:
+def test_the_real_shapes_stay_narratable(claim_set: ApprovedClaimSet) -> None:
     """The other direction. A guard that refuses everything would also stop the crash, and would be a
     far worse bug -- every answer becomes a false refusal and the metrics still look calm."""
     assert claim_set.narratable
+
+
+def test_a_reciprocal_pair_has_no_hub_and_still_refuses() -> None:
+    """Both ends of a two-way pair touch every claim, so either could be the centre. Choosing one would
+    pick a winner on what may be a contested pair, so it stays unnarratable. *(2026-09-14.)*"""
+    claim_set = ApprovedClaimSet(
+        claims=(
+            Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),
+            Claim(BLUES, INFLUENCED_BY, BLUES_ROCK, ("stmt/2",), HAND),
+        ),
+    )
+    assert claim_set.hub_id is None
+    assert not claim_set.narratable
+
+
+def test_a_hub_is_narrated_as_two_directed_lists() -> None:
+    """The fourth shape: what the centre came out of, then what came out of it, each under its own
+    heading and each heading's direction stated in the instruction."""
+    claim_set = ApprovedClaimSet(
+        claims=(
+            Claim(BLUES_ROCK, INFLUENCED_BY, BLUES, ("stmt/1",), HAND),
+            Claim(HEAVY_METAL, INFLUENCED_BY, BLUES_ROCK, ("stmt/2",), HAND),
+        ),
+        labels={BLUES_ROCK: "blues rock", BLUES: "blues", HEAVY_METAL: "heavy metal"},
+    )
+    assert claim_set.hub_id == BLUES_ROCK
+    llm = ScriptedLLM([LLMResponse(text="prose")])
+    list(synthesize(claim_set, llm))
+    prompt: str = llm.requests[-1]["messages"][0]["content"][0]["text"]
+    assert 'Documented influences: ["blues"]' in prompt
+    assert 'Documented as influenced by it: ["heavy metal"]' in prompt
+    assert 'blues rock was influenced by each name under "Documented influences"' in prompt
+    assert 'each name under "Documented as influenced by it" was influenced by blues rock' in prompt
 
 
 def test_narratable_is_exactly_the_set_synthesize_can_describe() -> None:
@@ -2148,6 +2197,11 @@ def test_an_unnarratable_shape_refuses_instead_of_killing_the_run(
     assert "no single lineage" in refusal.reason
     assert llm.exhausted, "the loop asked for prose it had no describable shape for"
     assert next(e for e in events if isinstance(e, Done)).claim_count == 2
+    # Found 2026-09-13 on the live site: "Where did Wolfgang Amadeus Mozart come from?" approved nine
+    # teaching claims and the text beside them said none traced. The reason was right; the sentence
+    # around it was the no-claims wording, false about the claims on the same panel.
+    text = "".join(e.text for e in events if isinstance(e, Token))
+    assert "none did" not in text, "the refusal denies the claims this run approved"
 
 
 # --- the three refusal states ----------------------------------------------------------------------

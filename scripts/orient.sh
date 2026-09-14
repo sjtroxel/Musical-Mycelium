@@ -25,8 +25,18 @@ if [ -z "$(git status --short)" ]; then echo "    clean"; else git status --shor
 
 echo
 echo "## Active phase"
-PHASE_DOC=$(ls docs/phases/phase-*-IMPLEMENTATION.md 2>/dev/null \
-  | sed -E 's/.*phase-([0-9]+)-.*/\1 &/' | sort -rn | head -1 | cut -d' ' -f2-)
+# A step is finished when its heading carries any marker the phase docs have used:
+# "[done]" (7.5 onward), "**DONE <date>**" (6 through 7), or a closing decision.
+DONE_RE='\[done|\*\*(DONE|DECIDED|DELETED)'
+# Phase numbers are versions (7, 7.5, 7.6, 7.7), so sort them as versions. The active doc
+# is the newest one with a step left unfinished; a closed newer phase is named, not shown.
+PHASE_DOC=""; NEWEST_CLOSED=""
+for f in $(ls docs/phases/phase-*-IMPLEMENTATION.md 2>/dev/null \
+  | sed -E 's/.*phase-([0-9.]+)-.*/\1 &/' | sort -k1,1 -rV | cut -d' ' -f2-); do
+  if grep -E '^### Step ' "$f" | grep -qvE "$DONE_RE"; then PHASE_DOC=$f; break; fi
+  [ -z "$NEWEST_CLOSED" ] && NEWEST_CLOSED=$f
+done
+[ -n "$NEWEST_CLOSED" ] && echo "  newest phase doc, every step finished: $NEWEST_CLOSED"
 if [ -n "$PHASE_DOC" ]; then
   echo "  doc: $PHASE_DOC"
   echo
@@ -34,7 +44,7 @@ if [ -n "$PHASE_DOC" ]; then
   grep -nE '^### Step ' "$PHASE_DOC" | sed -E 's/^([0-9]+):### /    L\1  /' \
     | sed -E 's/(\*\*DONE[^*]*\*\*)/[done]/'
   echo
-  NEXT=$(grep -nE '^### Step ' "$PHASE_DOC" | grep -v 'DONE' | head -1)
+  NEXT=$(grep -nE '^### Step ' "$PHASE_DOC" | grep -vE "$DONE_RE" | head -1)
   if [ -n "$NEXT" ]; then
     LN=${NEXT%%:*}
     echo "  >>> NEXT UNFINISHED STEP (line $LN):"
@@ -46,6 +56,8 @@ if [ -n "$PHASE_DOC" ]; then
   else
     echo "  >>> every step in this doc is marked DONE"
   fi
+else
+  echo "  every IMPLEMENTATION doc has all its steps finished -- check KNOWN-GAPS and ROADMAP below"
 fi
 
 echo
@@ -58,7 +70,7 @@ sed -n '/### Where the build actually is/,/^### /p' docs/ROADMAP.md | head -20 |
 
 echo
 echo "## Recorded suite counts (NOT re-measured -- run 'make check' to verify)"
-grep -rhoE '(make check|Python)[^.]{0,30}\b1[0-9]{3}\b|frontend [0-9]{3}' docs/KNOWN-GAPS.md 2>/dev/null | head -3 | sed 's/^/  /'
+grep -rhoE '(make check|Python)[^.]{0,30}\b1,?[0-9]{3}\b|frontend [0-9]{3}' docs/KNOWN-GAPS.md 2>/dev/null | head -3 | sed 's/^/  /'
 
 echo
 echo "## Memory router"

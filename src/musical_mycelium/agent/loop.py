@@ -222,6 +222,17 @@ studied with {subject}. Name every one of them, each with its own relationship, 
 direction: do not state either relationship the other way round. A name listed under both is both. \
 {ban}"""
 
+#: Both fans at once, around one node: "where did Mozart come from" approved with his teachers AND his
+#: students. *(Added 2026-09-14, his decision after the live Mozart answer of 2026-09-13.)* Until then
+#: this set had no shape and refused beside nine approved claims. **Grouped by direction as well as by
+#: predicate**: ``{directions}`` is built from the headings the body actually carries, one clause each,
+#: so a teaching-only hub is never handed influence wording and no heading's direction is left implied.
+HUB_SYNTHESIS_TEMPLATE = """Write {sentences} about {subject}, using only the names listed below. Some \
+come before {subject} and some after, and the direction matters: {directions}. Say first who or what \
+{subject} came from, then who or what came after. Name every one of them, each with its own \
+relationship, and do not state any relationship the other way round. A name listed under two headings \
+is both. {ban}"""
+
 #: A chain whose hops differ: Czerny studied with Beethoven, who was influenced by Haydn. **His
 #: decision D4, 2026-09-11**, overriding a first draft that refused these. Each hop reaches the prompt
 #: with the relationship read off its own approved claims, so the prose cannot give every hop one verb.
@@ -512,8 +523,33 @@ class ApprovedClaimSet:
         return objects.pop() if len(objects) == 1 and len(subjects) > 1 else None
 
     @property
+    def hub_id(self) -> str | None:
+        """The one node every claim touches, when it is the subject of some and the object of the rest.
+
+        *(Added 2026-09-14.)* The live Mozart answer of 2026-09-13 approved 3 claims with Mozart as
+        student and 6 with him as teacher: no single subject, no single object, no chain, and so a
+        refusal beside nine sourced claims. That set is two fans sharing a centre, and it is narrated as
+        two lists rather than refused.
+
+        ``None`` whenever an existing shape already describes the set, so this never takes a set away
+        from origins, descendants or a chain. **``None`` also when two nodes qualify**, which happens
+        only when every claim runs between the same two nodes in both directions: that is a reciprocal
+        pair, possibly a contested one, and picking one end as the centre would be picking a winner.
+        """
+        if (
+            not self.claims
+            or self.chain
+            or self.subject_id is not None
+            or self.object_id is not None
+        ):
+            return None
+        touched = [{c.subject_id, c.object_id} for c in self.claims]
+        common = set.intersection(*touched)
+        return common.pop() if len(common) == 1 else None
+
+    @property
     def narratable(self) -> bool:
-        """Whether these claims form one of the three arrangements ``synthesize`` can describe.
+        """Whether these claims form one of the four arrangements ``synthesize`` can describe.
 
         **The caller's half of the contract, and it was missing until 2026-08-23.** ``synthesize``
         raises on a set that is neither a chain, a single-subject fan-out, nor a single-object fan-in,
@@ -535,8 +571,16 @@ class ApprovedClaimSet:
         ``.claude/rules/grounding-and-claims.md`` exists to prevent. A fourth shape for disjoint sets is
         a product question, not a crash fix, and it belongs to whoever decides what such an answer
         should say.
+
+        *(2026-09-14: the fourth shape arrived for one arrangement only, the hub — see ``hub_id``. Two
+        disjoint edges like ``adv_008``'s still refuse, and so does a reciprocal pair.)*
         """
-        return bool(self.chain) or self.subject_id is not None or self.object_id is not None
+        return (
+            bool(self.chain)
+            or self.subject_id is not None
+            or self.object_id is not None
+            or self.hub_id is not None
+        )
 
     @property
     def axis(self) -> str | None:
@@ -762,6 +806,38 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
             for predicate, claims in groups.items()
         )
         body = f"{noun}: {subject}\n{lists}"
+    elif (hub_id := claim_set.hub_id) is not None:
+        subject = claim_set.label_of(hub_id)
+        before = _grouped(tuple(c for c in claim_set.claims if c.subject_id == hub_id))
+        after = _grouped(tuple(c for c in claim_set.claims if c.object_id == hub_id))
+        directions = [
+            f"{subject} {_wording(predicate, axis).verb} each name under "
+            f'"{_wording(predicate, axis).fan_out_heading}"'
+            for predicate in before
+        ] + [
+            f'each name under "{_wording(predicate, axis).fan_in_heading}" '
+            f"{_wording(predicate, axis).verb} {subject}"
+            for predicate in after
+        ]
+        instruction = HUB_SYNTHESIS_TEMPLATE.format(
+            sentences=_sentences(len(claim_set.claims), listing=True),
+            subject=subject,
+            directions="; ".join(directions),
+            ban=ban,
+        )
+        lists = "\n".join(
+            [
+                f"{_wording(predicate, axis).fan_out_heading}: "
+                f"{dumps([claim_set.label_of(c.object_id) for c in claims])}"
+                for predicate, claims in before.items()
+            ]
+            + [
+                f"{_wording(predicate, axis).fan_in_heading}: "
+                f"{dumps([claim_set.label_of(c.subject_id) for c in claims])}"
+                for predicate, claims in after.items()
+            ]
+        )
+        body = f"{noun}: {subject}\n{lists}"
     else:
         # No shape describes this set, and there is no safe prose for a shape nobody has defined. The
         # caller refuses, exactly as it does for an empty set above.
@@ -772,7 +848,7 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
         # directed, and only the prose was nonsense. Raising is what makes the failure findable.
         raise ValueError(
             f"synthesize() received {len(claim_set.claims)} approved claims that form neither a chain, "
-            f"a single-subject fan-out, nor a single-object fan-in; there is no shape to narrate."
+            f"a single-subject fan-out, a single-object fan-in, nor a hub; there is no shape to narrate."
         )
 
     prompt = f"{instruction}{_teaching_clause(claim_set)}{_reversal(claim_set)}\n\n{body}"
@@ -931,7 +1007,9 @@ def _reversal(claim_set: ApprovedClaimSet) -> str:
     return f"\n\n{INVERTED_PREMISE_PROMPT}\n\nAsked as: {dumps(asked)}"
 
 
-def refusal_text(query: str, reason: str, *, graph_is_empty: bool = True) -> str:
+def refusal_text(
+    query: str, reason: str, *, graph_is_empty: bool = True, claims_approved: bool = False
+) -> str:
     """Deterministic. No model call, so it cannot hallucinate the thing it is declining to state.
 
     **``graph_is_empty`` is the phase 6.5 step 2 correction, and it is about the OPENING SENTENCE
@@ -945,6 +1023,15 @@ def refusal_text(query: str, reason: str, *, graph_is_empty: bool = True) -> str
     graph. The reason clause was never the whole defect; a caller that passed an honest reason into
     the old opening still shipped a false sentence around it.
     """
+    if claims_approved:
+        # The third opening, 2026-09-14. The second one's "none did" was emitted for the
+        # no-single-lineage refusal too, beside claims the gate had approved: the live Mozart answer of
+        # 2026-09-13 showed nine cited claims under a sentence saying none traced.
+        return (
+            f"This run found no single answer for {query!r}: {reason}. "
+            f"Each approved claim here traces to a checkable source; together they do not form one "
+            f"lineage, so they are listed rather than told as one."
+        )
     if graph_is_empty:
         return (
             f"This graph has no sourced answer for {query!r}: {reason}. "
@@ -1237,7 +1324,7 @@ def run(
             # sourced answer" in the same sentence as "its sourced influences", which contradicted
             # itself and asserted an emptiness contradicted two lines up by `decision.approved`.
             reason = REASON_NO_SINGLE_LINEAGE
-            text = refusal_text(query, reason, graph_is_empty=False)
+            text = refusal_text(query, reason, graph_is_empty=False, claims_approved=True)
             # The second refusal path gets the offers too. A run that resolved one endpoint, failed the
             # other and approved claims that form no single lineage is precisely a run where naming the
             # unresolved term helps, and withholding it here would make the behaviour depend on which
