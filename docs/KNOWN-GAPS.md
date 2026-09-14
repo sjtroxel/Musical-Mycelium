@@ -2,6 +2,10 @@
 
 > ## START HERE — where things stand, 2026-09-14
 >
+> **2026-09-14, 09:10: ONE GATED LIVE RUN AT `a4cb783` FAILED `refusal_accuracy` (true 17/20), AND HE
+> DECIDED TO DEPLOY THE HUB FIX ANYWAY, AFTER SEEING THE RESULT, ON A STRUCTURAL REASON.** Detail in the
+> FINDING of the same date. The report page leads with this FAIL and lists every run beside it.
+>
 > **2026-09-14: THE MOZART ORIGINS ANSWER IS DIAGNOSED AND FIXED IN CODE, NOT DEPLOYED, NOT LIVE-MEASURED.**
 > Two bugs, detail in the FINDING of the same date below: the no-single-lineage refusal borrowed the
 > "none did" sentence, and a set holding both a node's teachers and its students had no shape. **Fixed
@@ -265,6 +269,34 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## FINDING — the gated run after the hub fix FAILED, on cases the fix never reached, 2026-09-14
+
+**`20260914T141014Z`, revision `a4cb783`, 63 cases, artifact 0.10.0: 5 passed, 1 FAILED.**
+`refusal_accuracy` read true 17/20 against >= 18/20 (false 0/41, the bound <= 1/41). 59/63 correct,
+216 claims, all grounded and resolving. Estimated about $1.23 up front; 603,681 tokens measured.
+
+- **The three true refusals that answered, read from the transcript:** `adv_008` ("metal") and
+  `adv_009` ("black") each saw the model call `resolve_node` on a LONGER name it chose ("heavy metal",
+  "black metal") and answer from it; `gold_v0_1_026` ("where did electronic music come from") answered
+  with 24 descendants, the `adv_006` direction swap. Prior at 0.10.0, answering in 9 runs: `adv_008` 4,
+  `gold_v0_1_026` 1, `adv_009` 0.
+- **Why the fix cannot have caused them, and this is structural rather than a noise argument:** all
+  three sets are single-subject or single-object fans, narratable before the hub existed, and the
+  tool calls that produced them happen before the gate, where nothing changed.
+- **The run does not credit the fix either.** False refusals 0/41, but `gold_v0_1_035` answered with
+  one claim and `adv_012` with a chain, both old shapes. **No case in the run reached the hub shape.**
+  The hub's live evidence is a separate check the same morning (about a cent): Mozart's 9 and
+  Beethoven's 8 teacher-and-student claims sent through the gate and the real synthesis model, each
+  answered in two sentences, every name present, directions right, study never called influence.
+- **THE FINDING WORTH MORE THAN THE VERDICT: name substitution by the model.** The system prompt
+  forbids substituting a similar name and phase 7.7 offers choices instead, but nothing in code stops
+  the model resolving a longer name it made up itself. `adv_008` has now done it in 5 of 10 runs at
+  0.10.0. A structural check (refuse a `resolve_node` name that is not in the question) is plausible,
+  may collide with invariant 4, and is **owed as a decision, not built**.
+- **His decision, after seeing the result:** deploy anyway, publish the FAIL, no re-run. Unlike
+  2026-09-13 the rule was not set before the run, so the reason recorded is the structural one above,
+  and "it would probably pass next time" is explicitly not it.
 
 ## FINDING — the Mozart answer, diagnosed: two bugs, both fixed in code, live effect unmeasured, 2026-09-14
 
