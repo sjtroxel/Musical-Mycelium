@@ -96,12 +96,30 @@ export const BUDGET = {
       "*(First measured at 11,001 bytes at step 1; step 2's trend view took it to 47,227 on the same " +
       "day. Most of that is the per-cohort table twins, which grow by about a row per future live run.)*",
   },
+  social: {
+    cap: 192 * KB,
+    observed: 106500,
+    why:
+      "One 1200x630 link-preview card, `og/card.jpg`, referenced by the og:image and twitter:image " +
+      "tags in index.html. Its own class rather than `shell` because a preview card is two orders of " +
+      "magnitude heavier than a favicon and would eat the shell cap whole -- and rather than a raised " +
+      "shell cap, because raising shell to fit this would retire the tripwire that catches a surprise " +
+      "asset, which is the one thing shell is for. **No visitor to the site ever downloads this file**: " +
+      "nothing in the page references it as an image, only crawlers fetch it, so the cost it guards is " +
+      "S3 storage and a `terraform destroy`/`apply` round-trip rather than load performance. Capped at " +
+      "roughly 1.8x the one file it holds, which leaves room to re-render the card or add a second one " +
+      "for the report page and trips on anything that tries to make this a media directory by another " +
+      "name. The source PNG is 804 KB and lives in the job-search repo; the JPEG at ffmpeg -q:v 3 is " +
+      "106 KB with the card's text still crisp, checked by eye on 2026-09-16.",
+  },
   shell: {
     cap: 32 * KB,
     observed: 10203,
     why:
       "index.html and the three favicons. Small, static, and here so that nothing lands in `dist/` " +
-      "unclassified -- an unbudgeted class is how the first 6 MB arrives.",
+      "unclassified -- an unbudgeted class is how the first 6 MB arrives. " +
+      "*(index.html grew by about 1.6 KB on 2026-09-16 when the link-preview tags landed. The card " +
+      "itself went to `social` rather than here; see that entry.)*",
   },
 };
 
@@ -120,6 +138,7 @@ export function classify(relPath) {
   if (path.startsWith("graph/")) return "graph";
   if (path.startsWith("media/")) return "media";
   if (path.startsWith("report/")) return "report";
+  if (path.startsWith("og/")) return "social";
   if (/\.(m?js|cjs)$/.test(path)) return "script";
   if (/\.css$/.test(path)) return "style";
   return "shell";

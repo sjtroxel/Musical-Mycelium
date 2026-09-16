@@ -29,6 +29,11 @@ describe("classify", () => {
     expect(classify("report/index.html")).toBe("report");
   });
 
+  it("gives the link-preview card its own class, by directory", () => {
+    // By extension a .jpg would land in `shell` and spend the favicons' 32 KB cap on a 106 KB card.
+    expect(classify("og/card.jpg")).toBe("social");
+  });
+
   it("classifies media by directory, not by extension", () => {
     // A poster frame is media even though `.avif` is not a video extension, and a `.js` shipped
     // inside media/ is still media -- the directory is the decision.
@@ -76,8 +81,15 @@ describe("audit", () => {
   it("reports every class even when nothing is over", () => {
     const { rows } = audit([{ path: "index.html", bytes: 10 }]);
     expect(rows.map((row) => row.name).sort()).toEqual(
-      ["graph", "media", "report", "script", "shell", "style"].sort(),
+      ["graph", "media", "report", "script", "shell", "social", "style"].sort(),
     );
+  });
+
+  it("does not let the preview card grow into a media directory by another name", () => {
+    // `social` exists to hold one card. The cap is the thing that keeps it from becoming the media
+    // class that `media.cap = 0` was written to forbid.
+    const { failed } = audit([{ path: "og/card.jpg", bytes: 400_000 }]);
+    expect(failed.map((row) => row.name)).toEqual(["social"]);
   });
 
   it("keeps a reason beside every cap", () => {

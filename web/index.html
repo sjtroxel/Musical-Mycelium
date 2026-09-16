@@ -15,6 +15,43 @@
       name="description"
       content="A goal-directed research agent that maps the history of music. Every claim traces to a checkable source."
     />
+
+    <!-- Link-preview tags, phase 7.5 step 5. Without these, pasting the URL into LinkedIn, Slack or
+         anywhere else produces a title-only card with no image, which is what happened when the
+         Musical Mycelium card went onto a LinkedIn profile on 2026-09-15.
+
+         The URLs are ABSOLUTE and point at the vercel.app host rather than being relative or pointing
+         at CloudFront. Two reasons: og:image is specified as an absolute URL and most crawlers will
+         not resolve a relative one, and musical-mycelium.vercel.app is the address the project
+         publishes everywhere. `infra/vercel/vercel.json` rewrites every path to the distribution, so
+         /og/card.jpg resolves through the proxy exactly as the app does.
+
+         og:image is a JPEG, not the 804 KB source PNG in the job-search repo. See the `social` entry
+         in web/scripts/asset-budget.mjs for why the size matters here. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Musical Mycelium" />
+    <meta property="og:url" content="https://musical-mycelium.vercel.app/" />
+    <meta property="og:title" content="Musical Mycelium" />
+    <meta
+      property="og:description"
+      content="A goal-directed research agent that maps the history of music. Every claim traces to a checkable source."
+    />
+    <meta property="og:image" content="https://musical-mycelium.vercel.app/og/card.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Musical Mycelium: music history is a network, not a timeline. Every connection traces to a checkable source."
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Musical Mycelium" />
+    <meta
+      name="twitter:description"
+      content="A goal-directed research agent that maps the history of music. Every claim traces to a checkable source."
+    />
+    <meta name="twitter:image" content="https://musical-mycelium.vercel.app/og/card.jpg" />
   </head>
   <body>
     <div id="root"></div>

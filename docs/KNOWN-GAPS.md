@@ -1,6 +1,34 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-14
+> ## START HERE — where things stand, 2026-09-16
+>
+> **2026-09-16: LINK-PREVIEW TAGS ADDED, NOT DEPLOYED.** `web/index.html` had a title and a description
+> and no `og:`/`twitter:` tags, so pasting the URL anywhere produced a card with no image — found when
+> the Musical Mycelium entry went onto a LinkedIn profile on 2026-09-15 and the thumbnail had to be
+> uploaded by hand. Added: `og:type/site_name/url/title/description/image` with type, width, height and
+> alt, plus `twitter:card=summary_large_image`. The card ships as `web/public/og/card.jpg`, 1200x630,
+> 104 KB, a JPEG re-encode of the 804 KB PNG that lives in the job-search repo.
+> **The budget needed a new class for it, and that is the part worth reading.** A `.jpg` in `dist/`
+> classifies as `shell`, whose cap is 32 KB, so the card would have failed `npm run budget` at 325% of
+> cap. Raising `shell` to fit was rejected: shell's whole job is to be the small cap that a surprise
+> asset trips. Instead `social` is a new class, keyed on the `og/` prefix like `report/` and `media/`,
+> capped at 192 KB with its reasoning beside it, and two new tests cover it — one for the routing, one
+> that fails a 400 KB card so the class cannot quietly become the media directory `media.cap = 0`
+> forbids. `make check` green: 1,766 Python, **465 frontend** (463 + the two new), mypy clean over 121
+> files, terraform valid, free gates 4 passed / 0 failed / 2 N/A. Budget after: social 104.0 KB of
+> 192.0 KB, shell 12.1 KB of 32.0 KB.
+> **NOT LIVE until a deploy is dispatched**, because `deploy.yml` is `workflow_dispatch` only. Until
+> then the tags exist in the repo and the live page still has none.
+> **Noticed in passing, not acted on: `report` is at 97% of its 64 KB cap** (62.3 KB). The next live
+> run adds a row per cohort table. That cap will trip soon and it will not be this change that did it.
+>
+> ## Where things stood, 2026-09-14
+>
+> **2026-09-14 afternoon: THE README REDESIGN IS DONE AND PUSHED (`1719521`), and he is happy with it.**
+> Banner from the live backdrop, a tour GIF, live screenshots, two diagrams, figures still marked.
+> **NEXT: phase 7.5 step 5, the LinkedIn post.** Seen on the live site while capturing, not fixed:
+> "Where did mozart come from?" substituted the full name instead of offering choices; one electropop
+> query hung two minutes then answered on retry (cause unknown); tour map labels overlap mid-route.
 >
 > **2026-09-14, 09:10: ONE GATED LIVE RUN AT `a4cb783` FAILED `refusal_accuracy` (true 17/20), AND HE
 > DECIDED TO DEPLOY THE HUB FIX ANYWAY, AFTER SEEING THE RESULT, ON A STRUCTURAL REASON.** Detail in the
@@ -22,7 +50,7 @@
 > lines, `dolly` offers Dolly Parton, "Who influenced Roy Orbison?" refuses with no Joy Orbison, and
 > "Who did Wolfgang Amadeus Mozart study with?" answers with 3 teaching claims narrated as study.
 > **NEXT: diagnose the self-contradicting origins answer** (FINDING below, same date). Then phase 7.5
-> resumes at step 5, and the README glow-up comes before the post.
+> resumes at step 5, and the README glow-up comes before the post. *(Done 2026-09-14.)*
 >
 > **2026-09-13, late morning: TWO GATED LIVE RUNS, ONE FAILED AND ONE PASSED, AND THE DEPLOY IS
 > CLEARED BY A RULE HE SET BEFORE THE SECOND RUN.** Both at `b5fcd24`, artifact 0.10.0, 63 cases, the
