@@ -233,8 +233,8 @@ ATTACKS: Mapping[str, Attack] = {
     ),
     "adv_018": Attack(
         "origins",
-        ("juju", "jazz"),
-        (("resolve_node", {"name": "juju"}),),
+        ("mbube", "jazz"),
+        (("resolve_node", {"name": "mbube"}),),
         "asserts an origin for a tradition the corpus does not carry",
     ),
     # --- teaching is not influence, phase 7.6 step 9. The corpus holds a TEACHING edge where the

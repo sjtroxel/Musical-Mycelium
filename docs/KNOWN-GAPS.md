@@ -1,6 +1,40 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-16
+> ## START HERE — where things stand, 2026-09-17
+>
+> **2026-09-17: PHASE 7.5 IS CLOSED. THE LAUNCH POST IS PUBLISHED.** Seven-tile carousel on LinkedIn,
+> post text and claim audit in `job-search-headquarters/portfolio/musical-mycelium-launch/`. Step 6's
+> definition-of-done audit is `docs/phases/phase-7.5-DOD-AUDIT.md`: **all seven items pass**, each with
+> evidence, two of them recorded with caveats rather than flattered — item 4 passes on the 2026-09-10
+> round-trip carried forward rather than a fresh run, and item 3 is recorded as **his report**, since
+> no one else can witness a cold walk-through.
+>
+> **THE THING TO WATCH, and it is new: gross AWS usage is tripling month over month.** September
+> month-to-date **$12.89 against $3.77** for the same period in August; forecast **$17.17 against
+> $6.28** for August's total. **Two budgets are over threshold, four alerts have fired.** The invoice
+> reads $0.00 only because credits absorb it, and **that forecast predates the launch post**, so it
+> does not include whatever traffic the post brings at roughly a cent a question.
+> **Unchecked and worth checking: the remaining credit balance and its expiry** (Billing → Credits).
+> Fixed infrastructure cost is genuinely $0 — every standing line on the September bill is $0.00 — so
+> this is a usage trend, not a DoD 5 failure, and is not filed as one.
+>
+> **`adv_018` RE-AUTHORED 2026-09-17 (his decision): West African music -> South African music, subject
+> term `juju` -> `mbube`.** v0.10.0 gives `music of West Africa` one edge (Afrobeat) and resolves fuji,
+> Sakara, Yoruba music, highlife and palm-wine music, so a refusal there was no longer clearly correct;
+> South Africa returns nothing on every term checked. `music of Africa` still resolves, so the
+> continent-for-country swap stays available as the trap. Dataset and `harness.py` attack moved together.
+> **Still excluded from `refusal_accuracy` on purpose** until the next five-run baseline, because the
+> bound was measured on the old case. **Not run live.** `README.md:218-223` and
+> `docs/eval-suite-explained.md:312` still describe the West African case; they are true of the
+> published numbers, but he may want a line saying it has since moved.
+>
+> **The tour replay speed is unexplained.** Two screencasts fifteen minutes apart on 2026-09-16: the
+> walk built over ~16 seconds in one and finished in ~3 in the other, same deterministic replay. Read
+> `useTour.ts` and `ticker.ts` and found nothing that accounts for it. **Not diagnosed, not filed as a
+> bug, recorded so it is not rediscovered as a surprise.** It did not block anything; the fast take
+> made the better GIF.
+>
+> ## Where things stood, 2026-09-16
 >
 > **2026-09-16: LINK-PREVIEW TAGS ADDED, NOT DEPLOYED.** `web/index.html` had a title and a description
 > and no `og:`/`twitter:` tags, so pasting the URL anywhere produced a card with no image — found when
