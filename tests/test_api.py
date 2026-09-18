@@ -223,6 +223,29 @@ def test_health_reports_the_corpus(client: TestClient) -> None:
     assert body["corpus"]["artifact_version"] == PINNED_ARTIFACT_VERSION
 
 
+def test_every_loop_event_has_a_frame_name() -> None:
+    """**The lock that would have caught a real 500.** ``render`` does ``EVENT_NAMES[type(event)]`` and
+    raises ``KeyError`` on anything missing, so an event type added to the loop without a line in that
+    map takes the public endpoint down the first time it is emitted.
+
+    That happened: ``MembershipDisclosed`` was added at phase 8 step 3 with no entry here and was a
+    latent 500 for the length of the step, unreachable only because nothing proposed a membership claim
+    until step 4 added the tool. The comment on ``offer`` in ``app.py`` warns about exactly this window.
+
+    Asserted against the ``Event`` union rather than a hand-written list, so the next event type cannot
+    be added without a frame name and cannot be added to this test's expectations by accident either.
+    """
+    from typing import get_args
+
+    from musical_mycelium.agent.loop import Event
+    from musical_mycelium.api.app import EVENT_NAMES
+
+    assert set(get_args(Event)) == set(EVENT_NAMES), (
+        "an event type has no SSE frame name; render() will KeyError and return a 500"
+    )
+    assert len(set(EVENT_NAMES.values())) == len(EVENT_NAMES), "two events share a frame name"
+
+
 def test_the_corpus_names_the_predicates_a_claim_can_carry(client: TestClient) -> None:
     """Phase 7.6 step 8. This field read ``"predicate": "influenced_by"``, typed as a literal, and became
     false the day the gate admitted teaching. It is read from the gate now, and the old key is gone

@@ -35,10 +35,12 @@ from musical_mycelium.agent.loop import (
     Contested,
     Done,
     Event,
+    MembershipDisclosed,
     Offer,
     PathWalked,
     Planned,
     Refused,
+    RouteWalked,
     Token,
     ToolCalled,
 )
@@ -79,6 +81,16 @@ EVENT_NAMES: dict[type, str] = {
     # "mozart" got a 500 instead of a choice, in the window between the two steps. Step 4 owns the
     # CONTRACT: the payload's shape in `SPEC.md`, and the frontend types.
     Offer: "offer",
+    # **Both added 2026-09-18, and `membership` was a latent 500 for the length of phase 8 step 3.**
+    # `render` raises `KeyError` on an event type it has no name for, so the moment a membership claim
+    # reached an answer the public endpoint would have returned a 500 instead of a frame. It was
+    # unreachable only because no tool proposed membership until step 4 -- the comment on `offer` above
+    # warns about exactly this window and step 3 walked into it anyway.
+    #
+    # `test_every_loop_event_has_a_frame_name` now asserts the mapping covers the whole `Event` union,
+    # so the next event type cannot be added without one.
+    MembershipDisclosed: "membership",
+    RouteWalked: "route",
     Token: "token",
     Refused: "refused",
     Done: "done",

@@ -332,7 +332,7 @@ has the detail.
 | **Infrastructure** | Terraform for every resource, so `terraform destroy` is a real off-switch, and it has been run for real |
 | **Deploys** | GitHub Actions with OIDC, no long-lived AWS keys |
 | **Evaluation** | Deterministic scorers, Amazon Nova Pro as judge, sealed held-out set |
-| **Tests** | At least <!-- n:python_tests_floor -->1,700<!-- /n --> Python and at least <!-- n:web_tests_floor -->400<!-- /n --> frontend, plus <!-- n:costs_money_tests -->14<!-- /n --> that spend real money and only run on purpose |
+| **Tests** | At least <!-- n:python_tests_floor -->1,800<!-- /n --> Python and at least <!-- n:web_tests_floor -->400<!-- /n --> frontend, plus <!-- n:costs_money_tests -->14<!-- /n --> that spend real money and only run on purpose |
 
 **The fixed infrastructure costs roughly nothing.** No managed database, which means no VPC and no NAT
 gateway, and nothing is left running. Budget alarms and log retention were in place before the first

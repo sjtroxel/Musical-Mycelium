@@ -610,7 +610,30 @@ def misnarrations(prompt: str, claim_set: ApprovedClaimSet) -> list[str]:
             if word in prompt
         )
 
-    if body.startswith("Hops: "):
+    if body.startswith("Steps: "):
+        # Phase 8 step 4b. A route's steps are stated in each claim's own direction, NOT the route's, so
+        # the expectation is built from the claims and never from the ordering. Added here rather than
+        # left to fall through to the heading branch, where a route would have been reported as using
+        # headings it may not use -- a true complaint about an untaught checker, which is how a real
+        # problem gets silenced by widening the wrong thing.
+        steps = json.loads(body.removeprefix("Steps: "))
+        for subject, relationship, obj in steps:
+            pair = next(
+                ((a, b) for (a, b) in by_pair if label(a) == subject and label(b) == obj),
+                None,
+            )
+            if pair is None:
+                problems.append(f"step {subject!r} -> {obj!r} is not an approved claim's direction")
+                continue
+            approved_relationship = RELATIONSHIP[tuple(sorted(by_pair[pair]))]
+            if relationship != approved_relationship:
+                problems.append(
+                    f"step {subject!r} -> {obj!r} says {relationship!r}, "
+                    f"approved {approved_relationship!r}"
+                )
+        if "Do not call this a lineage" not in head:
+            problems.append("a route was not forbidden from being called a lineage")
+    elif body.startswith("Hops: "):
         hops = json.loads(body.removeprefix("Hops: "))
         expected = [
             [label(a), RELATIONSHIP[tuple(sorted(by_pair[(a, b)]))], label(b)]

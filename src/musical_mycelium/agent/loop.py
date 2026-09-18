@@ -269,6 +269,34 @@ about where either came from; a hop listed with more than one is all of them. Na
 and keep them in that order. Do not describe the chain as a whole as a line, lineage or chain of \
 influence, nor of teaching, nor as one genre leading to another: it is none of those. {ban}"""
 
+#: A cross-axis route: how two genres are connected when no chain of influence connects them.
+#: *(Phase 8 step 4b.)*
+#:
+#: **Every difference from ``TYPED_CHAIN_SYNTHESIS_TEMPLATE`` is deliberate and each one is load-bearing.**
+#: That template tells the model it is tracing a chain, which is the single thing this must not say. The
+#: steps below are given **as their own sources state them**, not in route order's direction, because
+#: four of five hops on this corpus's canonical route run backwards; the model is told to connect them,
+#: not to re-orient them.
+#:
+#: The closing prohibition names all four wrong framings rather than gesturing at them, because phase
+#: 7.5 step 0.5's transcripts showed the model volunteering exactly this kind of summary line ("a direct
+#: line of musical influence") when the instruction left room for one.
+ROUTE_SYNTHESIS_TEMPLATE = """Write {sentences} saying how {start} and {end} are connected, using only \
+the steps below and in the order given. Each step is stated the way its source states it, which is \
+sometimes the reverse of the order you are reading them in: keep each one exactly as written. \
+"{membership_verb}" means that artist performed in that genre and says nothing about where either came \
+from. {framing} Do not call this a lineage, a line of influence, a chain, or one genre leading to \
+another, and do not say either genre came out of the other. {ban}"""
+
+#: The one sentence that changes between a route carried by a musician and one that is not. Separated
+#: from the template because getting it wrong in either direction states something false: claiming a
+#: connection through people that a pure-influence route does not have, or hiding the musician who is
+#: the entire reason a cross-axis route exists.
+ROUTE_FRAMING_THROUGH_MUSICIANS = (
+    "Say that these two genres are connected through musicians who played in both."
+)
+ROUTE_FRAMING_WITHIN_INFLUENCE = "Say only that the graph records these steps between them."
+
 #: The one addition to a synthesis prompt, appended when the question had it backwards. It reads as an
 #: exception to the "add nothing else" rule above and is worded to say so, since it *is* one.
 #:
@@ -551,6 +579,20 @@ class ApprovedClaimSet:
     #: ``chain`` does, and it is admissible under the same rule: **only when the approved claims
     #: establish the reverse**. A correction the gate did not produce cannot be constructed.
     inverted_premise: tuple[str, ...] = ()
+    #: Node ids in **route order** when the approved claims form a cross-axis route. Empty otherwise.
+    #: *(Phase 8 step 4b.)*
+    #:
+    #: **Why this is not ``chain`` and must never be merged into it.** ``chain`` is descendant-first and
+    #: asserts derivation at every hop; a route asserts only connection, and most of its hops run
+    #: against their own edges. Both are orderings over approved claims and that is the only thing they
+    #: have in common.
+    #:
+    #: It rides here rather than arriving as a second argument to ``synthesize`` for exactly the reason
+    #: ``chain`` and ``inverted_premise`` do, and it is admissible under the same rule, checked below:
+    #: **every consecutive pair must itself be an approved claim**, in one direction or the other. A
+    #: route the gate did not fully approve cannot be constructed, so synthesis still sees nothing but
+    #: the approved claim set and the function still takes exactly one claim-bearing parameter.
+    route: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         endpoints = {c.subject_id for c in self.claims} | {c.object_id for c in self.claims}
@@ -570,6 +612,11 @@ class ApprovedClaimSet:
             raise ValueError(
                 f"chain {list(self.chain)} contains a hop no approved claim supports. "
                 f"Synthesis may only see the approved claim set."
+            )
+        if self.route and not route_is_approved(self.route, self.claims):
+            raise ValueError(
+                f"route {list(self.route)} contains a hop no approved claim supports, in either "
+                f"direction. Synthesis may only see the approved claim set."
             )
         if self.inverted_premise and not self._premise_is_approved():
             raise ValueError(
@@ -665,9 +712,16 @@ class ApprovedClaimSet:
 
         *(2026-09-14: the fourth shape arrived for one arrangement only, the hub — see ``hub_id``. Two
         disjoint edges like ``adv_008``'s still refuse, and so does a reciprocal pair.)*
+
+        *(2026-09-18, phase 8 step 4b: the fifth shape, the cross-axis route. Unlike the hub it is not
+        an arrangement discovered in a failing run — it is one a tool asserts and ``__post_init__``
+        verifies hop by hop against the approved claims, so it cannot be "discovered" in a set that no
+        tool routed. The disjoint sets above still refuse, and a route is checked first below because
+        connection is a weaker claim than derivation.)*
         """
         return (
-            bool(self.chain)
+            bool(self.route)
+            or bool(self.chain)
             or self.subject_id is not None
             or self.object_id is not None
             or self.hub_id is not None
@@ -734,6 +788,41 @@ class ApprovedClaimSet:
             for subject, obj in pairwise(self.chain)
         )
 
+    @property
+    def route_steps(self) -> tuple[tuple[str, tuple[str, ...], str], ...]:
+        """The route as ``(subject, predicates, object)`` per hop, **in each claim's own direction**.
+
+        *(Phase 8 step 4b.)* This is where a route stops being an ordering and becomes a set of
+        statements. The route walks `Delta blues -> Chicago blues`; the claim underneath says *Chicago
+        blues came out of Delta blues*, and **what synthesis is shown is the claim**. The route supplies
+        the order and nothing else; every relationship is stated the way its own source states it.
+
+        That inversion is not an edge case: four of five hops on this corpus's canonical route are
+        backwards, so a version of this property that returned the route's direction would state the
+        reverse of the truth most of the time.
+
+        Predicates are read off the approved claims for that pair, exactly as ``hops`` does, so a pair
+        approved under two predicates carries both and is narrated with both. ``__post_init__`` has
+        already established every hop is approved in one direction, so the lookup cannot miss.
+        """
+        if not self.route:
+            return ()
+        by_pair: dict[tuple[str, str], set[str]] = {}
+        for claim in self.claims:
+            by_pair.setdefault((claim.subject_id, claim.object_id), set()).add(claim.predicate)
+        steps: list[tuple[str, tuple[str, ...], str]] = []
+        for a, b in pairwise(self.route):
+            subject, obj = (a, b) if (a, b) in by_pair else (b, a)
+            steps.append((subject, tuple(sorted(by_pair[(subject, obj)])), obj))
+        return tuple(steps)
+
+    @property
+    def route_through_musicians(self) -> bool:
+        """Whether a musician is actually carrying this route. A route that never leaves the influence
+        layer is an ordinary lineage answer and must not be narrated with the shared-musicians framing,
+        which would claim a connection through people that the route does not have."""
+        return any(PREDICATE_PLAYS_GENRE in predicates for _, predicates, _ in self.route_steps)
+
     def label_of(self, node_id: str) -> str:
         return self.labels.get(node_id, node_id)
 
@@ -752,6 +841,28 @@ def chain_is_approved(chain: tuple[str, ...], claims: tuple[Claim, ...]) -> bool
         return False
     approved = {(c.subject_id, c.object_id) for c in claims}
     return all(pair in approved for pair in pairwise(chain))
+
+
+def route_is_approved(route: tuple[str, ...], claims: tuple[Claim, ...]) -> bool:
+    """Is every hop of ``route`` an approved claim, **in either orientation**?
+
+    **Deliberately weaker than ``chain_is_approved``, and the difference is the whole of phase 8.** A
+    chain asserts that each node came out of the next, so its orientation is not negotiable. A route
+    asserts only that consecutive nodes are connected by something the gate approved — on the corpus's
+    canonical route four of five hops run against their own edges, and requiring the chain orientation
+    would reject a route that is entirely sourced.
+
+    **What it is NOT weaker about:** every hop must still be an approved claim. A route cannot bridge a
+    gap the gate refused, cannot invent a hop, and cannot reach a node no claim mentions. The looser
+    rule is about *direction*, never about *evidence*.
+
+    The direction each hop actually runs is not discarded — it is read back off the claims by
+    ``ApprovedClaimSet.route_steps``, so synthesis states each hop the way its own source states it.
+    """
+    if len(route) < 2:
+        return False
+    approved = {(c.subject_id, c.object_id) for c in claims}
+    return all((a, b) in approved or (b, a) in approved for a, b in pairwise(route))
 
 
 def descent_is_approved(descendant: str, ancestor: str, claims: tuple[Claim, ...]) -> bool:
@@ -825,7 +936,35 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
     teaching = _wording(PREDICATE_STUDIED_WITH, axis)
     membership = _wording(PREDICATE_PLAYS_GENRE, axis)
 
-    if claim_set.chain:
+    # **Before the chain branch, because a route is never a chain and the two cannot both apply.**
+    # `__post_init__` permits only one to be non-empty in practice -- a route's hops fail
+    # `chain_is_approved` whenever any of them runs backwards -- but ordering the branches this way
+    # means a set that somehow carried both is narrated as the weaker, safer claim rather than the
+    # stronger one. Connection is weaker than derivation; if the two ever disagree, say the lesser.
+    if claim_set.route:
+        steps = claim_set.route_steps
+        route_rows = [
+            [
+                claim_set.label_of(subject),
+                _relationship(predicates, axis),
+                claim_set.label_of(obj),
+            ]
+            for subject, predicates, obj in steps
+        ]
+        instruction = ROUTE_SYNTHESIS_TEMPLATE.format(
+            sentences=_sentences(len(steps), listing=False),
+            start=claim_set.label_of(claim_set.route[0]),
+            end=claim_set.label_of(claim_set.route[-1]),
+            membership_verb=membership.verb,
+            framing=(
+                ROUTE_FRAMING_THROUGH_MUSICIANS
+                if claim_set.route_through_musicians
+                else ROUTE_FRAMING_WITHIN_INFLUENCE
+            ),
+            ban=ban,
+        )
+        body = f"Steps: {dumps(route_rows)}"
+    elif claim_set.chain:
         hops = claim_set.hops
         kinds = {predicates for _, _, predicates in hops}
         if len(kinds) == 1 and len(only := kinds.pop()) == 1:
@@ -1406,18 +1545,21 @@ def run(
         announced.add((pair.a, pair.b))
         yield Contested(pair=pair, a_label=_label(store, pair.a), b_label=_label(store, pair.b))
 
-    # Emitted only when the gate approved every hop, for the reason `approved_chain` exists one field
-    # above: a route with a rejected hop is not a shorter route, it is one this graph cannot justify.
+    # **Approved as a whole or not at all**, for the reason `approved_chain` exists one field above: a
+    # route with a rejected hop is not a shorter route, it is one this graph cannot justify. Computed
+    # once here and used for both the event and the claim set, so the thing narrated and the thing
+    # displayed can never be two different routes.
+    approved_route: tuple[str, ...] = ()
     if route:
-        approved_pairs = {(c.subject_id, c.predicate, c.object_id) for c in decision.approved}
+        approved_triples = {(c.subject_id, c.predicate, c.object_id) for c in decision.approved}
         if all(
-            (hop.edge.subject_id, hop.predicate, hop.edge.object_id) in approved_pairs
+            (hop.edge.subject_id, hop.predicate, hop.edge.object_id) in approved_triples
             for hop in route
         ):
-            node_ids = (route[0].from_id, *(hop.to_id for hop in route))
+            approved_route = (route[0].from_id, *(hop.to_id for hop in route))
             yield RouteWalked(
-                node_ids=node_ids,
-                labels=tuple(_label(store, node_id) for node_id in node_ids),
+                node_ids=approved_route,
+                labels=tuple(_label(store, node_id) for node_id in approved_route),
                 hops=tuple((hop.predicate, hop.forward) for hop in route),
                 through_musicians=any(hop.predicate == PREDICATE_PLAYS_GENRE for hop in route),
             )
@@ -1483,6 +1625,7 @@ def run(
                 if (kind := _kind(store, node_id)) is not None
             },
             chain=approved_chain,
+            route=approved_route,
             inverted_premise=inverted_premise,
         )
         if not claim_set.narratable:

@@ -711,6 +711,86 @@ comment had predicted the step 2 failure exactly — *"if the gate ever admits a
 walk must not quietly start crossing it"* — and `trace_teaching_lineage` was unaffected for precisely
 that reason while `loop.py` broke.
 
+#### Step 4b — AS BUILT, 2026-09-18. **DoD 2 is met.** His decision to proceed, taken on the design below.
+
+The route is now an answer rather than a refusal:
+
+> *"Delta blues and Detroit techno are connected through Freddie King, who played both Chicago blues and
+> funk. Chicago blues was influenced by Delta blues, and Detroit techno was influenced by electro, which
+> was influenced by funk."*
+
+Every relationship there is stated in its **own source's** direction, the membership hops say *played*,
+and nothing claims either genre came out of the other. That sentence is the phase's thesis performed.
+
+##### How invariant 1 is kept, which was the reason this needed a decision
+
+**`synthesize` still takes exactly one claim-bearing parameter.** The route rides on `ApprovedClaimSet`
+as a `route` field, the same way `chain` and `inverted_premise` already do, and it is admissible under
+the same rule and checked in the same place: **`__post_init__` rejects any route with a hop no approved
+claim supports.** A route cannot bridge a gap the gate refused, cannot invent a hop, and cannot name a
+node no claim mentions. Two tests break that lock deliberately and watch it fire.
+
+**`route_is_approved` is deliberately weaker than `chain_is_approved`, about direction and nothing
+else.** A chain asserts derivation at every hop so its orientation is not negotiable; a route asserts
+connection, and requiring the chain orientation would reject a route that is entirely sourced. The
+direction each hop *actually* runs is not discarded — `route_steps` reads it back off the claims, so
+**synthesis is shown the claim, never the route's direction**. On this corpus that matters four times in
+five.
+
+##### The fifth narratable shape
+
+`narratable` gained `bool(self.route)`. Unlike the hub shape of 2026-09-14 this was not an arrangement
+discovered in a failing run: it is one a tool asserts and `__post_init__` verifies hop by hop, so it
+cannot be "discovered" in a set no tool routed. **Two disjoint edges like `adv_008`'s still refuse.**
+
+The route branch is checked **before** the chain branch. In practice only one can be non-empty, but if a
+set ever carried both, connection is the weaker claim and the weaker claim is the one to make.
+
+##### `ROUTE_SYNTHESIS_TEMPLATE`, and the framing that has to track the evidence
+
+Every difference from `TYPED_CHAIN_SYNTHESIS_TEMPLATE` is load-bearing: that template says it is tracing
+a chain, which is the one thing this must not say. The steps are given as their sources state them, with
+an instruction to keep them that way; membership gets its clause; and the close names all four wrong
+framings explicitly — *lineage, line of influence, chain, one genre leading to another* — because phase
+7.5 step 0.5's transcripts showed the model volunteering exactly that kind of summary when the
+instruction left room.
+
+**The framing sentence switches on `route_through_musicians`,** and getting it wrong in either direction
+states something false: claiming a connection through people a pure-influence route does not have, or
+hiding the musician who is the entire reason a cross-axis route exists. A test asserts the
+influence-only case does **not** get the shared-musicians sentence.
+
+##### A REAL BUG, mine, caught here: both new events would have returned a 500
+
+**`api/app.py:render` does `EVENT_NAMES[type(event)]` and raises `KeyError` on anything missing.**
+`MembershipDisclosed` was added at step 3 with no entry, so **the public endpoint would have 500'd the
+first time a membership claim reached an answer.** It was unreachable only because nothing proposed a
+membership claim until step 4 added the tool — and `app.py`'s own comment on `offer` warns about exactly
+that window, having been written after the same mistake at phase 7.7.
+
+Both events now have frame names (`membership`, `route`), and
+**`test_every_loop_event_has_a_frame_name` asserts the map covers the whole `Event` union**, computed
+via `get_args` rather than hand-listed, so the next event type cannot be added without one. The lock was
+verified by removing an entry and watching it fire.
+
+That is **four surfaces a new event type must reach** — the loop, `eval/runner.py`'s `match`, the
+`Event` union, and `EVENT_NAMES` — and three of the four have now been missed at least once. The union
+test closes the fourth permanently.
+
+##### Also done here
+
+`misnarrations` learned the `Steps:` body, building its expectation from the claims rather than from the
+ordering; without it a correct route prompt would have been reported as using headings it may not use.
+
+**Verification:** `make check` exit 0 — ruff clean, mypy clean over 123 source files, **1,799 Python
+tests passed** (1 skipped), **465 frontend tests**, free eval gates **4 passed / 0 failed / 3 not
+applicable**. Eighteen tests in `tests/test_crossaxis.py`. `README.md`'s `n:python_tests_floor` figure
+self-corrected via `make readme`, rounding down as the standing rule requires.
+
+**Still true and still owed to step 5:** `membership_disclosure` remains `N/A` on the free run, because
+the gold set has no case that calls the new tool. The machinery is now complete end to end; the dataset
+is what is missing.
+
 ### Step 5 — Eval cases
 
 New cases in their own dataset, scored by existing metrics — no new metrics (scope doc §3).
