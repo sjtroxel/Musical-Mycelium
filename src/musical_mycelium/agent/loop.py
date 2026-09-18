@@ -50,7 +50,6 @@ from dataclasses import dataclass, field
 from itertools import pairwise
 
 from musical_mycelium.agent.claims import (
-    ALLOWED_PREDICATES,
     Claim,
     ClaimProposal,
     GateResult,
@@ -75,6 +74,7 @@ from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
+    PREDICATE_PLAYS_GENRE,
     PREDICATE_STUDIED_WITH,
 )
 from musical_mycelium.graph.store import Direction, GraphStore
@@ -200,6 +200,18 @@ order. {ban}"""
 #: was also influenced by him, as two separately sourced edges. Such a person is both, and is said to be
 #: both. What is forbidden is inferring the influence from the teaching.
 TEACHING_VERB = "studied with"
+
+#: Membership's verb, phase 8 step 2. **One verb on every axis**, like teaching's and for a stronger
+#: reason: a ``plays_genre`` edge is artist-to-genre by construction, so there is no second axis for it
+#: to read differently on.
+#:
+#: **"played" and never a word of derivation.** P136 says this artist is documented in this genre. It
+#: does not say the artist shaped it, came out of it, or belongs to its lineage, and the whole hazard
+#: this project names for phase 8 is that a membership hop narrated in influence words produces a
+#: fluent, cited, plausible sentence about music history that is false, which every metric here would
+#: score perfectly. ``docs/graph-semantics.md`` and ``CLAUDE.md`` both say membership must never read as
+#: derivation; this string is where that is or is not true.
+MEMBERSHIP_VERB = "played"
 TEACHING_CLAUSE_PROMPT = """Studying with someone is teaching, not influence. Say that one person \
 influenced another only where that is listed as an influence; describe a teacher as a teacher, never \
 as an influence, unless they are also listed as one."""
@@ -589,9 +601,22 @@ class ApprovedClaimSet:
         ``None`` is the honest answer in three different situations — no kinds supplied, kinds supplied
         for only some endpoints, and endpoints genuinely disagreeing — and all three want the same
         behaviour from synthesis, which is to fall back to wording that is true on either axis rather
-        than to pick. A mixed set should not occur (the system prompt forbids cross-axis influence and
-        the gate enforces it), so reaching ``None`` that way means something upstream is wrong and
-        guessing would paper over it.
+        than to pick.
+
+        **A FOURTH situation arrived at phase 8 step 2 and it is not an error: membership.** A
+        ``plays_genre`` claim is artist-to-genre by construction, so any set containing one has
+        endpoints of both kinds and lands here *legitimately*. Until 2026-09-18 this docstring said a
+        mixed set "should not occur" and meant it — that was true of a corpus whose only claimable
+        predicates ran within one axis.
+
+        **So ``None`` now means two different things and the difference matters**: "the endpoints
+        disagree, which suggests something upstream is wrong" and "this set is about membership, which
+        is cross-axis by nature". Nothing downstream currently needs to tell them apart, because both
+        want axis-neutral wording and ``_wording`` picks membership's words off the *predicate* rather
+        than off the axis. **If something ever does need to tell them apart, it must ask the predicates,
+        not this property** — widening ``axis`` to return a third value would collapse a question about
+        node kinds into a question about relationships, which is the shape of mistake this codebase has
+        already had to correct for verification and corroboration.
         """
         endpoints = {c.subject_id for c in self.claims} | {c.object_id for c in self.claims}
         found = {self.kinds.get(node_id) for node_id in endpoints}
@@ -858,7 +883,19 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
 #: The order groups and typed hops are rendered in. Also the closed list of predicates synthesis has
 #: words for: ``_wording`` raises on anything else rather than falling back to influence wording, because
 #: a fallback is exactly how a new predicate would get narrated as influence without anyone deciding to.
-NARRATED_PREDICATES = (PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH)
+NARRATED_PREDICATES = (PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH, PREDICATE_PLAYS_GENRE)
+
+#: The predicates that constitute **lineage** — a relationship an answer about where something came
+#: from could be made of. Influence is derivation; teaching is not derivation but it is a documented
+#: line between two musicians running forward in time. **Membership is neither** and is deliberately
+#: absent: an artist playing a genre says nothing about where either came from.
+#:
+#: **Separate from ``ALLOWED_PREDICATES`` since phase 8 step 2, and the separation is the point.** The
+#: two sets were identical from 7.6 to 2026-09-18 and ``_graph_holds_lineage`` read the wrong one
+#: without consequence for exactly that long. Admitting ``plays_genre`` made them differ and the
+#: coincidence ended — caught by two guard tests written when the door was still shut, which is what
+#: those tests were for. A predicate added to one of these sets is not thereby added to the other.
+LINEAGE_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH})
 
 
 @dataclass(frozen=True, slots=True)
@@ -909,6 +946,19 @@ def _wording(predicate: str, axis: str | None) -> _Wording:
             fan_in_heading="Documented as having studied with them",
             reverse="study with",
             relationship="teaching",
+        )
+    if predicate == PREDICATE_PLAYS_GENRE:
+        return _Wording(
+            verb=MEMBERSHIP_VERB,
+            what="which genres",
+            listed="genres",
+            fan_out_heading="Documented genres",
+            # Fan-in is the shape "who played jazz": many artists, one genre. It is a legal claim set
+            # even though `plays_genre` is artist-to-genre only, because fan-in is about the SET having
+            # one common object, not about any single edge running backwards.
+            fan_in_heading="Documented as having played it",
+            reverse="play",
+            relationship="membership",
         )
     raise ValueError(
         f"synthesize() has no words for predicate {predicate!r}; narrating it in another predicate's "
@@ -1111,12 +1161,19 @@ def _graph_holds_lineage(store: GraphStore, node_ids: Iterable[str]) -> bool:
     the right direction to be imprecise in: the dangerous error is asserting an emptiness the corpus
     does not have, and no wording here can commit it.
 
-    ``plays_genre`` is not in ``ALLOWED_PREDICATES``, so a node that only plays a genre still counts
-    as having nothing. Membership is not derivation and must not make the graph look fuller here than
-    it is.
+    **It counts ``LINEAGE_PREDICATES``, NOT ``ALLOWED_PREDICATES``, and the difference arrived the hard
+    way at phase 8 step 2.** This read ``ALLOWED_PREDICATES`` from 7.6 until 2026-09-18, when membership
+    became claimable and two guard tests failed immediately: a node whose only edge is ``plays_genre``
+    started counting as a node the graph holds lineage about, which softened the refusal wording for the
+    entire artist axis and made the corpus-empty sentence nearly unreachable.
+
+    The constant was never the right one; it was **coincidentally** right while every claimable predicate
+    happened to be a lineage predicate. Membership is not derivation and must not make the graph look
+    fuller here than it is, so the two sets are now named separately and this function asks the narrower
+    question it always meant to ask.
     """
     return any(
-        store.neighbors(node_id, direction, predicates=ALLOWED_PREDICATES)
+        store.neighbors(node_id, direction, predicates=LINEAGE_PREDICATES)
         for node_id in node_ids
         for direction in Direction
     )

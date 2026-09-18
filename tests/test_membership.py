@@ -183,16 +183,41 @@ def test_the_membership_tiers_are_real_verification_levels() -> None:
     assert PREDICATE_INFLUENCED_BY not in VERIFICATION_LEVELS
 
 
-def test_the_gate_cannot_narrate_a_membership_edge() -> None:
-    """DoD #6 in one assertion. ``plays_genre`` is absent from ``ALLOWED_PREDICATES`` and that omission
-    is the feature: the gate refuses it without ``agent/`` being edited at all. If someone adds the
-    predicate to that set to make a metric move, this fails."""
+def test_the_gate_admits_membership_but_never_in_influence_words() -> None:
+    """**This test used to assert the opposite and the change is the phase 8 one-way door.**
+
+    Phase 6 wrote it as "``plays_genre`` is absent from ``ALLOWED_PREDICATES`` and that omission is the
+    feature", with the note that it fails "if someone adds the predicate to that set to make a metric
+    move". Phase 8 step 2 added it — not to move a metric, but because membership is what actually
+    connects this corpus and the product could not say so. His decision, 2026-09-18.
+
+    **What the omission was protecting has to be protected by something else now, and this is it.**
+    Admission is safe only because ``loop._wording`` sources every verb from the predicate and *raises*
+    on one it has no words for, so membership has its own words and cannot borrow influence's. That is
+    the property; the frozenset was only ever a proxy for it.
+    """
     from musical_mycelium.agent.claims import ALLOWED_PREDICATES
+    from musical_mycelium.agent.loop import (
+        GENRE_INFLUENCE_VERB,
+        MEMBERSHIP_VERB,
+        NEUTRAL_INFLUENCE_VERB,
+        _wording,
+    )
     from musical_mycelium.graph.schema import PREDICATE_STUDIED_WITH
 
-    assert PREDICATE_PLAYS_GENRE not in ALLOWED_PREDICATES
-    # Teaching joined at phase 7.6 step 7, deliberately; membership did not, and still may not.
-    assert frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH}) == ALLOWED_PREDICATES
+    assert PREDICATE_PLAYS_GENRE in ALLOWED_PREDICATES
+    assert (
+        frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH, PREDICATE_PLAYS_GENRE})
+        == ALLOWED_PREDICATES
+    )
+
+    membership = _wording(PREDICATE_PLAYS_GENRE, None)
+    assert membership.verb == MEMBERSHIP_VERB
+    assert membership.verb not in {GENRE_INFLUENCE_VERB, NEUTRAL_INFLUENCE_VERB}
+    assert membership.relationship == "membership"
+    # The words must not smuggle derivation in on either axis.
+    for axis in (None, "genre", "artist"):
+        assert _wording(PREDICATE_PLAYS_GENRE, axis).verb == MEMBERSHIP_VERB
 
 
 # --- the artifact-level lock this step owes -------------------------------------------------------

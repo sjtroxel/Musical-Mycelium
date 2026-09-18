@@ -420,6 +420,98 @@ Amendment 4 decides it, and the recommendation is `Claim`:**
 choice in the phase.** If he prefers the event shape, steps 3 and 4 change substantially and step 2 is
 where that is cheapest.
 
+#### Step 2 — AS BUILT, 2026-09-18. **Decided: a membership hop IS a `Claim`.** His decision.
+
+`plays_genre` is in `ALLOWED_PREDICATES`. The door named in scope §6 is open, on purpose, and the phase's
+recommendation was accepted as written.
+
+**What made admission safe was already there and is now the thing carrying the weight.** `loop._wording`
+sources every verb, heading and list noun from the claim's predicate and **raises** on a predicate it has
+no words for, rather than falling back to influence wording. The frozenset was only ever a proxy for that
+property. So step 2 is two edits: admit the predicate, and give it words.
+
+- `MEMBERSHIP_VERB = "played"`, one verb on every axis — a `plays_genre` edge is artist-to-genre by
+  construction, so there is no second axis for it to read differently on.
+- `NARRATED_PREDICATES` gained it, so `_grouped` and `_relationship` render it in order.
+- Its `relationship` is `"membership"`, never `"influence"`; headings are `Documented genres` and
+  `Documented as having played it`.
+
+A real fan-out prompt, generated from the code:
+
+```
+Write one or two sentences stating which genres Miles Davis played, using only the genres listed
+below. Name every one of them. Add nothing else: ...
+
+Subject: Miles Davis
+Documented genres: ["jazz", "jazz fusion"]
+```
+
+##### The regression this step actually found, which was not membership wording at all
+
+**Admitting the predicate silently changed what "this graph holds nothing about that" means, and two
+guard tests written when the door was still shut caught it within one test run.**
+
+`loop._graph_holds_lineage` decides whether a refusal may say the *corpus* is empty rather than that the
+*run* found nothing. It counted `ALLOWED_PREDICATES`. The moment membership joined that set, a node whose
+only edge is `plays_genre` began to count as a node the graph holds lineage about — which softens the
+refusal wording across the whole artist axis and makes the corpus-empty sentence nearly unreachable.
+
+**The constant was never the right one; it was coincidentally right for as long as every claimable
+predicate happened to be a lineage predicate.** Fixed by naming the narrower set:
+`LINEAGE_PREDICATES = {influenced_by, studied_with}`, with membership deliberately absent — an artist
+playing a genre says nothing about where either came from. **A predicate added to one set is not thereby
+added to the other**, and that sentence is now in the code rather than in a reviewer's head.
+
+This is the single most useful thing step 2 produced, and neither the scope doc nor this doc predicted it.
+
+##### Six guard tests inverted, none deleted
+
+Each asserted "membership is not a claim". Each was re-expressed to assert the property that survives,
+with the inversion and its date stated in the docstring so the change reads as a decision rather than as
+drift:
+
+| test | now asserts |
+|---|---|
+| `test_exactly_three_predicates_are_allowed` | exact equality at three, still not a subset check |
+| `test_membership_passes_the_gate_only_in_its_declared_shape` | approved in its shape; **`CROSS_AXIS` read backwards** |
+| `test_the_gate_admits_membership_but_never_in_influence_words` | admission plus `_wording` never yielding an influence verb on any axis |
+| `test_membership_became_a_claim_at_phase_8` | approved **and carrying a `MEMBERSHIP_*` tier** |
+| `test_synthesis_refuses_a_predicate_it_has_no_words_for` | example moved to **`subclass_of`** — P279, the predicate this project refuses to ingest at all, which is a better example than the one it replaced |
+| `test_the_corpus_names_the_predicates_a_claim_can_carry` | the `/health` field lists three |
+
+Two positive tests added: a membership-only fan-out is narrated as playing and contains **none** of
+`INFLUENCE_WORDING`; and a membership set's `axis` is legitimately `None` without the wording collapsing
+to influence's neutral verb.
+
+`misnarrations` in `tests/test_teaching.py` was taught membership's headings and relationship strings.
+Without that it would have failed a correct prompt as "a heading this shape may not use" — a true
+complaint about an untaught checker rather than about the prompt, and exactly the kind of failure that
+gets silenced by widening the wrong thing.
+
+##### `ApprovedClaimSet.axis` now returns `None` for a fourth, legitimate reason
+
+Its docstring said a mixed set "should not occur", which was true of a corpus whose claimable predicates
+all ran within one axis. Membership is cross-axis by nature. The docstring records the correction **and
+the constraint that follows**: if anything ever needs to tell "endpoints disagree, something is wrong"
+from "this is a membership set", it must ask the predicates, not widen `axis` to a third value. Widening
+it would collapse a question about node kinds into a question about relationships — the shape of mistake
+this codebase already had to correct once for `verification` and `corroboration`.
+
+##### Owed, and deliberately not done here
+
+**`TYPED_CHAIN_SYNTHESIS_TEMPLATE` still names only teaching and influence.** A mixed chain containing a
+membership hop would render the hop as `"played"` correctly while the surrounding instruction says
+nothing about membership. No such chain can be produced today — nothing plans a cross-axis route until
+step 4 — so this is a gap and not a defect, and it belongs to **step 3's disclosure and step 4's
+routing**. Recorded here so it is not discovered there as a surprise.
+
+**Verification:** `make check` exit 0 — ruff clean, mypy clean over 121 source files, **1,773 Python tests
+passed** (1 skipped: the held-out run-count guard), **465 frontend tests** across 25 files, free eval gates
+**4 passed / 0 failed / 2 not applicable**. `agent/loop.py` **was** modified — `LINEAGE_PREDICATES`, the
+membership wording and the `axis` docstring — which **DoD 6 requires be recorded in bold**: the edits are
+to synthesis vocabulary and a predicate set, not to the tool loop or its seam, and no tool was added or
+changed to make them work.
+
 ### Step 3 — Make membership structurally unable to read as derivation
 
 DoD 3, in the shape of `ContestedDisclosure`: a deterministic check over the rendered answer, gated on

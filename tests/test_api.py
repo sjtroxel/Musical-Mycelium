@@ -228,7 +228,8 @@ def test_the_corpus_names_the_predicates_a_claim_can_carry(client: TestClient) -
     false the day the gate admitted teaching. It is read from the gate now, and the old key is gone
     rather than left beside the new one saying something untrue."""
     corpus = client.get("/health").json()["corpus"]
-    assert corpus["claim_predicates"] == ["influenced_by", "studied_with"]
+    # Three since phase 8 step 2 admitted membership; sorted, so the order is the field's not the set's.
+    assert corpus["claim_predicates"] == ["influenced_by", "plays_genre", "studied_with"]
     assert "predicate" not in corpus
 
 

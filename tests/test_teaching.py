@@ -47,6 +47,7 @@ from musical_mycelium.agent.llm import (
     tool_results_message,
 )
 from musical_mycelium.agent.loop import (
+    NEUTRAL_INFLUENCE_VERB,
     REASON_RUN_FOUND_NONE,
     SYSTEM_PROMPT,
     ApprovedClaimSet,
@@ -89,6 +90,7 @@ FUX = "Q311378"  # Haydn was influenced by Fux; nobody here studied with him
 ELSNER = "Q471647"  # three students, no recorded teacher
 BLUES = "Q9759"
 STUDIED, INFLUENCED = PREDICATE_STUDIED_WITH, PREDICATE_INFLUENCED_BY
+PLAYS = PREDICATE_PLAYS_GENRE
 
 BEETHOVENS_TEACHERS = {CLEMENTI, NEEFE, SALIERI, HAYDN}
 #: Read off artifact v0.10.0 on 2026-09-14, from a live ``get_teachers`` call.
@@ -149,17 +151,72 @@ def test_one_predicate_never_approves_the_other(
     assert decision.rejected[0].reason == RejectionReason.NOT_IN_GRAPH
 
 
-def test_membership_is_still_not_a_claim(store: InMemoryGraphStore) -> None:
-    """``plays_genre`` stays out of ``ALLOWED_PREDICATES``: phase 8's to open, not this phase's."""
-    assert PREDICATE_PLAYS_GENRE not in ALLOWED_PREDICATES
+def test_membership_became_a_claim_at_phase_8(store: InMemoryGraphStore) -> None:
+    """**Inverted 2026-09-18.** Phase 7.6 wrote this as "membership is still not a claim: phase 8's to
+    open, not this phase's". Phase 8 opened it.
+
+    The approval must carry a **membership** verification tier. That is the half worth asserting: a
+    claim that arrived through the gate wearing an influence tier would read as derivation to every
+    surface downstream, and ``schema.TIERS_BY_PREDICATE`` is what makes it impossible to build.
+    """
+    from musical_mycelium.graph.schema import VERIFICATION_MEMBERSHIP_LEVELS
+
+    assert PREDICATE_PLAYS_GENRE in ALLOWED_PREDICATES
     edge = store.neighbors(
         BEETHOVEN, Direction.INFLUENCED_BY, predicates=frozenset({PREDICATE_PLAYS_GENRE})
     )[0]
     decision = gate([ClaimProposal(BEETHOVEN, PREDICATE_PLAYS_GENRE, edge.object_id)], store)
-    assert decision.rejected[0].reason == RejectionReason.UNSUPPORTED_PREDICATE
+    assert not decision.rejected
+    assert len(decision.approved) == 1
+    assert decision.approved[0].verification in VERIFICATION_MEMBERSHIP_LEVELS
 
 
 # --- trap 17: the teaching tools, and that teachers and students are not swapped ------------------
+
+
+def test_a_membership_only_answer_is_narrated_as_playing_and_never_as_derivation() -> None:
+    """Phase 8 step 2's positive case, and the one the phase is most likely to get wrong.
+
+    "Which genres did Miles Davis play" is a fan-out of membership claims. The prompt must ask for what
+    he *played*, list them under a membership heading, and contain **no influence wording at all** --
+    `misnarrations` enforces the last part against `INFLUENCE_WORDING` because a fluent, cited sentence
+    saying Miles Davis "came out of" jazz fusion is false and every metric here would score it 100%.
+    """
+    claims = (
+        Claim("Q1", PLAYS, "Q2", ("s1",), VERIFICATION_MEMBERSHIP_BARE),
+        Claim("Q1", PLAYS, "Q3", ("s2",), VERIFICATION_MEMBERSHIP_BARE),
+    )
+    claim_set = ApprovedClaimSet(
+        claims=claims,
+        labels={"Q1": "Miles Davis", "Q2": "jazz", "Q3": "jazz fusion"},
+        kinds={"Q1": NODE_KIND_ARTIST, "Q2": NODE_KIND_GENRE, "Q3": NODE_KIND_GENRE},
+    )
+    prompt = _prompt(claim_set)
+
+    assert misnarrations(prompt, claim_set) == []
+    assert "which genres Miles Davis played" in prompt
+    assert "Documented genres" in prompt
+    for word in INFLUENCE_WORDING:
+        assert word not in prompt, f"membership prompt contains influence wording {word!r}"
+
+
+def test_a_membership_set_is_cross_axis_and_that_is_not_an_error() -> None:
+    """`ApprovedClaimSet.axis` returns None for membership because the endpoints are a genre and an
+    artist. Before phase 8 that could only mean something upstream was wrong; now it is the ordinary
+    state of a membership answer, and the wording must come from the predicate rather than the axis.
+
+    The assertion that matters is the second one: axis-neutral wording must not become influence's
+    neutral verb, which is what a fallback keyed on axis would have produced.
+    """
+    claim_set = ApprovedClaimSet(
+        claims=(Claim("Q1", PLAYS, "Q2", ("s1",), VERIFICATION_MEMBERSHIP_BARE),),
+        labels={"Q1": "an artist", "Q2": "a genre"},
+        kinds={"Q1": NODE_KIND_ARTIST, "Q2": NODE_KIND_GENRE},
+    )
+    assert claim_set.axis is None
+    prompt = _prompt(claim_set)
+    assert "played" in prompt
+    assert NEUTRAL_INFLUENCE_VERB not in prompt
 
 
 def test_get_teachers_answers_who_beethoven_studied_with(registry: ToolRegistry) -> None:
@@ -453,18 +510,31 @@ def test_the_system_prompt_says_teaching_is_never_influence() -> None:
 # checker must be able to disagree with the code; one that read the loop's own constants would agree
 # with any edit to them.
 
-ORIGINS_HEADINGS = {"Documented influences": INFLUENCED, "Documented teachers": STUDIED}
+ORIGINS_HEADINGS = {
+    "Documented influences": INFLUENCED,
+    "Documented teachers": STUDIED,
+    # Phase 8 step 2. Without this row a membership prompt fails `misnarrations` as "a heading this
+    # shape may not use" -- which would be a true complaint about an untaught checker rather than about
+    # the prompt, and the kind of failure that gets silenced by widening the wrong thing.
+    "Documented genres": PLAYS,
+}
 FAN_IN_HEADINGS = {
     "Documented as coming out of it": INFLUENCED,
     "Documented as influenced by them": INFLUENCED,
     "Documented as influenced by it": INFLUENCED,
     "Documented as having studied with them": STUDIED,
+    "Documented as having played it": PLAYS,
 }
 #: Artist-axis renderings: teaching only ever runs between artists.
 RELATIONSHIP = {
     (INFLUENCED,): "was influenced by",
     (STUDIED,): "studied with",
     (INFLUENCED, STUDIED): "was influenced by and studied with",
+    # Phase 8 step 2. A pair carrying membership as well as influence is narrated with BOTH verbs
+    # joined, never with one chosen -- `loop._relationship` joins in NARRATED_PREDICATES order.
+    (PLAYS,): "played",
+    (INFLUENCED, PLAYS): "was influenced by and played",
+    (PLAYS, STUDIED): "studied with and played",
 }
 #: Wording that may appear in a prompt only if the claim set holds an influence claim.
 INFLUENCE_WORDING = (
@@ -897,11 +967,14 @@ def test_a_mixed_chain_reaches_the_prompt_with_typed_hops(store: InMemoryGraphSt
 
 def test_synthesis_refuses_a_predicate_it_has_no_words_for() -> None:
     """A fallback to influence wording is exactly how a new predicate would be narrated as influence
-    without anyone deciding to. It raises instead."""
-    genre = "Q1"
-    claim = Claim(
-        BEETHOVEN, PREDICATE_PLAYS_GENRE, genre, ("stmt/1",), VERIFICATION_MEMBERSHIP_BARE
-    )
+    without anyone deciding to. It raises instead.
+
+    **The example moved at phase 8 step 2**, from ``plays_genre`` — which now has words — to
+    ``subclass_of``, which is a better one anyway: P279 is the predicate this whole project refuses to
+    ingest precisely because "bebop is a kind of jazz" is one preposition from "bebop came out of jazz".
+    If it ever reached a claim set, silence is the only safe output and this is what produces it.
+    """
+    claim = Claim(BEETHOVEN, "subclass_of", "Q1", ("stmt/1",), VERIFICATION_MEMBERSHIP_BARE)
     with pytest.raises(ValueError, match="no words for predicate"):
         _prompt(ApprovedClaimSet(claims=(claim,)))
 

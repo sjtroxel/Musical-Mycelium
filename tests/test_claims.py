@@ -27,11 +27,13 @@ from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
     PREDICATES,
+    PROSE_TIER_NOT_APPLICABLE,
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_HAND,
     VERIFICATION_INFOBOX_AUTO,
     VERIFICATION_LEVELS,
+    VERIFICATION_MEMBERSHIP_BARE,
     VERIFICATION_PROSE_AUTO,
     Artifact,
     Edge,
@@ -95,14 +97,15 @@ def test_span_rejects_a_backwards_range() -> None:
         Span(10, 4)
 
 
-def test_only_the_two_lineage_predicates_are_allowed() -> None:
+def test_exactly_three_predicates_are_allowed() -> None:
     """P279 is absent from the artifact, so this is a second lock on the same door.
 
-    Exactly ``influenced_by`` until phase 7.6 step 7, when ``studied_with`` joined on purpose
-    (``agent/claims.py`` says why). Still an exact equality rather than a subset check, so a third
-    predicate cannot join without this line being edited by someone deciding to.
+    Exactly ``influenced_by`` until phase 7.6 step 7, when ``studied_with`` joined; ``plays_genre``
+    joined at phase 8 step 2 (``agent/claims.py`` says why for each). **Still an exact equality rather
+    than a subset check**, and the line has now been edited twice by someone deciding to, which is the
+    only way it is ever supposed to change. A fourth predicate costs the same deliberate edit.
     """
-    assert {INFLUENCED_BY, "studied_with"} == ALLOWED_PREDICATES
+    assert {INFLUENCED_BY, STUDIED_WITH, PLAYS_GENRE} == ALLOWED_PREDICATES
 
 
 # --- approval ---------------------------------------------------------------------------------
@@ -263,6 +266,41 @@ def test_a_citation_naming_its_own_subject_resolves() -> None:
 GOOD_CITATION = "http://www.wikidata.org/entity/statement/Q1-DEADBEEF"
 
 
+def membership_store() -> InMemoryGraphStore:
+    """One artist, one genre, one real ``plays_genre`` edge. Membership carries a MEMBERSHIP_* tier by
+    ``schema.TIERS_BY_PREDICATE``, so it cannot be built wearing an influence tier even here."""
+    when = "2026-01-01T00:00:00+00:00"
+    nodes = (
+        Node(
+            id="Q1",
+            label="an artist",
+            source="wikidata",
+            source_id="Q1",
+            retrieved_at=when,
+            kind=NODE_KIND_ARTIST,
+        ),
+        Node(
+            id="Q2",
+            label="a genre",
+            source="wikidata",
+            source_id="Q2",
+            retrieved_at=when,
+            kind=NODE_KIND_GENRE,
+        ),
+    )
+    edge = Edge(
+        subject_id="Q1",
+        predicate=PLAYS_GENRE,
+        object_id="Q2",
+        source="wikidata",
+        source_id=GOOD_CITATION,
+        retrieved_at=when,
+        prose_tier=PROSE_TIER_NOT_APPLICABLE,
+        verification=VERIFICATION_MEMBERSHIP_BARE,
+    )
+    return InMemoryGraphStore(Artifact(nodes=nodes, edges=(edge,)))
+
+
 def test_a_cross_axis_claim_is_refused_even_though_the_edge_is_really_there() -> None:
     """The load-bearing case. This edge exists in the artifact *and* its citation resolves, so every
     other check the gate makes would pass it. It is refused purely because a genre and an artist are
@@ -312,18 +350,26 @@ def test_studied_with_between_two_genres_is_cross_axis_not_a_missing_edge() -> N
     assert "studied_with permits artist->artist" in rejection.detail
 
 
-def test_membership_has_a_declared_shape_and_is_still_not_claimable() -> None:
-    """The two questions kept apart. ``plays_genre`` has a legal shape in the table *and* no place in
-    ``ALLOWED_PREDICATES``, so it is refused at rule 1 and never reaches rule 3. Phase 8 step 2 decides
-    the second question; step 1 deliberately did not answer it by implication."""
-    assert AXES_BY_PREDICATE[PLAYS_GENRE] == frozenset({(NODE_KIND_ARTIST, NODE_KIND_GENRE)})
-    assert PLAYS_GENRE not in ALLOWED_PREDICATES
+def test_membership_passes_the_gate_only_in_its_declared_shape() -> None:
+    """Both halves of the door phase 8 opened, in one test.
 
-    store = synthetic_store(
-        GOOD_CITATION, subject_kind=NODE_KIND_ARTIST, object_kind=NODE_KIND_GENRE
-    )
-    rejection = gate([proposal("Q1", "Q2", predicate=PLAYS_GENRE)], store).rejected[0]
-    assert rejection.reason is RejectionReason.UNSUPPORTED_PREDICATE
+    Step 1 gave ``plays_genre`` a legal shape while ``ALLOWED_PREDICATES`` still said no; step 2 said
+    yes. What must remain true afterwards is that admission did not also mean "any shape": an artist
+    plays a genre, and the reverse is not a claim the gate will take even though the artifact holds the
+    pair.
+    """
+    assert AXES_BY_PREDICATE[PLAYS_GENRE] == frozenset({(NODE_KIND_ARTIST, NODE_KIND_GENRE)})
+    assert PLAYS_GENRE in ALLOWED_PREDICATES
+
+    store = membership_store()
+    approved = gate([proposal("Q1", "Q2", predicate=PLAYS_GENRE)], store).approved
+    assert len(approved) == 1
+    assert approved[0].predicate == PLAYS_GENRE
+
+    # The same pair, read backwards. A genre does not play an artist.
+    rejection = gate([proposal("Q2", "Q1", predicate=PLAYS_GENRE)], store).rejected[0]
+    assert rejection.reason is RejectionReason.CROSS_AXIS
+    assert "plays_genre permits artist->genre" in rejection.detail
 
 
 def test_membership_read_backwards_is_not_a_legal_shape() -> None:

@@ -64,16 +64,27 @@ from musical_mycelium.graph.store import Direction, GraphStore
 #: second lock on the same door: even a corpus that later carries ``subclass_of`` cannot have it narrated
 #: as derivation without someone editing this line on purpose.
 #:
-#: **Two predicates, on purpose, since phase 7.6 step 7 (2026-09-11).** ``studied_with`` (P1066) joined
-#: because a teaching claim is sourced, hand-checked (``docs/p1066-handcheck.md``) and narratable in its
-#: own words; it is **not** a kind of influence, and ``agent.loop.synthesize`` takes each claim's verb
-#: from its predicate so it can never be narrated as one. ``plays_genre`` is **still out**: membership is
-#: not derivation in either direction, and narrating it needs the typed-hop wording phase 8 is scoped to
-#: design. A proposal carrying it is still rejected ``UNSUPPORTED_PREDICATE``.
+#: **Three predicates since phase 8 step 2 (2026-09-18).** ``studied_with`` (P1066) joined at 7.6 because
+#: a teaching claim is sourced, hand-checked (``docs/p1066-handcheck.md``) and narratable in its own
+#: words; it is **not** a kind of influence, and ``agent.loop.synthesize`` takes each claim's verb from
+#: its predicate so it can never be narrated as one. ``plays_genre`` (P136) joins now on the same
+#: reasoning and no other: it is sourced, it is allowlist-reviewed
+#: (``docs/p136-allowlist-review.md``), and it is narratable **in its own words**, which are
+#: membership's and never derivation's.
+#:
+#: **This is the phase's one-way door and it was taken deliberately, his decision 2026-09-18.** What it
+#: does NOT license: membership narrated as influence in any surface. ``loop.NARRATED_PREDICATES`` and
+#: ``loop._wording`` are where that is actually prevented — ``_wording`` raises on a predicate it has no
+#: words for rather than falling back to influence, which is the lock that makes widening this set safe
+#: to do at all.
 #:
 #: ``_find_edge`` searches with this same set. The store's default is ``INFLUENCE_ONLY``, so widening
-#: this constant alone would have rejected every teaching claim as ``NOT_IN_GRAPH`` (trap 1).
-ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH})
+#: this constant alone would have rejected every teaching claim as ``NOT_IN_GRAPH`` (trap 1); membership
+#: inherits that fix rather than needing its own, and ``Direction.INFLUENCED_BY`` means "node is the
+#: subject", which is the artist end of a membership edge and therefore already the right walk.
+ALLOWED_PREDICATES = frozenset(
+    {PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH, PREDICATE_PLAYS_GENRE}
+)
 
 #: The endpoint shapes each predicate is allowed to take, as ``(subject_kind, object_kind)``.
 #:
@@ -102,10 +113,10 @@ ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH}
 #: **Every predicate in ``PREDICATES`` must appear here**; a test asserts it, so a predicate added to the
 #: corpus cannot reach the gate without someone stating what shape it is allowed to have.
 #:
-#: ``plays_genre`` having a row here is **not** permission to claim it. Having a legal shape and being
-#: admissible are different questions, and ``ALLOWED_PREDICATES`` still answers the second one no: phase 8
-#: step 2 decides whether a membership hop is a ``Claim`` at all. Until then a ``plays_genre`` proposal is
-#: rejected ``UNSUPPORTED_PREDICATE`` at rule 1 and never reaches this table.
+#: ``plays_genre`` having a row here was **not** permission to claim it — that stayed with
+#: ``ALLOWED_PREDICATES``, which said no until phase 8 step 2 said yes on 2026-09-18. The two questions
+#: are still separate and still asked in that order, which is what let step 1 land without deciding
+#: step 2 by implication.
 AXES_BY_PREDICATE: dict[str, frozenset[tuple[str, str]]] = {
     PREDICATE_INFLUENCED_BY: frozenset(
         {(NODE_KIND_GENRE, NODE_KIND_GENRE), (NODE_KIND_ARTIST, NODE_KIND_ARTIST)}
