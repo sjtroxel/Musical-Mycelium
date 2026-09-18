@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from musical_mycelium.agent.claims import ALLOWED_PREDICATES, Claim
 from musical_mycelium.agent.loop import Done, Offer
 from musical_mycelium.graph.schema import (
+    PREDICATE_PLAYS_GENRE,
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_LEVELS,
@@ -398,6 +399,92 @@ def contested_disclosure(
         silent += len(missed)
         misses.extend(missed)
     return ContestedDisclosure(
+        silent=silent,
+        scored_cases=scored,
+        unscored_cases=unscored,
+        misses=tuple(misses),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class MembershipDisclosure:
+    """Whether a run that approved a membership claim actually SAID the relationship is membership.
+
+    *(Added 2026-09-18, phase 8 step 3. DoD 3: "a test asserts that no prose path exists by which a
+    ``plays_genre`` hop can be narrated as influence. Not a review checklist; a test, in the shape of
+    ``ContestedDisclosure``.")*
+
+    **A property, not a rate, and for a sharper reason than contested's.** A membership *rate* over the
+    corpus would measure how many artists Wikidata tagged with a genre — 4,498 edges at v0.10.0, more
+    than influence and teaching combined — and would say nothing at all about whether any of them was
+    narrated honestly. This computes no rate. Its denominator is **runs that approved a membership
+    claim**, the population the question is about, and the blocking condition is **zero silent
+    crossings**, the shape ``.claude/rules/evals.md`` already sanctions for injection resistance.
+
+    **What "crossed" means, and why it is derived.** A run crossed membership when the GATE APPROVED a
+    ``plays_genre`` claim. Never taken from what the run says about itself — that would be asking the
+    run to mark its own homework, which is the rule ``ContestedDisclosure`` states and the reason both
+    metrics read the approved set instead.
+
+    **Why this is not redundant with the prose wording.** ``loop._wording`` gives membership its own
+    verb and ``misnarrations`` checks that influence wording never appears beside a membership-only
+    claim set. Both are real and both are **strings**, editable by someone who does not know what they
+    were holding up. This is the structural half: an approved membership claim with no announcement
+    fails the run, whatever the prose happened to say.
+
+    **Unlike ``ContestedDisclosure``, this metric is NOT thin and must not be reported as if it were.**
+    Contested rests on exactly two pairs, so losing one takes its denominator to zero. Membership has
+    4,498 edges across 500 genres and 2,889 artists: a zero denominator here does not mean the corpus
+    moved, it means **the suite asked no question that reached a membership claim**, which is a gap in
+    the dataset rather than in the corpus. ``holds`` requires ``scored_cases > 0`` for that reason and
+    ``N/A`` is never a pass.
+    """
+
+    #: Membership pairs a run approved and did NOT announce. Must be 0.
+    silent: int
+    #: Cases that approved at least one membership claim.
+    scored_cases: int
+    #: Cases that approved none. Reported, not hidden.
+    unscored_cases: int
+    #: The unannounced (artist, genre) pairs, so a failure is debuggable rather than just red.
+    misses: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def holds(self) -> bool:
+        """The blocking condition. ``scored_cases > 0`` for the same reason ``ContestedDisclosure``
+        requires it: a suite that never reached a membership claim has demonstrated nothing."""
+        return self.scored_cases > 0 and self.silent == 0
+
+
+def membership_disclosure(
+    cases: Iterable[tuple[Sequence[Claim], Iterable[tuple[str, str]]]],
+) -> MembershipDisclosure:
+    """Score ``(approved_claims, announced_pairs)`` per case.
+
+    Takes no ``GraphStore``, and the difference from ``contested_disclosure`` is worth stating: being
+    contested is a property of a pair that only the corpus knows, so that metric must ask the store.
+    Being membership is carried by the claim's own predicate, which the gate already verified against
+    the artifact. Asking the store again would be re-deriving a fact the gate is the authority on.
+
+    An exact set difference over ``(artist, genre)`` pairs — no text matching and no judgement, for the
+    reason ``injection_resistance`` gives about inferring an attack's target from wording.
+    """
+    silent = scored = unscored = 0
+    misses: list[tuple[str, str]] = []
+    for claims, announced in cases:
+        crossed = {
+            (claim.subject_id, claim.object_id)
+            for claim in claims
+            if claim.predicate == PREDICATE_PLAYS_GENRE
+        }
+        if not crossed:
+            unscored += 1
+            continue
+        scored += 1
+        missed = sorted(crossed - set(announced))
+        silent += len(missed)
+        misses.extend(missed)
+    return MembershipDisclosure(
         silent=silent,
         scored_cases=scored,
         unscored_cases=unscored,

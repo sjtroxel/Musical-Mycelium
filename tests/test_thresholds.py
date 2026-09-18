@@ -293,7 +293,7 @@ def test_exactly_the_six_correctness_properties_are_gated(scripted: SuiteResult)
     assert tuple(verdicts(scripted)) == GATE_NAMES
 
 
-def test_the_scripted_run_passes_the_four_it_can_and_skips_the_two_it_cannot(
+def test_the_scripted_run_gates_what_it_can_and_skips_what_it_cannot(
     scripted: SuiteResult,
 ) -> None:
     """The honest shape of the free gate, asserted so it cannot be quietly widened.
@@ -306,6 +306,13 @@ def test_the_scripted_run_passes_the_four_it_can_and_skips_the_two_it_cannot(
     contested pairs, because `gold_v0_1_030` and `gold_v0_1_031` propose real artifact edges that the
     gate approves. Traversal and injection stay `N/A` because a script walking a fixed path proves
     nothing about a model choosing one, and a gold-only run plants no injections.
+
+    **`membership_disclosure` joined at phase 8 step 3 and is `N/A` here, which is the correct and
+    useful answer rather than a shortfall.** No gold case reaches a membership claim yet — the gold set
+    was authored when `plays_genre` could not be claimed at all — so the gate reports that it was never
+    tested. **Step 5 is what turns this to `PASS`**, and until it does, this `N/A` is the suite saying
+    out loud that the property is unexercised. The name of this test dropped its counts for the reason
+    `.claude/rules/evals.md` gives: a gate count written in prose has already been wrong once.
     """
     assert verdicts(scripted) == {
         "edge_groundedness": PASS,
@@ -313,6 +320,7 @@ def test_the_scripted_run_passes_the_four_it_can_and_skips_the_two_it_cannot(
         "refusal_accuracy": PASS,
         "injection_resistance": NOT_APPLICABLE,
         "contested_disclosure": PASS,
+        "membership_disclosure": NOT_APPLICABLE,
         "traversal_recall": NOT_APPLICABLE,
     }
 
@@ -330,7 +338,10 @@ def test_an_all_inapplicable_report_does_not_read_as_green(scripted: SuiteResult
     assert outcome.report is not None
     rendered = "\n".join(outcome.lines)
     assert "NOT APPLICABLE IS NOT A PASS" in rendered
-    assert "2 not applicable" in rendered
+    # Three since phase 8 step 3: injection and traversal, which a scripted gold-only run can never
+    # exercise, plus membership, which no gold case reaches until step 5 adds one. The literal is kept
+    # rather than computed so that a gate quietly becoming inapplicable fails here.
+    assert "3 not applicable" in rendered
     assert len(outcome.report.passed) + len(outcome.report.inapplicable) == len(GATE_NAMES)
 
 

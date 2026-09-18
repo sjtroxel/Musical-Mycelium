@@ -76,9 +76,16 @@ COPY: dict[str, str] = {
         "Grounded means traceable to a checkable source, not true. The gates below prove the first. "
         "Nothing on this page claims the second."
     ),
+    # **The count was spelled out here until 2026-09-18 and it went false that day.** It read "Six
+    # correctness properties block a release" from phase 7.5 step 1 until phase 8 step 3 added
+    # `membership_disclosure`, at which point a PUBLISHED page asserted a number the code disagreed
+    # with. `.claude/rules/evals.md` forbids writing a gate count in prose and says the reason is that
+    # the sentence "has now been wrong once for exactly that reason" -- this is the second time, and the
+    # first on a public surface. The run line below already prints the real count from `len(gates)`, so
+    # the standing sentence does not need one at all.
     "live_gates": (
-        "Six correctness properties block a release. They are judged against a real model, with bounds "
-        "measured over identical runs before any bound was set."
+        "Every correctness property below blocks a release. They are judged against a real model, with "
+        "bounds measured over identical runs before any bound was set."
     ),
     "live_gates_superseded": (
         "These verdicts were made against the bounds this set replaced, not the bounds above, so the "

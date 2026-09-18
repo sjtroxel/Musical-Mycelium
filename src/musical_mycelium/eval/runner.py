@@ -33,6 +33,7 @@ from musical_mycelium.agent.loop import (
     ClaimRejected,
     Contested,
     Done,
+    MembershipDisclosed,
     Offer,
     PathWalked,
     Planned,
@@ -81,6 +82,13 @@ class CaseRun:
     #: ``tool_calls`` until step 3. **Announced, not crossed:** whether a pair was crossed is a
     #: property of the approved claims and is derived in ``graph/``; this is what the run actually said.
     announced_contested: tuple[Contested, ...]
+    #: Membership crossings this run TOLD THE USER about. Recorded 2026-09-18, phase 8 step 3, at the
+    #: same time as the event, **because of the warning three fields below** -- ``Contested`` and
+    #: ``tool_calls`` and ``Offer`` each reached the person and never the measurement, for one step
+    #: each, because the ``match`` below had no arm. This is the fourth event type and the first one
+    #: added with its arm in the same commit. **Announced, not crossed:** whether a run crossed
+    #: membership is derived from the approved claims in ``eval.metrics``; this is what it said.
+    announced_membership: tuple[MembershipDisclosed, ...]
     #: Choices this run put in front of a person, in the order the loop announced them. Recorded
     #: 2026-09-12, phase 7.7 step 6, and **this record dropped them for one step**: the loop emitted
     #: ``Offer`` from step 3 and the ``match`` above had no arm for it, so the frames went to the
@@ -155,6 +163,7 @@ def run_case(
     refused = False
     refusal_reason = ""
     announced: list[Contested] = []
+    announced_membership: list[MembershipDisclosed] = []
     offered: list[Offer] = []
     prose_parts: list[str] = []
     done: Done | None = None
@@ -183,6 +192,8 @@ def run_case(
                 visited = event.node_ids
             case Contested():
                 announced.append(event)
+            case MembershipDisclosed():
+                announced_membership.append(event)
             case Offer():
                 offered.append(event)
             case Token():
@@ -208,6 +219,7 @@ def run_case(
         refused=refused,
         refusal_reason=refusal_reason,
         announced_contested=tuple(announced),
+        announced_membership=tuple(announced_membership),
         prose="".join(prose_parts),
         done=done,
     )

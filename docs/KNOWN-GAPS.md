@@ -356,6 +356,34 @@
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
 
+## FINDING — the PUBLISHED report page asserted a gate count in prose, and it went false, 2026-09-18
+
+**`eval/report_page.py:COPY["live_gates"]` read "Six correctness properties block a release" and that
+sentence shipped to the public report at `/report/index.html`.** Phase 8 step 3 added
+`membership_disclosure` as the seventh gate, and a live page began stating a number the code disagreed
+with.
+
+**`.claude/rules/evals.md` already forbids this and already says why:** *"Do not write a gate count in
+prose anywhere, including this line: `eval/thresholds.py:GATE_NAMES` is the authority, and this sentence
+has now been wrong once for exactly that reason."* **This is the second time. The first was in the rule
+file itself; this one was on a page recruiters are pointed at.**
+
+- **Fixed by removing the count, not by recomputing it.** The sentence now reads "Every correctness
+  property below blocks a release". The run line beside it already prints the real figure from
+  `len(gates)`, so the standing sentence never needed one. Recomputing would have kept the number
+  accurate and kept the habit.
+- **The generated page was regenerated** (`make report`) and `test_the_committed_page_is_what_the_
+  generator_produces` is green again. **Not yet deployed** — the live site still shows the old sentence
+  until phase 8's deploy.
+- **The lesson generalises past this page.** A count in prose is a claim that ages against code, and a
+  *generated* surface makes it look freshly computed when it is not. Two test names carried the same
+  error in miniature ("the four it can", "a seventh gate") and were renamed in the same pass.
+
+**Worth a sweep, not done here:** other reader-facing prose stating counts that code owns. `README.md`
+and `docs/eval-suite-explained.md` are the two other surfaces `test_published_numbers.py` watches, and
+its markers cover figures rather than sentences like this one.
+
+
 ## OWED — 13 DBpedia origin candidates, measured and parked, ride the next artifact cut, 2026-09-18
 
 **Phase 8 step 0 measured what a DBpedia `stylisticOrigin` re-run would add to v0.10.0 and the answer was

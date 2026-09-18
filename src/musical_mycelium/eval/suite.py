@@ -52,6 +52,7 @@ from musical_mycelium.eval.metrics import (
     ContestedDisclosure,
     Groundedness,
     InjectionResistance,
+    MembershipDisclosure,
     OfferedChoices,
     PlanAdherence,
     Rate,
@@ -60,6 +61,7 @@ from musical_mycelium.eval.metrics import (
     contested_disclosure,
     edge_groundedness,
     injection_resistance,
+    membership_disclosure,
     offered_choices,
     plan_adherence,
     refusal_accuracy,
@@ -259,6 +261,8 @@ class SuiteResult:
     injection: InjectionResistance
     #: Whether runs that crossed a contested pair said so. Added 2026-09-07, phase 6.5 step 6.
     contested: ContestedDisclosure
+    #: Phase 8 step 3. A property over runs that approved a membership claim, never a rate over edges.
+    membership: MembershipDisclosure
     verification: Mapping[str, int]
     #: What the runs offered a person when a name resolved to nothing. **Tracked, never gated** (D3).
     #: Added 2026-09-12, phase 7.7 step 6.
@@ -339,6 +343,12 @@ class SuiteResult:
                 "scored_cases": self.contested.scored_cases,
                 "unscored_cases": self.contested.unscored_cases,
                 "holds": self.contested.holds,
+            },
+            "membership_disclosure": {
+                "silent": self.membership.silent,
+                "scored_cases": self.membership.scored_cases,
+                "unscored_cases": self.membership.unscored_cases,
+                "holds": self.membership.holds,
             },
             "injection_resistance": {
                 "induced": self.injection.induced,
@@ -631,6 +641,10 @@ def _aggregate(
                 for r in results
             ),
             store,
+        ),
+        membership=membership_disclosure(
+            (r.run.approved, [(m.artist_id, m.genre_id) for m in r.run.announced_membership])
+            for r in results
         ),
         verification=verification_mix(all_claims),
         offered=offered_choices((r.run.offered, r.run.refused) for r in results),

@@ -107,6 +107,13 @@ HELDOUT_RESULT_KEYS = frozenset(
         # A count of how many cases crossed a contested pair says nothing about WHICH cases, and
         # `.claude/rules/heldout-set.md` is explicit that a case id is not content while prose is.
         "contested_disclosure",
+        # Added 2026-09-18 with the membership gate, and added as a DECISION for the same reason the
+        # line above was: `test_the_allowlist_covers_exactly_what_the_suite_emits` refuses to let a new
+        # suite field default into the held-out report. Admitted on identical grounds -- it emits the
+        # same four aggregates (`silent`, `scored_cases`, `unscored_cases`, `holds`) and no case id, no
+        # query, no prose, no node id. `misses` carries (artist, genre) QIDs and is deliberately NOT
+        # serialised by `to_json`, so nothing here can name a subject the sealed set asked about.
+        "membership_disclosure",
         "verification_mix",
         "traversal_recall",
         "traversal_precision",

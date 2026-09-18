@@ -201,6 +201,18 @@ def _metric_lines(result: SuiteResult) -> list[str]:
             marked,
         )
     )
+    # Phase 8 step 3, printed in the same breath as it was added rather than a step later, because
+    # the comment above records what that step's delay cost: a number in the JSON and invisible in the
+    # terminal on every NOT GATED run.
+    lines.append(
+        _line(
+            "membership_disclosure",
+            f"{result.membership.silent} silent over {result.membership.scored_cases} scored "
+            f"({result.membership.unscored_cases} cases approved no membership claim)",
+            result,
+            marked,
+        )
+    )
     # Phase 7.7 step 6, and printed for the reason the comment above gives about
     # `contested_disclosure`: a metric in the JSON and invisible in the terminal is a metric nobody
     # checks. **On a gold run this reads all zeros and that is correct rather than broken** -- every

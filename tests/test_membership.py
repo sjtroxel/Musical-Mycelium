@@ -8,9 +8,12 @@ the artifact would build, the suite would pass, and the corpus would be wrong.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from musical_mycelium.graph.schema import (
+    NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
     PREDICATE_PLAYS_GENRE,
@@ -218,6 +221,86 @@ def test_the_gate_admits_membership_but_never_in_influence_words() -> None:
     # The words must not smuggle derivation in on either axis.
     for axis in (None, "genre", "artist"):
         assert _wording(PREDICATE_PLAYS_GENRE, axis).verb == MEMBERSHIP_VERB
+
+
+# --- phase 8 step 3: the disclosure event and its ordering ----------------------------------------
+
+
+def _membership_run(store: Any) -> list[Any]:
+    """One run whose only tool proposes a real ``plays_genre`` edge from the pinned artifact.
+
+    **A stub tool, and the reason is worth stating rather than hiding.** No tool in
+    ``default_registry`` proposes a membership claim — routing is phase 8 step 4 — so today there is no
+    end-to-end path that reaches the disclosure. That makes the gate **inert on every dataset the suite
+    currently runs**, which is recorded in the IMPLEMENTATION doc rather than left for someone to infer
+    from a green build. This stub is what lets step 3's ordering guarantee be asserted before step 4
+    exists, and it is a test fixture, never a registered tool.
+    """
+    from musical_mycelium.agent.claims import ClaimProposal
+    from musical_mycelium.agent.llm import LLMResponse, ScriptedLLM, ToolUse
+    from musical_mycelium.agent.loop import run
+    from musical_mycelium.agent.tools import ToolRegistry, ToolResult
+
+    edge = next(e for e in store._artifact.edges if e.predicate == PREDICATE_PLAYS_GENRE)
+
+    class PlaysTool:
+        name = "get_genres"
+        description = "genres this artist is documented in"
+
+        def input_schema(self) -> dict[str, Any]:
+            return {"json": {"type": "object", "properties": {}, "required": []}}
+
+        def __call__(self, **_: Any) -> ToolResult:
+            return ToolResult(
+                content={"genres": [edge.object_id]},
+                proposals=(ClaimProposal(edge.subject_id, PREDICATE_PLAYS_GENRE, edge.object_id),),
+                visited=(edge.subject_id, edge.object_id),
+            )
+
+    llm = ScriptedLLM(
+        [
+            LLMResponse(text='{"intent": "membership", "steps": [], "tools": ["get_genres"]}'),
+            LLMResponse(tool_uses=(ToolUse(id="t1", name="get_genres", arguments={}),)),
+            LLMResponse(text="the traversal is done"),
+            LLMResponse(text="prose about playing"),
+        ]
+    )
+    return list(
+        run(
+            "which genres did this artist play?",
+            store=store,
+            llm=llm,
+            registry=ToolRegistry([PlaysTool()]),
+        )
+    )
+
+
+def test_a_membership_crossing_is_disclosed_and_arrives_before_the_first_prose_token() -> None:
+    """DoD 3's ordering half, the same guarantee ``Contested`` carries and for the same reason: a reader
+    must meet the membership caveat while the narration is still arriving, not after finishing it."""
+    from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+
+    store = InMemoryGraphStore.from_directory(artifact_directory())
+    events = _membership_run(store)
+    order = [type(e).__name__ for e in events]
+
+    assert "MembershipDisclosed" in order, "an approved membership claim was never disclosed"
+    assert order.index("MembershipDisclosed") < order.index("Token")
+    assert order.index("PathWalked") < order.index("MembershipDisclosed")
+
+
+def test_the_disclosure_names_the_artist_and_the_genre_in_that_direction() -> None:
+    """Direction is the whole hazard. The event must not be readable as the genre producing the artist,
+    so the two ids are separate named fields rather than a subject/object pair a reader could flip."""
+    from musical_mycelium.agent.loop import MembershipDisclosed
+    from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
+
+    store = InMemoryGraphStore.from_directory(artifact_directory())
+    disclosed = next(e for e in _membership_run(store) if isinstance(e, MembershipDisclosed))
+    artist = store.get_node(disclosed.artist_id)
+    genre = store.get_node(disclosed.genre_id)
+    assert artist is not None and artist.kind == NODE_KIND_ARTIST
+    assert genre is not None and genre.kind == NODE_KIND_GENRE
 
 
 # --- the artifact-level lock this step owes -------------------------------------------------------

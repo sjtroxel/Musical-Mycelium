@@ -528,6 +528,86 @@ DoD 3, in the shape of `ContestedDisclosure`: a deterministic check over the ren
 property with denominator *runs that crossed a membership hop*, never as a rate over all edges, and let
 `minimum_scored_cases` double as a coverage lock.
 
+#### Step 3 — AS BUILT, 2026-09-18. DoD 3 satisfied structurally; **the gate is inert until step 4.**
+
+**The honest headline first: nothing in the suite currently exercises this gate, and it reports that
+itself.** No tool in `default_registry` proposes a `plays_genre` claim — routing is step 4 — so no
+end-to-end run reaches a membership disclosure, `scored_cases` is 0, and `membership_disclosure` reads
+`N/A`. The free run now prints **4 passed / 0 failed / 3 not applicable, of 7**. `N/A` is never a pass
+here, and the gate's own note says which thing to go and fix: *"no case approved a membership claim, so
+disclosure was never tested; with 4,498 membership edges in the corpus that is a gap in the dataset"*.
+**Step 5 is what turns it green.** This is written down rather than left to be inferred from a green
+build, which is the failure mode `thresholds.py` was built to prevent.
+
+##### What landed
+
+- **`loop.MembershipDisclosed`** — artist id, genre id, both labels. Direction is carried in named
+  fields rather than a subject/object pair, because the entire hazard is a reader flipping it.
+- **Emission** immediately after the `Contested` loop, with the same three properties and for the same
+  three reasons: **before any prose token** (the reader meets the caveat while narration is arriving),
+  **after the gate** (only an approved claim puts a relationship in an answer), **deduplicated by pair**
+  (one artist on several routes is one fact). Derived from `decision.approved`, never from what the run
+  says about itself.
+- **`metrics.MembershipDisclosure`** and `membership_disclosure()` — a property, not a rate. Denominator
+  is *runs that approved a membership claim*; blocks on **zero silent crossings**; `holds` requires
+  `scored_cases > 0`.
+- **`_membership_gate`**, seventh in `GATE_NAMES`. A set with no bound reads `N/A`, so adding it could
+  not break the existing live suite — checked against `_ungateable` before it was added, since only a
+  case-count change un-gates a run.
+- **The typed-chain gap from step 2 is closed.** `TYPED_CHAIN_SYNTHESIS_TEMPLATE` now carries a
+  membership clause — *"means that artist performed in that genre and says nothing about where either
+  came from"* — and its closing prohibition gained "nor as one genre leading to another". The membership
+  clause is the strongest of the three deliberately: influence and teaching are at least both lines
+  running forward in time between musicians; membership is not a line at all.
+
+##### Why a metric when the prose wording already exists
+
+Both defences are real and the difference matters. `_wording` and `misnarrations` are **strings**, and a
+string can be edited by someone who does not know what it was holding up. The metric is structural: an
+approved membership claim with no announcement fails the run whatever the prose said. That is the
+difference DoD 3 asks for between "a test" and "a review checklist".
+
+Unlike `contested_disclosure`, **this metric is not thin and must not be reported as if it were.**
+Contested rests on two pairs, so an empty denominator there plausibly means the corpus moved. Membership
+has 4,498 edges across 500 genres and 2,889 artists, so an empty denominator means **the dataset asked
+nothing that reached one**. The two zeros look identical and mean opposite things; both gates say which.
+
+##### The fourth event type, and the first added with its `match` arm
+
+`eval/runner.py` carries a warning that a new event type needs an arm in its `match` and **nothing fails
+when it is missing** — it happened to `tool_calls` at phase 7 step 3, to `Contested` at 6.5 step 4, and
+to `Offer` at 7.7 step 6, each reaching the person and never the measurement for one step.
+`announced_membership` was added in the same commit as the event. Four for four is now three for four.
+
+##### A published page was asserting a gate count in prose, and this step made it false
+
+`eval/report_page.py:COPY["live_gates"]` read **"Six correctness properties block a release"** — on the
+**public** report at `/report/index.html`. Adding the seventh gate made it wrong.
+`.claude/rules/evals.md` forbids writing a gate count in prose and notes the sentence "has now been wrong
+once for exactly that reason"; **this is the second time, and the first on a public surface.** Reworded
+to carry no count at all — the run line beside it already prints the real one from `len(gates)` — rather
+than recomputing it, because the rule's point is that the number does not belong in the sentence.
+
+##### Guards updated, each deliberately
+
+`GATE_NAMES`' exact-tuple test (the device that makes any change to it a decision, same as
+`ALLOWED_PREDICATES`); the **held-out report allowlist** in `heldout_run.py`, admitted on the same
+grounds as `contested_disclosure` — four aggregates, no case id, no query, no prose, and `misses` is
+deliberately not serialised so no subject the sealed set asked about can be named; the scripted-run
+verdict map; and the all-inapplicable count. Two test names dropped their ordinals ("the four it can",
+"a seventh gate") because a count in a test name is the same forbidden prose in a smaller font.
+
+**Verification:** `make check` exit 0 — ruff clean, mypy clean over 121 source files, **1,780 Python
+tests passed** (1 skipped: the held-out run-count guard), **465 frontend tests**, free eval gates
+**4 passed / 0 failed / 3 not applicable**. Nine new tests: five on the metric including **the
+vacuous-truth guard in its membership form** (a route with no membership hop must not score as having
+disclosed one), two on ordering and direction through a real `run()` driven by a stub tool, and two
+rewritten wording guards.
+
+**DoD 6 again: `agent/loop.py` was modified** — the event, its emission, and the typed-chain template.
+No tool was added and the loop's seam is untouched; the stub tool used to test ordering is a test
+fixture and is not registered.
+
 ### Step 4 — Route planning: a new tool, not an argument to `trace_lineage`
 
 Invariant 4 says adding a tool must never require editing the loop. The scope doc's §8 already notes a new

@@ -329,6 +329,7 @@ def _result_with_error(error: CaseError) -> SuiteResult:
         ContestedDisclosure,
         Groundedness,
         InjectionResistance,
+        MembershipDisclosure,
         OfferedChoices,
         Rate,
         RefusalAccuracy,
@@ -349,6 +350,7 @@ def _result_with_error(error: CaseError) -> SuiteResult:
         # exists to carry a CaseError, not to be scored, and `scored_cases=0` is the honest value for
         # a run with no results -- it renders N/A rather than a free pass.
         contested=ContestedDisclosure(silent=0, scored_cases=0, unscored_cases=0),
+        membership=MembershipDisclosure(silent=0, scored_cases=0, unscored_cases=0),
         injection=InjectionResistance(induced=0, scored_cases=0, unscored_cases=0),
         verification={},
         offered=OfferedChoices(0, 0, 0, 0, 0, 0, 0),

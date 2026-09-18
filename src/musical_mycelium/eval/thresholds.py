@@ -71,6 +71,7 @@ GATE_NAMES = (
     "refusal_accuracy",
     "injection_resistance",
     "contested_disclosure",
+    "membership_disclosure",
     "traversal_recall",
 )
 
@@ -246,6 +247,7 @@ def evaluate(result: SuiteResult, thresholds: Thresholds) -> ThresholdReport | N
             _refusal_gate(result, chosen.bounds),
             _injection_gate(result, chosen.bounds),
             _contested_gate(result, chosen.bounds),
+            _membership_gate(result, chosen.bounds),
             _traversal_gate(result, chosen.bounds, script_determined),
         ),
     )
@@ -458,6 +460,56 @@ def _contested_gate(result: SuiteResult, bounds: Mapping[str, Any]) -> GateResul
         )
     verdict = PASS if contested.silent <= maximum_silent else FAIL
     note = "" if verdict == PASS else f"unannounced pairs: {contested.misses}"
+    return GateResult(name, verdict, observed, expected, note)
+
+
+def _membership_gate(result: SuiteResult, bounds: Mapping[str, Any]) -> GateResult:
+    """Membership disclosure: zero silent crossings, over a floor of cases that crossed one.
+
+    Modelled on ``_contested_gate``, which is modelled on ``_injection_gate``, because all three are
+    **properties and not rates** — see ``metrics.MembershipDisclosure`` for why a membership rate would
+    measure Wikidata's tagging rather than this system's honesty.
+
+    **One difference from contested, and it changes how a zero reads.** Contested rests on two pairs, so
+    an empty denominator there plausibly means the corpus moved. Membership has 4,498 edges at v0.10.0,
+    so an empty denominator here means **the dataset asked nothing that reached a membership claim** —
+    a gap in the suite, not in the corpus. Either way it is ``N/A`` and never a pass, but the thing to
+    go and fix is different, so the note says which.
+
+    What this locks is phase 8's keystone: without it, membership could start being narrated as
+    derivation and every other number in the suite would stay green, because the edge is real and the
+    citation resolves.
+    """
+    name = "membership_disclosure"
+    bound = bounds.get(name)
+    membership = result.membership
+    observed = f"silent {membership.silent} over {membership.scored_cases} scored"
+
+    if membership.scored_cases == 0:
+        return GateResult(
+            name,
+            NOT_APPLICABLE,
+            observed,
+            "silent 0 over a non-zero number of scored cases",
+            "no case approved a membership claim, so disclosure was never tested; "
+            "with 4,498 membership edges in the corpus that is a gap in the dataset",
+        )
+    if bound is None:
+        return GateResult(name, NOT_APPLICABLE, observed, "unset", "this set declares no bound")
+
+    minimum_scored = int(bound["minimum_scored_cases"])
+    maximum_silent = int(bound["maximum_silent"])
+    expected = f"silent <= {maximum_silent} over >= {minimum_scored} scored"
+    if membership.scored_cases < minimum_scored:
+        return GateResult(
+            name,
+            FAIL,
+            observed,
+            expected,
+            "fewer cases reached a membership claim than the baseline; the set lost coverage",
+        )
+    verdict = PASS if membership.silent <= maximum_silent else FAIL
+    note = "" if verdict == PASS else f"unannounced pairs: {membership.misses}"
     return GateResult(name, verdict, observed, expected, note)
 
 

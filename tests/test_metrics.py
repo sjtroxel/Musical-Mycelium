@@ -22,6 +22,7 @@ from musical_mycelium.eval.metrics import (
     citation_resolution,
     edge_groundedness,
     injection_resistance,
+    membership_disclosure,
     offered_choices,
     plan_adherence,
     refusal_accuracy,
@@ -38,8 +39,10 @@ from musical_mycelium.graph.memory import (
 )
 from musical_mycelium.graph.schema import (
     NODE_KIND_GENRE,
+    PREDICATE_PLAYS_GENRE,
     VERIFICATION_HAND,
     VERIFICATION_LEVELS,
+    VERIFICATION_MEMBERSHIP_BARE,
     VERIFICATION_PROSE_AUTO,
     Artifact,
     Edge,
@@ -570,12 +573,77 @@ def test_an_offer_on_a_run_that_did_not_refuse_is_reported_not_hidden() -> None:
     assert result.refusals == 0
 
 
-def test_the_offer_property_did_not_become_a_seventh_gate() -> None:
-    """Step 6's other half: the gate definitions are untouched.
+# --- membership disclosure, phase 8 step 3 -------------------------------------------------------
+
+
+def _mclaim(artist: str, genre: str) -> Claim:
+    return Claim(
+        subject_id=artist,
+        predicate=PREDICATE_PLAYS_GENRE,
+        object_id=genre,
+        source_ids=("http://www.wikidata.org/entity/statement/A1-AAA",),
+        verification=VERIFICATION_MEMBERSHIP_BARE,
+    )
+
+
+def test_an_announced_membership_crossing_is_not_silent() -> None:
+    result = membership_disclosure([([_mclaim("A1", "G1")], [("A1", "G1")])])
+    assert result.silent == 0
+    assert result.scored_cases == 1
+    assert result.holds
+
+
+def test_an_unannounced_membership_crossing_fails_the_property() -> None:
+    """The defect the metric exists to catch: an approved membership claim that the run never told the
+    reader was membership. The prose could say anything at all and this still fails."""
+    result = membership_disclosure([([_mclaim("A1", "G1")], [])])
+    assert result.silent == 1
+    assert result.misses == (("A1", "G1"),)
+    assert not result.holds
+
+
+def test_a_run_with_no_membership_claim_is_unscored_not_passed() -> None:
+    """**The vacuous-truth guard in its membership form**, which `.claude/rules/evals.md` requires by
+    name: "an empty output must not score 100% groundedness", applied here as *a route with no
+    membership hop must not score as having disclosed one*.
+
+    Zero silent over zero scored is arithmetically perfect and means nothing. If this counted as a pass,
+    a suite that stopped producing membership claims entirely would go green while the property it
+    gates quietly stopped being exercised -- the exact way this metric would inflate into decoration.
+    """
+    result = membership_disclosure([([claim("Q2", "Q1")], [])])
+    assert result.silent == 0
+    assert result.scored_cases == 0
+    assert result.unscored_cases == 1
+    assert not result.holds, "zero silent over zero scored is not a pass"
+
+
+def test_announcing_a_pair_that_was_not_approved_does_not_earn_a_pass() -> None:
+    """The metric reads what the GATE approved, never what the run says it did. A run announcing a
+    crossing it never made is not thereby correct about the one it did make."""
+    result = membership_disclosure([([_mclaim("A1", "G1")], [("A9", "G9")])])
+    assert result.silent == 1
+    assert result.misses == (("A1", "G1"),)
+
+
+def test_membership_disclosure_deduplicates_by_pair_not_by_claim() -> None:
+    """One artist approved twice for the same genre is one crossing. Counting it twice would let a
+    fan-out inflate `scored_cases` and make the coverage floor meaningless."""
+    duplicate = [_mclaim("A1", "G1"), _mclaim("A1", "G1")]
+    assert membership_disclosure([(duplicate, [("A1", "G1")])].__iter__()).scored_cases == 1
+
+
+def test_the_offer_property_is_still_not_a_gate() -> None:
+    """Step 6's other half: ``offer`` is measured and does not block.
 
     ``GATE_NAMES`` is the authority on what blocks a release — ``.claude/rules/evals.md`` forbids
     writing a gate count in prose precisely because that sentence has been wrong once already. So this
     asserts the tuple itself, and that ``offer`` is absent from it.
+
+    **The tuple grew at phase 8 step 3** when ``membership_disclosure`` joined. That is what an exact
+    equality is for: it does not forbid the tuple changing, it forbids the tuple changing without
+    someone editing this line on purpose — the same device as ``ALLOWED_PREDICATES``. The test's name
+    lost its ordinal, because naming a count here would reintroduce exactly the prose the rules forbid.
     """
     assert GATE_NAMES == (
         "edge_groundedness",
@@ -583,6 +651,7 @@ def test_the_offer_property_did_not_become_a_seventh_gate() -> None:
         "refusal_accuracy",
         "injection_resistance",
         "contested_disclosure",
+        "membership_disclosure",
         "traversal_recall",
     )
     assert "offer" not in GATE_NAMES

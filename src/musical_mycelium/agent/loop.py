@@ -252,12 +252,20 @@ is both. {ban}"""
 #: The last sentence names the summary it forbids because phase 7.5 step 0.5's transcripts showed the
 #: model volunteering exactly that kind of editorial line ("a direct line of musical influence"), and a
 #: mixed chain summed up as influence is teaching narrated as influence one sentence later.
+#: **Membership joined its clause at phase 8 step 3 (2026-09-18).** Step 2 admitted `plays_genre` and
+#: left this template naming only two relationships — a gap recorded there rather than discovered here.
+#: A mixed chain carrying a membership hop would have rendered the hop correctly as "played" while the
+#: surrounding instruction said nothing about what playing is, which is the exact seam a model fills in
+#: with derivation. The membership clause is the strongest of the three on purpose: teaching and
+#: influence are at least both lines running forward in time between two musicians, and membership is
+#: not a line at all.
 TYPED_CHAIN_SYNTHESIS_TEMPLATE = """Write {sentences} tracing the chain below, in the order given, one \
 hop at a time. Each hop is listed as a name, its relationship, and the name after it. Keep every hop's \
 relationship exactly as listed: "{teaching_verb}" is teaching, not influence; "{influence_verb}" is \
-influence, not teaching; a hop listed with both is both. Name every one of them and keep them in that \
-order. Do not describe the chain as a whole as a line, lineage or chain of influence, nor of teaching: \
-it is neither. {ban}"""
+influence, not teaching; "{membership_verb}" means that artist performed in that genre and says nothing \
+about where either came from; a hop listed with more than one is all of them. Name every one of them \
+and keep them in that order. Do not describe the chain as a whole as a line, lineage or chain of \
+influence, nor of teaching, nor as one genre leading to another: it is none of those. {ban}"""
 
 #: The one addition to a synthesis prompt, appended when the question had it backwards. It reads as an
 #: exception to the "add nothing else" rule above and is worded to say so, since it *is* one.
@@ -377,6 +385,42 @@ class Contested:
 
 
 @dataclass(frozen=True, slots=True)
+class MembershipDisclosed:
+    """An approved claim in this answer is **membership, not derivation**. Phase 8 step 3.
+
+    **Why this exists at all.** `plays_genre` became claimable at step 2, and the risk `CLAUDE.md` and
+    the scope doc both name first is that a membership hop narrated as influence produces a fluent,
+    cited, plausible sentence about music history that is false — one every metric in this project
+    would score perfectly, because the edge is real and the citation resolves. Prose wording is the
+    first defence and it is not sufficient on its own: it is a string, and a string can be edited by
+    someone who does not know what it was load-bearing for.
+
+    **This is the second, structural defence, and it is shaped after ``Contested`` on purpose.** A
+    membership crossing is announced as a distinct event, before the first prose token, derived from
+    what the GATE APPROVED rather than from anything the run says about itself. ``MembershipDisclosure``
+    in ``eval.metrics`` then blocks on **zero silent crossings**: if an approved claim set holds a
+    membership pair the run did not announce, the run fails. That is a property a future edit cannot
+    quietly remove, which the wording alone is not.
+
+    **What it must never become.** It does not reach ``synthesize`` — that function still takes exactly
+    one claim-bearing parameter, and handing it this would reintroduce the claims-first leak for the
+    same reason ``Contested`` is kept out. The membership claim IS narrated, in membership's own words;
+    what rides beside the narration is the *disclosure that the relationship is membership*, not the
+    relationship itself.
+
+    **Direction is carried explicitly** because the whole hazard is a reader collapsing it: the artist
+    played the genre. Nothing here says the artist shaped it, came out of it, or belongs to its lineage.
+    """
+
+    #: The artist. Subject of the ``plays_genre`` edge, always.
+    artist_id: str
+    #: The genre. Object of the edge, always.
+    genre_id: str
+    artist_label: str
+    genre_label: str
+
+
+@dataclass(frozen=True, slots=True)
 class Token:
     text: str
 
@@ -428,6 +472,7 @@ Event = (
     | ClaimRejected
     | PathWalked
     | Contested
+    | MembershipDisclosed
     | Offer
     | Token
     | Refused
@@ -744,6 +789,7 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
     noun = {NODE_KIND_GENRE: "Genre", NODE_KIND_ARTIST: "Artist"}.get(axis or "", "Subject")
     influence = _wording(PREDICATE_INFLUENCED_BY, axis)
     teaching = _wording(PREDICATE_STUDIED_WITH, axis)
+    membership = _wording(PREDICATE_PLAYS_GENRE, axis)
 
     if claim_set.chain:
         hops = claim_set.hops
@@ -763,6 +809,7 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
                 sentences=_sentences(len(hops), listing=False),
                 teaching_verb=teaching.verb,
                 influence_verb=influence.verb,
+                membership_verb=membership.verb,
                 ban=ban,
             )
             typed = [
@@ -1330,6 +1377,29 @@ def run(
             continue
         announced.add((pair.a, pair.b))
         yield Contested(pair=pair, a_label=_label(store, pair.a), b_label=_label(store, pair.b))
+
+    # **Before any prose token, after the gate, deduplicated by pair** — the same three properties the
+    # contested announcement above has, for the same three reasons. Before, so a reader meets the
+    # membership caveat while the narration is still arriving. After, because only an approved claim
+    # puts a relationship in the answer at all. Deduplicated, because one artist approved on several
+    # routes is one fact about that artist, and saying it twice reads as two.
+    #
+    # Derived from `decision.approved`, never from what the run reports about itself, which is the rule
+    # `ContestedDisclosure` states as not asking the run to mark its own homework.
+    disclosed: set[tuple[str, str]] = set()
+    for claim in decision.approved:
+        if claim.predicate != PREDICATE_PLAYS_GENRE:
+            continue
+        crossing = (claim.subject_id, claim.object_id)
+        if crossing in disclosed:
+            continue
+        disclosed.add(crossing)
+        yield MembershipDisclosed(
+            artist_id=claim.subject_id,
+            genre_id=claim.object_id,
+            artist_label=_label(store, claim.subject_id),
+            genre_label=_label(store, claim.object_id),
+        )
 
     if not decision.approved:
         # Axis-neutral wording. These strings said "genre" until the artist axis landed at v0.4.0, at
