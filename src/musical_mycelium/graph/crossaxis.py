@@ -29,8 +29,8 @@ the relationship does not have.
 
 from __future__ import annotations
 
-from collections import deque
 from dataclasses import dataclass
+from heapq import heappop, heappush
 
 from musical_mycelium.graph.schema import (
     PREDICATE_INFLUENCED_BY,
@@ -97,39 +97,99 @@ def _edges_both_ways(store: GraphStore, node_id: str) -> list[tuple[Edge, bool]]
     return out
 
 
+def genre_count(store: GraphStore, node_id: str, memo: dict[str, int] | None = None) -> int:
+    """How many genres this artist is documented in. 0 for a genre node.
+
+    **The specificity signal, and it is not a quality judgement.** A musician documented in three genres
+    tells you something when they appear between two of them; one documented in eighteen connects
+    almost anything to almost anything, and a route through them is a fact about the tagging rather than
+    about music. Corpus measured 2026-09-18: median 1, mean 2.4, max 18.
+    """
+    if memo is not None and node_id in memo:
+        return memo[node_id]
+    count = len(
+        store.neighbors(
+            node_id, Direction.INFLUENCED_BY, predicates=frozenset({PREDICATE_PLAYS_GENRE})
+        )
+    )
+    if memo is not None:
+        memo[node_id] = count
+    return count
+
+
 def cross_axis_route(
     store: GraphStore, from_id: str, to_id: str, *, max_hops: int = MAX_ROUTE_HOPS
 ) -> tuple[Hop, ...]:
-    """The shortest route between two nodes, ignoring edge direction, or ``()`` when there is none.
+    """The shortest route between two nodes, ignoring direction, breaking ties by pivot specificity.
 
-    Breadth-first, so the first route found is a shortest one. **Shortest rather than best**: ranking
-    routes by evidence strength is what ``graph/routes.py`` does for choosing a demo, and doing it here
-    would make the answer to "how are these connected" depend on a taste judgement the user cannot see.
+    **Shortest first, and among equally short routes the one through the most specific musicians.**
 
-    Returns hops in route order. Each carries its own edge and orientation; assembling claims from them
-    is the caller's job, and ``Hop.claim_pair`` is the only correct way to do it.
+    *(Ranking added 2026-09-18, phase 8 step 4c. The first cut returned whichever route the BFS reached
+    first and argued that "shortest rather than best" avoided a hidden taste judgement. That argument
+    was wrong, and measurably: `delta blues` to `Detroit techno` has **seven** routes tied at five hops,
+    so shortest does not choose -- edge order chose, which hides the judgement instead of declining to
+    make one. Six of the seven pivoted through an artist documented in ten genres, producing a fully
+    sourced answer that no reader would accept.)*
+
+    **Why specificity and not evidence strength**, which was the obvious first answer and was tested and
+    rejected: on that pair the sensible route and the absurd ones rest on **identical** provenance --
+    every membership hop is a Wikidata statement whose only reference is `imported from Russian
+    Wikipedia`. Ranking by citation quality would have been a coin flip between them.
+
+    **Why this is not the blended score ``graph/routes.py`` refuses.** That module declines to fold
+    incommensurable things into one number because the trade it hides is real. This folds nothing: it is
+    lexicographic, ``(hops, worst pivot, total pivots)``, each term exact and each reportable on its own.
+    ``route_specificity`` returns the numbers so a caller can show them rather than trusting the order.
+
+    The search is uniform-cost rather than breadth-first because the cost is lexicographic and
+    **monotone** -- hops only increase along a path and the worst pivot only gets worse -- which is
+    exactly the condition that makes a priority-first search correct here.
     """
     if from_id == to_id or store.get_node(from_id) is None or store.get_node(to_id) is None:
         return ()
 
+    memo: dict[str, int] = {}
     previous: dict[str, tuple[str, Edge, bool]] = {}
-    seen = {from_id}
-    frontier: deque[tuple[str, int]] = deque([(from_id, 0)])
+    # (hops, worst pivot degree, total pivot degree, tie-break id) -> the node
+    start = (0, 0, 0, from_id)
+    frontier: list[tuple[int, int, int, str]] = [start]
+    best: dict[str, tuple[int, int, int]] = {from_id: (0, 0, 0)}
 
     while frontier:
-        node_id, depth = frontier.popleft()
-        if depth >= max_hops:
+        hops, worst, total, node_id = heappop(frontier)
+        if (hops, worst, total) > best.get(node_id, (hops, worst, total)):
+            continue
+        if node_id == to_id:
+            return _rebuild(previous, from_id, to_id)
+        if hops >= max_hops:
             continue
         for edge, forward in _edges_both_ways(store, node_id):
             next_id = edge.object_id if forward else edge.subject_id
-            if next_id in seen:
+            # The pivot's own promiscuity is charged when the route ARRIVES at it, and the endpoints are
+            # never charged: a route is not worse for the genres its destination happens to carry.
+            degree = 0 if next_id == to_id else genre_count(store, next_id, memo)
+            cost = (hops + 1, max(worst, degree), total + degree)
+            if next_id in best and cost >= best[next_id]:
                 continue
-            seen.add(next_id)
+            best[next_id] = cost
             previous[next_id] = (node_id, edge, forward)
-            if next_id == to_id:
-                return _rebuild(previous, from_id, to_id)
-            frontier.append((next_id, depth + 1))
+            heappush(frontier, (*cost, next_id))
     return ()
+
+
+def route_specificity(store: GraphStore, hops: tuple[Hop, ...]) -> tuple[int, int]:
+    """``(worst pivot, total pivots)`` for a route: the numbers the ranking used, for reporting.
+
+    Returned rather than folded away because the honest form of this is *"connected through Freddie
+    King, documented in 4 genres"* -- a reader can weigh that. A rank with no visible basis is the thing
+    ``graph/routes.py`` spent a whole module refusing.
+    """
+    memo: dict[str, int] = {}
+    degrees = [
+        genre_count(store, hop.to_id, memo)
+        for hop in hops[:-1]  # every interior node; the destination is not a pivot
+    ]
+    return (max(degrees, default=0), sum(degrees))
 
 
 def _rebuild(

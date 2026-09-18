@@ -49,6 +49,11 @@ SHAPE_TOOL = {
     "teachers": "get_teachers",
     "students": "get_students",
     "teaching_path": "trace_teaching_lineage",
+    # Phase 8 step 5. A fourth two-endpoint shape, and the only one whose tool may return a route rather
+    # than a chain. It maps to the `lineage` query kind because the planner's vocabulary has no word for
+    # "connected without descent" -- which is the same mismatch the comment above records for `path`,
+    # and is better mapped here than solved by teaching the planner a kind no model has been asked for.
+    "route": "trace_route_through_musicians",
 }
 
 #: Gold ``shape`` to ``Plan.query_kind``. Both vocabularies are closed sets and neither is a superset of
@@ -61,10 +66,11 @@ SHAPE_QUERY_KIND = {
     "teachers": "origins",
     "students": "descendants",
     "teaching_path": "lineage",
+    "route": "lineage",
 }
 
 #: The shapes that name two endpoints and so need an ``expected_terminus``.
-PATH_SHAPES = frozenset({"path", "teaching_path"})
+PATH_SHAPES = frozenset({"path", "teaching_path", "route"})
 
 
 @dataclass(frozen=True, slots=True)

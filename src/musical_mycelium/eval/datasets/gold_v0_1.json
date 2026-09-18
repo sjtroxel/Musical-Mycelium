@@ -2301,6 +2301,79 @@
         }
       ],
       "notes": "The mixed chain, his decision D4 of the phase plan. The route the tool returns is Ravel studied with Faure, and Faure BOTH studied with Saint-Saens AND is recorded as influenced by him -- two separately sourced edges on one hop, which `trace_teaching_lineage` proposes together and synthesis must narrate with both verbs. `trace_lineage` finds no route between the endpoints.\n\n**The influence half of the second hop is deliberately NOT an expected claim, and the reason is a research finding.** The corpus holds `Q104919 influenced_by Q150445` at ASSERTS_AUTO. No sentence in the English Faure or Saint-Saens articles asserts that influence: the nearest is 'Saint-Saens took great pleasure in his pupil's progress, which he helped whenever he could; Nectoux comments that at each step in Faure's career \"Saint-Saens's shadow can effectively be taken for granted\"', which is about support for a career, not influence on the music. The gold set asserts verified correctness, so it does not vouch for an edge whose prose does not say what the edge says. The contested cases (030, 031) set the precedent: where correctness is not established, the case carries no claim for it and the failed research is the finding. The claims here are a required subset, so a run that approves the influence edge is not penalised; the edge simply is not certified by this file.\n\nA student is not thereby an influence and a teacher is not thereby a model, which is why the two predicates were kept apart in the first place. This case is where that separation earns its keep: the teaching is cited, the influence is not."
+    },
+    {
+      "case_id": "gold_v0_1_044",
+      "query": "How are Romantic music and the nocturne connected?",
+      "shape": "route",
+      "difficulty": "middle",
+      "authored_at": "2026-09-18",
+      "axis": "cross",
+      "era": "pre-1900",
+      "expected_resolution": {
+        "name": "Romantic music",
+        "node_id": "Q207591"
+      },
+      "expected_terminus": {
+        "name": "nocturne",
+        "node_id": "Q194172"
+      },
+      "expected_refusal": false,
+      "expected_path": [
+        "Q207591",
+        "Q260610",
+        "Q209684",
+        "Q194172"
+      ],
+      "expected_claims": [
+        {
+          "subject_id": "Q260610",
+          "predicate": "plays_genre",
+          "object_id": "Q207591",
+          "subject_label": "Maria Szymanowska",
+          "object_label": "Romantic music",
+          "wikidata_statement": "Q260610 P136 Q207591",
+          "supporting_prose": "Her work is typically labeled, stylistically, as part of the pre-romantic period stile brillant",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Maria_Szymanowska, Compositions, read 2026-09-18",
+          "independent_citations": [],
+          "citation_status": {
+            "state": "source_diverges",
+            "searched": [
+              "wikidata.org Q260610 P136 -> Q207591, statement Q260610$D07118C6-37BF-4880-B3AE-CB66D097FEA1 -- its only reference is P143 'imported from Wikimedia project', which is an import breadcrumb and not a citation.",
+              "en.wikipedia.org/wiki/Maria_Szymanowska -- the lead and the Compositions section both place her BEFORE the Romantic period, not in it: 'typify the stile brillant of the era preceding Frederic Chopin' and 'part of the pre-romantic period stile brillant'. Neither sentence carries an inline reference.",
+              "de Valera 2003 (cited on claim 2) is about her study with Field and does not characterise her period."
+            ],
+            "finding": "An independent source exists and DISAGREES. English Wikipedia places Szymanowska before the Romantic period ('pre-romantic period stile brillant'); the corpus, via a P143 import from Russian Wikipedia, records her genre as Romantic music. Neither is dismissed here: the corpus is reported at the strength it holds, and the disagreement is recorded beside it. This is the first claim in the set flagged `source_diverges` rather than `source_uncited`, and the distinction matters -- a contradiction filed as an absence would understate what was found."
+          }
+        },
+        {
+          "subject_id": "Q260610",
+          "predicate": "studied_with",
+          "object_id": "Q209684",
+          "subject_label": "Maria Szymanowska",
+          "object_label": "John Field",
+          "wikidata_statement": "Q260610 P1066 Q209684",
+          "supporting_prose": "She studied piano and composition with John Field and was an outstanding student of his.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/Maria_Szymanowska, Reputation, read 2026-09-18",
+          "independent_citations": [
+            "de Valera, Terry, \"Maria Szymanowska (1790-1831): A Pupil of John Field\", Dublin Historical Record, vol. 56 no. 1, 2003, p. 53, JSTOR 30101384"
+          ]
+        },
+        {
+          "subject_id": "Q209684",
+          "predicate": "plays_genre",
+          "object_id": "Q194172",
+          "subject_label": "John Field",
+          "object_label": "nocturne",
+          "wikidata_statement": "Q209684 P136 Q194172",
+          "supporting_prose": "He is widely credited as the inventor of the nocturne.",
+          "supporting_prose_source": "en.wikipedia.org/wiki/John_Field_(composer), lead, read 2026-09-18",
+          "independent_citations": [
+            "Langley, Robin, \"Field, John\", in Sadie, Stanley; Tyrrell, John (eds.), The New Grove Dictionary of Music and Musicians, 2nd ed., Macmillan, 2001, ISBN 978-1-56159-239-5"
+          ]
+        }
+      ],
+      "notes": "The first `route` case, phase 8 step 5, and the only case in this set whose answer contains NO influence edge at all. Every hop is carried by a person: Szymanowska played Romantic music, studied with Field, and Field originated the nocturne. That is `CLAUDE.md`'s central claim -- 'the organism is connected through the people who play across it' -- as a measurement rather than a slogan.\n\nSELECTED ON EVIDENCE, NOT ON APPEAL. The obvious candidate was the demo pair `delta blues -> Detroit techno`, and it was rejected: its pivot hop `Freddie King plays_genre funk` rests on a P143 import from Russian Wikipedia, the English article on him never uses the word funk, and no independent source for it was found. Six of that pair's seven tied routes also pivot through an artist documented in ten genres. This route was chosen instead because its teaching hop carries a real scholarly citation, its nocturne hop carries Grove, and both pivots are documented in few genres (worst pivot 2).\n\nDIRECTION IS THE TRAP AND THIS CASE CARRIES IT. The route walks Romantic music -> Szymanowska, while the claim underneath runs Szymanowska -> Romantic music. `expected_claims` is in EDGE orientation throughout, which is what `Hop.claim_pair` returns and what the gate approves; a version of this case written in route order would assert that a genre played a person.\n\nWHAT THIS CASE MUST NEVER BE READ AS. Two genres connected through people is not descent. Nothing here says Romantic music led to the nocturne or that either came out of the other, and claim 1 is explicitly uncited because the independent source disagrees with the corpus about her period."
     }
   ]
 }

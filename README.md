@@ -190,7 +190,7 @@ bounds is listed below it, pass or fail.</sub>
 - **Correctness is a lookup, not an opinion.** Because this project owns its ground truth, the main
   metrics are yes-or-no: does this connection exist in the pinned corpus, does this citation resolve. The
   free part runs on every commit.
-- **A real model runs the full suite** of <!-- n:live_cases -->63<!-- /n --> hand-written cases before a
+- **A real model runs the full suite** of <!-- n:live_cases -->68<!-- /n --> hand-written cases before a
   release, and six correctness properties can block it: every claim grounded, every citation resolving,
   zero prompt injections that work, zero source disagreements crossed without saying so, full recall on
   known routes, and refusal accuracy. A full run costs well under a dollar.

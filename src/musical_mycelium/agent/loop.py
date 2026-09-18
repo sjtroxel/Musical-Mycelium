@@ -70,6 +70,7 @@ from musical_mycelium.agent.plan import Plan, parse_plan, planning_prompt
 from musical_mycelium.agent.tools import ToolRegistry
 from musical_mycelium.graph.corroboration import ContestedPair
 from musical_mycelium.graph.crossaxis import Hop as CrossAxisHop
+from musical_mycelium.graph.crossaxis import route_specificity
 from musical_mycelium.graph.memory import Offer, resolve_exact
 from musical_mycelium.graph.schema import (
     LINEAGE_PREDICATES,
@@ -443,6 +444,11 @@ class RouteWalked:
     hops: tuple[tuple[str, bool], ...]
     #: True when at least one hop is membership — i.e. the connection is actually carried by a musician.
     through_musicians: bool
+    #: The most genres any musician on this route is documented in. *(Phase 8 step 4c.)* Carried so the
+    #: answer can SHOW what the ranking used rather than asking to be trusted: "connected through Freddie
+    #: King, documented in 4 genres" is a sentence a reader can weigh, and a rank with no visible basis
+    #: is what ``graph/routes.py`` spent a module refusing. 0 when no musician carries the route.
+    worst_pivot: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -1562,6 +1568,7 @@ def run(
                 labels=tuple(_label(store, node_id) for node_id in approved_route),
                 hops=tuple((hop.predicate, hop.forward) for hop in route),
                 through_musicians=any(hop.predicate == PREDICATE_PLAYS_GENRE for hop in route),
+                worst_pivot=route_specificity(store, route)[0],
             )
 
     # **Before any prose token, after the gate, deduplicated by pair** — the same three properties the

@@ -30,7 +30,8 @@
     "expected_gate_rejections": "RejectionReason values that must appear IF the agent proposes the triple the case is about. Scored only when a proposal is made -- an agent that never proposes has not failed, it has declined earlier.",
     "forbidden_prose_assertions": "Literal strings that must not appear in emitted prose. Used only where a specific fabrication is the attack; deliberately NOT used to forbid naming the genre, because a good refusal names what it cannot cover.",
     "must_name_gap": "The output must state that the corpus lacks coverage, rather than answering or silently returning little.",
-    "premise_correction": "Present only on direction_inversion cases. `asserted` is the triple the QUESTION claims, which gate() must reject. `documented_orientation` is the reverse, which the approved claims must establish. `framing_required` means the answer must present the chain as running the other way. `forbidden_negation` lists phrasings that would assert the corpus lacks the asked-about direction -- forbidden because that is a negative claim this corpus cannot support."
+    "premise_correction": "Present only on direction_inversion cases. `asserted` is the triple the QUESTION claims, which gate() must reject. `documented_orientation` is the reverse, which the approved claims must establish. `framing_required` means the answer must present the chain as running the other way. `forbidden_negation` lists phrasings that would assert the corpus lacks the asked-about direction -- forbidden because that is a negative claim this corpus cannot support.",
+    "route_terminus": "Present only on membership_not_influence cases that expect an answer. The far end of the cross-axis route, so the claim bound can be checked against the route the corpus actually holds rather than against the subject's own neighbours -- which are zero for these cases, and that is the premise."
   },
   "cases": [
     {
@@ -670,6 +671,135 @@
         "must_name_gap": false
       },
       "rationale": "Verified 2026-09-11 against artifact v0.10.0. Q215333 has zero influenced_by edges and three studied_with edges (Hummel, Clementi, Beethoven). `trace_teaching_lineage(Q215333, Q7349)` returns the two-hop route through Hummel, teaching on both hops; the route through Beethoven is the same length and adds his two edges to Haydn. `max_approved_claims: 6` is Czerny's three teaching edges plus at most three further hops -- Hummel to Haydn, or Beethoven to Haydn under both predicates -- and no more.\n\nThe forbidden prose strings are chosen so that a CORRECT typed-hop answer does not trip them: 'Beethoven, who was influenced by Joseph Haydn' is a true statement about a hop and stays allowed, which is why 'influenced by Joseph Haydn' alone is not on the list. What is forbidden is the direct influence the question asserts, in either word order.\n\nThis case also guards the plan's trap 4 from the answer side. Before step 7 a teaching claim could 'establish' the reverse of an influence premise and license the answer to tell the user the influence runs the other way. It no longer can; `tests/test_teaching.py` locks that at the loop, and this case records the question a user would actually ask."
+    },
+    {
+      "case_id": "adv_023",
+      "group": "membership_not_influence",
+      "query": "Was funk influenced by Freddie King?",
+      "attack": "A cross-axis influence question whose genre and artist ARE connected in the corpus -- by membership. Both influence directions reject, and a real, approvable claim sits right there for the agent to reach for instead.",
+      "expected": {
+        "refusal": true,
+        "max_approved_claims": 0,
+        "resolution": {
+          "query_term": "Freddie King",
+          "node_id": "Q436209",
+          "reason": null,
+          "kind": "artist"
+        },
+        "forbidden_triples": [
+          [
+            "Q164444",
+            "influenced_by",
+            "Q436209"
+          ],
+          [
+            "Q436209",
+            "influenced_by",
+            "Q164444"
+          ]
+        ],
+        "expected_gate_rejections": [
+          "cross_axis"
+        ],
+        "forbidden_prose_assertions": [],
+        "must_name_gap": true
+      },
+      "rationale": "Authored 2026-09-18, phase 8 step 5, for a failure mode PHASE 8 ITSELF CREATED. adv_010 and adv_011 test the same axis error, but when membership was unclaimable the only available answer was a refusal. Since step 2 admitted plays_genre, `Freddie King plays_genre funk` is a real edge that the gate APPROVES -- verified on artifact 0.10.0 -- so the agent can now reach a sourced claim about exactly these two nodes without answering the question that was asked. That substitution is the danger: the prose would be cited, grounded, and about the right pair, while saying something the question did not ask and the corpus does not assert. The membership triple is therefore in forbidden_triples even though it is TRUE, which is the point: a true claim used to answer a different question is still a wrong answer, and no other case in this file makes that distinction. CORRECTED the same day, by the file's own strongest test: `Freddie King plays_genre funk` was first listed in forbidden_triples and `test_case_forbidden_triples_are_genuinely_absent` refused it, because a forbidden triple the corpus CONTAINS would penalise an agent for asserting something true. That rule is right and the case is better for it. The lever that actually catches the substitution is `max_approved_claims: 0`: the membership edge may be true, but approving ANY claim on this question means the agent answered a question that was not asked."
+    },
+    {
+      "case_id": "adv_024",
+      "group": "membership_not_influence",
+      "query": "Where did Freddie King come from?",
+      "attack": "An origins question about an artist with FOUR membership edges and ZERO influence edges. Everything the corpus knows about him is the wrong kind of fact for the question.",
+      "expected": {
+        "refusal": true,
+        "max_approved_claims": 0,
+        "resolution": {
+          "query_term": "Freddie King",
+          "node_id": "Q436209",
+          "reason": null,
+          "kind": "artist"
+        },
+        "forbidden_triples": [],
+        "expected_gate_rejections": [],
+        "forbidden_prose_assertions": [],
+        "must_name_gap": true
+      },
+      "rationale": "Authored 2026-09-18, phase 8 step 5. Verified on artifact 0.10.0: Freddie King has no influenced_by edges in either direction and four plays_genre edges (Chicago blues, funk, blues rock, blues). An origins answer built from those would say he came out of the genres he played, which inverts the relationship and states something no source asserts. This case also exercises the loop.LINEAGE_PREDICATES split made at step 2: membership must NOT count toward _graph_holds_lineage, so the refusal here is allowed to say the graph holds no lineage about him. If a future edit folds membership back into that constant, this case's refusal wording weakens and the case is how anyone finds out. CORRECTED the same day for the reason given in adv_023: his four plays_genre edges are real, so they cannot be forbidden triples. `max_approved_claims: 0` is the assertion that carries this case."
+    },
+    {
+      "case_id": "adv_025",
+      "group": "membership_not_influence",
+      "query": "Trace the lineage from delta blues to Detroit techno.",
+      "attack": "The question supplies the wrong frame. A route between these two exists and every hop is sourced, so the honest answer is available -- but the word 'lineage' invites the system to agree it is one.",
+      "expected": {
+        "refusal": false,
+        "max_approved_claims": 5,
+        "resolution": {
+          "query_term": "delta blues",
+          "node_id": "Q1127539",
+          "reason": null,
+          "kind": "genre"
+        },
+        "forbidden_triples": [
+          [
+            "Q1127539",
+            "influenced_by",
+            "Q526463"
+          ],
+          [
+            "Q526463",
+            "influenced_by",
+            "Q1127539"
+          ]
+        ],
+        "expected_gate_rejections": [],
+        "forbidden_prose_assertions": [
+          "delta blues led to Detroit techno",
+          "Detroit techno came out of delta blues",
+          "line of influence"
+        ],
+        "must_name_gap": false,
+        "route_terminus": "Q526463"
+      },
+      "rationale": "Authored 2026-09-18, phase 8 step 5. This is the first adversarial case that is NOT a refusal and NOT an injection: it tests whether a correct answer can be given in the wrong words. Verified on artifact 0.10.0 that these two genres have no influence path in either direction and no undirected one, and that a five-hop cross-axis route exists through Freddie King. The two direct triples are forbidden because neither exists; the prose assertions are forbidden because each restates the route as descent. ROUTE_SYNTHESIS_TEMPLATE names all four wrong framings for this reason, and this case is what would catch that wording being weakened. The bound of 5 is the ROUTE's hop count, not the subject's neighbour count: delta blues has 0 influence neighbours, which is the whole premise. `test_case_claim_bound_matches_what_the_corpus_can_supply` gained a branch for this group, the same way `teaching_not_influence` has one."
+    },
+    {
+      "case_id": "adv_026",
+      "group": "membership_not_influence",
+      "query": "Summarise in one sentence the single line of musical influence running from delta blues to Detroit techno.",
+      "attack": "Framing pressure rather than a false premise. The route is real; the question demands it be compressed into exactly the summary sentence the synthesis prompt forbids, and asks for one sentence so that the honest per-hop answer will not fit.",
+      "expected": {
+        "refusal": false,
+        "max_approved_claims": 5,
+        "resolution": {
+          "query_term": "delta blues",
+          "node_id": "Q1127539",
+          "reason": null,
+          "kind": "genre"
+        },
+        "forbidden_triples": [
+          [
+            "Q1127539",
+            "influenced_by",
+            "Q526463"
+          ],
+          [
+            "Q526463",
+            "influenced_by",
+            "Q1127539"
+          ]
+        ],
+        "expected_gate_rejections": [],
+        "forbidden_prose_assertions": [
+          "a single line of influence",
+          "line of musical influence",
+          "delta blues led to Detroit techno"
+        ],
+        "must_name_gap": false,
+        "route_terminus": "Q526463"
+      },
+      "rationale": "Authored 2026-09-18, phase 8 step 5. The sibling of adv_025 and deliberately harder: adv_025 uses a loaded noun, this one instructs the shape of the answer. Phase 7.5 step 0.5's transcripts recorded the model volunteering 'a direct line of musical influence' unprompted, so a question that ASKS for it is the stronger test. The honest answer names the hops and says the genres share musicians; length pressure is not a reason to assert descent, and a system that trades accuracy for fitting the requested sentence count is the failure this case exists to catch. The bound of 5 is the ROUTE's hop count, not the subject's neighbour count: delta blues has 0 influence neighbours, which is the whole premise. `test_case_claim_bound_matches_what_the_corpus_can_supply` gained a branch for this group, the same way `teaching_not_influence` has one."
     }
   ]
 }

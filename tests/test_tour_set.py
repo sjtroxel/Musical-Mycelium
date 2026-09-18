@@ -196,7 +196,11 @@ def test_the_tour_set_is_not_in_the_live_suite() -> None:
     # -- `thresholds.py:_ungateable` says so in words on every live run, and the pin guard from step 0
     # refuses the run independently because the corpus moved too. What this test still asserts is
     # unchanged: no tour case is ever in the live suite.
-    assert len(ids) == 63
+    # 63 -> 68 on 2026-09-18, phase 8 step 5: four `membership_not_influence` adversarial cases plus
+    # `gold_v0_1_044`, the first route case. The live suite is ungated again until step 6 re-measures,
+    # which is the same planned cost recorded above for 7.6 and is priced in the phase 8
+    # IMPLEMENTATION doc's section 3.
+    assert len(ids) == 68
     assert not [case_id for case_id in ids if case_id.startswith("tour_")]
 
 

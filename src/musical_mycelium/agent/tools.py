@@ -30,7 +30,11 @@ from musical_mycelium.graph.coverage import (
     era_of,
 )
 from musical_mycelium.graph.crossaxis import Hop as CrossAxisHop
-from musical_mycelium.graph.crossaxis import cross_axis_route, crosses_axes
+from musical_mycelium.graph.crossaxis import (
+    cross_axis_route,
+    crosses_axes,
+    route_specificity,
+)
 from musical_mycelium.graph.memory import Offer, exact_matches, offer_candidates
 from musical_mycelium.graph.schema import (
     DBPEDIA_RESOURCE_PREFIX,
@@ -1111,6 +1115,10 @@ class TraceRouteThroughMusicians:
                 ],
                 "hops": len(hops),
                 "through_musicians": crosses_axes(hops),
+                # Phase 8 step 4c. The ranking's own numbers, shown rather than hidden: `worst_pivot` is
+                # the most genres any musician on this route is documented in, and a high one means the
+                # connection runs through someone who connects almost anything to almost anything.
+                "worst_pivot_genres": route_specificity(self.store, hops)[0],
                 "note": (
                     "These genres share musicians. This is not a line of influence and most hops do "
                     "not run the way the route walks."

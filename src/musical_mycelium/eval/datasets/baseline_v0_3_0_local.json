@@ -1,51 +1,51 @@
 {
   "measures": "the machinery, not the model: every run is scripted, so these numbers show that the gate and the loop refuse unsupported claims, NOT that a real model resists. Real-model behaviour is DoD #10 and #11 and requires Bedrock.",
   "artifact_version": "0.10.0",
-  "cases_run": 20,
+  "cases_run": 24,
   "cases_excluded": {
     "adv_014": "synthetic poisoned-label artifact; driven by tests/test_untrusted.py",
     "adv_015": "hostile stub tool; driven by tests/test_untrusted.py"
   },
   "near_miss_limitation": "substitution-then-narrate is a model choice, not a machinery property; deferred to DoD #11",
   "refusal_accuracy": {
-    "true_refusals": 15,
+    "true_refusals": 17,
     "false_refusals": 0,
     "missed_refusals": 0,
-    "correct_answers": 5,
-    "expected_refusals": 15,
-    "expected_answers": 5
+    "correct_answers": 7,
+    "expected_refusals": 17,
+    "expected_answers": 7
   },
   "injection_resistance": {
     "induced": 0,
-    "scored_cases": 7,
-    "unscored_cases": 13,
+    "scored_cases": 10,
+    "unscored_cases": 14,
     "holds": true
   },
   "edge_groundedness": 1.0,
   "citation_resolution": 1.0,
   "verification_mix": {
-    "PROSE_AUTO": 0,
-    "MEMBERSHIP_CITED": 0,
+    "TEACHING_PROSE_AUTO": 6,
+    "HAND": 7,
+    "MEMBERSHIP_CITED": 4,
     "EXPOSURE_AUTO": 1,
     "MEMBERSHIP_BARE": 0,
-    "HAND": 7,
-    "TEACHING_PROSE_AUTO": 6,
-    "INFOBOX_AUTO": 4,
-    "ASSERTS_AUTO": 0
+    "ASSERTS_AUTO": 0,
+    "INFOBOX_AUTO": 10,
+    "PROSE_AUTO": 0
   },
   "offer": {
     "runs_with_offers": 3,
     "offers": 3,
     "candidates_shown": 11,
     "over_cap": 1,
-    "refusals": 15,
+    "refusals": 17,
     "refusals_with_choices": 3,
     "offers_without_refusal": 0
   },
-  "claim_bound_respected": 20,
-  "gate_rejections_consistent": 20,
+  "claim_bound_respected": 24,
+  "gate_rejections_consistent": 24,
   "plan_divergence": {
-    "0": 20
+    "0": 24
   },
   "slices": {
     "era": {
@@ -66,8 +66,8 @@
         "denominator": 1
       },
       "1900-1949": {
-        "numerator": 3,
-        "denominator": 3
+        "numerator": 7,
+        "denominator": 7
       },
       "pre-1900": {
         "numerator": 2,
@@ -80,12 +80,12 @@
         "denominator": 9
       },
       "unstated": {
-        "numerator": 6,
-        "denominator": 6
+        "numerator": 8,
+        "denominator": 8
       },
       "anglophone_core": {
-        "numerator": 4,
-        "denominator": 4
+        "numerator": 6,
+        "denominator": 6
       },
       "elsewhere": {
         "numerator": 1,
@@ -98,8 +98,8 @@
         "denominator": 9
       },
       "isolated": {
-        "numerator": 7,
-        "denominator": 7
+        "numerator": 11,
+        "denominator": 11
       },
       "sparse": {
         "numerator": 2,
@@ -116,8 +116,8 @@
         "denominator": 9
       },
       "none": {
-        "numerator": 7,
-        "denominator": 7
+        "numerator": 11,
+        "denominator": 11
       },
       "wikidata_only": {
         "numerator": 2,
@@ -134,8 +134,8 @@
         "denominator": 9
       },
       "membership_only": {
-        "numerator": 5,
-        "denominator": 5
+        "numerator": 9,
+        "denominator": 9
       },
       "neither": {
         "numerator": 1,
@@ -156,12 +156,12 @@
     },
     "query_kind": {
       "origins": {
-        "numerator": 15,
-        "denominator": 15
+        "numerator": 17,
+        "denominator": 17
       },
       "lineage": {
-        "numerator": 5,
-        "denominator": 5
+        "numerator": 7,
+        "denominator": 7
       }
     }
   }

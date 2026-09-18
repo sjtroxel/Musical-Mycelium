@@ -356,6 +356,97 @@
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
 
+## FINDING — authoring the phase 8 gold case found three things, and the case was NOT written, 2026-09-18
+
+**He asked for a fully-sourced gold case on the canonical route. Researching it produced three results
+that each say the case should not be written yet.** No case was added; no citation was invented. Every
+number below was read from Wikidata's API or the pinned artifact today, not recalled.
+
+### 1. `MEMBERSHIP_CITED` is mostly not a citation — 82% of a 40-statement sample
+
+The tier means *"an editor attached a source to the statement"*, which `graph/schema.py` states
+accurately. What a reader takes from the word CITED is something else. Sampled 40 `MEMBERSHIP_CITED`
+edges at random (seed 20260918) and read their real Wikidata references:
+
+| what the reference actually is | of 40 |
+|---|---|
+| **P143 `imported from Wikimedia project`** — a breadcrumb from another Wikipedia | **23** |
+| P143 plus P4656 `Wikimedia import URL` — also an import | 9 |
+| P143 plus P813 `retrieved` — also an import | 1 |
+| P248 `stated in` — an actual source | 5 |
+| P854 `reference URL` | 1 |
+| P13947 plus P813 | 1 |
+
+**At least 33 of 40 (over 80%) carry import provenance only. Fewer than 1 in 5 carry anything a reader
+would call a citation.** The 2026-09-02 hand-check behind this tier is not invalidated — referenced pairs
+did read cleaner than unreferenced ones — but the tier's *name* promises more than its contents deliver,
+and any copy explaining it should say "an editor attached a reference, usually an import from another
+Wikipedia" rather than "cited".
+
+### 2. The canonical route's pivot hop is unsupported outside that import
+
+`Freddie King plays_genre funk`, statement `Q436209$6ba7cb70-...`, has exactly one reference: **P143,
+Russian Wikipedia**. Checked further:
+
+- **English Wikipedia's Freddie King article does not contain the word funk at all.**
+- Its "Musical style" section says *"King derived his guitar style from Texas blues and Chicago blues
+  influences"*, with no inline citation.
+- AllMusic on the Shelter Records period (`Getting Ready...`, 1971) describes *"competent electric blues
+  with a prominent rock/soul influence"* — adjacent to funk, and not funk.
+
+So **no independent citation could be written for the hop that makes the flagship route cross-axis at
+all.** The gold set's whole value is that it cites sources independent of Wikidata so divergence
+surfaces. It surfaced. Writing the case anyway would have put the weakest claim in the corpus into the
+measurement equipment, with a fabricated or absent citation.
+
+### 3. THE ENGINEERING DEFECT: the demo route is an accident of edge order
+
+**There are seven equally-short routes between `delta blues` and `Detroit techno`, and `cross_axis_route`
+returns whichever its BFS reaches first.** Deterministic, because the artifact's edge order is fixed —
+but *arbitrary*, because nothing ranked them.
+
+**Six of the seven pivot through Christina Aguilera**, bridging blues to synth-pop or electro:
+
+```
+Delta blues -> Robert Johnson -> blues -> Christina Aguilera -> electro -> Detroit techno
+Delta blues -> Charley Patton -> blues -> Christina Aguilera -> synth-pop -> Detroit techno
+Delta blues -> Fred McDowell  -> blues -> Christina Aguilera -> electro -> Detroit techno
+```
+
+Every hop there is sourced. Every one would pass the gate. As an answer to *"how is delta blues connected
+to Detroit techno"* it is absurd, and it is **exactly** the risk `graph-semantics.md` records for P136:
+*"an artist tagged with a genre they barely touched."* Scope doc §7 lists it second; this is it, on the
+phase's own demo query.
+
+**The route the product currently shows — through Freddie King — is the most musically defensible of the
+seven, and the system had no way of knowing that.** `graph/crossaxis.py`'s docstring argues for
+"shortest rather than best" on the grounds that ranking would hide a taste judgement the user cannot
+see. That argument is wrong as written: with seven routes tied at five hops, shortest does not choose —
+**iteration order chooses**, and it hides the judgement completely rather than declining to make one.
+
+`graph/routes.py` already ranks tour routes by evidence strength and prints every component as its own
+column, deliberately refusing a single blended score. The same instrument is what this needs.
+
+### What is owed, and it is a decision rather than a task
+
+**A tie-break for `cross_axis_route`, which is his call**, because the honest options differ in what
+they claim:
+
+1. **Rank by evidence strength** — prefer routes whose membership hops carry P248 over P143. Reuses
+   `routes.py`'s existing argument. Costs a Wikidata reference audit at ingest time, since the artifact
+   records only *whether* a reference exists, not what kind.
+2. **Record the reference KIND on the edge** — split `MEMBERSHIP_CITED` into imported-versus-sourced.
+   A schema change and a new artifact version, and it would make the tier honest for every consumer,
+   not just this tool.
+3. **Return all tied routes and let the product choose** — most honest, worst demo.
+4. **Do nothing and pin the demo query's route** — cheapest, and it makes the showcase a fixture rather
+   than a result, which this project has refused everywhere else.
+
+**Until that is decided, no gold `route` case should be authored**, because the case would pin an
+expected path that the next corpus change may silently re-route through Christina Aguilera while every
+gate stays green.
+
+
 ## FINDING — the PUBLISHED report page asserted a gate count in prose, and it went false, 2026-09-18
 
 **`eval/report_page.py:COPY["live_gates"]` read "Six correctness properties block a release" and that

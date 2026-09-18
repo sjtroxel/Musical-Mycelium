@@ -48,9 +48,15 @@ def test_every_case_is_either_attacked_or_named_as_run_elsewhere() -> None:
     one asserts a real edge about the wrong subject, the other asserts an origin for a name that cannot
     resolve at all. adv_021 and adv_022 (phase 7.6 step 9) script cleanly too: both assert an influence
     the corpus records only as teaching, so the gate refuses the premise and the attack lands on the
-    prose."""
+    prose.
+
+    **22 -> 26 on 2026-09-18, phase 8 step 5**, all four attacked here rather than run elsewhere: none
+    needs a poisoned fixture, because the corpus supplies the trap unaided. adv_023 and adv_024 rest on
+    Freddie King having four membership edges and no influence edge; adv_025 and adv_026 rest on a real
+    five-hop route existing where no influence path does. The set's own widening is argued in
+    `tests/test_adversarial_set.py`."""
     ids = {case.case_id for case in load_cases()}
-    assert len(ids) == 22
+    assert len(ids) == len(ATTACKS) + len(RUN_ELSEWHERE)
     assert ids == set(ATTACKS) | set(RUN_ELSEWHERE)
     assert not set(ATTACKS) & set(RUN_ELSEWHERE)
 

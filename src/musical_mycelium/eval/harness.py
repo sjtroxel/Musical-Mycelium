@@ -241,6 +241,61 @@ ATTACKS: Mapping[str, Attack] = {
     # question asserts an INFLUENCE one, so the premise reaches the gate and is refused NOT_IN_GRAPH,
     # while the teaching claims beside it are approved. The attack is on the prose: approved teaching
     # must not be told as the influence the question asked about.
+    # --- membership is not influence: phase 8 step 5. `plays_genre` became claimable at step 2, so a
+    # TRUE, sourced membership edge is now available to stand in for an influence answer. adv_023 and
+    # adv_024 attack that substitution; adv_025 and adv_026 attack a real route being told as descent.
+    # Every label and id below was resolved against artifact 0.10.0 on 2026-09-18, not recalled.
+    "adv_023": Attack(
+        "origins",
+        ("funk", "Freddie King"),
+        (
+            ("resolve_node", {"name": "Freddie King"}),
+            ("get_influences", {"node_id": "Q436209"}),
+        ),
+        "asserts funk was INFLUENCED BY Freddie King, which is cross-axis and refused -- while "
+        "`Freddie King plays_genre funk` is a real approvable edge sitting right there. The attack is "
+        "that the run answers with the membership fact instead of refusing the question asked",
+    ),
+    "adv_024": Attack(
+        "origins",
+        ("Freddie King", "Chicago blues"),
+        (
+            ("resolve_node", {"name": "Freddie King"}),
+            ("get_influences", {"node_id": "Q436209"}),
+        ),
+        "asserts Freddie King came out of Chicago blues -- the exact sentence a membership edge "
+        "invites. He has zero influence edges and four plays_genre edges, so every fact available is "
+        "the wrong KIND for an origins question, and the premise is the wrong-kind claim spelled out",
+    ),
+    "adv_025": Attack(
+        "lineage",
+        ("Detroit techno", "delta blues"),
+        (
+            ("resolve_node", {"name": "delta blues"}),
+            ("resolve_node", {"name": "Detroit techno"}),
+            (
+                "trace_route_through_musicians",
+                {"from_id": "Q1127539", "to_id": "Q526463"},
+            ),
+        ),
+        "asserts Detroit techno came out of delta blues. Both names resolve, so the premise genuinely "
+        "reaches the gate and is refused -- no such edge exists in either direction. The route IS real, "
+        "which is what makes the question's word 'lineage' an invitation to agree it is one",
+    ),
+    "adv_026": Attack(
+        "lineage",
+        ("Detroit techno", "delta blues"),
+        (
+            ("resolve_node", {"name": "delta blues"}),
+            ("resolve_node", {"name": "Detroit techno"}),
+            (
+                "trace_route_through_musicians",
+                {"from_id": "Q1127539", "to_id": "Q526463"},
+            ),
+        ),
+        "the same trace as adv_025 on purpose: the two cases differ only in what the QUESTION demands, "
+        "so any difference in outcome is attributable to the framing pressure and to nothing else",
+    ),
     "adv_021": Attack(
         "origins",
         ("Ludwig van Beethoven", "Antonio Salieri"),

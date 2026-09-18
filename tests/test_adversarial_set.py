@@ -62,6 +62,10 @@ EXPECTED_GROUPS = {
     # Phase 7.6 step 9: an influence premise that only a TEACHING edge could appear to support, and a
     # transitive one that crosses a teacher. Added under the approved phase plan.
     "teaching_not_influence": 2,
+    # Phase 8 step 5: membership substituted for influence (023), membership read as origins (024), and
+    # two on a real cross-axis route being narrated as descent (025, 026). Added under the approved
+    # phase plan, which sized step 5 at "6 to 10 new cases, not more" across both sets.
+    "membership_not_influence": 4,
 }
 
 
@@ -95,7 +99,7 @@ def test_the_set_is_pinned_to_the_artifact_this_suite_loads(
     assert dataset["artifact_version_pin"] == store.artifact_version
 
 
-def test_there_are_twenty_two_cases_with_unique_ids(dataset: dict[str, Any]) -> None:
+def test_the_case_count_matches_the_composition_plan(dataset: dict[str, Any]) -> None:
     """18 -> 20 on 2026-09-07. `.claude/rules/evals.md` asks for 15-20 adversarial cases, so 20 is the
     top of the band rather than an overflow of it: a further case needs the band revisited, not just
     this number bumped.
@@ -104,10 +108,27 @@ def test_there_are_twenty_two_cases_with_unique_ids(dataset: dict[str, Any]) -> 
     cases are the approved phase plan's (`teaching_not_influence`): a new predicate is a new way to
     assert the wrong relationship, and no existing case can exercise it because no existing subject has
     a teaching edge. The band's purpose is a set small enough to hand-author and read; two cases over it,
-    each tied to a new capability, is that purpose kept, not abandoned."""
+    each tied to a new capability, is that purpose kept, not abandoned.
+
+    **22 -> 26 on 2026-09-18, phase 8 step 5. This is the largest single widening the set has had and it
+    is the one most owed a second look.** The same argument as 7.6 applies and applies twice over --
+    `plays_genre` is a new predicate AND a new answer shape, and no existing case can exercise either,
+    because before this phase no membership claim could be approved at all. Two of the four (023, 024)
+    test a failure mode phase 8 CREATED: a true, sourced membership claim standing in for an influence
+    answer. The other two (025, 026) test the route being narrated as descent, which is the phase's
+    named first risk.
+
+    **What is genuinely stretched is the band's purpose, not its arithmetic.** 15-20 exists so the set
+    stays small enough to hand-author and read in one sitting; 26 is past that, and 026 is the case to
+    drop first if it is ever cut, being the harder sibling of 025 rather than an independent failure.
+    The count is asserted from the composition table rather than a literal so the two cannot drift, and
+    the test's name no longer carries a number for the reason `docs/KNOWN-GAPS.md` records on
+    2026-09-18: a count written into a name is prose that ages against code.
+    """
     ids = [c["case_id"] for c in dataset["cases"]]
-    assert len(ids) == 22
-    assert len(set(ids)) == 22, "duplicate case_id"
+    expected = sum(EXPECTED_GROUPS.values())
+    assert len(ids) == expected
+    assert len(set(ids)) == expected, "duplicate case_id"
 
 
 def test_the_group_composition_matches_the_amended_plan(dataset: dict[str, Any]) -> None:
@@ -234,6 +255,17 @@ def test_case_claim_bound_matches_what_the_corpus_can_supply(
         assert lineage <= bound <= lineage + 3, (
             f"{case_id}: bound {bound} outside [{lineage}, {lineage + 3}]"
         )
+    elif case["group"] == "membership_not_influence":
+        # Phase 8 step 5. The claims here come from along a cross-axis ROUTE, not from the subject's own
+        # neighbours, and the subject having none is the premise: delta blues has 0 influence edges and
+        # is still connected to Detroit techno through a musician. So the bound is checked against the
+        # route the corpus actually holds, which also means a corpus change that shortens or breaks the
+        # route fails this test instead of leaving the bound quietly too generous.
+        from musical_mycelium.graph.crossaxis import cross_axis_route
+
+        hops = len(cross_axis_route(store, node_id, case["expected"]["route_terminus"]))
+        assert hops, f"{case_id}: the corpus no longer holds a route from {node_id}"
+        assert bound == hops, f"{case_id}: bound {bound} but the route is {hops} hops"
     elif case["group"] == "direction_inversion":
         # The subject is the DESCENDANT and the bound covers a multi-hop chain, so the one-hop
         # neighbour count is a floor rather than the answer.

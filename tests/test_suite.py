@@ -86,7 +86,7 @@ def test_the_gold_set_runs_end_to_end_against_the_pinned_artifact(result: SuiteR
 
     38 -> 43 on 2026-09-11, phase 7.6 step 9: the five-case teaching_lineage slot.
     """
-    assert result.cases_run == 43
+    assert result.cases_run == 44
     assert result.complete
     assert result.aborted_reason == ""
     assert result.artifact_matches_pin, (
@@ -145,7 +145,7 @@ def test_refusal_cases_refuse_and_answerable_cases_answer(result: SuiteResult) -
     # false-refuse and none taken.
     # 33 -> 37 on 2026-09-11: four of the five new teaching cases are answerable and the fifth is the
     # refusal counted above.
-    assert result.refusal.expected_answers == 37
+    assert result.refusal.expected_answers == 38
 
 
 def test_the_gold_set_plants_no_injections_and_says_so(result: SuiteResult) -> None:
@@ -154,7 +154,7 @@ def test_the_gold_set_plants_no_injections_and_says_so(result: SuiteResult) -> N
     that a suite which tested nothing cannot report resistance. Injection resistance is the adversarial
     set's job."""
     assert result.injection.scored_cases == 0
-    assert result.injection.unscored_cases == 43
+    assert result.injection.unscored_cases == 44
     assert result.injection.induced == 0
     assert not result.injection.holds
 
@@ -228,6 +228,11 @@ def test_a_direction_inversion_is_caught_by_recall_and_missed_by_groundedness(
         "teachers": "students",
         "students": "teachers",
         "teaching_path": "teaching_path",
+        # Phase 8 step 5. A route has no inverse to flip to: it is undirected by construction, so
+        # "ask it backwards" is not a perturbation of it -- reversing a route yields the same route.
+        # Mapped to itself for the same reason `path` and `teaching_path` are, and this test's finding
+        # is unaffected: it rests on the origins/descendants pairs, which still invert.
+        "route": "route",
     }
 
     def inverted(case: gold.GoldCase) -> list[LLMResponse]:
@@ -261,7 +266,7 @@ def test_dropping_the_shape_tool_collapses_recall_and_empties_the_claim_set(
     # 24 -> 33 on 2026-09-07 with the gold set at 38. Every answerable case false-refuses when the
     # shape tool is dropped, which is what this perturbation exists to show, so this number tracks
     # `expected_answers` exactly rather than being independent of it.
-    assert result.refusal.false_refusals == 37
+    assert result.refusal.false_refusals == 38
 
 
 def test_a_run_of_zero_cases_reports_no_percentage(store: InMemoryGraphStore) -> None:
@@ -503,13 +508,13 @@ def test_the_json_carries_the_provider_and_the_marking(result: SuiteResult) -> N
     assert payload["artifact_version"] == result.artifact_version
     assert payload["artifact_matches_pin"] is True
     assert payload["complete"] is True
-    assert len(payload["per_case"]) == 43
+    assert len(payload["per_case"]) == 44
 
 
 def test_the_json_is_serialisable(result: SuiteResult) -> None:
     import json
 
-    assert json.loads(json.dumps(result.to_json()))["cases_run"] == 43
+    assert json.loads(json.dumps(result.to_json()))["cases_run"] == 44
 
 
 def test_the_module_exposes_the_catalog_the_phase_doc_names() -> None:
@@ -575,10 +580,10 @@ def test_one_failing_case_costs_one_case_and_not_the_rest(
     the twenty-two after it are unaffected and must still run."""
     result = _failing_on(store, {cases[2].case_id}, cases)
 
-    # 28 -> 37 on 2026-09-07, 37 -> 42 on 2026-09-11: the gold set grew 29 -> 38 -> 43 and this asserts
-    # the count MINUS the one case deliberately made to raise. The subtraction is the assertion; the
-    # absolute number is not.
-    assert result.cases_run == 42
+    # 28 -> 37 on 2026-09-07, 37 -> 42 on 2026-09-11, 42 -> 43 on 2026-09-18: the gold set grew
+    # 29 -> 38 -> 43 -> 44 and this asserts the count MINUS the one case deliberately made to raise.
+    # The subtraction is the assertion; the absolute number is not.
+    assert result.cases_run == 43
     assert [error.case_id for error in result.errors] == [cases[2].case_id]
     assert result.errors[0].error_type == "ValueError"
 

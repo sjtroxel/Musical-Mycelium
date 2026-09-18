@@ -20,6 +20,7 @@ from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import (
     INFLUENCE_ONLY,
     LINEAGE_PREDICATES,
+    NODE_KIND_ARTIST,
     PREDICATE_PLAYS_GENRE,
     Node,
 )
@@ -383,3 +384,112 @@ def test_the_whole_run_answers_instead_of_refusing(
     assert [e for e in events if isinstance(e, Token)]
     assert names.index("RouteWalked") < names.index("Token")
     assert names.index("MembershipDisclosed") < names.index("Token")
+
+
+# --- step 4c: the tie-break ---------------------------------------------------------------------------
+
+
+def test_seven_routes_tie_at_five_hops_so_shortest_alone_does_not_choose(
+    store: InMemoryGraphStore,
+) -> None:
+    """**The measurement that made step 4c necessary**, asserted so the premise cannot rot.
+
+    Step 4 shipped a plain BFS and argued "shortest rather than best" avoided a hidden taste judgement.
+    With several routes tied at the shortest length, shortest does not choose at all -- edge order does,
+    which hides the judgement completely instead of declining to make one.
+    """
+    from collections import defaultdict, deque
+
+    from musical_mycelium.graph.crossaxis import ROUTE_PREDICATES
+
+    adj = defaultdict(list)
+    for edge in store._artifact.edges:
+        if edge.predicate in ROUTE_PREDICATES:
+            adj[edge.subject_id].append(edge.object_id)
+            adj[edge.object_id].append(edge.subject_id)
+
+    shortest = len(cross_axis_route(store, DELTA_BLUES, DETROIT_TECHNO))
+    ties, queue = 0, deque([[DELTA_BLUES]])
+    while queue:
+        path = queue.popleft()
+        if len(path) - 1 > shortest:
+            continue
+        if path[-1] == DETROIT_TECHNO:
+            ties += len(path) - 1 == shortest
+            continue
+        for nxt in adj[path[-1]]:
+            if nxt not in path:
+                queue.append([*path, nxt])
+    assert shortest == 5
+    assert ties > 1, "the pair no longer has tied routes; step 4c's premise has changed"
+
+
+def test_the_ranking_prefers_the_specific_musician_over_the_hub(
+    store: InMemoryGraphStore,
+) -> None:
+    """The tie-break, on the case that motivated it. Six of the seven tied routes pivot through an
+    artist documented in 10 genres -- top 1.4% of the corpus -- and every hop of those routes is
+    sourced, so nothing downstream would have rejected them."""
+    from musical_mycelium.graph.crossaxis import genre_count, route_specificity
+
+    hops = cross_axis_route(store, DELTA_BLUES, DETROIT_TECHNO)
+    worst, _total = route_specificity(store, hops)
+    assert worst <= 4, f"the route now pivots through an artist in {worst} genres"
+
+    pivots = [h.to_id for h in hops[:-1] if _node(store, h.to_id).kind == NODE_KIND_ARTIST]
+    assert pivots, "the route stopped going through a musician"
+    for pivot in pivots:
+        assert genre_count(store, pivot) <= 4
+
+
+def test_specificity_ignores_the_endpoints(store: InMemoryGraphStore) -> None:
+    """A route is not worse for the genres its destination happens to carry. Charging the endpoints
+    would rank every route to a popular genre badly for a reason that has nothing to do with the route.
+    """
+    from musical_mycelium.graph.crossaxis import route_specificity
+
+    hops = cross_axis_route(store, DELTA_BLUES, DETROIT_TECHNO)
+    worst, total = route_specificity(store, hops)
+    # Freddie King is the only interior musician; the two genres between are 0.
+    assert (worst, total) == (4, 4)
+
+
+def test_the_ranking_never_lengthens_a_route(store: InMemoryGraphStore) -> None:
+    """Hops come first in the lexicographic cost, so specificity can only choose AMONG shortest routes.
+    A tie-break that could trade a hop for a better pivot would be answering a different question."""
+    from collections import defaultdict, deque
+
+    from musical_mycelium.graph.crossaxis import ROUTE_PREDICATES
+
+    adj = defaultdict(list)
+    for edge in store._artifact.edges:
+        if edge.predicate in ROUTE_PREDICATES:
+            adj[edge.subject_id].append(edge.object_id)
+            adj[edge.object_id].append(edge.subject_id)
+
+    for a, b in ((DELTA_BLUES, DETROIT_TECHNO), ("Q1071873", "Q217597")):
+        ranked = len(cross_axis_route(store, a, b))
+        if not ranked:
+            continue
+        seen, queue, true_shortest = {a}, deque([(a, 0)]), None
+        while queue and true_shortest is None:
+            node, depth = queue.popleft()
+            for nxt in adj[node]:
+                if nxt in seen:
+                    continue
+                if nxt == b:
+                    true_shortest = depth + 1
+                    break
+                seen.add(nxt)
+                queue.append((nxt, depth + 1))
+        assert ranked == true_shortest, f"ranking changed the hop count for {a}->{b}"
+
+
+def test_the_route_event_carries_the_number_the_ranking_used(
+    store: InMemoryGraphStore, registry: ToolRegistry
+) -> None:
+    """Shown, not hidden. A rank whose basis a reader cannot see is the thing `graph/routes.py` refuses."""
+    result = registry.invoke(
+        "trace_route_through_musicians", {"from_id": DELTA_BLUES, "to_id": DETROIT_TECHNO}
+    )
+    assert result.content["worst_pivot_genres"] == 4

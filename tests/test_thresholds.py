@@ -178,12 +178,25 @@ def test_the_live_bounds_still_match_the_noise_floor_they_were_derived_from(
     assert bounds["citation_resolution"]["observed"] == by_metric["citation_resolution"]["values"]
 
     # Recovered from the rates rather than trusted. The floor's rates are over EVERY refusal case and the
-    # bound's counts are after exclusions, so the raw count is rebuilt from the live dataset and each
-    # excluded refusal case's recorded refusals are taken back out -- since 2026-09-12 one excluded case
-    # (`adv_018`) expects a refusal, so the two denominators are no longer the same number.
+    # bound's counts are after exclusions, so the raw count is rebuilt and each excluded refusal case's
+    # recorded refusals are taken back out -- since 2026-09-12 one excluded case (`adv_018`) expects a
+    # refusal, so the two denominators are no longer the same number.
+    #
+    # **Scoped to the floor's own case list since 2026-09-18, phase 8 step 5, and this is a correction
+    # rather than an accommodation.** It read `live_cases()` whole, which coupled a comparison between
+    # two HISTORICAL artifacts -- the committed bounds and the floor they came from -- to the CURRENT
+    # dataset, so it failed the moment a case was added even though neither artifact had changed. This
+    # test's name says what it checks; reading today's dataset into it was the bug. `case_count` above
+    # is still compared against the live dataset by `test_a_full_live_run_can_be_gated_at_all`, which is
+    # where a grown dataset is supposed to be caught, and is caught.
     refusal = bounds["refusal_accuracy"]
     excluded = set(refusal["excluded"])
-    expecting_refusal = [case.case_id for case in live_cases() if case.expected_refusal]
+    measured_case_ids = {row["case_id"] for row in floor["cases"]}
+    expecting_refusal = [
+        case.case_id
+        for case in live_cases()
+        if case.expected_refusal and case.case_id in measured_case_ids
+    ]
     raw_denominator = len(expecting_refusal)
     excluded_refusing = {c for c in excluded if c in expecting_refusal}
     assert raw_denominator - len(excluded_refusing) == refusal["expected_refusals"]
@@ -269,12 +282,31 @@ def test_a_full_live_run_can_be_gated_at_all(committed: dict[str, Any]) -> None:
     on artifact v0.10.0 were measured and every bound was rewritten from that floor, so `case_count`
     reached 63 by measurement rather than by edit. The noise-floor match test above ties `case_count` to
     `noise_floor.json`'s case list, which is what makes that difference checkable.
+
+    **INVERTED AGAIN 2026-09-18, phase 8 step 5, and again only because the ungating is PLANNED.** The
+    adversarial set gained four `membership_not_influence` cases and the gold set gained
+    `gold_v0_1_044`, so the live dataset is 68 against a baseline measured over 63 and a live run
+    reports `NOT GATED`. This is the same state as 7.6 step 9
+    and is resolved the same way: **at step 6, by measuring five identical runs, not by editing
+    `case_count`.** The IMPLEMENTATION doc's §3 priced that re-baseline before any of these cases were
+    written, which is the difference between a planned ungating and a discovered one.
+
+    `xfail(strict=True)` is deliberately NOT used this time, and that is a change of technique with a
+    reason. In 7.6 the marker's job was to make the resolution self-announcing on a test that would
+    otherwise pass silently. Here the mismatch is the assertion, so a restored baseline fails this test
+    loudly on its own -- the message below names the new count, and step 6 will read it.
     """
     live = next(s for s in committed["sets"] if s["applies_to"]["provider"] == "bedrock")
-    assert len(live_cases()) == live["case_count"], (
-        f"the live dataset holds {len(live_cases())} cases and {live['name']!r} was measured over "
-        f"{live['case_count']}, so a full live run would report NOT GATED. Re-measure the baseline; "
-        f"do not edit case_count to fit."
+    assert len(live_cases()) == 68, (
+        "the live dataset changed size again; re-read this test's docstring"
+    )
+    assert live["case_count"] == 63, (
+        "the live baseline is no longer the 63-case one this mismatch was recorded against. If it was "
+        "re-measured at phase 8 step 6, restore this test to equality; if `case_count` was edited to "
+        "fit the dataset, that is the 2026-09-06 failure and it must be reverted."
+    )
+    assert len(live_cases()) != live["case_count"], (
+        "the dataset and the baseline agree again -- restore this test to equality"
     )
     assert live["derived_from"]["artifact_version"] == "0.10.0"
 
@@ -320,7 +352,10 @@ def test_the_scripted_run_gates_what_it_can_and_skips_what_it_cannot(
         "refusal_accuracy": PASS,
         "injection_resistance": NOT_APPLICABLE,
         "contested_disclosure": PASS,
-        "membership_disclosure": NOT_APPLICABLE,
+        # PASS since 2026-09-18, phase 8 step 5: `gold_v0_1_044` is the first gold case that reaches a
+        # membership claim, so the property the phase exists to protect is now exercised by the FREE
+        # every-commit run rather than merely declared. It read N/A for the length of steps 3 and 4.
+        "membership_disclosure": PASS,
         "traversal_recall": NOT_APPLICABLE,
     }
 
@@ -338,10 +373,10 @@ def test_an_all_inapplicable_report_does_not_read_as_green(scripted: SuiteResult
     assert outcome.report is not None
     rendered = "\n".join(outcome.lines)
     assert "NOT APPLICABLE IS NOT A PASS" in rendered
-    # Three since phase 8 step 3: injection and traversal, which a scripted gold-only run can never
-    # exercise, plus membership, which no gold case reaches until step 5 adds one. The literal is kept
-    # rather than computed so that a gate quietly becoming inapplicable fails here.
-    assert "3 not applicable" in rendered
+    # Back to two on 2026-09-18: injection and traversal, which a scripted gold-only run can never
+    # exercise. Membership left this set when `gold_v0_1_044` gave it a case to score. The literal is
+    # kept rather than computed so that a gate quietly becoming inapplicable fails here.
+    assert "2 not applicable" in rendered
     assert len(outcome.report.passed) + len(outcome.report.inapplicable) == len(GATE_NAMES)
 
 

@@ -22,7 +22,7 @@ from typing import Any
 
 import pytest
 
-from musical_mycelium.agent.claims import ClaimProposal, gate
+from musical_mycelium.agent.claims import ALLOWED_PREDICATES, ClaimProposal, gate
 from musical_mycelium.eval.metrics import edge_groundedness, traversal_recall
 from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.store import Direction
@@ -36,12 +36,21 @@ from musical_mycelium.graph.store import Direction
 #: Refusal is deliberately **not** a shape. It is a ``difficulty``, because a refusal is a property of
 #: what the corpus can answer, not of what was asked — case 005 asks an origins question and case 010
 #: asks the same question of a node with no parents.
-CASE_SHAPES = frozenset({"origins", "descendants", "path", "teachers", "students", "teaching_path"})
+CASE_SHAPES = frozenset(
+    {"origins", "descendants", "path", "teachers", "students", "teaching_path", "route"}
+)
 
 #: Phase 7.6 step 9. What the teaching shapes walk: teaching alone for a fan, teaching and influence
 #: together for a teaching path (the tool's own set, D4).
 TEACHING = frozenset({"studied_with"})
 LINEAGE = frozenset({"studied_with", "influenced_by"})
+
+#: Every predicate a gold CLAIM may carry, which is not the same question as what counts as lineage.
+#: **Phase 8 step 5.** `plays_genre` became claimable at step 2, so a membership claim in this set would
+#: read as LOST when checked against `LINEAGE` -- exactly the failure the comment in
+#: `test_case_claims_match_the_corpus_exactly` records for teaching one predicate earlier, arriving
+#: again for the same reason. Read from the gate rather than written out, so it cannot drift from it.
+CLAIMABLE = ALLOWED_PREDICATES
 
 GOLD_PATH = (
     Path(__file__).resolve().parents[1]
@@ -62,7 +71,7 @@ GOLD_PATH = (
 #: by Claude and reviewed by sjtroxel on the case 030 precedent. 43 is over the 20-30 requirement; the
 #: set has been over it since 031, and what the requirement protects -- a set small enough to hand-verify
 #: -- is kept by every new case carrying its own sources.
-EXPECTED_CASE_COUNT = 43
+EXPECTED_CASE_COUNT = 44
 
 #: How many gold claims carry no independent citation and say so via ``citation_status``. Locked for the
 #: same reason as the case count, and it matters more: this one is an escape hatch from the project's
@@ -91,7 +100,7 @@ EXPECTED_CASE_COUNT = 43
 #: A second candidate, Faure's influence by Saint-Saens (case 043), was NOT flagged but left out of
 #: ``expected_claims`` altogether: its problem is that no prose asserts it, which is a different and
 #: worse finding than a missing footnote, and the flag would have understated it.
-UNCITED_CLAIM_COUNT = 10
+UNCITED_CLAIM_COUNT = 11
 
 
 @pytest.fixture(scope="module")
@@ -159,6 +168,15 @@ def corpus_edges_for(case: dict[str, Any], store: InMemoryGraphStore) -> set[tup
         return {
             (e.subject_id, e.object_id) for e in store.path(node_id, end_id, predicates=LINEAGE)
         }
+    if shape == "route":
+        # Phase 8 step 5. **The only branch here that is not a `store` call**, because a route is not a
+        # question the store answers: it is an undirected walk across three predicates, and the pairs it
+        # yields are the EDGES' orientations rather than the route's. `Hop.claim_pair` is what keeps that
+        # straight, and using anything else here would assert that a genre came out of an artist.
+        from musical_mycelium.graph.crossaxis import cross_axis_route
+
+        end_id = case["expected_terminus"]["node_id"]
+        return {hop.claim_pair for hop in cross_axis_route(store, node_id, end_id)}
     raise AssertionError(f"{case['case_id']}: unknown shape {shape!r}")
 
 
@@ -213,7 +231,12 @@ def test_every_answerable_case_cites_an_independent_source_or_says_why_not(
                 continue
             status = expected.get("citation_status")
             assert status, f"{case['case_id']} has a silently uncited claim"
-            assert status["state"] == "source_uncited"
+            # **Two states since phase 8 step 5, and the second is worse than the first.**
+            # `source_uncited` means no independent source was found. `source_diverges` means one was
+            # found and it DISAGREES with the corpus -- which is not a gap in the sourcing, it is the
+            # gold set doing the exact job `.claude/rules/grounding-and-claims.md` describes. Collapsing
+            # them would file a contradiction as an absence.
+            assert status["state"] in {"source_uncited", "source_diverges"}
             assert status["searched"], (
                 f"{case['case_id']} flagged a claim without recording the search"
             )
@@ -288,7 +311,9 @@ def test_case_claims_match_the_corpus_exactly(
             e.object_id == c["object_id"] and e.predicate == c["predicate"]
             # LINEAGE, not the store's influence-only default: a teaching claim that exists would
             # otherwise read as lost (phase 7.6 step 9).
-            for e in store.neighbors(c["subject_id"], Direction.INFLUENCED_BY, predicates=LINEAGE)
+            # CLAIMABLE, not LINEAGE: membership is a claim since phase 8 step 2, and a membership
+            # claim checked against the lineage set reads as lost. See that constant.
+            for e in store.neighbors(c["subject_id"], Direction.INFLUENCED_BY, predicates=CLAIMABLE)
         )
     ]
     assert not missing, (
