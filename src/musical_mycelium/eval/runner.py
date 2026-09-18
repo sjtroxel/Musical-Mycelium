@@ -38,6 +38,7 @@ from musical_mycelium.agent.loop import (
     PathWalked,
     Planned,
     Refused,
+    RouteWalked,
     Token,
     ToolCalled,
     run,
@@ -89,6 +90,9 @@ class CaseRun:
     #: added with its arm in the same commit. **Announced, not crossed:** whether a run crossed
     #: membership is derived from the approved claims in ``eval.metrics``; this is what it said.
     announced_membership: tuple[MembershipDisclosed, ...]
+    #: Cross-axis routes this run walked and the gate fully approved. Phase 8 step 4, added with its
+    #: ``match`` arm in the same commit, which is now the rule rather than the exception.
+    routes: tuple[RouteWalked, ...]
     #: Choices this run put in front of a person, in the order the loop announced them. Recorded
     #: 2026-09-12, phase 7.7 step 6, and **this record dropped them for one step**: the loop emitted
     #: ``Offer`` from step 3 and the ``match`` above had no arm for it, so the frames went to the
@@ -164,6 +168,7 @@ def run_case(
     refusal_reason = ""
     announced: list[Contested] = []
     announced_membership: list[MembershipDisclosed] = []
+    routes: list[RouteWalked] = []
     offered: list[Offer] = []
     prose_parts: list[str] = []
     done: Done | None = None
@@ -194,6 +199,8 @@ def run_case(
                 announced.append(event)
             case MembershipDisclosed():
                 announced_membership.append(event)
+            case RouteWalked():
+                routes.append(event)
             case Offer():
                 offered.append(event)
             case Token():
@@ -220,6 +227,7 @@ def run_case(
         refusal_reason=refusal_reason,
         announced_contested=tuple(announced),
         announced_membership=tuple(announced_membership),
+        routes=tuple(routes),
         prose="".join(prose_parts),
         done=done,
     )

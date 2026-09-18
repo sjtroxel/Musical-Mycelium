@@ -74,6 +74,23 @@ PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_PLAYS_GENRE, PREDICAT
 #: turning the lock off for every caller at once.
 INFLUENCE_ONLY = frozenset({PREDICATE_INFLUENCED_BY})
 
+#: **Lineage: relationships an answer about where something came from can be made of.** Influence is
+#: derivation; teaching is not derivation, but it is a documented line between two musicians running the
+#: same way in time — the later person learned from the earlier one. **Membership is neither**, and its
+#: absence here is the whole point of the constant.
+#:
+#: **Deliberately NOT ``claims.ALLOWED_PREDICATES``**, and this constant has now been proved right the
+#: hard way. ``agent/tools.py`` carried it from phase 7.6 with the note *"if the gate ever admits a third
+#: predicate, this walk must not quietly start crossing it"*. Phase 8 step 2 admitted one.
+#: ``trace_teaching_lineage`` was unaffected exactly as predicted; ``loop._graph_holds_lineage`` read
+#: ``ALLOWED_PREDICATES`` instead and broke the same afternoon, softening the corpus-empty refusal across
+#: the whole artist axis until two guard tests caught it.
+#:
+#: **Defined once here, at v0.11-dev / phase 8 step 4**, because the fix for that made a second copy in
+#: ``loop.py`` and two identical frozensets in one package drift. A predicate joining one of these sets
+#: is not thereby joining the other.
+LINEAGE_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH})
+
 SOURCE_WIKIDATA = "wikidata"
 
 #: DBpedia, via ``dbo:stylisticOrigin``. Added at v0.7.0, phase 6 step 4, and it is the first time

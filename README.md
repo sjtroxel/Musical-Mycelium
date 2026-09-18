@@ -126,7 +126,7 @@ flowchart TB
 - **Refusing is a correct answer.** A connection the corpus can't source gets refused, not narrated. That
   is scored as a pair, correct refusals and wrong ones together, because a system that refused everything
   would otherwise look perfect.
-- **It never looks anything up live.** The agent uses <!-- n:tools -->10<!-- /n --> tools, all of them over a
+- **It never looks anything up live.** The agent uses <!-- n:tools -->11<!-- /n --> tools, all of them over a
   versioned snapshot of the graph built ahead of time. Answers are fast, repeatable, and cost nothing
   beyond the model's tokens.
 

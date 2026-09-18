@@ -64,6 +64,9 @@ ACID_JAZZ, JAZZ = "Q221772", "Q8341"
 U2, THE_BEATLES = "Q396", "Q1299"
 BLUES_ROCK = "Q193355"
 PUNK_ROCK, THRASH_METAL = "Q3071", "Q483352"
+#: The pair with no influence path in either direction at v0.10.0 -- phase 8's premise, and the only
+#: arguments that make `trace_route_through_musicians` actually walk a cross-axis route here.
+DELTA_BLUES, DETROIT_TECHNO = "Q1127539", "Q526463"
 
 #: The literal payloads from the frozen adversarial set. Restated as constants only for readability;
 #: every test that matters reads them back out of the dataset so the two cannot drift.
@@ -256,6 +259,7 @@ def test_stripping_covers_every_registered_tool(registry: ToolRegistry) -> None:
         "get_teachers": {"node_id": U2},
         "get_students": {"node_id": U2},
         "trace_teaching_lineage": {"from_id": U2, "to_id": THE_BEATLES},
+        "trace_route_through_musicians": {"from_id": DELTA_BLUES, "to_id": DETROIT_TECHNO},
         "describe_node": {"node_id": ACID_JAZZ},
         "resolve_source": {"source_id": f"{_STATEMENT_PREFIX}{ACID_JAZZ}-a"},
         "corpus_coverage": {},
@@ -292,6 +296,7 @@ def test_no_tool_payload_reaches_the_model_unmarked(registry: ToolRegistry) -> N
         ("get_teachers", {"node_id": U2}),
         ("get_students", {"node_id": U2}),
         ("trace_teaching_lineage", {"from_id": U2, "to_id": THE_BEATLES}),
+        ("trace_route_through_musicians", {"from_id": DELTA_BLUES, "to_id": DETROIT_TECHNO}),
         ("describe_node", {"node_id": ACID_JAZZ}),
         ("resolve_source", {"source_id": "not-a-uri"}),
         ("corpus_coverage", {}),

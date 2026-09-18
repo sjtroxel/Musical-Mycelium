@@ -177,6 +177,7 @@ def test_tool_config_is_the_bedrock_shape(registry: ToolRegistry) -> None:
         "get_teachers",
         "get_students",
         "trace_teaching_lineage",
+        "trace_route_through_musicians",
         "describe_node",
         "resolve_source",
         "corpus_coverage",

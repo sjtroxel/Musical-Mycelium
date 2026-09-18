@@ -253,11 +253,19 @@ def test_corpus_coverage_requires_no_arguments_through_the_registry(
 # --- the seam --------------------------------------------------------------------------------------
 
 
-def test_ten_tools_are_registered_and_coverage_is_last(store: InMemoryGraphStore) -> None:
-    """Seven until phase 7.6 step 7, when the three teaching tools joined by registration alone."""
+def test_the_registered_tools_are_exactly_these_and_coverage_is_last(
+    store: InMemoryGraphStore,
+) -> None:
+    """Seven until phase 7.6 step 7, when the three teaching tools joined by registration alone; eleven
+    since phase 8 step 4 added ``trace_route_through_musicians`` the same way.
+
+    **The tuple is the assertion and the count is not.** The name carried "ten" and went stale the day a
+    tool was added, which is the same class of error as a gate count in prose -- see
+    `docs/KNOWN-GAPS.md`, 2026-09-18, where that one reached a published page. ``len`` is still checked,
+    against the tuple rather than against a literal.
+    """
     registry = default_registry(store)
-    assert len(registry) == 10
-    assert registry.names == (
+    expected = (
         "resolve_node",
         "get_influences",
         "trace_lineage",
@@ -265,10 +273,14 @@ def test_ten_tools_are_registered_and_coverage_is_last(store: InMemoryGraphStore
         "get_teachers",
         "get_students",
         "trace_teaching_lineage",
+        "trace_route_through_musicians",
         "describe_node",
         "resolve_source",
         "corpus_coverage",
     )
+    assert registry.names == expected
+    assert len(registry) == len(expected)
+    assert registry.names[-1] == "corpus_coverage"
 
 
 def test_only_get_descendants_emits_proposals_among_the_new_tools(

@@ -69,8 +69,10 @@ from musical_mycelium.agent.llm import (
 from musical_mycelium.agent.plan import Plan, parse_plan, planning_prompt
 from musical_mycelium.agent.tools import ToolRegistry
 from musical_mycelium.graph.corroboration import ContestedPair
+from musical_mycelium.graph.crossaxis import Hop as CrossAxisHop
 from musical_mycelium.graph.memory import Offer, resolve_exact
 from musical_mycelium.graph.schema import (
+    LINEAGE_PREDICATES,
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
@@ -385,6 +387,37 @@ class Contested:
 
 
 @dataclass(frozen=True, slots=True)
+class RouteWalked:
+    """An ordered cross-axis route whose hops are **not** all oriented the same way. Phase 8 step 4.
+
+    **Why this is not ``PathWalked.chain``.** ``chain`` asserts that each node came out of the next, and
+    ``chain_is_approved`` enforces that orientation because accepting the reverse "would let a chain
+    narrate influence backwards in time". A cross-axis route cannot satisfy it and must not be bent to:
+    on this corpus's canonical route, `Delta blues -> Chicago blues -> Freddie King -> funk -> electro ->
+    Detroit techno`, **four of the five hops run against their own edges**. Rendering that as a chain
+    would state that Chicago blues came out of Freddie King.
+
+    So the route rides beside the claims, like ``Contested`` and ``MembershipDisclosed``, and every hop
+    carries the direction its *edge* runs as well as the direction the *route* walks. DoD 1 asks that
+    each hop's predicate be "in the payload, not inferred from the node kinds at its ends"; this is that
+    payload.
+
+    **Only emitted when every hop was approved.** A route with a rejected hop is not a shorter route, it
+    is a route this graph cannot justify, and showing it partially would be the broken-chain failure
+    ``approved_chain`` already guards against one field over.
+    """
+
+    #: Node ids in route order, from the first to the last.
+    node_ids: tuple[str, ...]
+    labels: tuple[str, ...]
+    #: Per hop: ``(predicate, forward)``, where ``forward`` says whether the route walks the way the
+    #: edge points. ``len(hops) == len(node_ids) - 1``.
+    hops: tuple[tuple[str, bool], ...]
+    #: True when at least one hop is membership — i.e. the connection is actually carried by a musician.
+    through_musicians: bool
+
+
+@dataclass(frozen=True, slots=True)
 class MembershipDisclosed:
     """An approved claim in this answer is **membership, not derivation**. Phase 8 step 3.
 
@@ -472,6 +505,7 @@ Event = (
     | ClaimRejected
     | PathWalked
     | Contested
+    | RouteWalked
     | MembershipDisclosed
     | Offer
     | Token
@@ -932,18 +966,6 @@ def synthesize(claim_set: ApprovedClaimSet, llm: LLM) -> Generator[str, None, Us
 #: a fallback is exactly how a new predicate would get narrated as influence without anyone deciding to.
 NARRATED_PREDICATES = (PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH, PREDICATE_PLAYS_GENRE)
 
-#: The predicates that constitute **lineage** — a relationship an answer about where something came
-#: from could be made of. Influence is derivation; teaching is not derivation but it is a documented
-#: line between two musicians running forward in time. **Membership is neither** and is deliberately
-#: absent: an artist playing a genre says nothing about where either came from.
-#:
-#: **Separate from ``ALLOWED_PREDICATES`` since phase 8 step 2, and the separation is the point.** The
-#: two sets were identical from 7.6 to 2026-09-18 and ``_graph_holds_lineage`` read the wrong one
-#: without consequence for exactly that long. Admitting ``plays_genre`` made them differ and the
-#: coincidence ended — caught by two guard tests written when the door was still shut, which is what
-#: those tests were for. A predicate added to one of these sets is not thereby added to the other.
-LINEAGE_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH})
-
 
 @dataclass(frozen=True, slots=True)
 class _Wording:
@@ -1266,6 +1288,7 @@ def run(
     visited: list[str] = []
     chain: tuple[str, ...] = ()
     offers: list[Offer] = []
+    route: tuple[CrossAxisHop, ...] = ()
     executed = 0
 
     # Its own call, with its own system prompt and **no tool config**: the planning turn is asked for
@@ -1322,6 +1345,11 @@ def run(
             # has approved every hop, checked below.
             if len(result.chain) > len(chain):
                 chain = result.chain
+            # The same generic read, for the field that carries an ordering ``chain`` structurally
+            # cannot. Longest wins for the same reason: a route is a candidate until the gate has
+            # approved every hop, checked below. **Never merged with ``chain``** -- see ToolResult.route.
+            if len(result.route) > len(route):
+                route = result.route
             for node_id in result.visited:
                 if node_id not in visited:
                     visited.append(node_id)
@@ -1377,6 +1405,22 @@ def run(
             continue
         announced.add((pair.a, pair.b))
         yield Contested(pair=pair, a_label=_label(store, pair.a), b_label=_label(store, pair.b))
+
+    # Emitted only when the gate approved every hop, for the reason `approved_chain` exists one field
+    # above: a route with a rejected hop is not a shorter route, it is one this graph cannot justify.
+    if route:
+        approved_pairs = {(c.subject_id, c.predicate, c.object_id) for c in decision.approved}
+        if all(
+            (hop.edge.subject_id, hop.predicate, hop.edge.object_id) in approved_pairs
+            for hop in route
+        ):
+            node_ids = (route[0].from_id, *(hop.to_id for hop in route))
+            yield RouteWalked(
+                node_ids=node_ids,
+                labels=tuple(_label(store, node_id) for node_id in node_ids),
+                hops=tuple((hop.predicate, hop.forward) for hop in route),
+                through_musicians=any(hop.predicate == PREDICATE_PLAYS_GENRE for hop in route),
+            )
 
     # **Before any prose token, after the gate, deduplicated by pair** — the same three properties the
     # contested announcement above has, for the same three reasons. Before, so a reader meets the

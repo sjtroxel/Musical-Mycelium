@@ -29,9 +29,12 @@ from musical_mycelium.graph.coverage import (
     PRECISION_YEAR,
     era_of,
 )
+from musical_mycelium.graph.crossaxis import Hop as CrossAxisHop
+from musical_mycelium.graph.crossaxis import cross_axis_route, crosses_axes
 from musical_mycelium.graph.memory import Offer, exact_matches, offer_candidates
 from musical_mycelium.graph.schema import (
     DBPEDIA_RESOURCE_PREFIX,
+    LINEAGE_PREDICATES,
     NODE_KIND_ARTIST,
     PREDICATE_INFLUENCED_BY,
     PREDICATE_STUDIED_WITH,
@@ -41,13 +44,6 @@ from musical_mycelium.graph.store import Direction, GraphStore
 
 #: What ``get_teachers`` and ``get_students`` walk, and nothing else. Added at phase 7.6 step 7.
 TEACHING_ONLY = frozenset({PREDICATE_STUDIED_WITH})
-
-#: What ``trace_teaching_lineage`` walks: teaching **and** influence, his decision D4 (2026-09-11). Sound
-#: because both run the same way in time (the later person learned from, or was shaped by, the earlier
-#: one), which membership does not. Deliberately its own constant rather than
-#: ``claims.ALLOWED_PREDICATES``: if the gate ever admits a third predicate, this walk must not quietly
-#: start crossing it.
-LINEAGE_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH})
 
 #: Wikidata statement URIs encode the QID of the entity the statement belongs to. Same prefix
 #: ``claims.resolve_sources`` parses; kept as its own constant here rather than imported so the tool
@@ -96,6 +92,16 @@ class ToolResult:
     #: alias, and 37 aliases in this corpus equal a *different* node's label. The person chooses, and
     #: the choice is re-asked as an ordinary query that resolves by exact label like any other.
     offers: tuple[Offer, ...] = ()
+    #: An ordered route whose hops are **not** all oriented the same way. *(Phase 8 step 4.)* Generic
+    #: exactly as ``visited``, ``chain`` and ``offers`` are generic: the loop harvests it without
+    #: learning which tool set it.
+    #:
+    #: **This is a separate field from ``chain`` and must never be folded into it.** ``chain`` asserts
+    #: that every consecutive pair came out of the next one; a cross-axis route asserts no such thing,
+    #: and on the corpus's own canonical route four of its five hops run against their edges. Putting a
+    #: route in ``chain`` would state that Chicago blues came out of Freddie King. See
+    #: ``graph/crossaxis.py``, which refuses to produce a chain for exactly this reason.
+    route: tuple[CrossAxisHop, ...] = ()
     is_error: bool = False
 
 
@@ -1016,8 +1022,119 @@ class CorpusCoverage:
         )
 
 
+@dataclass(frozen=True)
+class TraceRouteThroughMusicians:
+    """How two genres are connected when no chain of influence connects them. Phase 8 step 4.
+
+    **The question this answers is the project's own thesis and nothing else could answer it.** At
+    artifact v0.10.0 `delta blues` and `Detroit techno` have no influence path in either direction or
+    undirected; 184 of 739 genres have no influence edge at all and every one of them is attached to the
+    corpus by membership. `CLAUDE.md`: *"the organism is connected through the people who play across
+    it."* This is that sentence as a tool.
+
+    **It is emphatically not a lineage tool and its wording works hard to stay that way.** A route
+    through a musician says the two genres share personnel. It does not say either came out of the
+    other, and on the canonical route four of five hops run *against* their own edges, so reading it as
+    descent inverts most of it. ``trace_lineage`` and ``trace_teaching_lineage`` are untouched and stay
+    the right tools for a real chain -- the same care ``trace_teaching_lineage`` took not to disturb
+    ``trace_lineage``.
+
+    **It returns ``route`` and never ``chain``**, which is the one thing a future edit here is most
+    likely to get wrong. ``graph/crossaxis.py`` says why at length.
+    """
+
+    store: GraphStore
+    name: str = field(default="trace_route_through_musicians", init=False)
+    description: str = field(
+        default=(
+            "Find how two genres are connected through musicians who played both, when no chain of "
+            "influence connects them. Give it two node ids from resolve_node. Each hop says which "
+            "relationship it rests on. A hop that is 'plays_genre' means that artist performed in that "
+            "genre and says NOTHING about where either genre came from: never describe this route as a "
+            "lineage, a line of influence, or one genre leading to another. Say that the genres share "
+            "musicians. Returns an empty route when the graph holds none, which means this graph cannot "
+            "connect them, not that they are unrelated. For a real chain of influence between two "
+            "genres, use trace_lineage."
+        ),
+        init=False,
+    )
+
+    def input_schema(self) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "from_id": {"type": "string", "description": "A node id from resolve_node."},
+                "to_id": {"type": "string", "description": "The other node id."},
+            },
+            "required": ["from_id", "to_id"],
+        }
+
+    def __call__(self, **kwargs: Any) -> ToolResult:
+        from_id, to_id = kwargs["from_id"], kwargs["to_id"]
+        for node_id in (from_id, to_id):
+            if self.store.get_node(node_id) is None:
+                return ToolResult(
+                    content={"error": f"unknown node: {node_id}. Use resolve_node first."},
+                    is_error=True,
+                )
+
+        hops = cross_axis_route(self.store, from_id, to_id)
+        if not hops:
+            return ToolResult(
+                content={
+                    "route": [],
+                    "hops": 0,
+                    "reason": (
+                        "no route between these two in this graph, even through shared musicians"
+                    ),
+                },
+                visited=(from_id, to_id),
+            )
+
+        # A route that never left the influence layer is an ordinary lineage answer that arrived here
+        # by accident. Saying so is better than dressing it up: the honest framing depends on whether
+        # a musician is actually carrying the connection.
+        return ToolResult(
+            content={
+                "route": [
+                    {
+                        "from": _label(self.store, hop.from_id),
+                        "relationship": hop.predicate,
+                        "to": _label(self.store, hop.to_id),
+                        "asserted_as": (
+                            f"{_label(self.store, hop.edge.subject_id)} "
+                            f"{hop.predicate} "
+                            f"{_label(self.store, hop.edge.object_id)}"
+                        ),
+                    }
+                    for hop in hops
+                ],
+                "hops": len(hops),
+                "through_musicians": crosses_axes(hops),
+                "note": (
+                    "These genres share musicians. This is not a line of influence and most hops do "
+                    "not run the way the route walks."
+                    if crosses_axes(hops)
+                    else "This route stays within documented influence; trace_lineage is the better tool."
+                ),
+            },
+            proposals=tuple(
+                ClaimProposal(hop.edge.subject_id, hop.predicate, hop.edge.object_id)
+                for hop in hops
+            ),
+            visited=(hops[0].from_id, *(hop.to_id for hop in hops)),
+            route=hops,
+        )
+
+
 def default_registry(store: GraphStore) -> ToolRegistry:
-    """The ten tools as of phase 7.6 (product v0.9).
+    """The tools, as of phase 8 step 4 (product v1.1).
+
+    **Registration alone, again.** ``TraceRouteThroughMusicians`` joined here and nowhere else in this
+    function, and the signature still has not changed. That half of invariant 4 held. The half that did
+    not is recorded in ``phase-8-membership-tour-IMPLEMENTATION.md`` step 4: the tool needed a new
+    ``ToolResult`` field, and a new result *shape* is a loop edit even when the new *tool* is not.
+
 
     ``trace_lineage`` joined at phase 2 step 5, the next four at phase 3 step 2, and the three teaching
     tools at phase 7.6 step 7, all by registration alone. The signature has not changed since the
@@ -1033,6 +1150,7 @@ def default_registry(store: GraphStore) -> ToolRegistry:
             GetTeachers(store),
             GetStudents(store),
             TraceTeachingLineage(store),
+            TraceRouteThroughMusicians(store),
             DescribeNode(store),
             ResolveSource(store),
             CorpusCoverage(store),

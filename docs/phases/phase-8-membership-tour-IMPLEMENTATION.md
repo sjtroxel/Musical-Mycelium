@@ -619,6 +619,98 @@ Open and named as uncertain: what `PathWalked.chain` means for a mixed route. It
 descendant-first, claim-ordered, empty when a hop was rejected, and a route whose hops are not all
 time-ordered may not satisfy it. Decided in this step with the code open, recorded here as-built.
 
+#### Step 4 — AS BUILT, 2026-09-18. Route planner built; **DoD 2 not yet met — synthesis refuses it.**
+
+##### The open question from the scope doc is answered, and the answer is "neither"
+
+*"Whether the tour is one structure or two"* — a route that alternates predicates may be one path with
+typed hops, or an influence chain with membership bridges. **It is neither, and the corpus settled it
+rather than a preference.** Measured on the canonical route:
+
+```
+Delta blues -> Chicago blues -> Freddie King -> funk -> electro -> Detroit techno
+  influenced_by (backwards)  plays_genre (backwards)  plays_genre (forwards)
+  influenced_by (backwards)  influenced_by (backwards)
+```
+
+**Four of the five hops run against their own edges.** `ToolResult.chain`'s contract is that every
+consecutive pair is the `(subject_id, object_id)` of one of the result's proposals, and
+`chain_is_approved` states `(a, b)` means *a came out of b*. Putting this route in `chain` would assert
+that Chicago blues came out of Freddie King, and that funk did too. So a cross-axis route **is not a
+chain and this build will not produce one**: `graph/crossaxis.py` refuses to, `ToolResult.route` is a
+separate field, and `tests/test_crossaxis.py` asserts that the route *fails* `chain_is_approved` — so if
+a future edit routes it through `chain`, the ordering is silently lost rather than a falsehood asserted.
+
+##### What landed
+
+- **`graph/crossaxis.py`** — an undirected BFS over influence, teaching and membership, capped at 6
+  hops. Each `Hop` carries its edge and a `forward` flag, and `Hop.claim_pair` is the only correct way
+  to build a proposal from one: **the edge's orientation, never the route's**.
+- **`TraceRouteThroughMusicians`**, registered by registration alone. Its payload gives each hop an
+  `asserted_as` string naming the real direction, and a `note` that says *"These genres share musicians.
+  This is not a line of influence and most hops do not run the way the route walks."*
+- **`RouteWalked`**, emitted only when the gate approved **every** hop — a route with a rejected hop is
+  not a shorter route, it is one this graph cannot justify.
+- **Undirected is correct, not a concession.** Influence and teaching run forward in time; membership
+  does not run in time at all. Orienting a route through shared personnel would imply a direction the
+  relationship does not have.
+
+##### THE INVARIANT 4 FINDING, recorded in bold as DoD 6 requires
+
+**The tool needed no loop edit. The new result *shape* did.** `default_registry` gained one line and its
+signature did not change — that half of invariant 4 held exactly as written. But carrying an ordering
+that `chain` structurally cannot express required a new `ToolResult.route` field, a harvest in the loop,
+and a new event.
+
+**The seam is generic over *tools*, not over *result kinds*, and this is the third time that distinction
+has cost a loop edit** — `chain` at phase 2, `offers` at 7.7 step 3, `route` now. Each was added
+generically (the loop still never learns which tool set the field), so the invariant's *purpose* holds
+and its *wording* is too strong. Worth restating in `05` §2.1 terms at the phase close rather than
+quietly leaving invariant 4 reading as though it had not been bent three times.
+
+##### THE FINDING THAT BLOCKS DoD 2: synthesis has no shape for a route
+
+**End-to-end, the route is planned, gated, disclosed — and then refused.** A real run emits
+`RouteWalked`, both `MembershipDisclosed` events, and then:
+
+> `Refused`: *"the sourced relationships it found describe no single lineage"*
+
+This is **not** a regression from this step. It is the existing shape dispatch in `synthesize`: five
+approved claims with no common subject, no common object and no approved `chain` match none of the
+recognised shapes (chain, typed chain, fan-out, fan-in, hub), so the run falls through to the refusal
+added at phase 6.5 step 2. **Correct under the old shape rules and wrong for a route**, where the
+ordering is the answer.
+
+**DoD 2 — "`delta blues -> Detroit techno` is answerable, and its answer names membership as
+membership" — is therefore NOT met at the end of step 4.** Half of it is: the route exists, every hop is
+gated and cited, and membership is disclosed as membership. The answer is still a refusal.
+
+**The fix and why it is invariant-1-safe, offered rather than taken:** `ApprovedClaimSet` already
+carries `chain`, an ordering over approved claims that synthesis narrates. A `route` field beside it is
+the same kind of thing — derived from approved claims only, gated before it is set — so `synthesize`
+keeps **exactly one claim-bearing parameter** and the claims-first rule is untouched. It needs a route
+shape in the dispatch and a template whose wording is membership's, not influence's.
+
+**That is a decision about the project's most sensitive invariant, so it is his**, the same way step 2's
+claim-versus-event was. Recorded here unbuilt.
+
+**Verification:** `make check` exit 0 — ruff clean, mypy clean over 123 source files, **1,790 Python
+tests passed** (1 skipped), **465 frontend tests**, free eval gates **4 passed / 0 failed / 3 not
+applicable**. Ten new tests in `tests/test_crossaxis.py`, including the premise lock (the two genres
+still have no influence path) and the chain-impossibility lock.
+
+**Guards that fired and were extended deliberately:** both `test_untrusted.py` payload guards (*"a tool
+was added without extending this test"* — working exactly as written), the registry tuple, the Bedrock
+tool-config shape, and `README.md`'s `n:tools` marked figure, which **self-corrected via `make readme`
+because it is computed from source** — the contrast with the hand-written gate count on the published
+report page is the whole argument for markers.
+
+**Also fixed here: `LINEAGE_PREDICATES` was duplicated.** Step 2 added a copy to `loop.py` while
+`tools.py:50` already had one. Promoted to `graph/schema.py` beside `INFLUENCE_ONLY`. The `tools.py`
+comment had predicted the step 2 failure exactly — *"if the gate ever admits a third predicate, this
+walk must not quietly start crossing it"* — and `trace_teaching_lineage` was unaffected for precisely
+that reason while `loop.py` broke.
+
 ### Step 5 — Eval cases
 
 New cases in their own dataset, scored by existing metrics — no new metrics (scope doc §3).
