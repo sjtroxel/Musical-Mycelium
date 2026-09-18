@@ -47,7 +47,10 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from musical_mycelium.graph.schema import (
+    NODE_KIND_ARTIST,
+    NODE_KIND_GENRE,
     PREDICATE_INFLUENCED_BY,
+    PREDICATE_PLAYS_GENRE,
     PREDICATE_STUDIED_WITH,
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
@@ -71,6 +74,45 @@ from musical_mycelium.graph.store import Direction, GraphStore
 #: ``_find_edge`` searches with this same set. The store's default is ``INFLUENCE_ONLY``, so widening
 #: this constant alone would have rejected every teaching claim as ``NOT_IN_GRAPH`` (trap 1).
 ALLOWED_PREDICATES = frozenset({PREDICATE_INFLUENCED_BY, PREDICATE_STUDIED_WITH})
+
+#: The endpoint shapes each predicate is allowed to take, as ``(subject_kind, object_kind)``.
+#:
+#: **This replaced a bare ``subject.kind != obj.kind`` test in the gate — phase 8 step 1, 2026-09-18.**
+#: That test asked one question, "are these the same kind of thing", and answered it for every predicate
+#: at once. It was right for the two predicates that existed when it was written and it is **structurally
+#: unable to describe membership**, which is artist-to-genre by construction: ``plays_genre`` could never
+#: pass it, in either direction, no matter what ``ALLOWED_PREDICATES`` said.
+#:
+#: **Widening the gate is not what this does.** For two of the three predicates the table is *stricter*
+#: than the test it replaced: ``studied_with`` between two genres used to satisfy kind-equality and fail
+#: later as ``NOT_IN_GRAPH``, and ``influenced_by`` from an artist to a genre was merely absent from the
+#: artifact rather than forbidden here. Both are now refused by name, at the right step, with the right
+#: reason.
+#:
+#: **Direction is part of the shape, not a separate check.** ``plays_genre`` is artist-to-genre and the
+#: reverse is **not** a legal claim even though the artifact holds the pair: an "artist plays genre" edge
+#: read backwards is a genre that performs an artist. ``studied_with`` is student-to-teacher for the same
+#: reason. This is why the values are ordered pairs rather than a set of permitted kinds.
+#:
+#: The property the old test protected is unchanged and is the reason for the shape: a chain stepping
+#: genre -> artist -> genre reads as one continuous line of influence and is not one. What stops that is
+#: not kind-equality, it is that ``influenced_by`` — the only predicate whose prose asserts derivation —
+#: still cannot cross axes. See ``schema.TIERS_BY_PREDICATE``, which makes the same move for tiers.
+#:
+#: **Every predicate in ``PREDICATES`` must appear here**; a test asserts it, so a predicate added to the
+#: corpus cannot reach the gate without someone stating what shape it is allowed to have.
+#:
+#: ``plays_genre`` having a row here is **not** permission to claim it. Having a legal shape and being
+#: admissible are different questions, and ``ALLOWED_PREDICATES`` still answers the second one no: phase 8
+#: step 2 decides whether a membership hop is a ``Claim`` at all. Until then a ``plays_genre`` proposal is
+#: rejected ``UNSUPPORTED_PREDICATE`` at rule 1 and never reaches this table.
+AXES_BY_PREDICATE: dict[str, frozenset[tuple[str, str]]] = {
+    PREDICATE_INFLUENCED_BY: frozenset(
+        {(NODE_KIND_GENRE, NODE_KIND_GENRE), (NODE_KIND_ARTIST, NODE_KIND_ARTIST)}
+    ),
+    PREDICATE_STUDIED_WITH: frozenset({(NODE_KIND_ARTIST, NODE_KIND_ARTIST)}),
+    PREDICATE_PLAYS_GENRE: frozenset({(NODE_KIND_ARTIST, NODE_KIND_GENRE)}),
+}
 
 #: Evidential states this corpus **cannot express**, kept visible with their preconditions so nobody
 #: re-derives them by accident — and so nobody reads the names in a design doc and assumes they are
@@ -263,13 +305,17 @@ def gate(proposals: list[ClaimProposal], store: GraphStore) -> GateResult:
 
     1. the predicate is one ``ALLOWED_PREDICATES`` permits,
     2. both endpoints are nodes in the artifact,
-    3. both endpoints sit on the **same axis** — genre-to-genre or artist-to-artist, never across,
+    3. the endpoints' kinds are a shape ``AXES_BY_PREDICATE`` permits **for that predicate**, ordered,
     4. the edge exists in the artifact in the stated direction, and
     5. that edge's sources resolve.
 
     Order matters for the reported reason — the first failure wins, so "I made up a genre" is reported as
-    an unknown node rather than as a missing edge, and a cross-axis proposal is reported as cross-axis
+    an unknown node rather than as a missing edge, and a mis-shaped proposal is reported as cross-axis
     rather than as a merely absent edge.
+
+    **Rule 3 became per-predicate at phase 8 step 1 (2026-09-18)** and is stricter for two of the three,
+    not looser for any. It runs *after* rule 1, so a predicate with a declared shape but no place in
+    ``ALLOWED_PREDICATES`` — ``plays_genre``, today — never reaches it.
     """
     approved: list[Claim] = []
     rejected: list[Rejection] = []
@@ -306,16 +352,20 @@ def gate(proposals: list[ClaimProposal], store: GraphStore) -> GateResult:
             continue
 
         # Invariant 3, enforced rather than assumed. The ingest bounds each axis separately so a
-        # cross-axis edge should never reach the artifact at all; this is the second lock on that door,
+        # mis-shaped edge should never reach the artifact at all; this is the second lock on that door,
         # the same belt-and-braces as ALLOWED_PREDICATES against P279. A chain that steps from a genre
-        # to an artist and back reads as one continuous line of influence, and it is not one.
-        if subject.kind != obj.kind:
+        # to an artist and back reads as one continuous line of influence, and it is not one -- which is
+        # a fact about `influenced_by`, not about kinds, so the table is keyed on the predicate.
+        legal = AXES_BY_PREDICATE.get(proposal.predicate, frozenset())
+        if (subject.kind, obj.kind) not in legal:
+            shapes = ", ".join(f"{s}->{o}" for s, o in sorted(legal)) or "nothing"
             rejected.append(
                 Rejection(
                     proposal,
                     RejectionReason.CROSS_AXIS,
                     f"{proposal.subject_id} is a {subject.kind}, "
-                    f"{proposal.object_id} is a {obj.kind}",
+                    f"{proposal.object_id} is a {obj.kind}; "
+                    f"{proposal.predicate} permits {shapes}",
                 )
             )
             continue

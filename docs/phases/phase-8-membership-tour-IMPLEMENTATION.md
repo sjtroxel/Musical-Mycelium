@@ -1,0 +1,558 @@
+# Phase 8 — Membership Tour (v1.1) — IMPLEMENTATION
+
+> **As-built plan.** Written 2026-09-18, immediately before the phase is built, which is the rule: this doc
+> exists to absorb what phases 6 through 7.7 actually taught rather than what phase 8's scope doc guessed
+> on 2026-09-09. Scope is `docs/phases/phase-8-membership-tour.md` and it still governs; where this doc
+> diverges from it, §1 says so explicitly and proposes the amendment rather than quietly winning.
+>
+> **Status: AWAITING APPROVAL. No code written.**
+
+## 0. The one-sentence version
+
+**Let a route cross from a genre to the musicians who played it and back out into another genre, gated and
+cited like any other claim, with membership structurally unable to read as derivation** — and, before
+paying for the one live re-baseline this phase owes, batch into it every other change that has been
+waiting for one.
+
+## 1. What the scope doc got right, what moved, and the amendments owed
+
+The scope doc was written at artifact v0.7.1, before phases 7.6 and 7.7 existed. Every number in its §0
+was re-measured today against v0.10.0 (`Artifact.load`, undirected components, script kept in the session
+scratchpad and reproduced in §11). The result is unusual and worth reading before the table: **the part of
+the premise that matters did not move at all.**
+
+| measured over | v0.7.1 | v0.10.0 | verdict |
+|---|---|---|---|
+| `influenced_by` edges | 2,284 | **2,309** | +25, +1.1% |
+| `plays_genre` edges | 2,782 | **4,498** | scope doc's "2,782" is **stale** |
+| `studied_with` edges | — | **2,469** | did not exist |
+| influence-only components (all nodes) | 138, largest 534 | **138, largest 534** | **unchanged — scope doc still correct** |
+| influence-only, genre-to-genre only | 10, largest 534 | **10, largest 534** | **unchanged** |
+| influence + membership | 7, largest 1,465 | **13, largest 2,639** | scope doc's "7" is **stale and forbidden** |
+| all three predicates | — | 61, largest 3,490 | matches the manifest |
+| genres | 675 | **739** | +64 |
+| genres with **no** genre-to-genre influence edge | 120 (17.8%) | **184 (24.9%)** | **got worse** |
+| genres with no influence **and** no membership edge | — | **0** | the thesis, measured |
+
+**Amendment 1 — §0's table.** The `plays_genre` count becomes 4,498 and the both-predicates row becomes
+13 / 2,639. The "7" must go: `CLAUDE.md` forbids writing it, and this doc's whole §1 is an example of why
+that instruction exists.
+
+**Amendment 2 — §0's framing, which is the substantive one.** The scope doc presents "138 components"
+as evidence that the influence corpus is fragmented. The re-measurement says something more precise: the
+138 is **10 genre islands plus 128 artist islands**, and the genre influence graph is 534 of the 555
+genres it touches in one component — **96% connected**. The problem was never that genres with influence
+edges are scattered. It is that **184 of 739 genres have no influence edge at all**, and every one of them
+is nevertheless attached to the corpus, by membership, which is precisely the claim this phase performs.
+The phase's premise is stronger after re-measurement than before it, and stated more accurately.
+
+**Amendment 3 — §6's one-way door is named too narrowly.** §6 names `ALLOWED_PREDICATES`. That lock is
+already open — phase 7.6 opened it for `studied_with`, and the scope doc's own 2026-09-11 amendment says
+so. **The lock this phase actually has to open is a different one and the scope doc does not mention it:**
+`agent/claims.py:gate` rule 3 rejects any proposal whose endpoints differ in `kind`, with
+`RejectionReason.CROSS_AXIS`. A `plays_genre` claim is artist-to-genre by construction, so **the gate
+rejects every membership claim today, before it ever reaches the edge lookup.** §6 is amended to name the
+axis rule as the phase's real one-way door. See §5.
+
+**Amendment 4 — the founding example is intact, and now has a measured route.** `delta blues -> Detroit
+techno` still has **no path on influence alone** at v0.10.0: not delta-to-Detroit, not Detroit-to-delta,
+not undirected. Adding membership produces an undirected five-hop route:
+
+```
+Delta blues -> Chicago blues -> Freddie King -> funk -> electro -> Detroit techno
+```
+
+Two things about that route decide most of this phase, and §4 is built around them:
+
+- **It is undirected.** Directed traversal still fails in both directions with membership included. A
+  membership hop is not time-ordered, and the scope doc's 2026-09-11 amendment flagged exactly this
+  ("teaching and influence both run forward in time, and membership does not").
+- **Read as prose it is false.** Nothing about that chain means Chicago blues derived into funk via
+  Freddie King. It is the scope doc's §7 risk, printed, on the phase's own canonical demo.
+
+**Amendment 5 — the re-baseline price in §0 reason 3 is wrong and too low.** See §3.
+
+## 2. Definition of done
+
+The scope doc's seven DoD items stand unchanged. Restated here with the evidence each will be judged on,
+because phase 7 proved that a DoD item with a test can pass while the item is broken:
+
+1. **Typed cross-axis route.** A cross-axis query returns a route whose every hop carries its predicate in
+   the payload, not inferred from the node kinds at its ends. *Evidence: the SSE payload of a real run,
+   read, not a unit test of the serializer.*
+2. **The delta blues route is answerable and names membership as membership.** *Evidence: the live answer
+   text, quoted in full in the as-built section.*
+3. **A test asserts no prose path exists by which a `plays_genre` hop can be narrated as influence** — in
+   the shape of `ContestedDisclosure`, not a review checklist.
+4. **`verification` and `corroboration` stay two fields**, and a `MEMBERSHIP_*` tier never appears where an
+   influence tier is expected. *Already load-bearing in `schema.py:TIERS_BY_PREDICATE`; this phase must not
+   weaken it.*
+5. **The live suite reports its gates rather than a `NOT GATED` banner.** If restoring bounds is required,
+   that is an explicit spend decision at a freeze, taken by sjtroxel. §3 is that decision, brought forward.
+6. **`agent/loop.py` is unmodified**, or the edit is a finding recorded in bold here.
+7. **`make check` green, repo root inside its cap.**
+
+## 3. The re-baseline, its real price, and why batching is the whole point
+
+This section exists because he asked the right question: *spending for another five-run baseline would
+feel more justified if we did more than adjust `adv_018`.* That instinct is correct, and the numbers say
+so more strongly than the scope doc did.
+
+### 3.1 The price, measured rather than estimated
+
+The scope doc says $2.61 and ~2.4 hours. **That was measured when the live set was 56 cases.** Measured
+from the nine 63-case live runs in `eval/results/` since 2026-09-12:
+
+| | measured |
+|---|---|
+| one 63-case live run | **$0.72 – $0.76**, mean ~$0.74, 597k – 641k tokens |
+| five identical runs | **~$3.70** |
+| what the 2026-09-12 baseline session actually cost | **$4.63**, including one 17-case abort and one 62-case partial |
+| wall clock, steady state | **~32 min/run, ~2.7 h for five** — RPM-bound at 10 RPM, exactly as `aws-and-cost.md` predicts |
+
+With phase 8's new cases the per-run figure rises roughly in proportion. **Budget $5 and expect ~$4**, and
+quote the measured figures, never the scope doc's $2.61.
+
+Against the credit balance checked today — $140.85 estimated remaining, $80.85 of it on the only credit
+actually drawing down — a $5 baseline is **3.5%** of the usable pool. This is affordable. It is not free,
+and the reason to batch is not the money.
+
+### 3.2 The reason to batch is the measurement, not the money
+
+A re-baseline is not a payment, it is a **reset of what every gate means**. Each one discards the previous
+noise floor and the bounds derived from it. So the real cost of doing it twice is not $7.40 — it is that
+the first baseline's numbers are dead the moment the second is taken, and any decision made from them was
+made from a measurement that no longer exists.
+
+**Three things are already queued behind one baseline, before phase 8 adds a fourth:**
+
+1. **`adv_018`** was re-authored 2026-09-17 (West African -> South African, `juju` -> `mbube`) and is
+   **still excluded from `refusal_accuracy`** because the bound was measured on the old case. It is
+   unexcluded only by a fresh baseline.
+2. **The name-substitution finding of 2026-09-14** — the model calls `resolve_node` on a longer name it
+   invented itself (`"metal"` -> `"heavy metal"`), now seen in 5 of 10 runs at v0.10.0. `KNOWN-GAPS.md`
+   records it as **owed as a decision, not built**. Whatever is decided, if anything lands in code it moves
+   refusal behaviour and needs a baseline.
+3. **Phase 8's own new eval cases**, which hit `thresholds.py:_ungateable`'s superset branch and un-gate
+   the entire live suite until re-measured.
+4. **Anything §4 step 0 finds in the corpus**, if it is acted on.
+
+Doing these as one baseline instead of four saves roughly $11 and about eight hours, and it is the
+difference between one honest set of bounds and four sets of which only the last is true.
+
+**So: this phase takes exactly one live re-baseline, at its close, covering all of the above.** That is
+DoD 5's "explicit spend decision at a freeze," made here, in advance, in writing.
+
+### 3.3 The cost of batching that is NOT money, and it is the one to think about
+
+**If step 0's corpus work is acted on, the artifact becomes v0.11.0, and `heldout_v2` goes stale.** It is
+pinned at 0.10.0. `make heldout-check` would report `artifact-pin-moved`, which is exactly what happened to
+`heldout_v1` at v0.10.0 and exactly why it was retired.
+
+That set was drawn, sealed and run **six days ago**, run count 1, 10 of 10. A corpus change spends that.
+Re-drawing is his work, from his seed, and generalization returns to **untested, not passed**, until it is
+drawn and run again at the next freeze.
+
+**This is the real decision in this phase and it is his, not mine.** It is why step 0 measures for free and
+stops, rather than measuring and proceeding.
+
+> **DECIDED 2026-09-18, by him, before step 0 ran and before any yield number existed:** he accepts the
+> cost of drawing a **third** held-out set if the corpus moves. Recorded here with the timing it was given,
+> because a decision taken before the number arrives is worth more than the same decision taken after, and
+> because this one removes the phase's main blocker rather than being extracted by a result.
+>
+> **What it does not do is make the corpus change automatic.** §4 step 0's decision rule still stands on its
+> own merits: bumping the artifact for a handful of edges spends a held-out set to buy very little, and that
+> is a bad trade whether or not he is willing to pay it. The rule is the guard against acting for the sake
+> of having decided to act.
+
+## 4. The steps
+
+### Step 0 — Measure what the corpus could gain, spend nothing, and stop — **FREE, no artifact change**
+
+*This step is his request, and it is deliberately a measurement with a hard stop at the end. Nothing in it
+writes an edge, bumps an artifact version, or touches the held-out set.*
+
+The diagnosis from §1: the influence layer has been **flat while the corpus doubled**. Influence edges went
++1.1% across three phases while nodes went +145%. The product narrates influence. So the question "what
+would make the corpus stronger" has a sharp answer — *give the 184 orphan genres their first influence
+edge* — and one obvious, already-built instrument.
+
+**0.1 — The DBpedia re-run, measured not performed.** `ingest/dbpedia.py` fetches the whole
+`dbo:stylisticOrigin` genre graph and aligns it into Wikidata's identifier space. It produced **1,335 of
+the 1,468 genre-to-genre influence edges in the corpus — 91% of them** — at tier `INFOBOX_AUTO`. It was
+seeded from the **v0.7.0** corpus and **has never seen the 64 genres phase 7.6 added**. Step 0 runs the
+alignment and the origin-graph fetch against the v0.10.0 genre set and reports, without writing an
+artifact:
+
+- how many of the 184 orphan genres have a DBpedia resource at all;
+- how many of those carry `stylisticOrigin`;
+- how many of those origins align to a QID **already in the corpus** (an edge gained) versus outside it (a
+  node that would also have to be admitted, which is scope creep and is refused here);
+- the same three numbers for the 64 genres phase 7.6 added specifically.
+
+**0.2 — The Wikidata P737 gap, same treatment.** Wikidata contributed only 133 genre-to-genre influence
+edges against DBpedia's 1,335, so expectations are low, but it is the same query shape and costs nothing
+to count alongside.
+
+**0.3 — Report and STOP.** Step 0 ends with a table and no commit to act. The decision it feeds is his,
+and §3.3 is the part of it that is easy to miss, so the report restates it: **acting on any of this means
+v0.11.0, which means re-drawing the held-out set he sealed six days ago and returning generalization to
+untested.**
+
+**Recommended decision rule, offered now so the number is judged against something fixed rather than
+rationalized after it arrives:** act if the re-run gains **200 or more genre-to-genre influence edges
+against existing corpus nodes**, or cuts the 184 orphans **below 120** (its v0.7.1 level). Act on a smaller
+yield only if he wants it for its own sake. Below that, the held-out set is worth more than the edges.
+
+**Explicitly NOT measured in step 0, each for a stated reason:**
+
+- **The 964 teaching endpoints with no P136 genre.** Real — they are most of the 54 teaching-only islands —
+  but connecting them needs a genre Wikidata does not have, so it needs a new source and a new shape. It is
+  a phase, not a step, and the manifest's "shown as a gap and never inferred" is the right posture until
+  then.
+- **Non-Western expansion.** The skew is real (US 53.3%, 144 of 739 genres outside the US/UK) and it is by
+  construction and documented. Widening it means new discovery seeds, which is §5's excluded "new corpus."
+  Worth its own phase; not worth bundling blind into this one. Note the live suite's `elsewhere` slice
+  already runs 10 cases at 10/10 — it is the **held-out** set that has no `elsewhere` case, and that is a
+  drawing property, not a corpus one.
+
+#### Step 0 — CORRECTED, 2026-09-18, before anything was built. **The yield is ~10 edges, not 453.**
+
+> **Read this before the section below it. The as-built that follows overstated the yield by about 45x,
+> and its recommendation was acted on for roughly twenty minutes before the error surfaced.** Nothing was
+> built, no artifact was cut, and the corpus is untouched at v0.10.0.
+
+**The error.** `dbpedia.build()` takes two exclusion inputs: `known_edges`, so a candidate that is already
+an edge is skipped, and **`rejected`, so a candidate the Wikipedia prose check already refused is not
+re-admitted.** The step 0 measurement applied the first and not the second. Every DBpedia candidate must
+clear the same prose check Wikidata edges clear — *"only `PROSE` survives"* — and the refusals from that
+check are recorded in `artifacts/v0.7.0/exclusions.json`, in the artifact directory the measurement was
+already reading.
+
+| | |
+|---|---|
+| candidates the first measurement reported | 453 |
+| **already refused by the prose check at v0.7.0** | **440** (381 `INFOBOX_ONLY`, 55 `ORPHAN`, 4 `MISLINKED`) |
+| **genuinely unscreened** | **13** |
+| expected to survive at the measured 74% pass rate | **about 10** |
+
+The tell was visible in the original sample and was read past: its first two rows, `2-step garage <-
+breakbeat` and `acid house <- Chicago house`, are the **first two rows of the exclusions file.**
+
+**The strongest argument for acting was the weakest part of it.** `gold_v0_1_026` / *electronic music*
+appeared to gain its first two origins. Both candidates — `futurism` and `modernism` — are on the refused
+list. **Electronic music gains nothing**, and the hypothesis that this attacks the 2026-09-14 descendants
+failure at its cause is withdrawn.
+
+**All 13 survivors, in full**, since at this size a sample is the whole thing:
+
+| subject | candidate origins |
+|---|---|
+| chamber pop | classical music, indie pop, indie rock, lounge music, rock music |
+| tango | Contradanza, flamenco, mazurka, polka |
+| salsa / norteño / grupera | bolero |
+| extreme metal | heavy metal music |
+
+**The decision rule now fails both criteria**, having appeared to pass one decisively:
+
+- *"200 or more edges"* — **about 10. FAILS.**
+- *"orphans below 120"* — 184 would drop by 1 or 2, not to 166. **FAILS.**
+
+**Revised verdict: DO NOT ACT.** ~10 edges do not buy a v0.11.0 cut, a third held-out set, a re-draw that
+returns generalization to untested, or any gold-set re-checking. **Phase 8 proceeds on artifact v0.10.0**,
+`heldout_v2` keeps its run count of 1, and the membership work needs none of this.
+
+**What is worth keeping from it.** The 13 are not junk — `tango <- Contradanza / flamenco / mazurka /
+polka` is real pre-1900-adjacent lineage on a non-Western-adjacent genre, which is where this corpus is
+thinnest. They are simply not worth an artifact version **on their own**. They belong in the next cut that
+happens for another reason, and `docs/KNOWN-GAPS.md` carries them so they are not re-derived from scratch.
+
+**The generalizable lesson, which is why this correction is kept rather than edited away:** a measurement
+that reuses a pipeline's data must reuse **all** of that pipeline's filters. One of the two was applied,
+the number came out 45x too high, and it was reported with a recommendation attached. The exclusions file
+was sitting in the directory being read.
+
+#### Step 0 — first as-built, 2026-09-18, SUPERSEDED BY THE CORRECTION ABOVE. Kept for the method, not the numbers.
+
+Ran `dbpedia.align` over all 739 v0.10.0 genres, `fetch_origin_graph`, and `to_origins` against the current
+corpus. **No artifact was built and no edge was written.** Raw counts:
+
+| | |
+|---|---|
+| corpus genres with a DBpedia resource | **657 of 739** |
+| **orphan** genres with a DBpedia resource | **116 of 184** |
+| resource-space `stylisticOrigin` pairs DBpedia holds | 5,124 |
+| aligned into QID space against this corpus | 1,870 |
+| unresolved (one or both endpoints outside the corpus) | 3,253 |
+| **already an edge** | 1,417 |
+| **NEW edges, both endpoints already corpus nodes** | **453** |
+
+**453 new genre-to-genre influence edges, requiring no new nodes** — a **+31%** increase on the 1,468 the
+corpus holds, and the first material growth in the influence layer since v0.7.0. Spread across 226 subject
+genres, median gain 2.
+
+**The decision rule, scored honestly: one criterion passes decisively, the other fails decisively.**
+
+- *"200 or more edges against existing nodes"* — **453. PASSES.**
+- *"cuts the 184 orphans below 120"* — **184 -> 166. FAILS**, and not narrowly.
+
+The rule was written as an OR and was approved as an OR, so it is met. But the split is the finding and it
+must not be smoothed: **the re-run makes the well-connected part of the corpus denser; it does not connect
+the sparse part.** Only 18 of 184 orphans gain a first edge, although 116 of them have a DBpedia resource —
+so 98 orphan genres have a resource and still no usable origin. The gain lands where influence edges
+already are.
+
+**It does not fix the classical gap, and that is worth stating plainly because it is where the phase's
+sympathies were.** All 64 genres phase 7.6 added are orphans, and **only 4 of them are rescued**. DBpedia's
+`stylisticOrigin` is a popular-music infobox convention; classical genre articles do not use it. Nothing in
+this step brings Mozart's half of the corpus into the influence layer, and nothing here should be described
+as if it did.
+
+**The cost this step found that §3.3 did not anticipate: 12 of 43 gold cases have subjects that gain
+origins**, so their `expected_claims` become incomplete and the system would correctly name origins the
+gold set does not list — which scores as a precision drop rather than as the improvement it is.
+
+| case | shape | subject | origins before -> after |
+|---|---|---|---|
+| `gold_v0_1_022` | descendants | shoegaze | 9 -> 12 |
+| `gold_v0_1_010` | origins | techno | 9 -> 11 |
+| `gold_v0_1_013` | origins | bossa nova | 2 -> 4 |
+| `gold_v0_1_014` | origins | Manila sound | 5 -> 7 |
+| `gold_v0_1_017` | path | Shibuya-kei | 13 -> 15 |
+| **`gold_v0_1_026`** | origins | **electronic music** | **0 -> 2** |
+| `gold_v0_1_031` | origins | western music | 4 -> 6 |
+| `gold_v0_1_002` / `030` / `032` / `033` / `034` | origins | acid jazz, electropop, G-funk, bebop, soca music | +1 each |
+
+The adversarial set is unaffected — its queries are sentences, not labels, and none resolves to a gaining
+subject. `gold_v0_1_020`, the permanently excluded traversal case, does not appear.
+
+**`gold_v0_1_026` is the single most interesting row here.** *"Where did electronic music come from"* has
+**zero** origin edges today, which is very likely *why* it answered with 24 descendants in the 2026-09-14
+gated run and produced the `adv_006` direction swap recorded in `KNOWN-GAPS.md`. Giving it two real origins
+attacks that failure at its cause rather than at the prompt. **That is a hypothesis with a clear mechanism,
+not a measured fix**, and it is only testable at step 6.
+
+**Declined deliberately, and quantified so the decision is visible:** the 3,253 unresolved pairs are origins
+whose endpoints are genres this corpus does not hold. Admitting them would grow the corpus substantially and
+is exactly the "new corpus" §9 excludes. Not taken, and recorded so nobody re-derives it as an opportunity.
+
+**Verdict: the rule is met and the honest summary is narrow.** 453 real edges, a measurable shot at a known
+failure, no new nodes, no new source, no new extractor — against a held-out re-draw, 12 gold cases to
+re-check by hand, and no help at all for the classical layer. **His call.**
+
+### Step 1 — Open the axis lock, predicate-scoped — **the one-way door**
+
+`gate()` rule 3 rejects `subject.kind != obj.kind`. Phase 8 cannot simply delete it: that comment is right
+that a chain stepping genre -> artist -> genre "reads as one continuous line of influence, and it is not
+one."
+
+**The shape: the axis rule becomes a per-predicate constructor rule, mirroring
+`schema.py:TIERS_BY_PREDICATE`, which already proves the pattern in this codebase.**
+
+| predicate | permitted endpoints | direction |
+|---|---|---|
+| `influenced_by` | genre→genre or artist→artist | same-kind, as today |
+| `studied_with` | artist→artist only | student→teacher, as today |
+| `plays_genre` | **artist→genre only** | never genre→artist |
+
+This is *stricter* than today for two of the three: today's rule permits `studied_with` between two genres
+and `influenced_by` artist-to-genre is merely absent from the artifact rather than forbidden by the gate.
+Making the table explicit closes both. **The property to preserve is not the line, it is that no
+non-influence edge can reach prose as an influence claim**, and a table that names each predicate's legal
+shape holds it better than a kind-equality test does.
+
+Tests: every predicate's legal shape accepted; every illegal shape rejected with `CROSS_AXIS`; specifically
+that `plays_genre` genre→artist is rejected even though the artifact contains the same pair the other way.
+
+#### Step 1 — AS BUILT, 2026-09-18. Done on artifact v0.10.0, which did not move.
+
+`agent/claims.py` gained `AXES_BY_PREDICATE`, a table of legal `(subject_kind, object_kind)` pairs, and
+`gate()` rule 3 now reads it instead of testing `subject.kind != obj.kind`.
+
+| predicate | legal shapes |
+|---|---|
+| `influenced_by` | `genre->genre`, `artist->artist` |
+| `studied_with` | `artist->artist` |
+| `plays_genre` | `artist->genre` |
+
+**The gate got narrower, not wider, and that is the whole of step 1's behaviour change.** Two shapes the
+kind-equality test waved through are now refused by name: `studied_with` between two genres (which used to
+pass rule 3 and fail later as `NOT_IN_GRAPH` — a true refusal with a misleading reason) and
+`influenced_by` from an artist to a genre (previously not forbidden here at all, merely absent from the
+artifact). No shape became legal that was not legal before.
+
+**`plays_genre` has a row and is still not claimable.** Having a legal shape and being admissible are
+different questions and the code now keeps them apart: `ALLOWED_PREDICATES` is unchanged, so a membership
+proposal is refused `UNSUPPORTED_PREDICATE` at rule 1 and never reaches the table. **Step 2's decision is
+not pre-empted by step 1**, which was the risk in doing them in this order.
+
+Five tests added, all in `tests/test_claims.py`:
+
+- **every predicate in `PREDICATES` must have a row** — the lock, so a future predicate cannot reach the
+  gate and be refused with "permits nothing", which is a correct refusal arrived at by accident;
+- the table is **stricter** than what it replaced, asserted as a direction so a widening edit has to
+  delete the test on purpose;
+- `studied_with` genre-to-genre is `CROSS_AXIS`, with the reason naming what the predicate does permit;
+- membership has a shape **and** is not in `ALLOWED_PREDICATES`, refused at rule 1;
+- **membership read backwards is not a legal shape** — a genre does not play an artist. Written now, before
+  step 2 can widen `ALLOWED_PREDICATES`, so the guard is already standing when the door opens.
+
+**Verification:** `make check` green — ruff clean, mypy clean over 121 source files, **1,771 Python tests
+passed** (1 skipped: the held-out run-count guard, which is correct at run count 1), **465 frontend tests**
+across 25 files, Terraform valid, free eval gates **4 passed / 0 failed / 2 not applicable**.
+
+**Invariant 4 untouched so far:** `agent/loop.py` unmodified, per DoD 6.
+
+### Step 2 — Decide §4's central question with the code in front of it: claim, or event beside the claims
+
+The scope doc leaves this open on purpose and both answers cost something. **The measurement in §1
+Amendment 4 decides it, and the recommendation is `Claim`:**
+
+- The route `Delta blues -> Chicago blues -> Freddie King -> funk -> electro -> Detroit techno` is
+  **undirected and four of its five hops are not influence**. As a `Contested`-shaped event riding beside
+  the narration, the prose would go silent across the entire interesting middle of the phase's own demo —
+  scope doc §4's stated risk, realized on the canonical case.
+- As a `Claim`, every existing grounding metric covers it for free, and the risk ("one claim type now means
+  two different things") is answerable by step 3, which is a test rather than a hope.
+
+**This is a recommendation, not a decision. It is his to take, and it is the single most consequential
+choice in the phase.** If he prefers the event shape, steps 3 and 4 change substantially and step 2 is
+where that is cheapest.
+
+### Step 3 — Make membership structurally unable to read as derivation
+
+DoD 3, in the shape of `ContestedDisclosure`: a deterministic check over the rendered answer, gated on
+**zero silent crossings**, not a reviewer's judgment.
+
+- A route containing a `plays_genre` hop **must** emit a membership disclosure naming the hop as shared
+  musicianship before the first prose token, the same ordering `ContestedDisclosure` already enforces.
+- The check fails the run if a `plays_genre` hop appears in an approved claim set and the disclosure did
+  not fire.
+- Scope doc §4's third bullet becomes a rule in code: *"these two genres share musicians"* is permitted
+  wording; *"these two genres are connected"* is not, because it becomes derivation in the reader's head.
+
+**The thin-metric lesson from `contested_disclosure` applies and must be carried forward:** report it as a
+property with denominator *runs that crossed a membership hop*, never as a rate over all edges, and let
+`minimum_scored_cases` double as a coverage lock.
+
+### Step 4 — Route planning: a new tool, not an argument to `trace_lineage`
+
+Invariant 4 says adding a tool must never require editing the loop. The scope doc's §8 already notes a new
+tool "is the answer the seam was built for." A cross-axis planner as a new tool is therefore both the
+correct design and a live test of invariant 4 — **if `agent/loop.py` needs an edit, that is a finding
+about the seam and it gets recorded in bold, per DoD 6.**
+
+Open and named as uncertain: what `PathWalked.chain` means for a mixed route. Its current contract is
+descendant-first, claim-ordered, empty when a hop was rejected, and a route whose hops are not all
+time-ordered may not satisfy it. Decided in this step with the code open, recorded here as-built.
+
+### Step 5 — Eval cases
+
+New cases in their own dataset, scored by existing metrics — no new metrics (scope doc §3).
+
+Useful inheritance found today: the adversarial set **already has a `cross_axis_trap` group with 2 cases**,
+and the live slice breakdown **already classifies by predicate**, with `membership_only` at 10 cases. So
+the scoring surface largely exists. What is new is a `query_kind` for cross-axis routes; today's kinds are
+origins 44, lineage 12, descendants 6.
+
+Sized deliberately: **6 to 10 new cases**, not more. Every case is ~$0.012 per run and ~$0.06 across a
+five-run baseline, and the case count is what makes the baseline cost what it costs.
+
+### Step 6 — The one live re-baseline, and the close
+
+Five identical runs, gates rewritten from the new floor, per §3. Carries with it: `adv_018` unexcluded, the
+name-substitution decision if it landed, phase 8's cases, and any step 0 corpus change.
+
+**Before the run:** confirm `gold_v0_1_020`'s exclusion still traces to a diagnosed, reproducible cause,
+and check per-case data before writing any bound off an aggregate. A 0.0pp spread is a reason to ask what
+is constant — that trap has fired twice in this project, on the same metric, at two different corpus sizes.
+
+**If step 0 was acted on:** the held-out re-draw happens here, by him, from his seed, before the freeze.
+
+### Step 7 — The plain-English writeup
+
+`docs/membership-explained.md`, matching `classical-lineage-explained.md` and `name-resolution-explained.md`.
+The cold-articulation rep, and the honest version of the project's central claim, which is why it is a step
+and not an afterthought.
+
+## 5. One-way doors this phase touches
+
+| door | how it is satisfied |
+|---|---|
+| **1. Claims first, prose second** | Untouched if step 2 chooses `Claim`: prose still generates only from the approved set, and `synthesize` keeps exactly one claim-bearing parameter. **If step 2 chooses the event shape, this is the invariant at risk** and the phase 6.5 precedent — disclosure rides beside the narration, never inside it — is the only safe form. |
+| **3. Validated graph semantics** | P279 stays un-ingested; nothing here touches it. `plays_genre` is P136, already hand-reviewed (`docs/p136-allowlist-review.md`). |
+| **4. Agent-to-data tool contract** | Step 4 is the test. A new tool must not require a loop edit; if it does, DoD 6 records it as a finding. |
+| **6. Package boundaries** | Gate in `agent/`, routing in `graph/`, disclosure check in `eval/`. No logic in `api/`. |
+| **The axis rule** (not on the nine, but load-bearing) | Step 1 replaces kind-equality with a per-predicate table that is stricter for two of three predicates. Amendment 3. |
+
+## 6. Files and modules expected to change
+
+- `src/musical_mycelium/agent/claims.py` — the axis rule (step 1); `ALLOWED_PREDICATES` if step 2 says
+  `Claim`. **`checks_disagree` stays `UNREACHABLE` and is not touched.**
+- `src/musical_mycelium/graph/routes.py` — cross-axis route planning.
+- `src/musical_mycelium/agent/` — one new tool, registered through the existing seam (step 4).
+- `src/musical_mycelium/eval/` — the membership-disclosure check, the new cases, a `query_kind`.
+- `src/musical_mycelium/eval/thresholds.json`, `noise_floor.json` — rewritten at step 6, not before.
+- `web/` — rendering typed hops. Two-way door; be aggressively lazy.
+- `docs/` — this doc as-built, `membership-explained.md`, `ROADMAP.md`, `KNOWN-GAPS.md`.
+- **Expected NOT to change:** `agent/loop.py` (DoD 6), `graph/schema.py`'s tier table, anything under
+  `eval/datasets/heldout_v2*`.
+
+## 7. Testing
+
+`make check` throughout. Beyond it:
+
+- **Metric unit tests before the metric is trusted**, including the vacuous-truth guard in its membership
+  form: **a route with no membership hop must not score 100% on membership disclosure.** That is the
+  `07` §8 rule applied to the new check, and it is the shape of bug this project has actually shipped.
+- **Step 1's rejection tests** as listed there — the illegal-direction case matters most, because the
+  artifact contains the legal direction of the same pair.
+- **Free-suite gates every commit.** Four of six gate on the free run today; `GATE_NAMES` is the authority
+  on the count and no prose anywhere states a number, including here.
+- **The held-out set is not touched, not read, not run.** Run count stays 1 unless §3.3's decision goes the
+  other way, in which case it is re-drawn by him and restarts at 0.
+
+## 8. Cost and the guardrail
+
+- **Steps 0 through 5: $0.** DBpedia SPARQL is free; step 0 writes no artifact; free-suite runs are
+  dictionary lookups.
+- **Step 6: ~$4, budget $5.** Measured per §3.1. Behind `confirm_spend`, at a freeze, with his explicit go.
+- **Not in this phase:** any tier 2 judged run.
+- Per `aws-and-cost.md`, the exposure ceiling quoted anywhere is the **token budget**, never the Lambda
+  timeout.
+
+## 9. Not in this phase
+
+Inherited from scope §3, unchanged: new corpus or new ingestion **beyond step 0's re-run of an existing,
+already-validated extractor over genres it has never seen**; any change to `influenced_by` semantics;
+making `checks_disagree` reachable; re-running the held-out set; anything letting `plays_genre` be narrated
+as derivation in prose, caption or tooltip.
+
+Added here: the 964 genre-less teaching endpoints (§4 step 0); non-Western corpus expansion (§4 step 0);
+tier 2 judging; camera work, timeline and route ranking, which belong to phase 7 and are done — scope §7's
+fourth risk is drift back into them.
+
+## 10. Genuinely uncertain, named rather than smoothed
+
+1. **Whether step 0's DBpedia re-run yields anything.** The 184 orphans skew to classical and formal genres
+   from phase 7.6 — *modal jazz, post-bop, impressionist music, choral music, sonata, Roman School*. Some
+   plainly have infobox stylistic origins; whether they have **DBpedia resources that align to corpus
+   QIDs** is unmeasured, and no cached origin graph exists locally to check against. **Genuinely unknown,
+   which is why step 0 measures before anything commits.**
+2. **Whether a cross-axis route is legible.** Scope §7's third risk. Five hops alternating predicates may
+   read as a graph traversal, which is what it is and not what a demo wants. Unknown until one is rendered.
+3. **`PathWalked.chain`'s contract under mixed routes** (step 4).
+4. **Whether `delta blues -> Detroit techno` is still the demo anyone wants.** It works, it is measured, and
+   it is the sentence that started the phase. It is also five hops through Freddie King.
+5. **Whether step 2's recommendation survives contact with the code.** It is a recommendation from a
+   measured route, not from an implementation.
+
+## 11. Reproducing §1's measurements
+
+Every figure in §1 came from `Artifact.load()` over
+`src/musical_mycelium/artifacts/v0.7.1` and `v0.10.0`, computing undirected components per predicate set
+and BFS for the route. Cost figures came from the `usage.estimated_usd` field of the nine 63-case
+`*-bedrock.json` runs in `eval/results/` dated 2026-09-12 and later. Nothing here was taken from a doc,
+a memory, or the manifest's recorded `structure` block, and the manifest's own numbers were used only as a
+cross-check — they agreed.

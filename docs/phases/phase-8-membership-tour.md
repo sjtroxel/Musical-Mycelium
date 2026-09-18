@@ -27,10 +27,49 @@ either direction, and not undirected either.
 
 The measurement that explains it, and it is the whole premise of this phase:
 
+> **AMENDED 2026-09-18, phase 8 step 0 of the IMPLEMENTATION doc, re-measured against artifact v0.10.0.**
+> The table below was measured at v0.7.1 and its second row is now wrong; its **`7` is a number
+> `CLAUDE.md` forbids writing at all**, which is the second time an instruction in this repo has outlived
+> the figure it protected. Both rows are kept struck rather than deleted, because what moved and what did
+> not is the finding. Full re-measurement and method:
+> `phase-8-membership-tour-IMPLEMENTATION.md` §1.
+
 | over | components | largest |
 |---|---|---|
-| `influenced_by` only (2,284 edges) | **138** | 534 |
-| both predicates (`plays_genre` adds 2,782) | 7 | 1,465 |
+| ~~`influenced_by` only (2,284 edges)~~ **`influenced_by` only, 2,309 edges at v0.10.0** | **138** | 534 |
+| ~~both predicates (`plays_genre` adds 2,782) | 7 | 1,465~~ **both predicates, `plays_genre` now 4,498** | **13** | **2,639** |
+| **`influenced_by` only, genre-to-genre edges alone** *(new row, 2026-09-18)* | **10** | **534** |
+| **all three predicates, with `studied_with`** *(new row, 2026-09-18)* | **61** | **3,490** |
+
+**The influence-only row did not move across three phases, and that is the story.** 138 components and a
+534-node largest, identical at v0.7.1 and v0.10.0, while the corpus went from 1,479 nodes to 3,628.
+Influence edges grew **1.1%** while nodes grew **145%**.
+
+**And the 138 does not mean what this doc originally implied.** It is **10 genre islands plus 128 artist
+islands**: the genre-to-genre influence graph holds 534 of the 555 genres it touches in one component,
+**96% connected**. Genres carrying influence edges were never badly fragmented. The actual gap is the
+genres carrying none:
+
+| | v0.7.1 | v0.10.0 |
+|---|---|---|
+| genres | 675 | 739 |
+| genres with **no** genre-to-genre influence edge | 120 (17.8%) | **184 (24.9%)** |
+| genres with **neither** influence nor membership | — | **0** |
+
+**Every one of those 184 genres is attached to the corpus, and membership is the only thing attaching
+them.** That is this phase's claim, measured, and it is a stronger premise than the one this doc was
+written on.
+
+**The canonical route is intact and now has a measured answer.** `delta blues -> Detroit techno` still has
+no influence path at v0.10.0 in either direction or undirected. With membership:
+
+```
+Delta blues -> Chicago blues -> Freddie King -> funk -> electro -> Detroit techno
+```
+
+Five hops, **undirected** — directed traversal still fails both ways, because a membership hop is not
+time-ordered — and **four of its five hops are not influence**. Read as prose it asserts something false,
+which is §7's first risk appearing on this phase's own demo case before a line of it is built.
 
 **The corpus is one connected organism only when membership is counted.** That is not a defect and it is not
 news — `CLAUDE.md` states it as the project's central claim, and `docs/graph-semantics.md` §5.2 records it as
@@ -56,8 +95,15 @@ that settles it:
 2. **It moves the claim model.** Phase 7.5's writeup describes how grounding works. Changing what the gate
    admits the week before that gets written is how a writeup describes a system that no longer exists.
 3. **It costs the live gates.** New eval cases hit `eval/thresholds.py:_ungateable`, which returns before any
-   per-metric check and un-gates the entire live suite. Restoring the bounds is **$2.61 and roughly 2.4
-   hours** over five identical runs. v1.0 should not be paying that.
+   per-metric check and un-gates the entire live suite. ~~Restoring the bounds is **$2.61 and roughly 2.4
+   hours** over five identical runs.~~ v1.0 should not be paying that.
+
+   > **AMENDED 2026-09-18: the price was measured when the live set was 56 cases and it is now too low.**
+   > Measured over the nine 63-case live runs in `eval/results/` from 2026-09-12 on: **$0.72-$0.76 per run**,
+   > mean ~$0.74, so **~$3.70 for five** and **~32 minutes per run, ~2.7 hours for five** — RPM-bound, not
+   > token-bound, as `aws-and-cost.md` predicts. The 2026-09-12 baseline session actually cost **$4.63**
+   > including one aborted and one partial run. **Quote the measured figures; budget $5.** The reasoning
+   > above is unchanged and is strengthened, not weakened, by the correction.
 
 ## 1. What this phase is for
 
@@ -131,7 +177,21 @@ later carries a taxonomic predicate cannot have it narrated as derivation **with
 on purpose.**
 
 **This phase is someone editing that line on purpose.** That is legitimate, and it is exactly why it gets a
-scope doc, a decision record, and a disclosure test rather than a commit. The thing to preserve is the
+scope doc, a decision record, and a disclosure test rather than a commit.
+
+> **AMENDED 2026-09-18: this section names the wrong lock, and the right one is not mentioned anywhere in
+> this doc.** `ALLOWED_PREDICATES` is **already open** — phase 7.6 opened it for `studied_with`, as the
+> 2026-09-11 amendment at the top of this doc says. The lock this phase actually has to open is
+> `agent/claims.py:gate` **rule 3**, which rejects any proposal whose endpoints differ in `kind` with
+> `RejectionReason.CROSS_AXIS`. A `plays_genre` claim is artist-to-genre by construction, so **the gate
+> rejects every membership claim today, before the edge lookup ever runs.** Its code comment is right about
+> why it exists: a chain stepping genre to artist and back "reads as one continuous line of influence, and
+> it is not one."
+>
+> So the door is opened **predicate-scoped, not removed**: a per-predicate table of legal endpoint shapes,
+> mirroring `schema.py:TIERS_BY_PREDICATE`, which is **stricter** than today's kind-equality test for two of
+> the three predicates. The property this section says to preserve is unchanged and is the reason for the
+> shape. `phase-8-membership-tour-IMPLEMENTATION.md` §1 Amendment 3 and step 1 carry the detail. The thing to preserve is the
 property, not the line: after this phase there must still be no path by which a non-influence edge reaches
 prose as an influence claim. If the phase cannot hold that property, the phase is wrong and the corpus keeps
 its 138 influence components.

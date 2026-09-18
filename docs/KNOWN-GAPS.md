@@ -14,7 +14,31 @@
 > $6.28** for August's total. **Two budgets are over threshold, four alerts have fired.** The invoice
 > reads $0.00 only because credits absorb it, and **that forecast predates the launch post**, so it
 > does not include whatever traffic the post brings at roughly a cent a question.
-> **Unchecked and worth checking: the remaining credit balance and its expiry** (Billing → Credits).
+> ~~**Unchecked and worth checking: the remaining credit balance and its expiry**~~ **CHECKED
+> 2026-09-18** (Billing → Credits). The strikethrough is kept because half that sentence was wrong when
+> it was written: **the expiry was never unchecked** — 2027-07-30 has been on file since 2026-09-10, in
+> this file's phase 7.5 steps 0-3 entry and `phase-7.5-portfolio-and-writeup-IMPLEMENTATION.md` §3.0. **Nor, it turns out, was the balance** — §3.0
+> also carries $153.73, the $93.73-plus-three-unused-$20s split, and all four expiries. **The whole
+> sentence was wrong**, and the reason is worth more than the numbers below: the check had been done
+> and written into a *phase* doc, and the open-item file did not know. A re-opened question that was
+> already answered is the same stale-instruction failure this project has recorded twice before, and
+> this time it came from the record being split across two files rather than from the text aging.
+> What was genuinely missing is a **current** figure, which is what follows.
+> - **$140.85 estimated remaining of $160 issued**, estimated used $19.15. **Quote the estimated
+>   figures, not the $153.73 / $6.27 pair** on the same page — those are the last *finalized* invoice
+>   basis and lag by a month.
+> - **All four credits expire 2027-07-30**, confirming the recorded date.
+> - **Only the $100 AWS Free Tier credit is drawing down: $80.85 estimated remaining.** The three $20
+>   "Explore AWS" credits (Bedrock playground, Budgets, Lambda web app) read **$0.00 used** each.
+>   Whether that $60 can ever apply to this workload is behind "Applicable products" and **was not
+>   opened**. Do not count it as runway until it is.
+> - **Two console-to-repo cross-checks passed:** $6.27 finalized used against the $6.28 August figure,
+>   and $6.27 + $12.89 September MTD = $19.16 against $19.15 estimated used.
+> - **Runway, both readings, neither acted on.** Flat at ~$17/month, $140.85 lasts about 8 months to
+>   roughly 2027-05, so **the expiry binds before the balance does** and the credits expire with money
+>   on them. At a continued tripling it is gone by about November. The tripling is believed bursty —
+>   7.6 and 7.7 each ran five-run gated live baselines, plus launch traffic — but that is a
+>   **hypothesis, and October's number is what tests it.**
 > Fixed infrastructure cost is genuinely $0 — every standing line on the September bill is $0.00 — so
 > this is a usage trend, not a DoD 5 failure, and is not filed as one.
 >
@@ -331,6 +355,39 @@
 > **Nothing in phase 6.5 moved the artifact pin, the infrastructure or the deployed image.** The live
 > site still serves what `v0.6.0` deployed on 2026-09-06; deploying `v0.6.5` is a separate decision that
 > has not been taken.
+
+## OWED — 13 DBpedia origin candidates, measured and parked, ride the next artifact cut, 2026-09-18
+
+**Phase 8 step 0 measured what a DBpedia `stylisticOrigin` re-run would add to v0.10.0 and the answer was
+about 10 edges, so the corpus was NOT cut.** The candidates are recorded here in full so the work is not
+re-derived, and so the next artifact cut — whenever one happens, for whatever reason — picks them up
+instead of rediscovering them.
+
+**These 13 have never been through the Wikipedia prose check.** They are candidates, not edges. At the
+measured 74% pass rate expect roughly 10 to survive, and `dbpedia.build()` must receive both
+`known_edges` **and** `rejected` when they are finally screened.
+
+| subject | candidate origins |
+|---|---|
+| chamber pop | classical music, indie pop, indie rock, lounge music, rock music |
+| tango | Contradanza, flamenco, mazurka, polka |
+| salsa / norteño / grupera | bolero |
+| extreme metal | heavy metal music |
+
+**Worth having, not worth a version on their own.** `tango <- Contradanza / flamenco / mazurka / polka` is
+real pre-1900-adjacent lineage on Latin genres, which is where this corpus is thinnest; `chamber pop` is
+one of the 184 genres with no influence edge at all and would gain its first.
+
+**What step 0 also established, and it is the durable half:** the other **440** candidates the re-run
+surfaces were **already refused by the prose check at v0.7.0** (381 `INFOBOX_ONLY`, 55 `ORPHAN`, 4
+`MISLINKED`). A future re-run will surface all 453 again. **Only these 13 are new.** Anyone reading a
+larger number from a DBpedia re-run has forgotten `exclusions.json`, which is exactly the error made and
+corrected on 2026-09-18 — see `phase-8-membership-tour-IMPLEMENTATION.md` step 0, where the correction is
+kept above the superseded as-built.
+
+**Not owed, explicitly:** the 3,253 origin pairs whose endpoints are not corpus nodes. Admitting them is
+new corpus and is excluded from phase 8 on purpose.
+
 
 ## FINDING — the gated run after the hub fix FAILED, on cases the fix never reached, 2026-09-14
 

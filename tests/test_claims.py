@@ -12,6 +12,7 @@ import pytest
 from musical_mycelium.agent import claims as claims_module
 from musical_mycelium.agent.claims import (
     ALLOWED_PREDICATES,
+    AXES_BY_PREDICATE,
     UNREACHABLE,
     Claim,
     ClaimProposal,
@@ -25,6 +26,7 @@ from musical_mycelium.graph.memory import InMemoryGraphStore, artifact_directory
 from musical_mycelium.graph.schema import (
     NODE_KIND_ARTIST,
     NODE_KIND_GENRE,
+    PREDICATES,
     SOURCE_DBPEDIA,
     SOURCE_WIKIDATA,
     VERIFICATION_HAND,
@@ -41,6 +43,8 @@ BLUES_ROCK, BLUES = "Q193355", "Q9759"
 ACID_JAZZ, JAZZ = "Q221772", "Q8341"
 HEAVY_METAL = "Q38848"
 INFLUENCED_BY = "influenced_by"
+STUDIED_WITH = "studied_with"
+PLAYS_GENRE = "plays_genre"
 
 #: Test claims state a verification level explicitly, the same rule every construction site obeys.
 HAND = VERIFICATION_HAND
@@ -281,6 +285,53 @@ def test_cross_axis_is_reported_as_cross_axis_not_as_a_missing_edge() -> None:
     assert rejection.reason is RejectionReason.CROSS_AXIS
     # ...and it says which side is which, because "cross axis" alone is not diagnosable.
     assert "artist" in rejection.detail and "genre" in rejection.detail
+
+
+def test_every_corpus_predicate_declares_a_legal_shape() -> None:
+    """The lock. A predicate that reaches the corpus without a row in ``AXES_BY_PREDICATE`` would be
+    rejected by the gate with "permits nothing", which is a correct refusal arrived at by accident.
+    Forcing the declaration makes the shape a decision someone took rather than a default."""
+    assert set(AXES_BY_PREDICATE) == set(PREDICATES)
+
+
+def test_the_axis_table_is_stricter_than_the_kind_equality_test_it_replaced() -> None:
+    """Phase 8 step 1. Two shapes that the old ``subject.kind != obj.kind`` test waved through are now
+    refused by name. This asserts the direction of the change: the table narrowed the gate, and any
+    future edit that widens it past these has to delete this test on purpose."""
+    assert (NODE_KIND_GENRE, NODE_KIND_GENRE) not in AXES_BY_PREDICATE[STUDIED_WITH]
+    assert (NODE_KIND_ARTIST, NODE_KIND_GENRE) not in AXES_BY_PREDICATE[INFLUENCED_BY]
+
+
+def test_studied_with_between_two_genres_is_cross_axis_not_a_missing_edge() -> None:
+    """Previously this satisfied kind-equality and failed later as NOT_IN_GRAPH -- a true refusal with
+    a misleading reason, which is the failure mode rule 3's ordering exists to prevent. Two genres
+    cannot study with each other whatever the artifact happens to contain."""
+    store = synthetic_store(GOOD_CITATION)
+    rejection = gate([proposal("Q1", "Q2", predicate=STUDIED_WITH)], store).rejected[0]
+    assert rejection.reason is RejectionReason.CROSS_AXIS
+    assert "studied_with permits artist->artist" in rejection.detail
+
+
+def test_membership_has_a_declared_shape_and_is_still_not_claimable() -> None:
+    """The two questions kept apart. ``plays_genre`` has a legal shape in the table *and* no place in
+    ``ALLOWED_PREDICATES``, so it is refused at rule 1 and never reaches rule 3. Phase 8 step 2 decides
+    the second question; step 1 deliberately did not answer it by implication."""
+    assert AXES_BY_PREDICATE[PLAYS_GENRE] == frozenset({(NODE_KIND_ARTIST, NODE_KIND_GENRE)})
+    assert PLAYS_GENRE not in ALLOWED_PREDICATES
+
+    store = synthetic_store(
+        GOOD_CITATION, subject_kind=NODE_KIND_ARTIST, object_kind=NODE_KIND_GENRE
+    )
+    rejection = gate([proposal("Q1", "Q2", predicate=PLAYS_GENRE)], store).rejected[0]
+    assert rejection.reason is RejectionReason.UNSUPPORTED_PREDICATE
+
+
+def test_membership_read_backwards_is_not_a_legal_shape() -> None:
+    """Direction is part of the shape. A genre does not play an artist, and the artifact holding the
+    pair the other way is exactly why this needs asserting: the edge lookup would find nothing, but the
+    refusal must name the real problem. Written now so step 2 cannot widen ``ALLOWED_PREDICATES``
+    without this already standing guard."""
+    assert (NODE_KIND_GENRE, NODE_KIND_ARTIST) not in AXES_BY_PREDICATE[PLAYS_GENRE]
 
 
 def test_artist_to_artist_is_the_same_axis_and_passes() -> None:
