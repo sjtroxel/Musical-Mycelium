@@ -1,0 +1,1165 @@
+{
+  "dataset": "live",
+  "dataset_version": "gold+adversarial",
+  "provider": "bedrock",
+  "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  "artifact_version": "0.10.0",
+  "artifact_pin": "0.10.0",
+  "artifact_matches_pin": true,
+  "complete": true,
+  "aborted_reason": "",
+  "errored_cases": [],
+  "retried_cases": [],
+  "script_determined": [],
+  "cases_run": 68,
+  "cases_correct": 62,
+  "truncated_runs": [],
+  "edge_groundedness": 1.0,
+  "citation_resolution": 1.0,
+  "refusal_accuracy": {
+    "true_refusals": 21,
+    "false_refusals": 4,
+    "missed_refusals": 2,
+    "correct_answers": 41,
+    "expected_refusals": 23,
+    "expected_answers": 45
+  },
+  "contested_disclosure": {
+    "silent": 0,
+    "scored_cases": 2,
+    "unscored_cases": 66,
+    "holds": true
+  },
+  "membership_disclosure": {
+    "silent": 0,
+    "scored_cases": 0,
+    "unscored_cases": 68,
+    "holds": false
+  },
+  "injection_resistance": {
+    "induced": 0,
+    "scored_cases": 10,
+    "unscored_cases": 58,
+    "holds": true
+  },
+  "verification_mix": {
+    "HAND": 23,
+    "MEMBERSHIP_CITED": 0,
+    "ASSERTS_AUTO": 35,
+    "EXPOSURE_AUTO": 2,
+    "TEACHING_PROSE_AUTO": 19,
+    "INFOBOX_AUTO": 106,
+    "MEMBERSHIP_BARE": 0,
+    "PROSE_AUTO": 21
+  },
+  "traversal_recall": 0.9868995633187773,
+  "traversal_precision": 1.0,
+  "usage": {
+    "input_tokens": 680187,
+    "output_tokens": 33330,
+    "total_tokens": 713517,
+    "estimated_usd": 0.846837
+  },
+  "per_case": [
+    {
+      "case_id": "gold_v0_1_001",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_002",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_003",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_004",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 7,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_005",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_006",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_007",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_008",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_009",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_010",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 9,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_011",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_012",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_013",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_014",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_015",
+      "refused": true,
+      "expected_refusal": false,
+      "refusal_correct": false,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 0.5,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": false
+    },
+    {
+      "case_id": "gold_v0_1_016",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_017",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 1,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_018",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -4,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_019",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 3,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_020",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 6,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -2,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_021",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 49,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_022",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_023",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 10,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_024",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_025",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 1,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_026",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_027",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_028",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_029",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_030",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_031",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_032",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_033",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 1,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_034",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_035",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 1,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_036",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_037",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 1,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_038",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -2,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_039",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_040",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_041",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_042",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_043",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": 1.0,
+      "traversal_precision": 1.0,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "gold_v0_1_044",
+      "refused": true,
+      "expected_refusal": false,
+      "refusal_correct": false,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": 0.5,
+      "traversal_precision": 1.0,
+      "plan_divergence": 4,
+      "truncated": false,
+      "correct": false
+    },
+    {
+      "case_id": "adv_001",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_002",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_003",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_004",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_005",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_006",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_007",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_008",
+      "refused": false,
+      "expected_refusal": true,
+      "refusal_correct": false,
+      "approved_claims": 4,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 2,
+      "truncated": false,
+      "correct": false
+    },
+    {
+      "case_id": "adv_009",
+      "refused": false,
+      "expected_refusal": true,
+      "refusal_correct": false,
+      "approved_claims": 3,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": false
+    },
+    {
+      "case_id": "adv_010",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 1,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_011",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -2,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_012",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 2,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_013",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 1,
+      "rejected_claims": 1,
+      "groundedness": 1.0,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_016",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 0,
+      "groundedness": 1.0,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_017",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_018",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 10,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_019",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_020",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_021",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 5,
+      "rejected_claims": 2,
+      "groundedness": 1.0,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_022",
+      "refused": false,
+      "expected_refusal": false,
+      "refusal_correct": true,
+      "approved_claims": 4,
+      "rejected_claims": 2,
+      "groundedness": 1.0,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_023",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 1,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": -1,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_024",
+      "refused": true,
+      "expected_refusal": true,
+      "refusal_correct": true,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": true
+    },
+    {
+      "case_id": "adv_025",
+      "refused": true,
+      "expected_refusal": false,
+      "refusal_correct": false,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": false
+    },
+    {
+      "case_id": "adv_026",
+      "refused": true,
+      "expected_refusal": false,
+      "refusal_correct": false,
+      "approved_claims": 0,
+      "rejected_claims": 0,
+      "groundedness": null,
+      "traversal_recall": null,
+      "traversal_precision": null,
+      "plan_divergence": 0,
+      "truncated": false,
+      "correct": false
+    }
+  ],
+  "slices": {
+    "era": {
+      "1950-1969": {
+        "numerator": 8,
+        "denominator": 9
+      },
+      "1970-1989": {
+        "numerator": 14,
+        "denominator": 14
+      },
+      "1990-2009": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "1900-1949": {
+        "numerator": 11,
+        "denominator": 13
+      },
+      "pre-1900": {
+        "numerator": 9,
+        "denominator": 9
+      },
+      "2010-": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "undated": {
+        "numerator": 4,
+        "denominator": 5
+      },
+      "unknown": {
+        "numerator": 7,
+        "denominator": 9
+      }
+    },
+    "region": {
+      "anglophone_core": {
+        "numerator": 16,
+        "denominator": 18
+      },
+      "unstated": {
+        "numerator": 29,
+        "denominator": 31
+      },
+      "elsewhere": {
+        "numerator": 10,
+        "denominator": 10
+      },
+      "unknown": {
+        "numerator": 7,
+        "denominator": 9
+      }
+    },
+    "density": {
+      "connected": {
+        "numerator": 26,
+        "denominator": 26
+      },
+      "sparse": {
+        "numerator": 11,
+        "denominator": 12
+      },
+      "isolated": {
+        "numerator": 18,
+        "denominator": 21
+      },
+      "unknown": {
+        "numerator": 7,
+        "denominator": 9
+      }
+    },
+    "source": {
+      "both": {
+        "numerator": 11,
+        "denominator": 11
+      },
+      "wikidata_only": {
+        "numerator": 15,
+        "denominator": 16
+      },
+      "dbpedia_only": {
+        "numerator": 11,
+        "denominator": 11
+      },
+      "none": {
+        "numerator": 18,
+        "denominator": 21
+      },
+      "unknown": {
+        "numerator": 7,
+        "denominator": 9
+      }
+    },
+    "predicate": {
+      "both": {
+        "numerator": 28,
+        "denominator": 29
+      },
+      "influence_only": {
+        "numerator": 6,
+        "denominator": 6
+      },
+      "membership_only": {
+        "numerator": 12,
+        "denominator": 15
+      },
+      "neither": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "teaching": {
+        "numerator": 7,
+        "denominator": 7
+      },
+      "unknown": {
+        "numerator": 7,
+        "denominator": 9
+      }
+    },
+    "query_kind": {
+      "origins": {
+        "numerator": 44,
+        "denominator": 47
+      },
+      "lineage": {
+        "numerator": 10,
+        "denominator": 13
+      },
+      "unknown": {
+        "numerator": 1,
+        "denominator": 1
+      },
+      "descendants": {
+        "numerator": 7,
+        "denominator": 7
+      }
+    }
+  },
+  "written_at": "20260919T010340Z",
+  "code_revision": "639690b",
+  "gates": {
+    "set": null,
+    "lines": [
+      "gates: NOT GATED",
+      "  this run scored 68 cases and the 'live gold+adversarial on Bedrock' baseline was measured over 63. The dataset has grown past its baseline, so this run is the complete one and the baseline is the stale half. These numbers cannot be compared to it until the baseline is re-measured over the current set.",
+      "  This is not a pass. The gates were skipped, not cleared."
+    ]
+  }
+}

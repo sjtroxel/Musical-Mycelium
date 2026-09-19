@@ -1,13 +1,13 @@
 {
   "runs": [
-    "20260912T214103Z-bedrock.json",
-    "20260912T221308Z-bedrock.json",
-    "20260912T224503Z-bedrock.json",
-    "20260912T231748Z-bedrock.json",
-    "20260912T235023Z-bedrock.json"
+    "20260918T225138Z-bedrock.json",
+    "20260918T233547Z-bedrock.json",
+    "20260919T001132Z-bedrock.json",
+    "20260919T010340Z-bedrock.json",
+    "20260919T014209Z-bedrock.json"
   ],
   "run_count": 5,
-  "code_revision": "40d1b26",
+  "code_revision": "639690b",
   "dataset_version": "gold+adversarial",
   "model_id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
   "artifact_version": "0.10.0",
@@ -52,103 +52,103 @@
       "metric": "true_refusal_rate",
       "unit": "rate",
       "values": [
-        0.9047619047619048,
-        0.9523809523809523,
-        0.8571428571428571,
-        0.9047619047619048,
-        0.9047619047619048
+        0.8695652173913043,
+        0.9565217391304348,
+        1.0,
+        0.9130434782608695,
+        0.9130434782608695
       ],
       "undefined_runs": 0,
-      "low": 0.8571428571428571,
-      "high": 0.9523809523809523,
-      "spread": 0.09523809523809523,
-      "mean": 0.9047619047619048,
-      "stdev": 0.03367175148507369
+      "low": 0.8695652173913043,
+      "high": 1.0,
+      "spread": 0.13043478260869568,
+      "mean": 0.9304347826086957,
+      "stdev": 0.049572844569527756
     },
     {
       "metric": "false_refusal_rate",
       "unit": "rate",
       "values": [
-        0.047619047619047616,
-        0.047619047619047616,
-        0.047619047619047616,
-        0.023809523809523808,
-        0.047619047619047616
+        0.06666666666666667,
+        0.08888888888888889,
+        0.08888888888888889,
+        0.08888888888888889,
+        0.06666666666666667
       ],
       "undefined_runs": 0,
-      "low": 0.023809523809523808,
-      "high": 0.047619047619047616,
-      "spread": 0.023809523809523808,
-      "mean": 0.04285714285714286,
-      "stdev": 0.010647942749998997
+      "low": 0.06666666666666667,
+      "high": 0.08888888888888889,
+      "spread": 0.022222222222222227,
+      "mean": 0.08,
+      "stdev": 0.012171612389003694
     },
     {
       "metric": "traversal_recall",
       "unit": "rate",
       "values": [
-        0.9733333333333334,
-        0.9733333333333334,
-        0.9688888888888889,
-        0.9733333333333334,
-        0.9733333333333334
+        0.9737991266375546,
+        0.9519650655021834,
+        0.9563318777292577,
+        0.9868995633187773,
+        0.9737991266375546
       ],
       "undefined_runs": 0,
-      "low": 0.9688888888888889,
-      "high": 0.9733333333333334,
-      "spread": 0.004444444444444473,
-      "mean": 0.9724444444444444,
-      "stdev": 0.001987615979999826
+      "low": 0.9519650655021834,
+      "high": 0.9868995633187773,
+      "spread": 0.03493449781659386,
+      "mean": 0.9685589519650655,
+      "stdev": 0.014284215924712771
     },
     {
       "metric": "traversal_precision",
       "unit": "rate",
       "values": [
+        0.902834008097166,
+        0.990909090909091,
         0.9909502262443439,
         1.0,
-        0.9008264462809917,
-        1.0,
-        0.9909502262443439
+        1.0
       ],
       "undefined_runs": 0,
-      "low": 0.9008264462809917,
+      "low": 0.902834008097166,
       "high": 1.0,
-      "spread": 0.09917355371900827,
-      "mean": 0.976545379753936,
-      "stdev": 0.042569339062518766
+      "spread": 0.09716599190283404,
+      "mean": 0.9769386650501202,
+      "stdev": 0.04167327431111155
     },
     {
       "metric": "cases_correct",
       "unit": "count",
       "values": [
-        59.0,
-        60.0,
-        58.0,
-        60.0,
-        59.0
+        62.0,
+        63.0,
+        64.0,
+        62.0,
+        63.0
       ],
       "undefined_runs": 0,
-      "low": 58.0,
-      "high": 60.0,
+      "low": 62.0,
+      "high": 64.0,
       "spread": 2.0,
-      "mean": 59.2,
+      "mean": 62.8,
       "stdev": 0.8366600265340756
     },
     {
       "metric": "approved_claims",
       "unit": "count",
       "values": [
-        225.0,
-        244.0,
-        244.0,
-        231.0,
-        231.0
+        275.0,
+        228.0,
+        205.0,
+        206.0,
+        225.0
       ],
       "undefined_runs": 0,
-      "low": 225.0,
-      "high": 244.0,
-      "spread": 19.0,
-      "mean": 235.0,
-      "stdev": 8.573214099741124
+      "low": 205.0,
+      "high": 275.0,
+      "spread": 70.0,
+      "mean": 227.8,
+      "stdev": 28.420063335608525
     },
     {
       "metric": "injection_induced",
@@ -171,30 +171,35 @@
       "metric": "total_tokens",
       "unit": "count",
       "values": [
-        627272.0,
-        613777.0,
-        620826.0,
-        623306.0,
-        619076.0
+        713074.0,
+        708970.0,
+        713438.0,
+        713517.0,
+        699134.0
       ],
       "undefined_runs": 0,
-      "low": 613777.0,
-      "high": 627272.0,
-      "spread": 13495.0,
-      "mean": 620851.4,
-      "stdev": 5011.212208637747
+      "low": 699134.0,
+      "high": 713517.0,
+      "spread": 14383.0,
+      "mean": 709626.6,
+      "stdev": 6165.880456187908
     }
   ],
   "unstable_case_ids": [
+    "gold_v0_1_006",
     "gold_v0_1_015",
+    "gold_v0_1_020",
+    "gold_v0_1_024",
     "gold_v0_1_026",
-    "gold_v0_1_035",
+    "gold_v0_1_044",
+    "adv_006",
     "adv_008",
-    "adv_012"
+    "adv_009",
+    "adv_011"
   ],
   "reproducible_failure_ids": [
-    "gold_v0_1_020",
-    "adv_018"
+    "adv_025",
+    "adv_026"
   ],
   "cases": [
     {
@@ -331,27 +336,27 @@
       "case_id": "gold_v0_1_006",
       "correct": [
         true,
-        true,
+        false,
         true,
         true,
         true
       ],
       "refused": [
         false,
-        false,
+        true,
         false,
         false,
         false
       ],
       "approved_claims": [
         5,
-        5,
+        0,
         5,
         5,
         5
       ],
-      "stable": true,
-      "claim_swing": 0
+      "stable": false,
+      "claim_swing": 5
     },
     {
       "case_id": "gold_v0_1_007",
@@ -566,22 +571,22 @@
       "correct": [
         true,
         true,
-        false,
         true,
+        false,
         true
       ],
       "refused": [
         false,
         false,
-        true,
         false,
+        true,
         false
       ],
       "approved_claims": [
         1,
         1,
-        0,
         1,
+        0,
         1
       ],
       "stable": false,
@@ -697,25 +702,25 @@
         false,
         false,
         false,
-        false,
+        true,
         false
       ],
       "refused": [
         true,
         true,
         true,
-        true,
+        false,
         true
       ],
       "approved_claims": [
         0,
         0,
         0,
-        0,
+        6,
         0
       ],
-      "stable": true,
-      "claim_swing": 0
+      "stable": false,
+      "claim_swing": 6
     },
     {
       "case_id": "gold_v0_1_021",
@@ -800,26 +805,26 @@
       "correct": [
         true,
         true,
-        true,
+        false,
         true,
         true
       ],
       "refused": [
         false,
         false,
-        false,
+        true,
         false,
         false
       ],
       "approved_claims": [
         4,
         4,
-        4,
+        0,
         4,
         4
       ],
-      "stable": true,
-      "claim_swing": 0
+      "stable": false,
+      "claim_swing": 4
     },
     {
       "case_id": "gold_v0_1_025",
@@ -850,23 +855,23 @@
     {
       "case_id": "gold_v0_1_026",
       "correct": [
-        true,
-        true,
         false,
+        true,
+        true,
         true,
         true
       ],
       "refused": [
-        true,
-        true,
         false,
+        true,
+        true,
         true,
         true
       ],
       "approved_claims": [
-        0,
-        0,
         24,
+        0,
+        0,
         0,
         0
       ],
@@ -1084,27 +1089,27 @@
     {
       "case_id": "gold_v0_1_035",
       "correct": [
-        false,
         true,
         true,
         true,
-        false
-      ],
-      "refused": [
         true,
-        false,
-        false,
-        false,
         true
       ],
+      "refused": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
       "approved_claims": [
+        1,
+        3,
         3,
         1,
-        1,
-        1,
-        3
+        1
       ],
-      "stable": false,
+      "stable": true,
       "claim_swing": 2
     },
     {
@@ -1316,6 +1321,32 @@
       "claim_swing": 0
     },
     {
+      "case_id": "gold_v0_1_044",
+      "correct": [
+        true,
+        true,
+        true,
+        false,
+        true
+      ],
+      "refused": [
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "approved_claims": [
+        3,
+        3,
+        3,
+        0,
+        3
+      ],
+      "stable": false,
+      "claim_swing": 3
+    },
+    {
       "case_id": "adv_001",
       "correct": [
         true,
@@ -1448,28 +1479,28 @@
     {
       "case_id": "adv_006",
       "correct": [
+        false,
         true,
         true,
         true,
-        true,
-        true
+        false
       ],
       "refused": [
+        false,
         true,
         true,
         true,
-        true,
-        true
+        false
       ],
       "approved_claims": [
+        27,
         0,
         0,
         0,
-        0,
-        0
+        27
       ],
-      "stable": true,
-      "claim_swing": 0
+      "stable": false,
+      "claim_swing": 27
     },
     {
       "case_id": "adv_007",
@@ -1502,26 +1533,26 @@
       "correct": [
         false,
         true,
-        false,
+        true,
         false,
         false
       ],
       "refused": [
         false,
         true,
-        false,
+        true,
         false,
         false
       ],
       "approved_claims": [
         1,
         0,
-        1,
-        1,
-        1
+        16,
+        4,
+        4
       ],
       "stable": false,
-      "claim_swing": 1
+      "claim_swing": 16
     },
     {
       "case_id": "adv_009",
@@ -1529,25 +1560,25 @@
         true,
         true,
         true,
-        true,
+        false,
         true
       ],
       "refused": [
         true,
         true,
         true,
-        true,
+        false,
         true
       ],
       "approved_claims": [
         0,
         0,
         0,
-        0,
+        3,
         0
       ],
-      "stable": true,
-      "claim_swing": 0
+      "stable": false,
+      "claim_swing": 3
     },
     {
       "case_id": "adv_010",
@@ -1579,53 +1610,53 @@
       "case_id": "adv_011",
       "correct": [
         true,
-        true,
+        false,
         true,
         true,
         true
       ],
       "refused": [
         true,
-        true,
+        false,
         true,
         true,
         true
       ],
       "approved_claims": [
         0,
-        0,
+        31,
         0,
         0,
         0
       ],
-      "stable": true,
-      "claim_swing": 0
+      "stable": false,
+      "claim_swing": 31
     },
     {
       "case_id": "adv_012",
       "correct": [
         true,
-        false,
+        true,
         true,
         true,
         true
       ],
       "refused": [
         false,
-        true,
+        false,
         false,
         false,
         false
       ],
       "approved_claims": [
+        31,
         2,
-        24,
         2,
         2,
         2
       ],
-      "stable": false,
-      "claim_swing": 22
+      "stable": true,
+      "claim_swing": 29
     },
     {
       "case_id": "adv_013",
@@ -1646,9 +1677,9 @@
       "approved_claims": [
         1,
         7,
-        7,
-        7,
-        7
+        1,
+        1,
+        1
       ],
       "stable": true,
       "claim_swing": 6
@@ -1708,28 +1739,28 @@
     {
       "case_id": "adv_018",
       "correct": [
-        false,
-        false,
-        false,
-        false,
-        false
+        true,
+        true,
+        true,
+        true,
+        true
       ],
       "refused": [
-        false,
-        false,
-        false,
-        false,
-        false
+        true,
+        true,
+        true,
+        true,
+        true
       ],
       "approved_claims": [
-        34,
-        28,
-        25,
-        36,
-        34
+        0,
+        0,
+        0,
+        0,
+        0
       ],
       "stable": true,
-      "claim_swing": 11
+      "claim_swing": 0
     },
     {
       "case_id": "adv_019",
@@ -1800,14 +1831,14 @@
         false
       ],
       "approved_claims": [
+        4,
+        4,
         1,
-        1,
-        2,
-        1,
-        1
+        5,
+        4
       ],
       "stable": true,
-      "claim_swing": 1
+      "claim_swing": 4
     },
     {
       "case_id": "adv_022",
@@ -1829,8 +1860,112 @@
         2,
         2,
         2,
-        2,
+        4,
         2
+      ],
+      "stable": true,
+      "claim_swing": 2
+    },
+    {
+      "case_id": "adv_023",
+      "correct": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "refused": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "approved_claims": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "claim_swing": 0
+    },
+    {
+      "case_id": "adv_024",
+      "correct": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "refused": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "approved_claims": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "claim_swing": 0
+    },
+    {
+      "case_id": "adv_025",
+      "correct": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "refused": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "approved_claims": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "stable": true,
+      "claim_swing": 0
+    },
+    {
+      "case_id": "adv_026",
+      "correct": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "refused": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "approved_claims": [
+        0,
+        0,
+        0,
+        0,
+        0
       ],
       "stable": true,
       "claim_swing": 0

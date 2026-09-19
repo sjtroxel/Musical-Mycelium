@@ -586,6 +586,26 @@ def did_not_work_section(
     )
 
 
+#: How many charted cohorts the trend section renders, newest first.
+#:
+#: **A cap, added 2026-09-18 at phase 8 step 6, because the page had no bound and breached its own.**
+#: `trend_section` was handed every Bedrock run ever written, so the section grew with each baseline --
+#: 61 KB of a 75 KB page by the time phase 8's five runs landed, against a 64 KB asset budget. That is
+#: not a one-off overflow: every future baseline adds a cohort, so the page would breach again at every
+#: freeze and the cap would be raised each time until it meant nothing.
+#:
+#: Cohorts rather than runs, because a cohort is the unit that can honestly share a line. Truncating by
+#: RUN could cut a cohort in half and draw a spread over part of one, which is the thing this whole
+#: section is shaped to avoid. Omitted cohorts are COUNTED in the copy rather than dropped silently:
+#: the older numbers still exist in `eval/results/` and in git.
+#:
+#: **TWO, measured rather than guessed.** Four charted cohorts existed when this was written and a cap
+#: of 4 changed nothing -- the 61 KB was spread across them, not concentrated in old ones. Two is the
+#: current freeze and the one before it, which is what a reader comparing freezes actually needs; the
+#: 0.5.0 41-case and 0.7.1 56-case cohorts are history rather than comparison.
+MAX_CHARTED_COHORTS = 2
+
+
 def trend_section(runs: Sequence[tuple[str, Json]], floor: Json) -> str:
     """Step 2: cohorts, not a line. Charted cohorts newest first, then everything that is not joined."""
     groups = trend.cohorts(runs)
@@ -594,7 +614,16 @@ def trend_section(runs: Sequence[tuple[str, Json]], floor: Json) -> str:
     units = {name: unit for name, unit, _ in noise.METRICS}
 
     out = '<h2 id="trend">Across runs</h2>' + _p(COPY["trend"])
-    for cohort in reversed([group for group in groups if group.charted]):
+    charted = list(reversed([group for group in groups if group.charted]))
+    shown, omitted = charted[:MAX_CHARTED_COHORTS], charted[MAX_CHARTED_COHORTS:]
+    if omitted:
+        out += _p(
+            f"Showing the {len(shown)} most recent cohorts. "
+            f"{len(omitted)} older {'cohort is' if len(omitted) == 1 else 'cohorts are'} not drawn; "
+            f"the runs remain in the repository.",
+            "note",
+        )
+    for cohort in shown:
         # The band is drawn only on the cohort that CONTAINS the measured floor's runs. A band borrowed
         # onto a different cohort would be a noise floor for a measurement nobody made.
         measured = floor_stamps <= set(cohort.stamps)
