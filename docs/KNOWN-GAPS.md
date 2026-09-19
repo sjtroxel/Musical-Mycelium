@@ -1,6 +1,46 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-17
+> ## START HERE — where things stand, 2026-09-18
+>
+> **PHASE 8 `membership-tour` IS COMPLETE AND NOT DEPLOYED.** The public site still serves the phase 7.7
+> build; nothing from phase 8 is live. As-built, the seven DoD verdicts and what the phase leaves behind:
+> `docs/phases/phase-8-membership-tour-IMPLEMENTATION.md` §6.
+>
+> **Live baseline re-measured over 68 cases** — five runs at `639690b`, $4.21, `noise_floor.json`
+> rewritten and `sufficient: true`. Bounds: refusal true **>= 20/23**, false **<= 2/42**; traversal **39
+> named cases**; membership 0 silent over >= 1 scored. `adv_018` **un-excluded** (its re-authoring
+> worked); `adv_025`/`adv_026` **excluded, tracked not gated**, diagnosed at 5 of 5.
+>
+> **Held-out: 9 of 10, RUN COUNT 2**, $0.13. One case at n=10 is not a regression; still no `elsewhere`
+> case and no `route` case, so this phase's capability is untested by it. **Do not run it again.**
+>
+> **OWED BEFORE ANY NEXT BASELINE, decided 2026-09-18:** the name-substitution check and the `adv_006`
+> direction swap were **deferred by decision**, not forgotten. Both change refusal behaviour, so they
+> belong before a baseline and never after one.
+>
+> **The phase 9 candidate:** refuse a "lineage" framing, then offer the route. That is the honest fix for
+> `adv_025`/`adv_026`, and it is why they are excluded rather than re-authored.
+>
+> **OWED AND READER-FACING: three README claims went false tonight, and the report page now contradicts
+> the README.** The generator self-corrected — `/report/index.html` says *"No full live run has been
+> judged against the current bounds yet"* — because it compares the run to the bounds. The README states
+> it in prose and cannot. **His to reword; the facts are:**
+> - `README.md:211` — *"Three runs have been judged against the current bounds, and two of them failed."*
+>   The bounds were replaced tonight, so the true count is **zero**. Those three were judged against the
+>   bounds this set replaced. This is the exact shape the handoff ritual exists for: true when written,
+>   reads as a standing fact, describes a thing that no longer exists.
+> - `README.md:219` — *"Two cases are excluded from the gates."* It is **three**
+>   (`gold_v0_1_020`, `adv_025`, `adv_026`), and the paragraph's own example is wrong in the other
+>   direction: the West African case it describes is **`adv_018`, which was UN-excluded tonight** because
+>   its re-authoring worked.
+> - `README.md:389` — *"As of 2026-09-14 ... Phase 8 ... is planned and not started."* Phase 8 is
+>   **complete and not deployed.**
+>
+> **Also owed:** a second gold route case (membership gates on a one-case live denominator, N/A in 1 of 5
+> runs); `MEMBERSHIP_CITED` described honestly wherever a reader sees it, since it is over 80% import
+> provenance; the 13 parked DBpedia candidates at the next artifact cut.
+>
+> ## Where things stood, 2026-09-17
 >
 > **2026-09-17: PHASE 7.5 IS CLOSED. THE LAUNCH POST IS PUBLISHED.** Seven-tile carousel on LinkedIn,
 > post text and claim audit in `job-search-headquarters/portfolio/musical-mycelium-launch/`. Step 6's

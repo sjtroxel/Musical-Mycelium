@@ -1149,3 +1149,94 @@ and BFS for the route. Cost figures came from the `usage.estimated_usd` field of
 `*-bedrock.json` runs in `eval/results/` dated 2026-09-12 and later. Nothing here was taken from a doc,
 a memory, or the manifest's recorded `structure` block, and the manifest's own numbers were used only as a
 cross-check — they agreed.
+
+
+---
+
+## Step 6 — AS BUILT, 2026-09-18. **PHASE 8 IS COMPLETE.**
+
+### The baseline
+
+Five identical live runs over the 68-case set, **$4.21**, about three and a half hours, all five stamped
+`639690b` with **no `-dirty` suffix**. `noise_floor.json` rewritten: `sufficient: true`, no provisional
+reasons.
+
+| metric | spread over five runs |
+|---|---|
+| edge_groundedness | **0.0pp** (1.0 every run) |
+| citation_resolution | **0.0pp** (1.0 every run) |
+| injection_induced | **0** |
+| false_refusal_rate | 2.2pp |
+| traversal_recall | 3.5pp |
+| traversal_precision | 9.7pp |
+| true_refusal_rate | **13.0pp** |
+| approved_claims | 205–275, sd 28 |
+
+**A drift scare that was not drift.** Claims fell 275 → 228 → 205 across runs 1–3 and I flagged it as a
+possible trend at run 3. Runs 4 and 5 came in at 206 and 225: a wide but **stationary** spread. Recorded
+because calling it early was the right instinct and the wrong conclusion, and the floor is what settled
+it. Three points cannot tell drift from variance.
+
+### Bounds, each at the worst observed value
+
+`refusal_accuracy` **true ≥ 20 of 23, false ≤ 2 of 42**; injection 0 induced over ≥10 scored; contested
+0 silent over ≥2; membership 0 silent over ≥1; traversal **39 named cases at full recall**, down from 41
+— **the first decrease, and not a weakening**: four cases dipped once each and are absent by the bound's
+own every-run rule rather than by decision.
+
+**`adv_018` UN-EXCLUDED.** The South African re-authoring of 2026-09-17 worked: it true-refuses in all
+five runs.
+
+**`adv_025` and `adv_026` EXCLUDED**, tracked not gated, on the `gold_v0_1_020` precedent. Diagnosed and
+reproducible at 5 of 5: a query phrased *"trace the lineage"* routes to the influence tools, finds no
+path and refuses, while *"how are X and Y connected"* reaches the route tool and answers. **Deliberately
+NOT re-authored to expect refusal** — that would make them pass and hide the gap. The system may in fact
+be more right than the cases: asked to trace a lineage that does not exist, refusing beats offering a
+membership route the reader would then read *as* the lineage.
+
+**No re-run was needed for any of this.** `_refusal_gate` recomputes counts per case when a bound carries
+exclusions, which is machinery built at phase 6.5 for exactly this.
+
+**`test_a_full_live_run_can_be_gated_at_all` restored itself to equality.** It failed on its own inverted
+assertion with a message naming which of two repairs to make. `case_count` reached 68 by measurement,
+never by edit.
+
+### The held-out set
+
+**9 of 10, RUN COUNT 2**, $0.13, complete, no errors. Reported with its limits beside it and **not
+re-run**: one case at n=10 is not a regression, there is still no `elsewhere` case, and there is no
+`route` case, so this phase's own capability is untested by it. `.claude/rules/heldout-set.md` carries it.
+
+### A page that had no bound on its own growth
+
+`report_page.trend_section` rendered every Bedrock run ever written — 61 KB of a 75 KB page against a
+64 KB asset budget, breaching it. **Not a one-off:** every future baseline adds a cohort, so the cap
+would have been raised at every freeze until it meant nothing. Now capped at the two most recent cohorts
+with omitted ones counted, not dropped. Page is **42.3 KB, 66% of cap**. A cap of 4 was tried first and
+measured to do nothing, which is why it is 2.
+
+## Definition of done — the audit
+
+| # | item | verdict |
+|---|---|---|
+| 1 | Cross-axis route, every hop gated, cited and **typed** in the payload | **PASS** — `RouteWalked` carries `(predicate, forward)` per hop plus `worst_pivot`; read from a real SSE frame, not a serializer test |
+| 2 | `delta blues -> Detroit techno` answerable, naming membership as membership | **PASS** — answered at step 4b; the quoted prose is in that section |
+| 3 | A **test** that no prose path narrates `plays_genre` as influence | **PASS** — `MembershipDisclosure`, gated, zero silent crossings, plus `misnarrations` and the `INFLUENCE_WORDING` check |
+| 4 | `verification` and `corroboration` stay two fields; no `MEMBERSHIP_*` where an influence tier is expected | **PASS** — `TIERS_BY_PREDICATE` untouched; step 2's test asserts membership claims carry a `MEMBERSHIP_*` tier |
+| 5 | Eval cases run in the free suite; live suite reports gates, not a banner | **PASS with a caveat** — free run gates **5 passed / 0 failed / 2 N/A of 7**; live re-baselined and gating at 68. The caveat: `membership_disclosure` rests on **one** live case and was N/A in 1 of 5 runs |
+| 6 | `agent/loop.py` unmodified, or the edit recorded in bold | **PASS by the second clause** — modified at steps 2, 3, 4 and 4b, each recorded in bold with its reason |
+| 7 | `make check` green, repo root inside its cap | **PASS** — exit 0, 1,832 Python, 465 frontend, root check green |
+
+**Seven of seven, two with caveats stated rather than flattered.**
+
+## What phase 8 leaves behind
+
+- **The reframe:** refuse a "lineage" framing, *then* offer the route. It is the honest fix for
+  `adv_025`/`adv_026` and it changes refusal behaviour, so it needs its own baseline. **The phase 9
+  candidate.**
+- **A second gold route case**, to take `membership_disclosure` off a one-case live denominator.
+- **Two structural checks deferred by decision** on 2026-09-18: name substitution and the `adv_006`
+  direction swap. Both belong *before* a baseline, never after.
+- **`MEMBERSHIP_CITED` is over 80% import provenance** — measured, recorded in `KNOWN-GAPS.md`, and it
+  should change how that tier is described anywhere a reader sees it.
+- **13 DBpedia origin candidates** parked for the next artifact cut.

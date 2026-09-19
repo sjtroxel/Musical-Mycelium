@@ -135,6 +135,22 @@ be built on. See `docs/graph-semantics.md`.
 genre's origins, deployed by CI, provisioned by Terraform, with a passing eval in the pipeline and a budget
 alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
+### Where the build actually is — 2026-09-18
+
+**PHASE 8 `membership-tour` (v1.1) IS COMPLETE, NOT DEPLOYED.** Membership is a `Claim`, routes cross the
+axes, and a real model answered *"Maria Szymanowska played Romantic music and studied with John Field,
+who played nocturne, connecting these two genres through a musician who engaged in both."* Seven of seven
+DoD items pass, two with caveats stated. As-built and the audit:
+`docs/phases/phase-8-membership-tour-IMPLEMENTATION.md` §6.
+
+Live baseline **re-measured over 68 cases** (five runs, `639690b`, $4.21); held-out run **9 of 10, run
+count 2**; free gates **5 passed / 0 failed / 2 N/A of 7**. Night's spend $4.34.
+
+**Next:** deploy, then the reframe (refuse a "lineage" framing, then offer the route) as the phase 9
+candidate. Open items: `docs/KNOWN-GAPS.md`.
+
+*(The block below is dated 2026-09-13.)*
+
 ### Where the build actually is — 2026-09-13
 
 **PHASE 7.7 IS CLOSED AND DEPLOYED, with DoD 1 partial.** Phases 7.6 and 7.7 went live together in run

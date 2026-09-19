@@ -25,7 +25,18 @@ the one dataset in this project that an agent must actively refuse to read. Hard
   the skip meant exactly what this bullet says it means. It runs now.)*
   That is a real outstanding item — it is a hard precondition on the first live model run, per
   `docs/phases/phase-3-agent-loop-IMPLEMENTATION.md` §4.8 — not a passing state to report as fine.
-- **`heldout_v2` HAS BEEN RUN ONCE — 2026-09-12 evening, phase 7.7 step 7, at the freeze. RUN COUNT 1.**
+- **`heldout_v2` HAS BEEN RUN TWICE. RUN COUNT 2.** *(Second run 2026-09-18, phase 8 step 6, at the
+  freeze, code `6950684`, artifact 0.10.0, $0.13, result in `eval/results/20260919T021256Z-heldout.json`.)*
+  **9 of 10 correct**, one false refusal of 8 answerable, groundedness 24/24, citations 24/24, complete,
+  no errors, no retries. The rule agreed before the first run applied unchanged and did not trigger.
+  **Report it as 9 of 10 at RUN COUNT 2, and say the three things beside it:** 9/10 against the previous
+  10/10 is **one case at n=10 and is not distinguishable from noise** — do not call it a regression;
+  there is still **no `elsewhere` region case** (anglophone_core 5, unstated 5), so it says nothing about
+  non-Western generalization; and there is **no `route` case**, so phase 8's own capability is untested
+  by it, which was known and accepted before the run. **Do not run it again** — the next run belongs to
+  the next freeze, and a re-run to see whether the 9/10 recovers is the exact move that stops this set
+  measuring generalization.
+- ~~**`heldout_v2` HAS BEEN RUN ONCE — 2026-09-12 evening, phase 7.7 step 7, at the freeze. RUN COUNT 1.**~~
   10 of 10 correct, complete, no errors or retries, code `4ac1aec`, artifact 0.10.0, result in
   `eval/results/20260913T002323Z-heldout.json`. **Report it with the run count beside it, and report it
   as what it is: ONE run of TEN cases** — 2 refusals, every slice under n=5 except two, and **no case in
