@@ -1,10 +1,19 @@
 # Known gaps
 
-> ## START HERE — where things stand, 2026-09-18
+> ## START HERE — where things stand, 2026-09-19
 >
-> **PHASE 8 `membership-tour` IS COMPLETE AND NOT DEPLOYED.** The public site still serves the phase 7.7
-> build; nothing from phase 8 is live. As-built, the seven DoD verdicts and what the phase leaves behind:
+> **PHASE 8 `membership-tour` IS COMPLETE, DEPLOYED AND TAGGED `v1.1`.** Run `35415772484` from
+> `7a59a66`, both flags passed. Verified against the live Lambda by hand: a cross-axis query returned a
+> typed `route`, two `membership` disclosures, 3 claims and 0 rejections in 9.5s. As-built, the seven DoD
+> verdicts and what the phase leaves behind:
 > `docs/phases/phase-8-membership-tour-IMPLEMENTATION.md` §6.
+>
+> **A VERIFICATION TRAP THAT COST TEN MINUTES OF ALARM, 2026-09-18.** `curl .../report/` returns the
+> **SPA shell** (3,257 bytes), not the report — CloudFront's default root object applies only to `/`, so
+> a subdirectory falls through to the app. The correct path is **`/report/index.html`**, which
+> `web/src/App.tsx:203` already carries a comment about and which every real link in the app and README
+> already uses. A grep for new content against `/report/` returns 0 and looks exactly like a failed
+> deploy. **Check `/report/index.html`.**
 >
 > **Live baseline re-measured over 68 cases** — five runs at `639690b`, $4.21, `noise_floor.json`
 > rewritten and `sufficient: true`. Bounds: refusal true **>= 20/23**, false **<= 2/42**; traversal **39
@@ -21,24 +30,72 @@
 > **The phase 9 candidate:** refuse a "lineage" framing, then offer the route. That is the honest fix for
 > `adv_025`/`adv_026`, and it is why they are excluded rather than re-authored.
 >
-> **OWED AND READER-FACING: three README claims went false tonight, and the report page now contradicts
-> the README.** The generator self-corrected — `/report/index.html` says *"No full live run has been
-> judged against the current bounds yet"* — because it compares the run to the bounds. The README states
-> it in prose and cannot. **His to reword; the facts are:**
-> - `README.md:211` — *"Three runs have been judged against the current bounds, and two of them failed."*
->   The bounds were replaced tonight, so the true count is **zero**. Those three were judged against the
->   bounds this set replaced. This is the exact shape the handoff ritual exists for: true when written,
->   reads as a standing fact, describes a thing that no longer exists.
-> - `README.md:219` — *"Two cases are excluded from the gates."* It is **three**
->   (`gold_v0_1_020`, `adv_025`, `adv_026`), and the paragraph's own example is wrong in the other
->   direction: the West African case it describes is **`adv_018`, which was UN-excluded tonight** because
->   its re-authoring worked.
-> - `README.md:389` — *"As of 2026-09-14 ... Phase 8 ... is planned and not started."* Phase 8 is
->   **complete and not deployed.**
+> **THE README IS CORRECTED — 2026-09-19, with his explicit permission for Claude to draft the prose,
+> which is an exception he granted for this pass and not a change to the standing rule that public prose
+> is his.** Five stale claims, not the three the 9/18 handoff listed, and the two it missed are the
+> instructive ones. `make check` green after: 1,832 Python, 465 frontend.
+> - *"Three runs have been judged against the current bounds, and two of them failed."* The bounds were
+>   replaced on 9/18, so the true count is **zero**. Now says so, and keeps the three verdicts as history
+>   against the bounds they were judged under. This is the exact shape the handoff ritual exists for:
+>   true when written, reads as a standing fact, describes a thing that no longer exists.
+> - *"Two cases are excluded from the gates."* It is **three** (`gold_v0_1_020`, `adv_025`, `adv_026`),
+>   and the paragraph's own example was wrong in the other direction: the West African case it described
+>   is `adv_018`, **UN-excluded** on 9/18 because its re-authoring worked. Both halves are now written,
+>   the exclusion and the un-exclusion, because a list that only ever grows is not a diagnosis.
+> - *"As of 2026-09-14 ... Phase 8 ... is planned and not started."* Phase 8 is complete, deployed and
+>   tagged `v1.1`. **The 9/18 entry above said "complete and not deployed" in this very bullet while its
+>   own header said deployed** — the entry was written across the deploy and half of it did not move.
+> - **MISSED BY THE HANDOFF: the held-out result.** The README said *"run once, on 2026-09-12: 10 of 10"*
+>   while the set had been run a second time that same night. Now **10 of 10 then 9 of 10, run count 2**,
+>   with the three qualifiers `.claude/rules/heldout-set.md` requires. A number a reader weights heavily,
+>   stale by a whole run, and nothing in the 9/18 list caught it.
+> - **MISSED BY THE HANDOFF: the limits list.** *"It doesn't narrate membership yet ... phase 8's whole
+>   job"* was a limit the phase removed. Replaced with the two limits phase 8 actually left: the
+>   lineage-versus-connected split, and the route tie-break. **A shipped phase falsifies its own
+>   README limits, and nothing greps for that.**
 >
-> **Also owed:** a second gold route case (membership gates on a one-case live denominator, N/A in 1 of 5
-> runs); `MEMBERSHIP_CITED` described honestly wherever a reader sees it, since it is over 80% import
-> provenance; the 13 parked DBpedia candidates at the next artifact cut.
+> **`MEMBERSHIP_CITED` is now described honestly where a reader sees it** — the README's tier footnote
+> carries the 33-of-40 import-provenance measurement. **Still owed:** a second gold route case (membership
+> gates on a one-case live denominator, N/A in 1 of 5 runs); the same honest description anywhere else a
+> reader meets that tier; the 13 parked DBpedia candidates at the next artifact cut.
+>
+> **THE COST QUESTION IS ANSWERED, AND THE ANSWER IS "THE EVAL SUITE IS THE AWS BILL" — measured
+> 2026-09-19, 9/01 through 9/19.** The 2026-09-17 entry below flagged gross usage tripling month over
+> month and noted its forecast predated the launch post. **Measured: $17.70 gross month-to-date, already
+> past that whole-month $17.17 forecast with 11 days left, and the launch post is not why.**
+>
+> - **Nothing always-on has crept in.** Lambda **$0**, CloudFront **$0**, CloudWatch **$0**, KMS $0,
+>   Glue $0. S3 $0.004, ECR $0.008. Every decision `aws-and-cost.md` was built around — no database, no
+>   VPC, no NAT, no provisioned concurrency — is holding at literally zero after a public launch.
+> - **99.4% is model tokens: $17.61.** "Bedrock spend is the only real line item" is now measured rather
+>   than predicted.
+> - **Five eval episodes carry $15.56 of the $17.70:** 9/07 $2.88 (baseline, 56 cases), 9/12 $5.12
+>   (re-baseline, 63 cases), 9/13 $1.84 (two gated runs), 9/14 $0.91 (one gated run), 9/18+9/19 $4.81
+>   (phase 8 baseline plus held-out). The phase 8 night splits across two calendar days because its runs
+>   straddled UTC midnight — `20260918T225138Z` through `20260919T014209Z`.
+> - **The idle floor is $0.0004 to $0.0007 a day** (9/04, 9/05, 9/08, 9/15, 9/17). Storage, not compute.
+> - **Public traffic is a rounding error.** Lambda invocations by UTC day: 9/16 **4**, 9/17 **0**,
+>   9/18 **0**, 9/19 **4** — and the 9/19 four are the hand-verification of the phase 8 deploy. The post
+>   went up 9/17. CloudFront requests over the same days ran 9 to 28, and a single page load is a dozen
+>   or more requests, so that is a few visits a day with no post-day spike. **Recorded, not acted on.**
+> - Credits still absorb all of it: **$153.73 balance, expiry 2027-07-30** (§3.0 of the phase 7.5 doc).
+>   The $20/month ceiling is a gross-usage ceiling, and September will end over it.
+>
+> **FOUR TRAPS THAT MAKE THIS EXPENSIVE TO RE-DERIVE — this is why it is written down.**
+> 1. **`get-cost-and-usage` with no filter nets credits against usage and returns $0.00.** It reads like
+>    flat spend and is not. Filter `{"Dimensions":{"Key":"RECORD_TYPE","Values":["Usage"]}}` for gross.
+> 2. **Bedrock bills under TWO service lines.** `Claude Haiku 4.5 (Amazon Bedrock Edition)` carried
+>    **$17.61**; the line actually named `Amazon Bedrock` carried **$0.08**. Reading the row called
+>    "Amazon Bedrock" and stopping is wrong by 200x. The split comes from the Marketplace subscription
+>    of 2026-08-11.
+> 3. **Vercel is a pure rewrite proxy** — `infra/vercel/vercel.json` rewrites everything to
+>    `d1eu81q25yzmpx.cloudfront.net` — so all public traffic, page views included, IS visible in AWS
+>    metrics. Do not go looking for Vercel analytics.
+> 4. **CloudFront metrics live only in `us-east-1`** and need `Name=Region,Value=Global`. The Lambda is
+>    `musical-mycelium`.
+>
+> **Do not re-run this to answer "is the site costing money".** It is not. Re-measure when the spend
+> SHAPE should have changed — a new baseline, a new always-on resource, or real traffic.
 >
 > ## Where things stood, 2026-09-17
 >

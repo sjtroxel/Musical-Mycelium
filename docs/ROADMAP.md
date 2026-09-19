@@ -137,7 +137,12 @@ alarm armed. A deeply unimpressive product and a completely correct skeleton.
 
 ### Where the build actually is — 2026-09-18
 
-**PHASE 8 `membership-tour` (v1.1) IS COMPLETE, NOT DEPLOYED.** Membership is a `Claim`, routes cross the
+**PHASE 8 `membership-tour` (v1.1) IS COMPLETE, DEPLOYED AND TAGGED.** Run `35415772484`, built from
+`7a59a66` (pushed first, so no silent rebuild), `llm_provider=bedrock`, `reserved_concurrency=-1`,
+tagged **`v1.1`** on the deployed commit. Verified by hand against the live Lambda rather than by the
+workflow result: a cross-axis query returned `route` with typed hops and `worst_pivot: 2`, two
+`membership` disclosures, 3 claims, 0 rejections, 9.5s. **`v1.0` was never tagged** — phase 7.5 closed
+it on 2026-09-17 without one, so the tag history goes `v0.9.5` -> `v1.1`. His decision, 2026-09-18. Membership is a `Claim`, routes cross the
 axes, and a real model answered *"Maria Szymanowska played Romantic music and studied with John Field,
 who played nocturne, connecting these two genres through a musician who engaged in both."* Seven of seven
 DoD items pass, two with caveats stated. As-built and the audit:

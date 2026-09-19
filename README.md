@@ -183,8 +183,9 @@ shows the failures next to the passes.
 <div align="center">
 <img src="docs/assets/readme/report-gates.png" alt="The report's correctness gates on 2026-09-14: five passed, refusal accuracy failed, with every run listed underneath." width="720">
 
-<sub><b>The live report on 2026-09-14.</b> That red FAIL is real, and every run judged against these
-bounds is listed below it, pass or fail.</sub>
+<sub><b>The live report on 2026-09-14.</b> That red FAIL is real, and every run is listed below it,
+pass or fail, labelled with the bounds it ran under. Those bounds have since been replaced, and the page
+says so rather than quietly re-scoring old runs.</sub>
 </div>
 
 - **Correctness is a lookup, not an opinion.** Because this project owns its ground truth, the main
@@ -199,28 +200,43 @@ bounds is listed below it, pass or fail.</sub>
   An earlier baseline had one case fail three runs in a row and then pass twice, so stopping at three
   runs would have written down a coin flip as a permanent bug.
 - **A ten-question held-out set is sealed and encrypted.** It was drawn from the corpus with a seed only
-  I hold, checked without being read, and **run once, on 2026-09-12: 10 of 10.** That's one run of ten
-  questions, and none of them is placed outside the US and UK, so it says nothing about non-Western music. It
-  won't run again until the next freeze, because re-running a held-out set after changes made in
-  response to it stops measuring anything.
+  I hold, checked without being read, and **run twice, once per freeze: 10 of 10 on 2026-09-12, then 9 of
+  10 on 2026-09-18.** One case out of ten is not distinguishable from noise and I'm not going to re-run it
+  to find out, because re-running a held-out set after changes made in response to it stops measuring
+  anything. Read the rest of it as narrowly as the numbers deserve: ten questions, none placed outside the
+  US and UK, and none asking for a route between two genres, so it says nothing about non-Western music and
+  nothing about the newest thing the agent can do.
 
 <details>
 <summary><b>The gate history, the exclusions, and the judge</b></summary>
 <br>
 
-- **Three runs have been judged against the current bounds, and two of them failed.** On 2026-09-13 the
-  first run failed refusal accuracy by one case: two questions already known to refuse now and then did
-  it in the same run, with no code changed. A second run was allowed under a rule set before it started
+- **No run has been judged against the current bounds yet.** They were re-measured on 2026-09-18 over a
+  case set that had grown to 68, and re-measuring bounds retires every verdict made against the old ones.
+  The report page works this out on its own, because it compares each run to the bounds that run was
+  actually judged under. A sentence in a README can't do that, which is why this one said the opposite
+  of the report for a day before anyone noticed.
+- **Under the bounds this set replaced, three runs were judged and two failed.** On 2026-09-13 the first
+  failed refusal accuracy by one case: two questions already known to refuse now and then did it in the
+  same run, with no code changed. A second run was allowed under a rule set written before it started
   (pass and deploy, or fail and stop), and it passed all six. On 2026-09-14, after a fix to how teacher
   and student answers are narrated, a third run failed the same gate. The three failing cases never
-  reached the changed code, which is why the fix was deployed anyway. All three verdicts are on the
-  report.
-- **Two cases are excluded from the gates, and each has a diagnosis rather than a noise excuse.** In one,
-  the question names the artist femtanyl and the model looks up fentanyl, the drug, every single run. The
-  other was written to expect a refusal about West African influence, and the corpus outgrew it the day
-  after it was written: DBpedia added sourced edges from "music of Africa". Both still run and still
-  count in the totals. They just don't get a vote on blocking a release. Cases that are merely noisy stay
-  in, because being noisy isn't a diagnosis.
+  reached the changed code, which is why the fix was deployed anyway. All three verdicts are still on the
+  report, next to the bounds they were judged against.
+- **Three cases are excluded from the gates, and each has a diagnosis rather than a noise excuse.** In
+  one, the question names the artist femtanyl and the model looks up fentanyl, the drug, every single run.
+  The other two were added on 2026-09-18 and are the same bug twice: both ask to trace the *lineage*
+  between two genres, and that word sends the agent to the influence tools, where there is no path, so it
+  refuses. Asked how the same two genres are *connected*, it plans a route through a musician who played
+  both and answers. They failed all five baseline runs identically, which is what separates a diagnosis
+  from a bad night. They were deliberately not rewritten to expect a refusal, because rewriting them would
+  make them pass and hide the gap.
+- **A case came off the exclusion list in the same pass, which is the half that's easy to skip.** It was
+  written to expect a refusal about West African influence and the corpus outgrew it the day after it was
+  written, when DBpedia added sourced edges from "music of Africa". Rewritten on 2026-09-17 to ask about
+  South Africa instead, it now refuses correctly in all five runs and is back inside the gate. Excluded
+  cases still run and still count in the totals; they just don't get a vote on blocking a release. Cases
+  that are merely noisy stay in, because being noisy isn't a diagnosis.
 - **Traversal recall taught the same lesson three times.** Its overall number barely moves, which looks
   like stability. Underneath, one case fails the same way every run while nearly every other case scores
   perfectly every time. The report shows per-case data under every aggregate for that reason.
@@ -257,8 +273,20 @@ bounds is listed below it, pass or fail.</sub>
   a footnote. That lean isn't the same as absence, though: the corpus reaches back to <!-- n:earliest_genre_year -->500<!-- /n -->
   CE across <!-- n:places -->65<!-- /n --> places, and <!-- n:genres_without_us_or_uk -->144<!-- /n --> of its genres name no US or UK origin at all. Whether
   answers hold up as well on older or non-Western music hasn't been tested.
-- **It doesn't narrate membership yet.** The map shows which genres an artist plays, but the agent never
-  says a genre "came out of" an artist. Doing that honestly is phase 8's whole job.
+- **Two ways of asking the same question get two different answers.** Ask how two genres are connected
+  and the agent will plan a route through a musician who played both. Ask it to trace the lineage between
+  those same two genres and it looks for influence, finds no path, and refuses. Each behaviour is
+  defensible alone and together they're inconsistent. Two evaluation cases are excluded from the gates
+  because of it rather than rewritten to pass, and the fix is to refuse the lineage framing explicitly
+  and then offer the route.
+- **The route it shows you is one of several equally short ones, and something has to pick.** Between
+  delta blues and Detroit techno there are seven routes of the same length, and six pivot through
+  Christina Aguilera, who is documented in ten genres. Every hop in all of them is sourced and every one
+  would pass the gates, which is the point: grounded is not the same as sensible. The sources can't break
+  the tie either, because those hops rest on identical provenance. It ranks on how much a musician's
+  record narrows things down instead, preferring the pivot documented in fewer genres. Across 300 sampled
+  pairs that moved the median worst pivot from six genres to three and made none worse. Nineteen routes
+  still run through a hub artist, because for those pairs the corpus offers a hub or nothing.
 
 ## The corpus
 
@@ -304,8 +332,12 @@ source agrees. A second source never upgrades the first one's check.
 | Membership tiers | <!-- n:verified_membership -->4,498<!-- /n --> | An artist recorded as playing a genre. |
 | Teaching | <!-- n:verified_teaching -->2,469<!-- /n --> | A `student of` statement whose teacher is named in the student's article. |
 
-A few honest footnotes. The exposure filter measured 20% recall on held-out data on 2026-08-06, so that
-count is a floor, not a total. The teaching tier claims less than its name suggests: forty rows were read
+A few honest footnotes. The membership row is the weakest word in that table: it means a Wikidata editor
+attached a reference to the statement, and when 40 of those references were pulled at random and read, at
+least 33 turned out to be a breadcrumb recording that the fact was imported from some other Wikipedia
+rather than a source a reader could check. Fewer than one in five is a citation in the ordinary sense of
+the word. The exposure filter measured 20% recall on held-out data on 2026-08-06, so that count is a
+floor, not a total. The teaching tier claims less than its name suggests: forty rows were read
 by hand before any were ingested, and none had the relationship wrong or backwards, but of the 30 that
 passed the automated prose check, 3 rested on a sentence that doesn't actually describe study. Wikidata's
 `subclass of` isn't ingested at all, because a hand check of 47 of those edges found that zero of them
@@ -386,9 +418,16 @@ The repo root is capped at 18 entries and CI enforces it.
 
 ## Status
 
-*As of 2026-09-14.* **v1.0 is live**, with classical teaching lineage and name offers added on
-2026-09-13 and a fix for teacher-and-student answers deployed on 2026-09-14. The release writeup is next.
-Phase 8, which will let the agent narrate which genres an artist plays, is planned and not started.
+*As of 2026-09-19.* **v1.1 is live.** Phase 8 shipped on 2026-09-18: the agent can now answer how two
+genres are connected when no influence path exists between them, by routing through a musician documented
+in both, and it names that as membership rather than letting it read as one genre coming out of the other.
+A real model answered *"Maria Szymanowska played Romantic music and studied with John Field, who played
+nocturne, connecting these two genres through a musician who engaged in both."* Before that, v1.0 added
+classical teaching lineage and name offers, both deployed on 2026-09-13.
+
+What the newest work leaves behind is in [`docs/KNOWN-GAPS.md`](docs/KNOWN-GAPS.md), newest first: the
+membership gate currently rests on a single live case, and the lineage-versus-connected inconsistency in
+the limits above has a fix but not a release.
 
 ---
 
